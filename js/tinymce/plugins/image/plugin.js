@@ -15,7 +15,10 @@ tinymce.PluginManager.add('image', function(editor) {
 		var img = document.createElement('img');
 
 		function done(width, height) {
-			img.parentNode.removeChild(img);
+			if (img.parentNode) {
+				img.parentNode.removeChild(img);
+			}
+
 			callback({width: width, height: height});
 		}
 
@@ -27,8 +30,6 @@ tinymce.PluginManager.add('image', function(editor) {
 			done();
 		};
 
-		img.src = url;
-
 		var style = img.style;
 		style.visibility = 'hidden';
 		style.position = 'fixed';
@@ -36,6 +37,7 @@ tinymce.PluginManager.add('image', function(editor) {
 		style.width = style.height = 'auto';
 
 		document.body.appendChild(img);
+		img.src = url;
 	}
 
 	function createImageList(callback) {
@@ -117,6 +119,8 @@ tinymce.PluginManager.add('image', function(editor) {
 
 				imgElm.onerror = selectImage;
 			}
+			
+			updateStyle();
 
 			var data = win.toJSON();
 
@@ -236,9 +240,9 @@ tinymce.PluginManager.add('image', function(editor) {
 				align: 'center',
 				spacing: 5,
 				items: [
-					{name: 'width', type: 'textbox', maxLength: 3, size: 3, onchange: recalcSize},
+					{name: 'width', type: 'textbox', maxLength: 5, size: 3, onchange: recalcSize},
 					{type: 'label', text: 'x'},
-					{name: 'height', type: 'textbox', maxLength: 3, size: 3, onchange: recalcSize},
+					{name: 'height', type: 'textbox', maxLength: 5, size: 3, onchange: recalcSize},
 					{name: 'constrain', type: 'checkbox', checked: true, text: 'Constrain proportions'}
 				]
 			}
