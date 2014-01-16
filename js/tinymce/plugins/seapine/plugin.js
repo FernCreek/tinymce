@@ -7,7 +7,7 @@
  * License: http://tinymce.moxiecode.com/license
  */
 
-/*global tinymce:true */
+/*global tinymce:true, $: false */
 
 (function() {
 
@@ -25,7 +25,7 @@
 		 * @param {tinymce.Editor} ed Editor instance that the plugin is initialized in.
 		 * @param {string} url Absolute URL to where the plugin is located.
 		 */
-		init : function(ed, url) {
+		init : function(ed) {
 			// Override some formats.
 			ed.on('init', function() {
 				this.formatter.register({
@@ -75,19 +75,6 @@
 						body.contentEditable = !ro;
 						$body.toggleClass('mceReadOnly', ro);
 					}
-
-					// Disable all the toolbar buttons.
-					buttons = s.theme_advanced_buttons1.split(',');
-					buttons = buttons.concat(s.theme_advanced_buttons2.split(','));
-					for (i = 0, l = buttons.length; i < l; ++i) {
-						if (buttons[i] !== '|') {
-							c = cm.get(buttons[i]);
-							if (c) {
-								c.setDisabled(ro);
-							}
-						}
-					}
-
 				},
 
 				/**
