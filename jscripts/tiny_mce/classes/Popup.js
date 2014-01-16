@@ -192,8 +192,9 @@ tinyMCEPopup = {
 	restoreSelection : function() {
 		var t = tinyMCEPopup;
 
-		if (!t.isWindow && tinymce.isIE)
+		if (!t.isWindow && tinymce.isIE) {
 			t.editor.selection.moveToBookmark(t.editor.windowManager.bookmark);
+		}
 	},
 
 	/**
@@ -300,8 +301,8 @@ tinyMCEPopup = {
 
 	// Internal functions	
 
-	_restoreSelection : function() {
-		var e = window.event.srcElement;
+	_restoreSelection : function(e) {
+		var e = e.target || window.event.srcElement;
 
 		if (e.nodeName == 'INPUT' && (e.type == 'submit' || e.type == 'button'))
 			tinyMCEPopup.restoreSelection();
@@ -341,12 +342,14 @@ tinyMCEPopup = {
 		document.body.style.display = '';
 
 		// Restore selection in IE when focus is placed on a non textarea or input element of the type text
-		if (tinymce.isIE) {
+		if (tinymce.isIE && !tinymce.isIE11) {
 			document.attachEvent('onmouseup', tinyMCEPopup._restoreSelection);
 
 			// Add base target element for it since it would fail with modal dialogs
 			t.dom.add(t.dom.select('head')[0], 'base', {target : '_self'});
-		}
+		} else if (tinymce.isIE11) {
+			document.addEventListener('mouseup', tinyMCEPopup._restoreSelection, false);
+ 		}
 
 		t.restoreSelection();
 		t.resizeToInnerSize();

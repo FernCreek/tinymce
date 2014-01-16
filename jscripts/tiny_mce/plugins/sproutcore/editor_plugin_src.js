@@ -454,6 +454,7 @@
 				delegate
 					.set('entityType', owner.get('entityType'))
 					.set('entityID', owner.get('entityID'))
+					.set('subtypeID', owner.get('subtypeID'))
 					.set('reportedBy', owner.get('reportedBy'))
 					.set('fieldID', owner.get('fieldID'));
 			}
