@@ -1,16 +1,15 @@
 /**
  * editor_plugin_src.js
  *
- * Copyright 2012, Seapine Software Inc
+ * Copyright 2014, Seapine Software Inc
  * Released under LGPL License.
  *
  * License: http://tinymce.moxiecode.com/license
  */
 
-/*global tinymce:true */
+/*global tinymce:true, TinySC, SC, $ */
 
-(function() {
-//	var $ = tinymce.$, defaults, getParam;
+(function () {
 	var defaults, getParam;
 
 	defaults = {
@@ -25,7 +24,7 @@
 	 * @param {tinymce.Editor} ed Editor instance.
 	 * @param {String} name Parameter name.
 	 */
-	getParam = function(ed, name) {
+	getParam = function (ed, name) {
 		return ed.getParam(name, defaults[name]);
 	};
 
@@ -36,10 +35,10 @@
 	 */
 	tinymce.create('tinymce.plugins.SproutCorePlugin', {
 
-    // TTWEB_TODO_JEL -
-    SproutCoreWindowManager: function () {
-      // Class Constructor?
-    },
+		// TTWEB_TODO_JEL -
+		SproutCorePlugin: function (ed) {
+			// Class Constructor?
+		},
 
 		/**
 		 * Initializes the plugin, this will be executed after the plugin has been created.
@@ -47,16 +46,16 @@
 		 * of the editor instance to intercept that event.
 		 *
 		 * @param {tinymce.Editor} ed Editor instance that the plugin is initialized in.
-		 * @param {string} url Absolute URL to where the plugin is located.
 		 */
-		init : function(ed, url) {
+		init: function (ed) {
 			// Override the editor's window manager with our own.
-			ed.on('BeforeRenderUI', function() {
+			ed.on('BeforeRenderUI', function () {
 				ed.windowManager = new tinymce.SproutCoreWindowManager(ed);
 			});
 
 			// Add expanded editor command.
-			ed.addCommand('scOpenExpandedEditor', function(ui, value) {
+			ed.addCommand('scOpenExpandedEditor', function (ui, value) {
+				//jshint unused:false
 				var view = TinySC.Utils.getOwnerView(ed), expandedView;
 
 				if (view && !view.get('isExpanded')) {
@@ -68,20 +67,42 @@
 				}
 			});
 
+			// Insert/edit link command
+			ed.addCommand('mceLink', function (ui, value) {
+				//jshint unused:false
+				// Just matching the function signature with params here
+				var viewClass = this.windowManager._setupLinkPropertiesDialog(this),
+						ownerView = TinySC.Utils.getOwnerView(this),
+						dialog;
+
+				dialog = viewClass.create({owner: ownerView});
+				this.plugins.sproutcore.openDialog(this, dialog);
+			});
+
+			// Insert/edit image command
+			ed.addCommand('mceImage', function (ui, value) {
+				var ownerView = TinySC.Utils.getOwnerView(this),
+						viewClass = this.windowManager._setupImagePropertiesDialog(this, ownerView),
+						dialog;
+
+				dialog = viewClass.create({owner: ownerView});
+				this.plugins.sproutcore.openDialog(this, dialog);
+			});
+
 			// Add expanded editor button.
 			ed.addButton('expanded_editor', {
-				title : 'sproutcore.expanded_editor_desc',
-				cmd : 'scOpenExpandedEditor',
-				ui : true
+				title: 'sproutcore.expanded_editor_desc',
+				cmd: 'scOpenExpandedEditor',
+				ui: true
 			});
 
 			// Add paste post processing.
 			if (ed.plugins.paste) {
-				ed.on('PastePostProcess', function(pl, o) {
+				ed.on('PastePostProcess', function (evt) {
 					var view = TinySC.Utils.getOwnerView(ed);
 
 					if (view) {
-						view.onPaste(ed, o);
+						view.onPaste(ed, evt.node);
 					}
 				});
 			}
@@ -90,11 +111,11 @@
 				/**
 				 * Stores the editor's current selection.
 				 */
-				storeSelection: function() {
+				storeSelection: function () {
 					var curBookmark = this.plugins.sproutcore.getBookmark();
 
 					// Only store the selection if we don't already have one
-					if(this.selection && !curBookmark) {
+					if (this.selection && !curBookmark) {
 						this.plugins.sproutcore.setBookmark(this.selection.getBookmark());
 					}
 				},
@@ -102,10 +123,10 @@
 				/**
 				 * Restores the previously saved editor selection.
 				 */
-				restoreSelection: function() {
+				restoreSelection: function () {
 					var bm = this.plugins.sproutcore.getBookmark();
 
-					if(bm) {
+					if (bm) {
 						this.selection.moveToBookmark(bm);
 					}
 
@@ -122,7 +143,7 @@
 		 * @param {tinymce.Editor} ed Editor instance.
 		 * @param {SC.PanelPane} view Dialog instance.
 		 */
-		openDialog: function(ed, view) {
+		openDialog: function (ed, view) {
 			var app, dialogOpen;
 
 			app = getParam(ed, 'sproutcore_app_namespace');
@@ -150,7 +171,7 @@
 		 * @param {tinymce.Editor} ed Editor instance.
 		 * @param {SC.PanelPane} view Dialog instance.
 		 */
-		closeDialog: function(ed, view) {
+		closeDialog: function (ed, view) {
 			var app, dialogClose;
 
 			app = getParam(ed, 'sproutcore_app_namespace');
@@ -175,7 +196,7 @@
 		 * Sets the bookmark in the sproutcore plugin for this editor
 		 * @param {Object} bm bookmark object
 		 */
-		setBookmark: function(bm) {
+		setBookmark: function (bm) {
 			this._bookmark = bm;
 		},
 
@@ -183,7 +204,7 @@
 		 * Gets the saved bookmark in the sproutcore plugin for this editor
 		 * @return {*}
 		 */
-		getBookmark: function() {
+		getBookmark: function () {
 			return this._bookmark;
 		},
 
@@ -193,15 +214,16 @@
 		 *
 		 * @return {Object} Name/value array containing information about the plugin.
 		 */
-		getInfo : function() {
+		getInfo: function () {
 			return {
-				longname : 'SproutCore integration plugin',
-				author : 'Seapine Software Inc',
-				authorurl : 'http://www.seapine.com',
-				infourl : 'http://www.seapine.com',
-				version : '0.1'
+				longname: 'SproutCore integration plugin',
+				author: 'Seapine Software Inc',
+				authorurl: 'http://www.seapine.com',
+				infourl: 'http://www.seapine.com',
+				version: '0.2'
 			};
 		}
+
 	});
 
 	/**
@@ -216,67 +238,68 @@
 		 * @constructor
 		 * @param {tinymce.Editor} ed Editor instance that the windows are bound to.
 		 */
-    SproutCoreWindowManager : function(ed) {
-//			var t = this;
-//
-//			t.parent(ed);
+		SproutCoreWindowManager: function (ed) {
+			// Class constructor
+			var t = this;
+			t.editor = ed;
 		},
 
 		/**
 		 * Opens a new window. Overriden to open our SproutCore based dialogs instead.
 		 *
-		 * @param {Object} s See documentation of tinymce.WindowManager.
-		 * @param {Object} p See documentation of tinymce.WindowManager.
+		 * @param {Object} args See documentation of tinymce.WindowManager.
 		 */
-		open : function(s, p) {
-			var self = this, ed = self.editor, owner, extraOptions, url, viewClass;
+		open: function (args) {
+			var self = this,
+					editor = self.editor,
+					owner,
+					extraOptions,
+					url,
+					viewClass,
+					title = args.title;
 
-			owner = TinySC.Utils.getOwnerView(ed);
+			owner = TinySC.Utils.getOwnerView(editor);
 
-			url = s.url || s.file;
-			if (url) {
-				if (/tinymce\/plugins\/table\/table\.htm/.test(url)) {
+			if (title) {
+				// Boy do I hate doing this... TinyMCE changed how they open windows, so title is the best thing we have to
+				// match now.
+				switch (title) {
+				case 'Table properties':
 					// Insert Table
-					viewClass = this._setupTablePropertiesDialog(ed);
-				} else if (/tinymce\/plugins\/table\/row\.htm/.test(url)) {
-					// Row Properties
-					viewClass = this._setupRowCellPropertiesDialog(ed, YES);
-				} else if (/tinymce\/plugins\/table\/cell\.htm/.test(url)) {
+					viewClass = this._setupTablePropertiesDialog(editor, args.onsubmit);
+					break;
+				case 'Cell properties':
 					// Cell Properties
-					viewClass = this._setupRowCellPropertiesDialog(ed, NO);
-				} else if (/tinymce\/plugins\/table\/merge_cells\.htm/.test(url)) {
-					// Merge Cells
-					viewClass = this._setupMergeCellsDialog(ed, p.rows, p.cols, p.onaction);
-				} else if (/themes\/advanced\/image\.htm/.test(url)) {
-					// Insert Image
-					viewClass = this._setupImagePropertiesDialog(ed, owner);
-				} else if (/themes\/advanced\/link\.htm/.test(url)) {
-					// Insert Link
-					viewClass = this._setupLinkPropertiesDialog(ed);
-				} else if (/themes\/advanced\/color_picker\.htm/.test(url)) {
-					viewClass = this._setupColorPicker(ed);
-					extraOptions = { value: p.input_color, applyFunction: p.func };
-				} else if (/themes\/advanced\/source_editor\.htm/.test(url)) {
-					viewClass = this._setupSourceEditorDialog(ed);
+					viewClass = this._setupRowCellPropertiesDialog(editor, false);
+					break;
+				case 'Row properties':
+					// Row Properties
+					viewClass = this._setupRowCellPropertiesDialog(editor, true);
+					break;
+//				case 'Merge cells':
+//					// Merge Cells
+//					viewClass = this._setupMergeCellsDialog(editor, p.rows, p.cols, p.onaction);
+//					break;
+				case 'Source code':
+					// HTML editor, used in debug
+					viewClass = this._setupSourceEditorDialog(editor);
+					break;
+				default:
+
 				}
+
 			}
 
 			if (viewClass) {
 				// We implemented this window, its been setup, now open it.
-				this._openDialog(ed, viewClass, owner, extraOptions);
-			} else {
-				// We did not implement the requested window, pass through to the parent.
-				self.parent(s, p);
-			}
+				this._openDialog(editor, viewClass, owner, extraOptions);
+			} // else we shouldn't be here...we are using all our own dialogs (for now)
+			// else {
+//				// TTWEB_TODO_JEL - I think this crashes
+//				// We did not implement the requested window, pass through to the parent.
+//				self.parent(s, p);
+//			}
 		},
-
-		// TODO: is this needed?
-		// May want this so dialogs can be forceably closed when states change.
-		/*close : function(w) {
-			var t = this;
-
-			t.parent(w);
-		},*/
 
 		/**
 		 * Opens a dialog according to the app specified method.
@@ -284,9 +307,9 @@
 		 * @param {tinymce.Editor} ed Editor instance.
 		 * @param {SC.PanelPane} viewClass Dialog class to create and open.
 		 * @param {SC.PanelPane} owner Dialog owner.
-		 * @param {Object} extraOptions Optional extra options.
+		 * @param {Object} opts Optional extra options.
 		 */
-		_openDialog: function(ed, viewClass, owner, opts) {
+		_openDialog: function (ed, viewClass, owner, opts) {
 			var view;
 
 			opts = SC.mixin(opts, {
@@ -306,7 +329,7 @@
 		 * @param {tinymce.Editor} ed Editor instance.
 		 * @return {TinySC.TablePropertiesPane} View class to create.
 		 */
-		_setupTablePropertiesDialog: function(ed) {
+		_setupTablePropertiesDialog: function (ed, onsubmit) {
 			var viewClass, controller, selectedNode, tableElement, $tableElement,
 					cellPadding, cellSpacing, border, alignment, backgroundColor;
 
@@ -317,7 +340,7 @@
 			tableElement = ed.dom.getParent(selectedNode, 'table');
 
 			if (tableElement) {
-				$tableElement = ed.$(tableElement);
+				$tableElement = $(ed.dom.select(tableElement));
 
 				cellPadding = parseInt(tableElement.cellPadding, 10);
 				if (!isFinite(cellPadding)) {
@@ -335,20 +358,21 @@
 				backgroundColor = tableElement.bgColor || '#ffffff'; // TODO: RGBtoHex?
 
 				controller.beginPropertyChanges()
-					.set('insertMode', NO)
-					.set('node', tableElement)
-					.set('rows', TinySC.Utils.countTableRows($tableElement))
-					.set('columns', TinySC.Utils.countTableColumns($tableElement))
-					.set('width', tableElement.offsetWidth)
-					.set('cellPadding', cellPadding)
-					.set('cellSpacing', cellSpacing)
-					.set('frame', border > 0 ? 'on' : 'off')
-					.set('frameWidth', border)
-					.set('alignment', alignment)
-					.set('backgroundColor', backgroundColor)
-				.endPropertyChanges();
+						.set('insertMode', false)
+						.set('node', tableElement)
+						.set('rows', TinySC.Utils.countTableRows($tableElement))
+						.set('columns', TinySC.Utils.countTableColumns($tableElement))
+						.set('width', tableElement.offsetWidth)
+						.set('cellPadding', cellPadding)
+						.set('cellSpacing', cellSpacing)
+						.set('frame', border > 0 ? 'on' : 'off')
+						.set('frameWidth', border)
+						.set('alignment', alignment)
+						.set('backgroundColor', backgroundColor)
+						.set('onsubmit', onsubmit)
+						.endPropertyChanges();
 			} else {
-				controller.set('insertMode', YES);
+				controller.set('insertMode', true);
 			}
 
 			return viewClass;
@@ -361,7 +385,7 @@
 		 * @param {Boolean} rowMode Setup for row or cell mode.
 		 * @return {TinySC.TableRowCellPropertiesPane} View class to create.
 		 */
-		_setupRowCellPropertiesDialog: function(ed, rowMode) {
+		_setupRowCellPropertiesDialog: function (ed, rowMode) {
 			var viewClass, controller, selectedNode, rowCellElement, horizontalAlignment, verticalAlignment, backgroundColor;
 
 			viewClass = TinySC.TableRowCellPropertiesPane;
@@ -376,12 +400,12 @@
 				backgroundColor = rowCellElement.bgColor || '#ffffff'; // TODO: RGBtoHex?
 
 				controller.beginPropertyChanges()
-					.set('rowMode', rowMode)
-					.set('node', rowCellElement)
-					.set('horizontalAlignment', horizontalAlignment)
-					.set('verticalAlignment', verticalAlignment)
-					.set('backgroundColor', backgroundColor)
-				.endPropertyChanges();
+						.set('rowMode', rowMode)
+						.set('node', rowCellElement)
+						.set('horizontalAlignment', horizontalAlignment)
+						.set('verticalAlignment', verticalAlignment)
+						.set('backgroundColor', backgroundColor)
+						.endPropertyChanges();
 			}
 
 			return viewClass;
@@ -396,17 +420,17 @@
 		 * @param {Function} mergeAction Function that does the cell merge.
 		 * @return {TinySC.TableMergeCellsPane} View class to create.
 		 */
-		_setupMergeCellsDialog: function(ed, rows, cols, mergeAction) {
+		_setupMergeCellsDialog: function (ed, rows, cols, mergeAction) {
 			var viewClass, controller;
 
 			viewClass = TinySC.TableMergeCellsPane;
 			controller = TinySC.tableMergeCellsController;
 
 			controller.beginPropertyChanges()
-				.set('mergeRows', rows)
-				.set('mergeColumns', cols)
-				.set('mergeAction', mergeAction)
-			.endPropertyChanges();
+					.set('mergeRows', rows)
+					.set('mergeColumns', cols)
+					.set('mergeAction', mergeAction)
+					.endPropertyChanges();
 
 			return viewClass;
 		},
@@ -418,7 +442,7 @@
 		 * @param {TinySC.WysiwygView} owner Dialog owner.
 		 * @return {TinySC.InsertImagePane} View class to create.
 		 */
-		_setupImagePropertiesDialog: function(ed, owner) {
+		_setupImagePropertiesDialog: function (ed, owner) {
 			var viewClass, controller, delegate, selectedNode, percentWidth, percentHeight;
 
 			// Insert image pane and controller.
@@ -435,18 +459,18 @@
 
 				// Get values from the selected image node.
 				controller.beginPropertyChanges()
-					.set('insertMode', false)
-					.set('fileSelected', true)
-					.set('node', selectedNode)
-					.set('originalWidth', selectedNode.getAttribute('data-mce-tinysc-original-width'))
-					.set('originalHeight', selectedNode.getAttribute('data-mce-tinysc-original-height'))
-					.set('scaledPixelWidth', selectedNode.getAttribute('width'))
-					.set('scaledPixelHeight', selectedNode.getAttribute('height'))
-					.set('fileName', selectedNode.getAttribute('data-mce-tinysc-file-name'))
-					.set('serverFileID', selectedNode.getAttribute('data-mce-tinysc-server-file-id'))
-					.set('fileSize', selectedNode.getAttribute('data-mce-tinysc-file-size'))
-					.set('imageType', selectedNode.getAttribute('data-mce-tinysc-image-type'))
-				.endPropertyChanges();
+						.set('insertMode', false)
+						.set('fileSelected', true)
+						.set('node', selectedNode)
+						.set('originalWidth', selectedNode.getAttribute('data-mce-tinysc-original-width'))
+						.set('originalHeight', selectedNode.getAttribute('data-mce-tinysc-original-height'))
+						.set('scaledPixelWidth', selectedNode.getAttribute('width'))
+						.set('scaledPixelHeight', selectedNode.getAttribute('height'))
+						.set('fileName', selectedNode.getAttribute('data-mce-tinysc-file-name'))
+						.set('serverFileID', selectedNode.getAttribute('data-mce-tinysc-server-file-id'))
+						.set('fileSize', selectedNode.getAttribute('data-mce-tinysc-file-size'))
+						.set('imageType', selectedNode.getAttribute('data-mce-tinysc-image-type'))
+						.endPropertyChanges();
 
 				// Now that the controller has calculated the %width/%height (by setting the pixel width/height above),
 				// we can check if we should maintain aspect ratio.
@@ -461,11 +485,11 @@
 			delegate = controller.get('delegate');
 			if (delegate) {
 				delegate
-					.set('entityType', owner.get('entityType'))
-					.set('entityID', owner.get('entityID'))
-					.set('subtypeID', owner.get('subtypeID'))
-					.set('reportedBy', owner.get('reportedBy'))
-					.set('fieldID', owner.get('fieldID'));
+						.set('entityType', owner.get('entityType'))
+						.set('entityID', owner.get('entityID'))
+						.set('subtypeID', owner.get('subtypeID'))
+						.set('reportedBy', owner.get('reportedBy'))
+						.set('fieldID', owner.get('fieldID'));
 			}
 
 			return viewClass;
@@ -477,8 +501,8 @@
 		 * @param {tinymce.Editor} ed Editor instance.
 		 * @return {TinySC.InsertLinkPane} View class to create.
 		 */
-		_setupLinkPropertiesDialog: function(ed) {
-			var viewClass, controller, selectedNode, anchorNode, tmpDiv;
+		_setupLinkPropertiesDialog: function (ed) {
+			var viewClass, controller, selectedNode, anchorNode, tmpDiv, $q;
 
 			// Insert Link pane and controller.
 			viewClass = TinySC.InsertLinkPane;
@@ -486,7 +510,7 @@
 
 			// Try to find the selected anchor node.
 			selectedNode = ed.selection.getNode();
-			anchorNode = TinySC.Utils.findClosestAnchorNode(ed.$(selectedNode));
+			anchorNode = TinySC.Utils.findClosestAnchorNode($(ed.dom.select(selectedNode)));
 
 			// Create a temporary div with the selected HTML so we can do some inspection.
 			tmpDiv = document.createElement('div');
@@ -501,7 +525,7 @@
 				// No anchor node found, we are inserting a new link.
 				controller.set('insertMode', true);
 				// Try to find a child anchor node, so we can populate the dialog with its href.
-				anchorNode = TinySC.Utils.findChildAnchorNode(tinymce.$(tmpDiv));
+				anchorNode = TinySC.Utils.findChildAnchorNode($(tmpDiv));
 			}
 
 			if (anchorNode) {
@@ -515,7 +539,7 @@
 
 			// This is a little complicated. We are trying to figure out if the display text should be editable.
 			// So we are looking to see if the selection contains anything other than anchor and text nodes.
-			$q = tinymce.$(tmpDiv).find('*').andSelf().contents().filter(function() {
+			$q = $(tmpDiv).find('*').andSelf().contents().filter(function () {
 				return (this.nodeType !== Node.TEXT_NODE && this.tagName !== 'A');
 			});
 			if ($q.length) {
@@ -532,7 +556,8 @@
 		 * @param {tinymce.Editor} ed Editor instance.
 		 * @return {TinySC.PopupColorPicker} View class to create.
 		 */
-		_setupColorPicker: function(ed) {
+		_setupColorPicker: function (ed) {
+			//jshint unused:false
 			return TinySC.PopupColorPicker;
 		},
 
@@ -542,7 +567,8 @@
 		 * @param {tinymce.Editor} ed Editor instance.
 		 * @return {TinySC.SourceEditorPane} View class to create.
 		 */
-		_setupSourceEditorDialog: function(ed) {
+		_setupSourceEditorDialog: function (ed) {
+			//jshint unused:false
 			return TinySC.SourceEditorPane;
 		}
 	});
