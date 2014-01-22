@@ -72,6 +72,10 @@ if( !$opt_c )
 }
 
 # Copy files to ttweb directory
+
+############################
+### tiny_mce_combined.js ###
+############################
 print 'Copying tinymce.jquery.full.js to tiny_mce_combined.js...';
 $filename = 'js/tinymce/tinymce.jquery.full.js';
 $destination = '../../cgi/TTWeb/TTWeb/frameworks/tinymce-sproutcore/lib/tiny_mce_combined.js';
@@ -79,9 +83,18 @@ unless (-e $filename) {
    print "\n***Build failed: Cannot find file $filename\n";
    exit 1;
 }
+
+# Delete old file first
+if ( -e $destination ) {
+   unlink($destination) or die "\n***Build failed: Cannot delete $destination: $!"
+}
+
 copy($filename, $destination) or die "\n***Copy failed: $!\n";
 print "done\n";
 
+####################
+### skin.min.css ###
+####################
 print 'Copying skin.min.css...';
 $filename = 'js/tinymce/skins/lightgray/skin.min.css';
 $destination = '../../cgi/TTWeb/TTWeb/frameworks/tinymce-sproutcore/resources/stylesheet/skin.min.css';
@@ -98,6 +111,9 @@ if ( -e $destination ) {
 copy($filename, $destination) or die "\n***Copy failed: $!\n";
 print "done\n";
 
+###########################
+### content.min.css.txt ###
+###########################
 print 'Copying content.min.css to content.min.css.txt...';
 $filename = 'js/tinymce/skins/lightgray/content.min.css';
 $destination = '../../cgi/TTWeb/TTWeb/frameworks/tinymce-sproutcore/resources/stylesheet/content.min.css.txt';
