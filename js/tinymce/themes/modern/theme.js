@@ -479,7 +479,7 @@ tinymce.ThemeManager.add('modern', function(editor) {
 			items: [
 				settings.menubar === false ? null : {type: 'menubar', border: '0 0 1 0', items: createMenuButtons()},
 				settings.toolbar === false ? null : {type: 'panel', layout: 'stack', classes: "toolbar-grp", items: createToolbars()},
-				{type: 'panel', name: 'iframe', layout: 'stack', classes: 'edit-area', html: '', border: '1 0 0 0'}
+				{type: 'panel', name: 'iframe', layout: 'stack', classes: 'edit-area', html: '', border: '0 0 0 0'}
 			]
 		});
 
