@@ -245,13 +245,14 @@ tinymce.PluginManager.add('link', function(editor) {
 						});
 
 						selection.select(anchorElm);
+						editor.undoManager.add();
 					} else {
 						if (onlyText) {
 							editor.insertContent(dom.createHTML('a', {
 								href: href,
 								target: data.target ? data.target : null,
 								rel: data.rel ? data.rel : null
-							}, data.text));
+							}, dom.encode(data.text)));
 						} else {
 							editor.execCommand('mceInsertLink', false, {
 								href: href,

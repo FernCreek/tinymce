@@ -1035,7 +1035,7 @@ define("tinymce/ui/Control", [
 
 			if (self._rendered) {
 				if (name == 'label') {
-					elm.setAttribute('aria-labeledby', self._id);
+					elm.setAttribute('aria-labelledby', self._id);
 				}
 
 				elm.setAttribute(name == 'role' ? name : 'aria-' + name, value);
@@ -1148,6 +1148,8 @@ define("tinymce/ui/Control", [
 
 				elm.parentNode.removeChild(elm);
 			}
+
+			self._rendered = false;
 
 			return self;
 		},
