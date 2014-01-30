@@ -35,9 +35,8 @@
 	 */
 	tinymce.create('tinymce.plugins.SproutCorePlugin', {
 
-		// TTWEB_TODO_JEL -
 		SproutCorePlugin: function (ed) {
-			// Class Constructor?
+			// Class Constructor
 		},
 
 		/**
@@ -276,16 +275,16 @@
 					// Row Properties
 					viewClass = this._setupRowCellPropertiesDialog(editor, true);
 					break;
-//				case 'Merge cells':
-//					// Merge Cells
-//					viewClass = this._setupMergeCellsDialog(editor, p.rows, p.cols, p.onaction);
-//					break;
+				case 'Merge cells':
+					// Merge Cells
+					viewClass = this._setupMergeCellsDialog(editor, args.onsubmit);
+					break;
 				case 'Source code':
 					// HTML editor, used in debug
 					viewClass = this._setupSourceEditorDialog(editor);
 					break;
 				default:
-
+					// no-op
 				}
 
 			}
@@ -294,11 +293,6 @@
 				// We implemented this window, its been setup, now open it.
 				this._openDialog(editor, viewClass, owner, extraOptions);
 			} // else we shouldn't be here...we are using all our own dialogs (for now)
-			// else {
-//				// TTWEB_TODO_JEL - I think this crashes
-//				// We did not implement the requested window, pass through to the parent.
-//				self.parent(s, p);
-//			}
 		},
 
 		/**
@@ -415,22 +409,14 @@
 		 * Setup the merge cells dialog.
 		 *
 		 * @param {tinymce.Editor} ed Editor instance.
-		 * @param {Number} rows Initial number of merged rows.
-		 * @param {Number} cols Initial number of merged columns.
 		 * @param {Function} mergeAction Function that does the cell merge.
 		 * @return {TinySC.TableMergeCellsPane} View class to create.
 		 */
-		_setupMergeCellsDialog: function (ed, rows, cols, mergeAction) {
-			var viewClass, controller;
+		_setupMergeCellsDialog: function (ed, mergeAction) {
+			var viewClass = TinySC.TableMergeCellsPane,
+					controller = TinySC.tableMergeCellsController;
 
-			viewClass = TinySC.TableMergeCellsPane;
-			controller = TinySC.tableMergeCellsController;
-
-			controller.beginPropertyChanges()
-					.set('mergeRows', rows)
-					.set('mergeColumns', cols)
-					.set('mergeAction', mergeAction)
-					.endPropertyChanges();
+			controller.set('mergeAction', mergeAction);
 
 			return viewClass;
 		},
