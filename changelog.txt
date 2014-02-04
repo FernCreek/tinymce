@@ -1,3 +1,15 @@
+Version 4.0.17 (2014-02-xx)
+	Added dfn,code,samp,kbd,var,cite,mark,q elements to the default remove formats list. Patch contributed by Naim Hammadi.
+	Fixed bug where the autolink plugin would steal focus when loaded on IE 9+.
+	Fixed bug where the formatter would merge span elements with parent bookmarks if an id format was used.
+	Fixed so pagebreak elements in the editor breaks pages when printing. Patch contributed by penc.
+	Added support for highlighting the video icon when a video is added that produces an iframe. Patch contributed by monkeydiane.
+Version 4.0.16 (2014-01-31)
+	Fixed bug where the editor wouldn't be properly rendered on IE 10 depending on the document.readyState.
+Version 4.0.15 (2014-01-31)
+	Fixed bug where paste in inline mode would produce an exception if the contents was pasted inside non overflow element.
+Version 4.0.14 (2014-01-30)
+	Fixed a bug in the image plugin where images couldn't be inserted if the image_advtab option wasn't set to true.
 Version 4.0.13 (2014-01-30)
 	Added language selection menu to spellchecker button similar to the 3.x functionality. Patch contributed by threebytesfull.
 	Added new style_formats_merge option that enables you to append to the default formats instead of replaceing them. Patch contributed by PacificMorrowind.
