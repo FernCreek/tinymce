@@ -75,6 +75,10 @@ define("tinymce/tableplugin/Plugin", [
 						});
 					});
 				});
+			if (!rowElm) {
+				// If this element is null, return now to avoid crashing.
+				return;
+			}
 
 				editor.dom.setAttribs(tableElm, editor.settings.table_default_attributes || {});
 				editor.dom.setStyles(tableElm, editor.settings.table_default_styles || {});
