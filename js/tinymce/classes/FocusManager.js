@@ -96,7 +96,8 @@ define("tinymce/FocusManager", [
 							// IE throws "Unexcpected call to method or property access" some times so lets ignore it
 						}
 
-						editor.selection.lastFocusBookmark = createBookmark(editor.lastRng);
+						// Seapine change. Commenting this out because it breaks w/ the expanded editor and send mail
+						//editor.selection.lastFocusBookmark = createBookmark(editor.lastRng);
 					});
 				} else if (editor.inline || Env.ie > 10) {
 					// On other browsers take snapshot on nodechange in inline mode since they have Ghost selections for iframes
@@ -195,7 +196,8 @@ define("tinymce/FocusManager", [
 
 				// Check to make sure we have a valid selection
 				if (activeEditor.selection) {
-					activeEditor.selection.lastFocusBookmark = createBookmark(activeEditor.lastRng);
+					// Seapine change. Commenting this out because it breaks w/ the expanded editor and send mail
+					//activeEditor.selection.lastFocusBookmark = createBookmark(activeEditor.lastRng);
 				}
 
 				// Fire a blur event if the element isn't a UI element
