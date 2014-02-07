@@ -224,8 +224,8 @@ define("tinymce/UndoManager", [
 				editor.fire('AddUndo', args);
 
 				if (index > 0) {
-					editor.fire('change', args);
 					editor.isNotDirty = false;
+					editor.fire('change', args);
 				}
 
 				return level;
