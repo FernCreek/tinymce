@@ -496,7 +496,7 @@
 
 			// Try to find the selected anchor node.
 			selectedNode = ed.selection.getNode();
-			anchorNode = TinySC.Utils.findClosestAnchorNode($(ed.dom.select(selectedNode)));
+			anchorNode = TinySC.Utils.findClosestAnchorNode($(selectedNode));
 
 			// Create a temporary div with the selected HTML so we can do some inspection.
 			tmpDiv = document.createElement('div');
