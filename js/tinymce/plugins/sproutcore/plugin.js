@@ -334,7 +334,7 @@
 			tableElement = ed.dom.getParent(selectedNode, 'table');
 
 			if (tableElement) {
-				$tableElement = $(ed.dom.select(tableElement));
+				$tableElement = $(tableElement);
 
 				cellPadding = parseInt(tableElement.cellPadding, 10);
 				if (!isFinite(cellPadding)) {
