@@ -115,7 +115,7 @@
 
 					// Only store the selection if we don't already have one
 					if (this.selection && !curBookmark) {
-						this.plugins.sproutcore.setBookmark(this.selection.getBookmark());
+						this.plugins.sproutcore.setBookmark(this.selection.getBookmark(2));
 					}
 				},
 
