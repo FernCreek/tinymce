@@ -61,7 +61,7 @@ if( !$opt_c )
 
    # Build TinyMCE
    print 'Building TinyMCE...';
-   $buildCommand = 'jake bundle-full-jquery[themes:modern,plugins:autoresize,code,fullpage,lists,paste,seapine,sproutcore,table]';
+   $buildCommand = 'jake bundle-full-jquery[themes:modern,plugins:autoresize,fullpage,lists,paste,seapine,sproutcore,table]';
    $buildResult = `$buildCommand`;
    if ($? != 0 )
    {
