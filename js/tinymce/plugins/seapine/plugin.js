@@ -1,7 +1,7 @@
 /**
- * editor_plugin_src.js
+ * plugin.js
  *
- * Copyright 2012, Seapine Software Inc
+ * Copyright 2014, Seapine Software Inc
  * Released under LGPL License.
  *
  * License: http://tinymce.moxiecode.com/license
@@ -86,25 +86,6 @@
 					return this.plugins.seapine ? this.plugins.seapine.readonly : false;
 				}
 			});
-
-			// Update strings with our own versions.
-			tinymce.addI18n('en.table', {
-				'desc' : 'Insert Table',
-				'delete_col_desc' : 'Remove Column'
-			});
-			tinymce.addI18n('en.advanced', {
-				'fontdefault' : 'Default Font',
-				'font_size' : 'Default Size',
-				'hr_desc' : 'Insert Horizontal Ruler',
-				'link_desc' : 'Insert/Edit Hyperlink',
-				'unlink_desc' : 'Remove Hyperlink',
-				'numlist_desc' : 'Numbered List',
-				'bullist_desc' : 'Bulleted List',
-				'removeformat_desc' : 'Clear Formatting',
-				'more_colors' : 'More Colors'
-			});
-
-			// TODO: Cut,Copy,Paste,PasteText
 		},
 
 		/**
