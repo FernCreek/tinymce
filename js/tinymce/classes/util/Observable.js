@@ -18,7 +18,7 @@ define("tinymce/util/Observable", [
 ], function(Tools) {
 	var bindingsName = "__bindings";
 	var nativeEvents = Tools.makeMap(
-		"focusin focusout click dblclick mousedown mouseup mousemove mouseover beforepaste paste cut copy selectionchange" +
+		"focusin focusout click dblclick mousedown mouseup mousemove mouseover mousewheel wheel beforepaste paste cut copy selectionchange" +
 		" mouseout mouseenter mouseleave keydown keypress keyup contextmenu dragstart dragend dragover draggesture dragdrop drop drag", ' '
 	);
 
