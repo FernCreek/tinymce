@@ -74,6 +74,14 @@
 					if (body) {
 						body.contentEditable = !ro;
 						$body.toggleClass('mceReadOnly', ro);
+						if (ro) {
+							this.dom.add(body, 'div', {
+								id: this.id + '-blocker',
+								style: 'background: black; position: absolute; left: 0; top: 0; height: 100%; width: 100%; opacity: 0.3'
+							});
+						} else {
+							this.dom.remove(this.dom.select('div#' + this.id + '-blocker'));
+						}
 					}
 				},
 

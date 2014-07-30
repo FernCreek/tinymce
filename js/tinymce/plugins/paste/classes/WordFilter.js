@@ -349,7 +349,7 @@ define("tinymce/pasteplugin/WordFilter", [
 
 					// Remove comments, scripts (e.g., msoShowComment), XML tag, VML content,
 					// MS Office namespaced tags, and a few other tags
-					/<(!|script[^>]*>.*?<\/script(?=[>\s])|\/?(\?xml(:\w+)?|img|meta|link|style|\w:\w+)(?=[\s\/>]))[^>]*>/gi,
+					/<(!|script[^>]*>.*?<\/script(?=[>\s])|\/?(\?xml(:\w+)?|meta|link|style|\w:\w+)(?=[\s\/>]))[^>]*>/gi,
 
 					// Convert <s> into <strike> for line-though
 					[/<(\/?)s>/gi, "<$1strike>"],
