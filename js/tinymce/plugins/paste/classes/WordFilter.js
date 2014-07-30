@@ -198,7 +198,7 @@ define("tinymce/pasteplugin/WordFilter", [
 
 					// Remove comments, scripts (e.g., msoShowComment), XML tag, VML content,
 					// MS Office namespaced tags, and a few other tags
-					/<(!|script[^>]*>.*?<\/script(?=[>\s])|\/?(\?xml(:\w+)?|img|meta|link|style|\w:\w+)(?=[\s\/>]))[^>]*>/gi,
+					/<(!|script[^>]*>.*?<\/script(?=[>\s])|\/?(\?xml(:\w+)?|meta|link|style|\w:\w+)(?=[\s\/>]))[^>]*>/gi,
 
 					// Convert <s> into <strike> for line-though
 					[/<(\/?)s>/gi, "<$1strike>"],
@@ -219,7 +219,7 @@ define("tinymce/pasteplugin/WordFilter", [
 				var validElements = settings.paste_word_valid_elements;
 				if (!validElements) {
 					validElements = '@[style],-strong/b,-em/i,-span,-p,-ol,-ul,-li,-h1,-h2,-h3,-h4,-h5,-h6,' +
-						'-table,-tr,-td[colspan|rowspan],-th,-thead,-tfoot,-tbody,-a[href|name],sub,sup,strike,br';
+						'-table,-tr,-td[colspan|rowspan],-th,-thead,-tfoot,-tbody,-a[href|name],img[width|height|src],sub,sup,strike,br';
 				}
 
 				// Setup strict schema

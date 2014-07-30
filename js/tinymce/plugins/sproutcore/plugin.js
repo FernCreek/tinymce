@@ -239,8 +239,8 @@
 		 */
 		SproutCoreWindowManager: function (ed) {
 			// Class constructor
-			var t = this;
-			t.editor = ed;
+			this.editor = ed;
+			tinymce.WindowManager.call(this, ed);
 		},
 
 		/**

@@ -233,16 +233,48 @@ define("tinymce/pasteplugin/Clipboard", [
 		 * @param {DataTransfer} dataTransfer Event fired on paste.
 		 * @return {Object} Object with mime types and data for those mime types.
 		 */
-		function getDataTransferItems(dataTransfer) {
+		function getDataTransferItems(dataTransfer, forPaste) {
 			var data = {};
+			var i;
+			var item;
+			var contentType;
+			var images = [];
 
-			if (dataTransfer && dataTransfer.types) {
-				data['text/plain'] = dataTransfer.getData('Text');
+			if (dataTransfer) {
+				if (dataTransfer.types) {
+					data['text/plain'] = dataTransfer.getData('Text');
 
-				for (var i = 0; i < dataTransfer.types.length; i++) {
-					var contentType = dataTransfer.types[i];
-					data[contentType] = dataTransfer.getData(contentType);
+					for (i = 0; i < dataTransfer.types.length; i++) {
+						contentType = dataTransfer.types[i];
+						if (contentType !== 'Files') {
+							data[contentType] = dataTransfer.getData(contentType);
+						}
+					}
 				}
+
+				if (dataTransfer.items && forPaste) {
+					// Only Chrome currently has an items array, which it uses for pasted images.
+					for (i = 0; i < dataTransfer.items.length; i++) {
+						item = dataTransfer.items[i];
+						if (item.kind === 'file' && item.type.indexOf('image/') === 0) {
+							images.push(item.getAsFile());
+						}
+					}
+				}
+
+				if (dataTransfer.files) {
+					// Drag-and-dropped files are in the files array. IE also puts pasted files here.
+					for (i = 0; i < dataTransfer.files.length; i++) {
+						item = dataTransfer.files[i];
+						if (item.type.indexOf('image/') === 0) {
+							images.push(item);
+						}
+					}
+				}
+			}
+
+			if (images.length) {
+				data['image/*'] = images;
 			}
 
 			return data;
@@ -256,7 +288,26 @@ define("tinymce/pasteplugin/Clipboard", [
 		 * @return {Object} Object with mime types and data for those mime types.
 		 */
 		function getClipboardContent(clipboardEvent) {
-			return getDataTransferItems(clipboardEvent.clipboardData || editor.getDoc().dataTransfer);
+			return getDataTransferItems(clipboardEvent.clipboardData || window.clipboardData || editor.getDoc().dataTransfer, true);
+		}
+
+		/**
+		 * Create a blob url.
+		 * @param {Blob} blob Create url for this blob.
+		 * @returns {String} Blob url.
+		 */
+		function getBlobUrl(blob) {
+			var URL = window.URL || window.webkitURL;
+			return URL.createObjectURL(blob);
+		}
+
+		/**
+		 * Gets img tag html for a blob.
+		 * @param {Blob} blob Image blob.
+		 * @returns {String} img tag html.
+		 */
+		function getImgTagFromBlob(blob) {
+			return '<img src="' + getBlobUrl(blob) +'">';
 		}
 
 		function getCaretRangeFromEvent(e) {
@@ -331,6 +382,8 @@ define("tinymce/pasteplugin/Clipboard", [
 
 				setTimeout(function() {
 					var html = getPasteBinHtml();
+					var dom = editor.dom;
+					var images, i, tempBody, imgNodes, imgNode;
 
 					// WebKit has a nice bug where it clones the paste bin if you paste from for example notepad
 					if (pasteBinElm && pasteBinElm.firstChild && pasteBinElm.firstChild.id === 'mcepastebin') {
@@ -339,10 +392,29 @@ define("tinymce/pasteplugin/Clipboard", [
 
 					removePasteBin();
 
-					if (html == pasteBinDefaultContent || !isKeyBoardPaste) {
+					if ((images = clipboardContent['image/*'])) {
+						if (html === pasteBinDefaultContent) {
+							html = '';
+							for (i = 0; i < images.length; i++) {
+								html += getImgTagFromBlob(images[i]);
+							}
+						} else {
+							tempBody = dom.add(editor.getBody(), 'div', {style: 'display:none'}, html);
+							imgNodes = dom.select('img', tempBody);
+							for (i = 0; i < imgNodes.length; i++) {
+								imgNode = imgNodes[i];
+								imgNode.src = getBlobUrl(images[i]);
+							}
+							html = tempBody.innerHTML;
+							dom.remove(tempBody);
+						}
+					}
+
+					if (html == pasteBinDefaultContent) {
 						html = clipboardContent['text/html'] || clipboardContent['text/plain'] || pasteBinDefaultContent;
 
 						if (html == pasteBinDefaultContent) {
+
 							if (!isKeyBoardPaste) {
 								editor.windowManager.alert('Please use Ctrl+V/Cmd+V keyboard shortcuts to paste contents.');
 							}
@@ -369,12 +441,28 @@ define("tinymce/pasteplugin/Clipboard", [
 				}
 			});
 
+			editor.on('dragenter dragover', function (e) {
+				// Preventing default on these events is required so the browser
+				// doesn't try to navigate to the file.
+				e.preventDefault();
+				e.stopPropagation();
+			});
+
 			editor.on('drop', function(e) {
 				var rng = getCaretRangeFromEvent(e);
+				var images, i;
 
-				if (rng && !e.isDefaultPrevented()) {
+				if (!e.isDefaultPrevented()) {
 					var dropContent = getDataTransferItems(e.dataTransfer);
 					var content = dropContent['mce-internal'] || dropContent['text/html'] || dropContent['text/plain'];
+
+					if ((images = dropContent['image/*'])) {
+						content = '';
+						for (i = 0; i < images.length; i++) {
+							content += getImgTagFromBlob(images[i]);
+						}
+						dropContent['text/html'] = content;
+					}
 
 					if (content) {
 						e.preventDefault();
@@ -384,7 +472,9 @@ define("tinymce/pasteplugin/Clipboard", [
 								editor.execCommand('Delete');
 							}
 
-							editor.selection.setRng(rng);
+							if (rng) {
+								editor.selection.setRng(rng);
+							}
 
 							if (!dropContent['text/html']) {
 								pasteText(content);
@@ -403,18 +493,25 @@ define("tinymce/pasteplugin/Clipboard", [
 		editor.on('preInit', function() {
 			registerEventHandlers();
 
-			// Remove all data images from paste for example from Gecko
-			// except internal images like video elements
 			editor.parser.addNodeFilter('img', function(nodes) {
-				if (!editor.settings.paste_data_images) {
-					var i = nodes.length;
+				var i = nodes.length;
 
-					while (i--) {
-						var src = nodes[i].attributes.map.src;
-						if (src && src.indexOf('data:image') === 0) {
-							if (!nodes[i].attr('data-mce-object') && src !== Env.transparentSrc) {
-								nodes[i].remove();
+				while (i--) {
+					var node = nodes[i];
+					var src = node.attributes.map.src;
+					if (src) {
+						// Remove all data images from paste for example from Gecko
+						// except internal images like video elements
+						if (!editor.settings.paste_data_images) {
+							if (src.indexOf('data:image') === 0 && !node.attr('data-mce-object') && src !== Env.transparentSrc) {
+								node.remove();
 							}
+						}
+
+						// Remove images that reference local files or webkit's webkit-fake-url scheme.
+						// These are inaccessible to us, (and local file urls won't even load), so nothing we can do.
+						if (src.indexOf('file://') === 0 || src.indexOf('webkit-fake-url://') === 0) {
+							node.remove();
 						}
 					}
 				}
