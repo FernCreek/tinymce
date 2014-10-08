@@ -17,13 +17,20 @@
 	 * TinyMCE plugin for general Seapine modifications.
 	 */
 	tinymce.create('tinymce.plugins.SeapinePlugin', {
+
+		/**
+		 * tracks whether this tinymce instance is set to read only or not.
+		 * @type {Boolean}
+		 * @default
+		 */
+		readonly: false,
+
 		/**
 		 * Initializes the plugin, this will be executed after the plugin has been created.
 		 * This call is done before the editor instance has finished it's initialization so use the onInit event
 		 * of the editor instance to intercept that event.
 		 *
 		 * @param {tinymce.Editor} ed Editor instance that the plugin is initialized in.
-		 * @param {string} url Absolute URL to where the plugin is located.
 		 */
 		init : function(ed) {
 			// Override some formats.
@@ -60,11 +67,13 @@
 				 * @param {Boolean} ro Whether to make the editor readonly or not.
 				 */
 				makeReadOnly: function(ro) {
-					var body = this.getBody(), $body = $(body), s = this.settings, cm = this.controlManager, buttons, i, l, c;
+
+					var body = this.getBody(),
+						$body = $(body);
+
 					ro = !!ro;
 
 					if (!this.plugins.seapine || (ro && this.plugins.seapine.readonly) || (!ro && !this.plugins.seapine.readonly)) {
-						// If readonly value didn't change, do nothing.
 						return;
 					}
 
@@ -74,16 +83,45 @@
 					if (body) {
 						body.contentEditable = !ro;
 						$body.toggleClass('mceReadOnly', ro);
-						if (ro) {
-							this.dom.add(this.getContainer(), 'div', {
-								id: this.id + '-blocker',
-								style: 'background: black; position: absolute; left: 0; top: 0; height: 100%; width: 100%; opacity: 0.3'
-							});
+					}
+				},
+
+				/**
+				 * Applies or removes the blocking div from the editor.
+				 * {Boolean} applyBlockingDiv Whether to apply the blocking div. If not
+				 * specified, the default is false and if there was a blocking div, it is
+				 * removed.
+				 */
+				applyBlockingDiv: function(applyBlockingDiv) {
+
+					var blockingDivElements,
+						hasBlockingDivApplied;
+
+					//This if check makes sure we are initialized.
+					if(this.getBody() && this.plugins.seapine) {
+
+
+						blockingDivElements = this.dom.select('div#' + this.id + '-blocker', this.getContainer());
+						hasBlockingDivApplied = ($.isArray(blockingDivElements) && (blockingDivElements.length > 0));
+
+						if (applyBlockingDiv) {
+
+							if (!hasBlockingDivApplied) {
+								//Apply if not already there.
+								this.dom.add(this.getContainer(), 'div', {
+									id: this.id + '-blocker',
+									style: 'background: black; position: absolute; left: 0; top: 0; height: 100%; width: 100%; opacity: 0.3'
+								});
+							} //else div is already applied.
 						} else {
-							this.dom.remove(this.dom.select('div#' + this.id + '-blocker', this.getContainer()));
+							//Only remove it if the div is there.
+							if (hasBlockingDivApplied) {
+								this.dom.remove(blockingDivElements);
+							} //else nothing to remove.
 						}
 					}
 				},
+
 
 				/**
 				 * Gets the readonly status of the editor.
