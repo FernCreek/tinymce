@@ -241,14 +241,18 @@
 			// Class constructor
 			this.editor = ed;
 			tinymce.WindowManager.call(this, ed);
+
+			//Overriding the open command so we can replace the defautl dialogs with
+			// our SproutCore based dialogs.
+			this.open = this._myOpenOverride;
 		},
 
 		/**
-		 * Opens a new window. Overriden to open our SproutCore based dialogs instead.
+		 * Opens a new window. Overridden to open our SproutCore based dialogs instead.
 		 *
 		 * @param {Object} args See documentation of tinymce.WindowManager.
 		 */
-		open: function (args) {
+		_myOpenOverride: function (args) {
 			var self = this,
 					editor = self.editor,
 					owner,
