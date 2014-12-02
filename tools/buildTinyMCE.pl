@@ -19,7 +19,6 @@ use Getopt::Std;
 STDOUT->autoflush(1);
 
 $curdir = cwd;
-$buildCommand = 'jake clean';
 
 # Get command line options.
 getopts('ch');
@@ -50,24 +49,17 @@ if ( $opt_h )
 if( !$opt_c )
 {
    # Clean up the old builds
-   print 'Cleaning up old builds...';
-   $buildResult = `$buildCommand`;
-   if ($? != 0 )
-   {
-      print "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
-      exit 1;
-   }
+   print "Cleaning up old builds...\n";
+   $buildCommand = 'grunt clean:core clean:plugins clean:skins';
+   system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
    print "done\n";
 
    # Build TinyMCE
-   print 'Building TinyMCE...';
-   $buildCommand = 'jake bundle-full-jquery[themes:modern,plugins:autoresize,fullpage,lists,paste,seapine,sproutcore,table]';
-   $buildResult = `$buildCommand`;
-   if ($? != 0 )
-   {
-      print "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
-      exit 1;
-   }
+   print "Building TinyMCE...\n";
+   $buildCommand = 'grunt minify';
+   system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
+   $buildCommand = 'grunt bundle --themes modern --plugins autoresize,fullpage,lists,paste,seapine,sproutcore,table';
+   system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
    print "done\n";
 }
 
