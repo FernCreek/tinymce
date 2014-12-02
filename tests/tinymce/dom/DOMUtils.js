@@ -1,4 +1,10 @@
 (function() {
+	module("tinymce.dom.DOMUtils", {
+		teardownModule: function() {
+			DOM = null;
+		}
+	});
+
 	var DOM = new tinymce.dom.DOMUtils(document, {keep_values : true, schema : new tinymce.html.Schema()});
 
 	test('parseStyle', 11, function() {
@@ -6,7 +12,7 @@
 
 		DOM.add(document.body, 'div', {id : 'test'});
 
-		dom = new tinymce.dom.DOMUtils(document, {hex_colors : true, keep_values : true, url_converter : function(u, n, e) {
+		dom = new tinymce.dom.DOMUtils(document, {hex_colors : true, keep_values : true, url_converter : function(u) {
 			return 'X' + u + 'Y';
 		}});
 
@@ -60,16 +66,12 @@
 		DOM.remove('test');
 	});
 
-	test('addClass', 10, function() {
+	test('addClass', function() {
 		DOM.add(document.body, 'div', {id : 'test'});
 
 		DOM.get('test').className = '';
 		DOM.addClass('test', 'abc');
 		equal(DOM.get('test').className, 'abc');
-
-		DOM.get('test').className = '';
-		equal(DOM.addClass('test', 'abc'), 'abc');
-		equal(DOM.addClass(null, 'abc'), false);
 
 		DOM.addClass('test', '123');
 		equal(DOM.get('test').className, 'abc 123');
@@ -81,17 +83,10 @@
 		equal(DOM.get('test4').className, 'abc');
 		DOM.get('test').innerHTML = '';
 
-		DOM.get('test').innerHTML = '<span id="test2"></span><span id="test3"></span><span id="test4"></span>';
-		DOM.addClass(['test2', 'test3', 'test4'], 'abc');
-		equal(DOM.get('test2').className, 'abc');
-		equal(DOM.get('test3').className, 'abc');
-		equal(DOM.get('test4').className, 'abc');
-		DOM.get('test').innerHTML = '';
-
 		DOM.remove('test');
 	});
 
-	test('removeClass', 4, function() {
+	test('removeClass', 5, function() {
 		DOM.add(document.body, 'div', {id : 'test'});
 
 		DOM.get('test').className = 'abc 123 xyz';
@@ -103,7 +98,10 @@
 		equal(DOM.get('test2').className, '');
 		equal(DOM.get('test3').className, 'test test');
 		equal(DOM.get('test4').className, 'test');
-		DOM.get('test').innerHTML = '';
+
+		DOM.get('test').innerHTML = '<span id="test2" class="test"></span>';
+		DOM.removeClass('test2', 'test');
+		equal(Utils.normalizeHtml(DOM.get('test').innerHTML), '<span id="test2"></span>');
 
 		DOM.remove('test');
 	});
@@ -167,9 +165,10 @@
 		equal(e.innerHTML.toLowerCase(), 'content <b>abc</b>');
 	});
 
-	test('createHTML', 4, function() {
-		equal(DOM.createHTML('span', {'id' : 'id1', 'class' : 'abc 123'}, 'content <b>abc</b>'), '<span id="id1" class="abc 123">content <b>abc</b></span>');
-		equal(DOM.createHTML('span', {'id' : 'id1', 'class' : 'abc 123'}), '<span id="id1" class="abc 123" />');
+	test('createHTML', 5, function() {
+		equal(DOM.createHTML('span', {'id': 'id1', 'class': 'abc 123'}, 'content <b>abc</b>'), '<span id="id1" class="abc 123">content <b>abc</b></span>');
+		equal(DOM.createHTML('span', {'id': 'id1', 'class': 'abc 123'}), '<span id="id1" class="abc 123" />');
+		equal(DOM.createHTML('span', {'id': null, 'class': undefined}), '<span />');
 		equal(DOM.createHTML('span'), '<span />');
 		equal(DOM.createHTML('span', null, 'content <b>abc</b>'), '<span>content <b>abc</b></span>');
 	});
@@ -182,28 +181,16 @@
 		equal(DOM.uniqueId(), 'mce_2');
 	});
 
-	test('showHide', 10, function() {
+	test('showHide', function() {
 		DOM.add(document.body, 'div', {id : 'test'});
 
 		DOM.show('test');
-		equal(DOM.get('test').style.display, 'block');
+		equal(DOM.get('test').style.display, '');
 		ok(!DOM.isHidden('test'));
 
 		DOM.hide('test');
 		equal(DOM.get('test').style.display, 'none');
 		ok(DOM.isHidden('test'));
-
-		DOM.get('test').innerHTML = '<span id="test2"></span><span id="test3"></span><span id="test4"></span>';
-		DOM.hide(['test2', 'test3', 'test4'], 'test');
-		equal(DOM.get('test2').style.display, 'none');
-		equal(DOM.get('test3').style.display, 'none');
-		equal(DOM.get('test4').style.display, 'none');
-
-		DOM.get('test').innerHTML = '<span id="test2"></span><span id="test3"></span><span id="test4"></span>';
-		DOM.show(['test2', 'test3', 'test4'], 'test');
-		equal(DOM.get('test2').style.display, 'block');
-		equal(DOM.get('test3').style.display, 'block');
-		equal(DOM.get('test4').style.display, 'block');
 
 		// Cleanup
 		DOM.setAttrib('test', 'style', '');
@@ -218,10 +205,10 @@
 		equal(DOM.select('div', 'test').length, 4);
 		ok(DOM.select('div', 'test').reverse);
 
-		DOM.setHTML('test', '<div class="test1 test2 test3">test 1</div><div class="test2">test 2 <div>test 3</div></div><div>test 4</div>')
+		DOM.setHTML('test', '<div class="test1 test2 test3">test 1</div><div class="test2">test 2 <div>test 3</div></div><div>test 4</div>');
 		equal(DOM.select('div.test2', 'test').length, 2);
 
-		DOM.setHTML('test', '<div class="test1 test2 test3">test 1</div><div class="test2">test 2 <div>test 3</div></div><div>test 4</div>')
+		DOM.setHTML('test', '<div class="test1 test2 test3">test 1</div><div class="test2">test 2 <div>test 3</div></div><div>test 4</div>');
 		equal(DOM.select('div div', 'test').length, 1, null, tinymce.isWebKit); // Issue: http://bugs.webkit.org/show_bug.cgi?id=17461
 		//alert(DOM.select('div div', 'test').length +","+DOM.get('test').querySelectorAll('div div').length);
 
@@ -243,7 +230,7 @@
 		equal(DOM.encode('abc<>"&\'\u00e5\u00e4\u00f6'), 'abc&lt;&gt;&quot;&amp;&#39;\u00e5\u00e4\u00f6');
 	});
 
-	test('setGetAttrib', 16, function() {
+	test('setGetAttrib', function() {
 		var dom;
 
 		DOM.add(document.body, 'div', {id : 'test'});
@@ -264,19 +251,13 @@
 		equal(DOM.getAttrib('test', 'class'), '123');
 		equal(DOM.getAttrib('test', 'title'), 'abc');
 
-		dom = new tinymce.dom.DOMUtils(document, {keep_values : true, url_converter : function(u, n, e) {
+		dom = new tinymce.dom.DOMUtils(document, {keep_values : true, url_converter : function(u, n) {
 			return '&<>"' + u + '&<>"' + n;
 		}});
 
 		dom.setAttribs('test', {src : '123', href : 'abc'});
 		equal(DOM.getAttrib('test', 'src'), '&<>"123&<>"src');
 		equal(DOM.getAttrib('test', 'href'), '&<>"abc&<>"href');
-
-		DOM.get('test').innerHTML = '<span id="test2"></span><span id="test3"></span><span id="test4"></span>';
-		DOM.setAttribs(['test2', 'test3', 'test4'], {test1 : "1", test2 : "2"});
-		equal(DOM.getAttrib('test2', 'test1'), '1');
-		equal(DOM.getAttrib('test3', 'test2'), '2');
-		equal(DOM.getAttrib('test4', 'test1'), '1');
 
 		equal(DOM.getAttrib(document, 'test'), false);
 		equal(DOM.getAttrib(document, 'test', ''), '');
@@ -285,21 +266,25 @@
 		DOM.remove('test');
 	});
 
-	test('getAttribs', 2, function() {
-		var dom;
+	test('setGetAttrib on null', function() {
+		strictEqual(DOM.getAttrib(null, 'test'), '');
+		DOM.setAttrib(null, 'test');
+	});
 
+	test('getAttribs', 2, function() {
 		function check(obj, val) {
 			var count = 0;
 
 			val = val.split(',');
 
 			tinymce.each(obj, function(o) {
-				if (tinymce.inArray(val, o.nodeName.toLowerCase()) != -1 && o.specified)
+				if (tinymce.inArray(val, o.nodeName.toLowerCase()) != -1 && o.specified) {
 					count++;
+				}
 			});
 
 			return count == obj.length;
-		};
+		}
 
 		DOM.add(document.body, 'div', {id : 'test'});
 
@@ -312,26 +297,32 @@
 		DOM.remove('test');
 	});
 
-	test('setGetStyles', 7, function() {
+	test('setGetStyles', function() {
 		DOM.add(document.body, 'div', {id : 'test'});
 
 		DOM.setStyle('test', 'font-size', '20px');
-		equal(DOM.getStyle('test', 'font-size'), '20px', null, tinymce.isWebKit);
+		equal(DOM.getStyle('test', 'font-size'), '20px');
 
 		DOM.setStyle('test', 'fontSize', '21px');
-		equal(DOM.getStyle('test', 'fontSize'), '21px', null, tinymce.isWebKit);
+		equal(DOM.getStyle('test', 'fontSize'), '21px');
 
 		DOM.setStyles('test', {fontSize : '22px', display : 'inline'});
-		equal(DOM.getStyle('test', 'fontSize'), '22px', null, tinymce.isWebKit);
-		equal(DOM.getStyle('test', 'display'), 'inline', null, tinymce.isWebKit);
+		equal(DOM.getStyle('test', 'fontSize'), '22px');
+		equal(DOM.getStyle('test', 'display'), 'inline');
 
-		DOM.get('test').innerHTML = '<span id="test2"></span><span id="test3"></span><span id="test4"></span>';
-		DOM.setStyles(['test2', 'test3', 'test4'], {fontSize : "22px"});
-		equal(DOM.getStyle('test2', 'fontSize'), '22px');
-		equal(DOM.getStyle('test3', 'fontSize'), '22px');
-		equal(DOM.getStyle('test4', 'fontSize'), '22px');
+		DOM.setStyle('test', 'fontSize', 23);
+		equal(DOM.getStyle('test', 'fontSize'), '23px');
+
+		DOM.setStyle('test', 'fontSize', 23);
+		DOM.setStyle('test', 'fontSize', '');
+		equal(DOM.getStyle('test', 'fontSize'), '');
+
+		DOM.setStyle('test', 'fontSize', 23);
+		DOM.setStyle('test', 'fontSize', null);
+		equal(DOM.getStyle('test', 'fontSize'), '');
 
 		DOM.setAttrib('test', 'style', '');
+		equal(typeof DOM.getStyle(null, 'fontSize'), 'undefined');
 
 		DOM.remove('test');
 	});
@@ -356,7 +347,7 @@
 		equal(DOM.getParent('test2', function(n) {return n.nodeName == 'SPAN';}).nodeName, 'SPAN');
 		equal(DOM.getParent('test2', function(n) {return n.nodeName == 'BODY';}).nodeName, 'BODY');
 		equal(DOM.getParent('test2', function(n) {return n.nodeName == 'BODY';}, document.body), null);
-		equal(DOM.getParent('test2', function(n) {return false;}), null);
+		equal(DOM.getParent('test2', function() {return false;}), null);
 		equal(DOM.getParent('test2', 'SPAN').nodeName, 'SPAN');
 		equal(DOM.getParent('test2', 'body', DOM.get('test')), null);
 
@@ -435,8 +426,6 @@
 	});
 
 	test('getNext', 5, function() {
-		var r;
-
 		DOM.add(document.body, 'div', {id : 'test'});
 
 		DOM.get('test').innerHTML = '<strong>A</strong><span>B</span><em>C</em>';
@@ -444,14 +433,12 @@
 		equal(DOM.getNext(DOM.get('test').firstChild, 'em').nodeName, 'EM');
 		equal(DOM.getNext(DOM.get('test').firstChild, 'div'), null);
 		equal(DOM.getNext(null, 'div'), null);
-		equal(DOM.getNext(DOM.get('test').firstChild, function(n) {return n.nodeName == 'EM'}).nodeName, 'EM');
+		equal(DOM.getNext(DOM.get('test').firstChild, function(n) {return n.nodeName == 'EM';}).nodeName, 'EM');
 
 		DOM.remove('test');
 	});
 
 	test('getPrev', 5, function() {
-		var r;
-
 		DOM.add(document.body, 'div', {id : 'test'});
 
 		DOM.get('test').innerHTML = '<strong>A</strong><span>B</span><em>C</em>';
@@ -459,7 +446,7 @@
 		equal(DOM.getPrev(DOM.get('test').lastChild, 'strong').nodeName, 'STRONG');
 		equal(DOM.getPrev(DOM.get('test').lastChild, 'div'), null);
 		equal(DOM.getPrev(null, 'div'), null);
-		equal(DOM.getPrev(DOM.get('test').lastChild, function(n) {return n.nodeName == 'STRONG'}).nodeName, 'STRONG');
+		equal(DOM.getPrev(DOM.get('test').lastChild, function(n) {return n.nodeName == 'STRONG';}).nodeName, 'STRONG');
 
 		DOM.remove('test');
 	});
@@ -467,11 +454,12 @@
 	test('loadCSS', 1, function() {
 		var c = 0;
 
-		DOM.loadCSS('css/test.css?a=1,css/test.css?a=2,css/test.css?a=3');
+		DOM.loadCSS('tinymce/dom/test.css?a=1,tinymce/dom/test.css?a=2,tinymce/dom/test.css?a=3');
 
 		tinymce.each(document.getElementsByTagName('link'), function(n) {
-			if (n.href.indexOf('test.css?a=') != -1)
+			if (n.href.indexOf('test.css?a=') != -1) {
 				c++;
+			}
 		});
 
 		equal(c, 3, null, tinymce.isOpera);
@@ -498,7 +486,7 @@
 		ok(DOM.isBlock('div'));
 	});
 
-	test('remove', 3, function() {
+	test('remove', 2, function() {
 		DOM.add(document.body, 'div', {id : 'test'});
 
 		DOM.setHTML('test', '<span id="test2"><span>test</span><span>test2</span></span>');
@@ -507,10 +495,6 @@
 
 		DOM.setHTML('test', '<span id="test2"><span>test</span><span>test2</span></span>');
 		equal(DOM.remove('test2').nodeName, 'SPAN');
-
-		DOM.get('test').innerHTML = '<span id="test2"></span><span id="test3"></span><span id="test4"></span>';
-		DOM.remove(['test2', 'test4']);
-		equal(DOM.select('span', 'test').length, 1);
 
 		DOM.remove('test');
 	});
@@ -576,7 +560,7 @@
 		parent = DOM.select('li:nth-child(1)', DOM.get('test'))[0];
 		point = DOM.select('ul li:nth-child(2)', DOM.get('test'))[0];
 		DOM.split(parent, point);
-		equal(cleanHtml(DOM.get('test').innerHTML), '<ul><li>first line<br><ul><li><span>second</span> <span>line</span></li></ul></li><li>third line<br></li></ul>');
+		equal(Utils.cleanHtml(DOM.get('test').innerHTML), '<ul><li>first line<br><ul><li><span>second</span> <span>line</span></li></ul></li><li>third line<br></li></ul>');
 
 		DOM.remove('test');
 	});
@@ -630,7 +614,7 @@
 		DOM.setHTML('test', '<div><span><b></b></span><b></b><em><a name="x"></a></em></div>');
 		ok(!DOM.isEmpty(DOM.get('test')), 'Non empty complex HTML with achor name');
 
-		DOM.setHTML('test', '<img src="x">');
+		DOM.setHTML('test', '<img src="tinymce/ui/img/raster.gif">');
 		ok(!DOM.isEmpty(DOM.get('test')), 'Non empty html with img element');
 
 		DOM.setHTML('test', '<span data-mce-bookmark="1"></span>');
@@ -643,6 +627,18 @@
 		ok(!DOM.isEmpty(DOM.get('test')), 'Element with comment.');
 
 		DOM.remove('test');
+	});
+
+	test('isEmpty with list of elements considered non-empty', function() {
+		var elm = DOM.create('p', null, '<img>');
+		equal(false, DOM.isEmpty(elm, {img: true}));
+	});
+
+	test('isEmpty with list of elements considered non-empty without schema', function() {
+		var domWithoutSchema = new tinymce.dom.DOMUtils(document, {keep_values: true});
+
+		var elm = domWithoutSchema.create('p', null, '<img>');
+		equal(false, domWithoutSchema.isEmpty(elm, {img: true}));
 	});
 
 	test('isEmpty on P with BR in EM', function() {

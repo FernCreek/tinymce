@@ -20,7 +20,7 @@
 		plugins: [
 			"advlist autolink link image lists charmap print preview hr anchor pagebreak spellchecker",
 			"searchreplace wordcount visualblocks visualchars code fullscreen insertdatetime media nonbreaking",
-			"save table contextmenu directionality emoticons template paste textcolor importcss"
+			"save table contextmenu directionality emoticons template paste textcolor importcss colorpicker textpattern"
 		],
 		external_plugins: {
 			//"moxiemanager": "/moxiemanager-php/plugin.js"
@@ -50,9 +50,19 @@
 			username : "Preview user name"
 		},
 
-		templates: [ 
-			{title: 'Some title 1', description: 'Some desc 1', content: '<strong class="red">My content: {$username}</strong>'}, 
-			{title: 'Some title 2', description: 'Some desc 2', url: 'development.html'} 
+		link_class_list: [
+			{title: 'Example 1', value: 'example1'},
+			{title: 'Example 2', value: 'example2'}
+		],
+
+		image_class_list: [
+			{title: 'Example 1', value: 'example1'},
+			{title: 'Example 2', value: 'example2'}
+		],
+
+		templates: [
+			{title: 'Some title 1', description: 'Some desc 1', content: '<strong class="red">My content: {$username}</strong>'},
+			{title: 'Some title 2', description: 'Some desc 2', url: 'development.html'}
 		],
 
 		setup: function(ed) {
@@ -64,21 +74,26 @@
 			});*/
 		},
 
-		spellchecker_callback: function(method, words, callback) {
+		spellchecker_callback: function(method, data, success) {
 			if (method == "spellcheck") {
+				var words = data.match(this.getWordCharPattern());
 				var suggestions = {};
 
 				for (var i = 0; i < words.length; i++) {
 					suggestions[words[i]] = ["First", "second"];
 				}
 
-				callback(suggestions);
+				success({words: suggestions, dictionary: true});
+			}
+
+			if (method == "addToDictionary") {
+				success();
 			}
 		}
 	});
 </script>
 </head>
-<body role="application">
+<body>
 <form method="post" action="http://www.tinymce.com/dump.php?example=true">
 	<div>
 		<div>

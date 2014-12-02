@@ -23,7 +23,7 @@
  *  2. Wait for the browser to fire a "paste" event and get the contents out of the paste bin.
  *  3. Check if the paste was successful if true, process the HTML.
  *  (4). If the paste was unsuccessful use IE execCommand, Clipboard API, document.dataTransfer old WebKit API etc.
- * 
+ *
  * @class tinymce.pasteplugin.Clipboard
  * @private
  */
@@ -33,7 +33,7 @@ define("tinymce/pasteplugin/Clipboard", [
 	"tinymce/pasteplugin/Utils"
 ], function(Env, VK, Utils) {
 	return function(editor) {
-		var self = this, pasteBinElm, lastRng, keyboardPasteTimeStamp = 0;
+		var self = this, pasteBinElm, lastRng, keyboardPasteTimeStamp = 0, draggingInternally = false;
 		var pasteBinDefaultContent = '%MCEPASTEBIN%', keyboardPastePlainTextState;
 
 		/**
@@ -63,7 +63,7 @@ define("tinymce/pasteplugin/Clipboard", [
 				}
 
 				if (!args.isDefaultPrevented()) {
-					editor.insertContent(html);
+					editor.insertContent(html, {merge: editor.settings.paste_merge_formats !== false});
 				}
 			}
 		}
@@ -121,20 +121,70 @@ define("tinymce/pasteplugin/Clipboard", [
 			if (editor.inline) {
 				scrollContainer = editor.selection.getScrollContainer();
 
-				if (scrollContainer) {
+				// Can't always rely on scrollTop returning a useful value.
+				// It returns 0 if the browser doesn't support scrollTop for the element or is non-scrollable
+				if (scrollContainer && scrollContainer.scrollTop > 0) {
 					scrollTop = scrollContainer.scrollTop;
+				}
+			}
+
+			/**
+			 * Returns the rect of the current caret if the caret is in an empty block before a
+			 * BR we insert a temporary invisible character that we get the rect this way we always get a proper rect.
+			 *
+			 * TODO: This might be useful in core.
+			 */
+			function getCaretRect(rng) {
+				var rects, textNode, node, container = rng.startContainer;
+
+				rects = rng.getClientRects();
+				if (rects.length) {
+					return rects[0];
+				}
+
+				if (!rng.collapsed || container.nodeType != 1) {
+					return;
+				}
+
+				node = container.childNodes[lastRng.startOffset];
+
+				// Skip empty whitespace nodes
+				while (node && node.nodeType == 3 && !node.data.length) {
+					node = node.nextSibling;
+				}
+
+				if (!node) {
+					return;
+				}
+
+				// Check if the location is |<br>
+				// TODO: Might need to expand this to say |<table>
+				if (node.tagName == 'BR') {
+					textNode = dom.doc.createTextNode('\uFEFF');
+					node.parentNode.insertBefore(textNode, node);
+
+					rng = dom.createRng();
+					rng.setStartBefore(textNode);
+					rng.setEndAfter(textNode);
+
+					rects = rng.getClientRects();
+					dom.remove(textNode);
+				}
+
+				if (rects.length) {
+					return rects[0];
 				}
 			}
 
 			// Calculate top cordinate this is needed to avoid scrolling to top of document
 			// We want the paste bin to be as close to the caret as possible to avoid scrolling
 			if (lastRng.getClientRects) {
-				var rects = lastRng.getClientRects();
+				var rect = getCaretRect(lastRng);
 
-				if (rects.length) {
+				if (rect) {
 					// Client rects gets us closes to the actual
 					// caret location in for example a wrapped paragraph block
-					top = scrollTop + (rects[0].top - dom.getPos(body).y);
+					top = scrollTop + (rect.top - dom.getPos(body).y);
 				} else {
 					top = scrollTop;
 
@@ -156,7 +206,7 @@ define("tinymce/pasteplugin/Clipboard", [
 			pasteBinElm = dom.add(editor.getBody(), 'div', {
 				id: "mcepastebin",
 				contentEditable: true,
-				"data-mce-bogus": "1",
+				"data-mce-bogus": "all",
 				style: 'position: absolute; top: ' + top + 'px;' +
 					'width: 10px; height: 10px; overflow: hidden; opacity: 0'
 			}, pasteBinDefaultContent);
@@ -195,7 +245,6 @@ define("tinymce/pasteplugin/Clipboard", [
 				}
 			}
 
-			keyboardPastePlainTextState = false;
 			pasteBinElm = lastRng = null;
 		}
 
@@ -205,22 +254,23 @@ define("tinymce/pasteplugin/Clipboard", [
 		 * @return {String} Get the contents of the paste bin.
 		 */
 		function getPasteBinHtml() {
-			var html = pasteBinDefaultContent, pasteBinClones, i;
+			var html = '', pasteBinClones, i, clone, cloneHtml;
 
 			// Since WebKit/Chrome might clone the paste bin when pasting
 			// for example: <img style="float: right"> we need to check if any of them contains some useful html.
 			// TODO: Man o man is this ugly. WebKit is the new IE! Remove this if they ever fix it!
 			pasteBinClones = editor.dom.select('div[id=mcepastebin]');
-			i = pasteBinClones.length;
-			while (i--) {
-				var cloneHtml = pasteBinClones[i].innerHTML;
+			for (i = 0; i < pasteBinClones.length; i++) {
+				clone = pasteBinClones[i];
 
-				if (html == pasteBinDefaultContent) {
-					html = '';
+				// Pasting plain text produces pastebins in pastebinds makes sence right!?
+				if (clone.firstChild && clone.firstChild.id == 'mcepastebin') {
+					clone = clone.firstChild;
 				}
 
-				if (cloneHtml.length > html.length) {
-					html = cloneHtml;
+				cloneHtml = clone.innerHTML;
+				if (html != pasteBinDefaultContent) {
+					html += cloneHtml;
 				}
 			}
 
@@ -233,48 +283,24 @@ define("tinymce/pasteplugin/Clipboard", [
 		 * @param {DataTransfer} dataTransfer Event fired on paste.
 		 * @return {Object} Object with mime types and data for those mime types.
 		 */
-		function getDataTransferItems(dataTransfer, forPaste) {
+		function getDataTransferItems(dataTransfer) {
 			var data = {};
-			var i;
-			var item;
-			var contentType;
-			var images = [];
 
 			if (dataTransfer) {
+				// Use old WebKit/IE API
+				if (dataTransfer.getData) {
+					var legacyText = dataTransfer.getData('Text');
+					if (legacyText && legacyText.length > 0) {
+						data['text/plain'] = legacyText;
+					}
+				}
+
 				if (dataTransfer.types) {
-					data['text/plain'] = dataTransfer.getData('Text');
-
-					for (i = 0; i < dataTransfer.types.length; i++) {
-						contentType = dataTransfer.types[i];
-						if (contentType !== 'Files') {
-							data[contentType] = dataTransfer.getData(contentType);
-						}
+					for (var i = 0; i < dataTransfer.types.length; i++) {
+						var contentType = dataTransfer.types[i];
+						data[contentType] = dataTransfer.getData(contentType);
 					}
 				}
-
-				if (dataTransfer.items && forPaste) {
-					// Only Chrome currently has an items array, which it uses for pasted images.
-					for (i = 0; i < dataTransfer.items.length; i++) {
-						item = dataTransfer.items[i];
-						if (item.kind === 'file' && item.type.indexOf('image/') === 0) {
-							images.push(item.getAsFile());
-						}
-					}
-				}
-
-				if (dataTransfer.files) {
-					// Drag-and-dropped files are in the files array. IE also puts pasted files here.
-					for (i = 0; i < dataTransfer.files.length; i++) {
-						item = dataTransfer.files[i];
-						if (item.type.indexOf('image/') === 0) {
-							images.push(item);
-						}
-					}
-				}
-			}
-
-			if (images.length) {
-				data['image/*'] = images;
 			}
 
 			return data;
@@ -288,52 +314,116 @@ define("tinymce/pasteplugin/Clipboard", [
 		 * @return {Object} Object with mime types and data for those mime types.
 		 */
 		function getClipboardContent(clipboardEvent) {
-			return getDataTransferItems(clipboardEvent.clipboardData || window.clipboardData || editor.getDoc().dataTransfer, true);
+			return getDataTransferItems(clipboardEvent.clipboardData || editor.getDoc().dataTransfer);
 		}
 
 		/**
-		 * Create a blob url.
-		 * @param {Blob} blob Create url for this blob.
-		 * @returns {String} Blob url.
+		 * Checks if the clipboard contains image data if it does it will take that data
+		 * and convert it into a data url image and paste that image at the caret location.
+		 *
+		 * @param  {ClipboardEvent} e Paste/drop event object.
+		 * @param  {DOMRange} rng Optional rng object to move selection to.
+		 * @return {Boolean} true/false if the image data was found or not.
 		 */
-		function getBlobUrl(blob) {
-			var URL = window.URL || window.webkitURL;
-			return URL.createObjectURL(blob);
+		function pasteImageData(e, rng) {
+			var dataTransfer = e.clipboardData || e.dataTransfer;
+
+			function processItems(items) {
+				var i, item, reader;
+
+				function pasteImage() {
+					if (rng) {
+						editor.selection.setRng(rng);
+						rng = null;
+					}
+
+					pasteHtml('<img src="' + reader.result + '">');
+				}
+
+				if (items) {
+					for (i = 0; i < items.length; i++) {
+						item = items[i];
+
+						if (/^image\/(jpeg|png|gif)$/.test(item.type)) {
+							reader = new FileReader();
+							reader.onload = pasteImage;
+							reader.readAsDataURL(item.getAsFile ? item.getAsFile() : item);
+
+							e.preventDefault();
+							return true;
+						}
+					}
+				}
+			}
+
+			if (editor.settings.paste_data_images && dataTransfer) {
+				return processItems(dataTransfer.items) || processItems(dataTransfer.files);
+			}
 		}
 
 		/**
-		 * Gets img tag html for a blob.
-		 * @param {Blob} blob Image blob.
-		 * @returns {String} img tag html.
+		 * Chrome on Android doesn't support proper clipboard access so we have no choice but to allow the browser default behavior.
+		 *
+		 * @param {Event} e Paste event object to check if it contains any data.
+		 * @return {Boolean} true/false if the clipboard is empty or not.
 		 */
-		function getImgTagFromBlob(blob) {
-			return '<img src="' + getBlobUrl(blob) +'">';
+		function isBrokenAndroidClipboardEvent(e) {
+			var clipboardData = e.clipboardData;
+
+			return navigator.userAgent.indexOf('Android') != -1 && clipboardData && clipboardData.items && clipboardData.items.length === 0;
 		}
 
 		function getCaretRangeFromEvent(e) {
-			var doc = editor.getDoc(), rng;
+			var doc = editor.getDoc(), rng, point;
 
 			if (doc.caretPositionFromPoint) {
-				var point = doc.caretPositionFromPoint(e.pageX, e.pageY);
+				point = doc.caretPositionFromPoint(e.clientX, e.clientY);
 				rng = doc.createRange();
 				rng.setStart(point.offsetNode, point.offset);
 				rng.collapse(true);
 			} else if (doc.caretRangeFromPoint) {
-				rng = doc.caretRangeFromPoint(e.pageX, e.pageY);
+				rng = doc.caretRangeFromPoint(e.clientX, e.clientY);
+			} else if (doc.body.createTextRange) {
+				rng = doc.body.createTextRange();
+
+				try {
+					rng.moveToPoint(e.clientX, e.clientY);
+					rng.collapse(true);
+				} catch (ex) {
+					// Append to top or bottom depending on drop location
+					rng.collapse(e.clientY < doc.body.clientHeight);
+				}
 			}
 
 			return rng;
 		}
 
+		function hasContentType(clipboardContent, mimeType) {
+			return mimeType in clipboardContent && clipboardContent[mimeType].length > 0;
+		}
+
+		function isKeyboardPasteEvent(e) {
+			return (VK.metaKeyPressed(e) && e.keyCode == 86) || (e.shiftKey && e.keyCode == 45);
+		}
+
 		function registerEventHandlers() {
 			editor.on('keydown', function(e) {
-				if (e.isDefaultPrevented()) {
-					return;
+				function removePasteBinOnKeyUp(e) {
+					// Ctrl+V or Shift+Insert
+					if (isKeyboardPasteEvent(e) && !e.isDefaultPrevented()) {
+						removePasteBin();
+					}
 				}
 
 				// Ctrl+V or Shift+Insert
-				if ((VK.metaKeyPressed(e) && e.keyCode == 86) || (e.shiftKey && e.keyCode == 45)) {
+				if (isKeyboardPasteEvent(e) && !e.isDefaultPrevented()) {
 					keyboardPastePlainTextState = e.shiftKey && e.keyCode == 86;
+
+					// Edge case on Safari on Mac where it doesn't handle Cmd+Shift+V correctly
+					// it fires the keydown but no paste or keyup so we are left with a paste bin
+					if (keyboardPastePlainTextState && Env.webkit && navigator.userAgent.indexOf('Version/') != -1) {
+						return;
+					}
 
 					// Prevent undoManager keydown handler from making an undo level with the pastebin in it
 					e.stopImmediatePropagation();
@@ -350,15 +440,33 @@ define("tinymce/pasteplugin/Clipboard", [
 
 					removePasteBin();
 					createPasteBin();
+
+					// Remove pastebin if we get a keyup and no paste event
+					// For example pasting a file in IE 11 will not produce a paste event
+					editor.once('keyup', removePasteBinOnKeyUp);
+					editor.once('paste', function() {
+						editor.off('keyup', removePasteBinOnKeyUp);
+					});
 				}
 			});
 
 			editor.on('paste', function(e) {
+				// Getting content from the Clipboard can take some time
+				var clipboardTimer = new Date().getTime();
 				var clipboardContent = getClipboardContent(e);
-				var isKeyBoardPaste = new Date().getTime() - keyboardPasteTimeStamp < 1000;
+				var clipboardDelay = new Date().getTime() - clipboardTimer;
+
+				var isKeyBoardPaste = (new Date().getTime() - keyboardPasteTimeStamp - clipboardDelay) < 1000;
 				var plainTextMode = self.pasteFormat == "text" || keyboardPastePlainTextState;
 
-				if (e.isDefaultPrevented()) {
+				keyboardPastePlainTextState = false;
+
+				if (e.isDefaultPrevented() || isBrokenAndroidClipboardEvent(e)) {
+					removePasteBin();
+					return;
+				}
+
+				if (pasteImageData(e)) {
 					removePasteBin();
 					return;
 				}
@@ -381,88 +489,83 @@ define("tinymce/pasteplugin/Clipboard", [
 				}
 
 				setTimeout(function() {
-					var html = getPasteBinHtml();
-					var dom = editor.dom;
-					var images, i, tempBody, imgNodes, imgNode;
+					var content;
+
+					// Grab HTML from Clipboard API or paste bin as a fallback
+					if (hasContentType(clipboardContent, 'text/html')) {
+						content = clipboardContent['text/html'];
+					} else {
+						content = getPasteBinHtml();
+
+						// If paste bin is empty try using plain text mode
+						// since that is better than nothing right
+						if (content == pasteBinDefaultContent) {
+							plainTextMode = true;
+						}
+					}
+
+					content = Utils.trimHtml(content);
 
 					// WebKit has a nice bug where it clones the paste bin if you paste from for example notepad
+					// so we need to force plain text mode in this case
 					if (pasteBinElm && pasteBinElm.firstChild && pasteBinElm.firstChild.id === 'mcepastebin') {
 						plainTextMode = true;
 					}
 
 					removePasteBin();
 
-					if ((images = clipboardContent['image/*'])) {
-						if (html === pasteBinDefaultContent) {
-							html = '';
-							for (i = 0; i < images.length; i++) {
-								html += getImgTagFromBlob(images[i]);
-							}
+					// If we got nothing from clipboard API and pastebin then we could try the last resort: plain/text
+					if (!content.length) {
+						plainTextMode = true;
+					}
+
+					// Grab plain text from Clipboard API or convert existing HTML to plain text
+					if (plainTextMode) {
+						// Use plain text contents from Clipboard API unless the HTML contains paragraphs then
+						// we should convert the HTML to plain text since works better when pasting HTML/Word contents as plain text
+						if (hasContentType(clipboardContent, 'text/plain') && content.indexOf('</p>') == -1) {
+							content = clipboardContent['text/plain'];
 						} else {
-							tempBody = dom.add(editor.getBody(), 'div', {style: 'display:none'}, html);
-							imgNodes = dom.select('img', tempBody);
-							for (i = 0; i < imgNodes.length; i++) {
-								imgNode = imgNodes[i];
-								imgNode.src = getBlobUrl(images[i]);
-							}
-							html = tempBody.innerHTML;
-							dom.remove(tempBody);
+							content = Utils.innerText(content);
 						}
 					}
 
-					if (html == pasteBinDefaultContent) {
-						html = clipboardContent['text/html'] || clipboardContent['text/plain'] || pasteBinDefaultContent;
-
-						if (html == pasteBinDefaultContent) {
-
-							if (!isKeyBoardPaste) {
-								editor.windowManager.alert('Please use Ctrl+V/Cmd+V keyboard shortcuts to paste contents.');
-							}
-
-							return;
+					// If the content is the paste bin default HTML then it was
+					// impossible to get the cliboard data out.
+					if (content == pasteBinDefaultContent) {
+						if (!isKeyBoardPaste) {
+							editor.windowManager.alert('Please use Ctrl+V/Cmd+V keyboard shortcuts to paste contents.');
 						}
+
+						return;
 					}
 
 					if (plainTextMode) {
-						pasteText(clipboardContent['text/plain'] || Utils.innerText(html));
+						pasteText(content);
 					} else {
-						pasteHtml(html);
+						pasteHtml(content);
 					}
 				}, 0);
 			});
 
-			editor.on('dragstart', function(e) {
-				if (e.dataTransfer.types) {
-					try {
-						e.dataTransfer.setData('mce-internal', editor.selection.getContent());
-					} catch (ex) {
-						// IE 10 throws an error since it doesn't support custom data items
-					}
-				}
-			});
-
-			editor.on('dragenter dragover', function (e) {
-				// Preventing default on these events is required so the browser
-				// doesn't try to navigate to the file.
-				e.preventDefault();
-				e.stopPropagation();
+			editor.on('dragstart dragend', function(e) {
+				draggingInternally = e.type == 'dragstart';
 			});
 
 			editor.on('drop', function(e) {
 				var rng = getCaretRangeFromEvent(e);
-				var images, i;
 
-				if (!e.isDefaultPrevented()) {
+				if (e.isDefaultPrevented() || draggingInternally) {
+					return;
+				}
+
+				if (pasteImageData(e, rng)) {
+					return;
+				}
+
+				if (rng && editor.settings.paste_filter_drop !== false) {
 					var dropContent = getDataTransferItems(e.dataTransfer);
 					var content = dropContent['mce-internal'] || dropContent['text/html'] || dropContent['text/plain'];
-
-					if ((images = dropContent['image/*'])) {
-						content = '';
-						for (i = 0; i < images.length; i++) {
-							content += getImgTagFromBlob(images[i]);
-						}
-						dropContent['text/html'] = content;
-					}
 
 					if (content) {
 						e.preventDefault();
@@ -472,9 +575,9 @@ define("tinymce/pasteplugin/Clipboard", [
 								editor.execCommand('Delete');
 							}
 
-							if (rng) {
-								editor.selection.setRng(rng);
-							}
+							editor.selection.setRng(rng);
+
+							content = Utils.trimHtml(content);
 
 							if (!dropContent['text/html']) {
 								pasteText(content);
@@ -482,6 +585,20 @@ define("tinymce/pasteplugin/Clipboard", [
 								pasteHtml(content);
 							}
 						});
+					}
+				}
+			});
+
+			editor.on('dragover dragend', function(e) {
+				var i, dataTransfer = e.dataTransfer;
+
+				if (editor.settings.paste_data_images && dataTransfer) {
+					for (i = 0; i < dataTransfer.types.length; i++) {
+						// Prevent default if we have files dragged into the editor since the pasteImageData handles that
+						if (dataTransfer.types[i] == "Files") {
+							e.preventDefault();
+							return false;
+						}
 					}
 				}
 			});
@@ -493,34 +610,25 @@ define("tinymce/pasteplugin/Clipboard", [
 		editor.on('preInit', function() {
 			registerEventHandlers();
 
+			// Remove all data images from paste for example from Gecko
+			// except internal images like video elements
 			editor.parser.addNodeFilter('img', function(nodes) {
-				var i = nodes.length;
+				if (!editor.settings.paste_data_images) {
+					var i = nodes.length;
 
-				while (i--) {
-					var node = nodes[i];
-					var src = node.attributes.map.src;
-					if (src) {
-						// Remove all data images from paste for example from Gecko
-						// except internal images like video elements
-						if (!editor.settings.paste_data_images) {
-							if (src.indexOf('data:image') === 0 && !node.attr('data-mce-object') && src !== Env.transparentSrc) {
-								node.remove();
+					while (i--) {
+						var src = nodes[i].attributes.map.src;
+
+						// Some browsers automatically produce data uris on paste
+						// Safari on Mac produces webkit-fake-url see: https://bugs.webkit.org/show_bug.cgi?id=49141
+						if (src && /^(data:image|webkit\-fake\-url)/.test(src)) {
+							if (!nodes[i].attr('data-mce-object') && src !== Env.transparentSrc) {
+								nodes[i].remove();
 							}
-						}
-
-						// Remove images that reference local files or webkit's webkit-fake-url scheme.
-						// These are inaccessible to us, (and local file urls won't even load), so nothing we can do.
-						if (src.indexOf('file://') === 0 || src.indexOf('webkit-fake-url://') === 0) {
-							node.remove();
 						}
 					}
 				}
 			});
-		});
-
-		// Fix for #6504 we need to remove the paste bin on IE if the user paste in a file
-		editor.on('PreProcess', function() {
-			editor.dom.remove(editor.dom.get('mcepastebin'));
 		});
 	};
 });

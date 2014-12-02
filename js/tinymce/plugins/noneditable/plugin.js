@@ -9,6 +9,7 @@
  */
 
 /*jshint loopfunc:true */
+/*eslint no-loop-func:0 */
 /*global tinymce:true */
 
 tinymce.PluginManager.add('noneditable', function(editor) {
@@ -132,18 +133,18 @@ tinymce.PluginManager.add('noneditable', function(editor) {
 			var rng, child, currentCaretContainer, lastContainer;
 
 			if (caretContainer) {
-					rng = selection.getRng(true);
-					rng.setStartBefore(caretContainer);
-					rng.setEndBefore(caretContainer);
+				rng = selection.getRng(true);
+				rng.setStartBefore(caretContainer);
+				rng.setEndBefore(caretContainer);
 
-					child = findFirstTextNode(caretContainer);
-					if (child && child.nodeValue.charAt(0) == invisibleChar) {
-						child = child.deleteData(0, 1);
-					}
+				child = findFirstTextNode(caretContainer);
+				if (child && child.nodeValue.charAt(0) == invisibleChar) {
+					child = child.deleteData(0, 1);
+				}
 
-					dom.remove(caretContainer, true);
+				dom.remove(caretContainer, true);
 
-					selection.setRng(rng);
+				selection.setRng(rng);
 			} else {
 				currentCaretContainer = getParentCaretContainer(selection.getStart());
 				while ((caretContainer = dom.get(caretContainerId)) && caretContainer !== lastContainer) {
@@ -184,7 +185,7 @@ tinymce.PluginManager.add('noneditable', function(editor) {
 					if (offset < container.childNodes.length) {
 						// Browser represents caret position as the offset at the start of an element. When moving right
 						// this is the element we are moving into so we consider our container to be child node at offset-1
-						var pos = !left && offset > 0 ? offset-1 : offset;
+						var pos = !left && offset > 0 ? offset - 1 : offset;
 						container = container.childNodes[pos];
 						if (container.hasChildNodes()) {
 							container = container.firstChild;

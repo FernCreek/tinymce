@@ -85,13 +85,49 @@ define("tinymce/util/Quirks", [
 		 *  7. Delete by selecting contents and writing a character.'
 		 *
 		 * This code is a ugly hack since writing full custom delete logic for just this bug
-		 * fix seemed like a huge task. I hope we can remove this before the year 2030. 
+		 * fix seemed like a huge task. I hope we can remove this before the year 2030.
 		 */
 		function cleanupStylesWhenDeleting() {
-			var doc = editor.getDoc();
+			var doc = editor.getDoc(), urlPrefix = 'data:text/mce-internal,';
+			var MutationObserver = window.MutationObserver, olderWebKit, dragStartRng;
 
-			if (!window.MutationObserver) {
-				return;
+			// Add mini polyfill for older WebKits
+			// TODO: Remove this when old Safari versions gets updated
+			if (!MutationObserver) {
+				olderWebKit = true;
+
+				MutationObserver = function() {
+					var records = [], target;
+
+					function nodeInsert(e) {
+						var target = e.relatedNode || e.target;
+						records.push({target: target, addedNodes: [target]});
+					}
+
+					function attrModified(e) {
+						var target = e.relatedNode || e.target;
+						records.push({target: target, attributeName: e.attrName});
+					}
+
+					this.observe = function(node) {
+						target = node;
+						target.addEventListener('DOMSubtreeModified', nodeInsert, false);
+						target.addEventListener('DOMNodeInsertedIntoDocument', nodeInsert, false);
+						target.addEventListener('DOMNodeInserted', nodeInsert, false);
+						target.addEventListener('DOMAttrModified', attrModified, false);
+					};
+
+					this.disconnect = function() {
+						target.removeEventListener('DOMSubtreeModified', nodeInsert, false);
+						target.removeEventListener('DOMNodeInsertedIntoDocument', nodeInsert, false);
+						target.removeEventListener('DOMNodeInserted', nodeInsert, false);
+						target.removeEventListener('DOMAttrModified', attrModified, false);
+					};
+
+					this.takeRecords = function() {
+						return records;
+					};
+				};
 			}
 
 			function customDelete(isForward) {
@@ -105,7 +141,7 @@ define("tinymce/util/Quirks", [
 
 					// Make sure all elements has a data-mce-style attribute
 					if (!elm.hasAttribute('data-mce-style') && elm.hasAttribute('style')) {
-						editor.dom.setAttrib(elm, 'style', elm.getAttribute('style'));
+						editor.dom.setAttrib(elm, 'style', editor.dom.getAttrib(elm, 'style'));
 					}
 				});
 
@@ -123,6 +159,10 @@ define("tinymce/util/Quirks", [
 				var caretElement = rng.startContainer.parentNode;
 
 				Tools.each(mutationObserver.takeRecords(), function(record) {
+					if (!dom.isChildOf(record.target, editor.getBody())) {
+						return;
+					}
+
 					// Restore style attribute to previous value
 					if (record.attributeName == "style") {
 						var oldValue = record.target.getAttribute('data-mce-style');
@@ -202,20 +242,58 @@ define("tinymce/util/Quirks", [
 				customDelete(true);
 			});
 
+			// Older WebKits doesn't properly handle the clipboard so we can't add the rest
+			if (olderWebKit) {
+				return;
+			}
+
 			editor.on('dragstart', function(e) {
-				e.dataTransfer.setData('mce-internal', editor.selection.getContent());
+				var selectionHtml;
+
+				if (editor.selection.isCollapsed() && e.target.tagName == 'IMG') {
+					selection.select(e.target);
+				}
+
+				dragStartRng = selection.getRng();
+				selectionHtml = editor.selection.getContent();
+
+				// Safari doesn't support custom dataTransfer items so we can only use URL and Text
+				if (selectionHtml.length > 0) {
+					e.dataTransfer.setData('URL', 'data:text/mce-internal,' + escape(selectionHtml));
+				}
 			});
 
 			editor.on('drop', function(e) {
 				if (!isDefaultPrevented(e)) {
-					var internalContent = e.dataTransfer.getData('mce-internal');
+					var internalContent = e.dataTransfer.getData('URL');
 
-					if (internalContent && doc.caretRangeFromPoint) {
-						e.preventDefault();
-						customDelete();
-						editor.selection.setRng(doc.caretRangeFromPoint(e.x, e.y));
-						editor.insertContent(internalContent);
+					if (!internalContent || internalContent.indexOf(urlPrefix) == -1 || !doc.caretRangeFromPoint) {
+						return;
 					}
+
+					internalContent = unescape(internalContent.substr(urlPrefix.length));
+					if (doc.caretRangeFromPoint) {
+						e.preventDefault();
+
+						// Safari has a weird issue where drag/dropping images sometimes
+						// produces a green plus icon. When this happens the caretRangeFromPoint
+						// will return "null" even though the x, y coordinate is correct.
+						// But if we detach the insert from the drop event we will get a proper range
+						window.setTimeout(function() {
+							var pointRng = doc.caretRangeFromPoint(e.x, e.y);
+
+							if (dragStartRng) {
+								selection.setRng(dragStartRng);
+								dragStartRng = null;
+							}
+
+							customDelete();
+
+							selection.setRng(pointRng);
+							editor.insertContent(internalContent);
+						}, 0);
+					}
+
 				}
 			});
 
@@ -309,12 +387,7 @@ define("tinymce/util/Quirks", [
 		 * This selects the whole body so that backspace/delete logic will delete everything
 		 */
 		function selectAll() {
-			editor.on('keydown', function(e) {
-				if (!isDefaultPrevented(e) && e.keyCode == 65 && VK.metaKeyPressed(e)) {
-					e.preventDefault();
-					editor.execCommand('SelectAll');
-				}
-			});
+			editor.shortcuts.add('ctrl+a', null, 'SelectAll');
 		}
 
 		/**
@@ -336,10 +409,17 @@ define("tinymce/util/Quirks", [
 				});
 
 				// Case 2 IME doesn't initialize if you click the documentElement it also doesn't properly fire the focusin event
-				dom.bind(editor.getDoc(), 'mousedown', function(e) {
+				// Needs to be both down/up due to weird rendering bug on Chrome Windows
+				dom.bind(editor.getDoc(), 'mousedown mouseup', function(e) {
 					if (e.target == editor.getDoc().documentElement) {
 						editor.getBody().focus();
-						selection.setRng(selection.getRng());
+
+						if (e.type == 'mousedown') {
+							// Edge case for mousedown, drag select and mousedown again within selection on Chrome Windows to render caret
+							selection.placeCaretAt(e.clientX, e.clientY);
+						} else {
+							selection.setRng(selection.getRng());
+						}
 					}
 				});
 			}
@@ -357,6 +437,11 @@ define("tinymce/util/Quirks", [
 		function removeHrOnBackspace() {
 			editor.on('keydown', function(e) {
 				if (!isDefaultPrevented(e) && e.keyCode === BACKSPACE) {
+					// Check if there is any HR elements this is faster since getRng on IE 7 & 8 is slow
+					if (!editor.getBody().getElementsByTagName('hr').length) {
+						return;
+					}
+
 					if (selection.isCollapsed() && selection.getRng(true).startOffset === 0) {
 						var node = selection.getNode();
 						var previousSibling = node.previousSibling;
@@ -406,20 +491,21 @@ define("tinymce/util/Quirks", [
 		 */
 		function selectControlElements() {
 			editor.on('click', function(e) {
-				e = e.target;
+				var target = e.target;
 
 				// Workaround for bug, http://bugs.webkit.org/show_bug.cgi?id=12250
 				// WebKit can't even do simple things like selecting an image
-				// Needs tobe the setBaseAndExtend or it will fail to select floated images
-				if (/^(IMG|HR)$/.test(e.nodeName)) {
-					selection.getSel().setBaseAndExtent(e, 0, e, 1);
+				// Needs to be the setBaseAndExtend or it will fail to select floated images
+				if (/^(IMG|HR)$/.test(target.nodeName)) {
+					e.preventDefault();
+					selection.getSel().setBaseAndExtent(target, 0, target, 1);
+					editor.nodeChanged();
 				}
 
-				if (e.nodeName == 'A' && dom.hasClass(e, 'mce-item-anchor')) {
-					selection.select(e);
+				if (target.nodeName == 'A' && dom.hasClass(target, 'mce-item-anchor')) {
+					e.preventDefault();
+					selection.select(target);
 				}
-
-				editor.nodeChanged();
 			});
 		}
 
@@ -479,31 +565,6 @@ define("tinymce/util/Quirks", [
 						applyAttributes();
 					}, 0);
 				}
-			});
-		}
-
-		/**
-		 * Fire a nodeChanged when the selection is changed on WebKit this fixes selection issues on iOS5. It only fires the nodeChange
-		 * event every 50ms since it would other wise update the UI when you type and it hogs the CPU.
-		 */
-		function selectionChangeNodeChanged() {
-			var lastRng, selectionTimer;
-
-			editor.on('selectionchange', function() {
-				if (selectionTimer) {
-					clearTimeout(selectionTimer);
-					selectionTimer = 0;
-				}
-
-				selectionTimer = window.setTimeout(function() {
-					var rng = selection.getRng();
-
-					// Compare the ranges to see if it was a real change or not
-					if (!lastRng || !RangeUtils.compareRanges(rng, lastRng)) {
-						editor.nodeChanged();
-						lastRng = rng;
-					}
-				}, 50);
 			});
 		}
 
@@ -900,7 +961,7 @@ define("tinymce/util/Quirks", [
 						dom.bind(doc, 'mouseup', endSelection);
 						dom.bind(doc, 'mousemove', selectionChange);
 
-						dom.win.focus();
+						dom.getRoot().focus();
 						startRng.select();
 					}
 				}
@@ -908,16 +969,16 @@ define("tinymce/util/Quirks", [
 		}
 
 		/**
-		 * Fixes selection issues on Gecko where the caret can be placed between two inline elements like <b>a</b>|<b>b</b>
+		 * Fixes selection issues where the caret can be placed between two inline elements like <b>a</b>|<b>b</b>
 		 * this fix will lean the caret right into the closest inline element.
 		 */
 		function normalizeSelection() {
 			// Normalize selection for example <b>a</b><i>|a</i> becomes <b>a|</b><i>a</i> except for Ctrl+A since it selects everything
-			editor.on('keyup focusin', function(e) {
+			editor.on('keyup focusin mouseup', function(e) {
 				if (e.keyCode != 65 || !VK.metaKeyPressed(e)) {
 					selection.normalize();
 				}
-			});
+			}, true);
 		}
 
 		/**
@@ -964,8 +1025,8 @@ define("tinymce/util/Quirks", [
 				editor.contentStyles.push('body {min-height: 150px}');
 				editor.on('click', function(e) {
 					if (e.target.nodeName == 'HTML') {
-						editor.execCommand('SelectAll');
-						editor.selection.collapse(true);
+						editor.getBody().focus();
+						editor.selection.normalize();
 						editor.nodeChanged();
 					}
 				});
@@ -994,8 +1055,133 @@ define("tinymce/util/Quirks", [
 			setEditorCommandState("AutoUrlDetect", false);
 		}
 
+		/**
+		 * IE 11 has a fantastic bug where it will produce two trailing BR elements to iframe bodies when
+		 * the iframe is hidden by display: none on a parent container. The DOM is actually out of sync
+		 * with innerHTML in this case. It's like IE adds shadow DOM BR elements that appears on innerHTML
+		 * but not as the lastChild of the body. However is we add a BR element to the body then remove it
+		 * it doesn't seem to add these BR elements makes sence right?!
+		 *
+		 * Example of what happens: <body>text</body> becomes <body>text<br><br></body>
+		 */
+		function doubleTrailingBrElements() {
+			if (!editor.inline) {
+				editor.on('focus blur beforegetcontent', function() {
+					var br = editor.dom.create('br');
+					editor.getBody().appendChild(br);
+					br.parentNode.removeChild(br);
+				}, true);
+			}
+		}
+
+		/**
+		 * iOS 7.1 introduced two new bugs:
+		 * 1) It's possible to open links within a contentEditable area by clicking on them.
+		 * 2) If you hold down the finger it will display the link/image touch callout menu.
+		 */
+		function tapLinksAndImages() {
+			editor.on('click', function(e) {
+				var elm = e.target;
+
+				do {
+					if (elm.tagName === 'A') {
+						e.preventDefault();
+						return;
+					}
+				} while ((elm = elm.parentNode));
+			});
+
+			editor.contentStyles.push('.mce-content-body {-webkit-touch-callout: none}');
+		}
+
+		/**
+		 * iOS Safari and possible other browsers have a bug where it won't fire
+		 * a click event when a contentEditable is focused. This function fakes click events
+		 * by using touchstart/touchend and measuring the time and distance travelled.
+		 */
+		function touchClickEvent() {
+			editor.on('touchstart', function(e) {
+				var elm, time, startTouch, changedTouches;
+
+				elm = e.target;
+				time = new Date().getTime();
+				changedTouches = e.changedTouches;
+
+				if (!changedTouches || changedTouches.length > 1) {
+					return;
+				}
+
+				startTouch = changedTouches[0];
+
+				editor.once('touchend', function(e) {
+					var endTouch = e.changedTouches[0], args;
+
+					if (new Date().getTime() - time > 500) {
+						return;
+					}
+
+					if (Math.abs(startTouch.clientX - endTouch.clientX) > 5) {
+						return;
+					}
+
+					if (Math.abs(startTouch.clientY - endTouch.clientY) > 5) {
+						return;
+					}
+
+					args = {
+						target: elm
+					};
+
+					each('pageX pageY clientX clientY screenX screenY'.split(' '), function(key) {
+						args[key] = endTouch[key];
+					});
+
+					args = editor.fire('click', args);
+
+					if (!args.isDefaultPrevented()) {
+						// iOS WebKit can't place the caret properly once
+						// you bind touch events so we need to do this manually
+						// TODO: Expand to the closest word? Touble tap still works.
+						editor.selection.placeCaretAt(endTouch.clientX, endTouch.clientY);
+						editor.nodeChanged();
+					}
+				});
+			});
+		}
+
+		/**
+		 * WebKit has a bug where it will allow forms to be submitted if they are inside a contentEditable element.
+		 * For example this: <form><button></form>
+		 */
+		function blockFormSubmitInsideEditor() {
+			editor.on('init', function() {
+				editor.dom.bind(editor.getBody(), 'submit', function(e) {
+					e.preventDefault();
+				});
+			});
+		}
+
+		/**
+		 * Sometimes WebKit/Blink generates BR elements with the Apple-interchange-newline class.
+		 *
+		 * Scenario:
+		 *  1) Create a table 2x2.
+		 *  2) Select and copy cells A2-B2.
+		 *  3) Paste and it will add BR element to table cell.
+		 */
+		function removeAppleInterchangeBrs() {
+			parser.addNodeFilter('br', function(nodes) {
+				var i = nodes.length;
+
+				while (i--) {
+					if (nodes[i].attr('class') == 'Apple-interchange-newline') {
+						nodes[i].remove();
+					}
+				}
+			});
+		}
+
 		// All browsers
-		disableBackspaceIntoATable();
 		removeBlockQuoteOnBackSpace();
 		emptyEditorWhenDeleting();
 		normalizeSelection();
@@ -1006,12 +1192,16 @@ define("tinymce/util/Quirks", [
 			inputMethodFocus();
 			selectControlElements();
 			setDefaultBlockType();
+			blockFormSubmitInsideEditor();
+			disableBackspaceIntoATable();
+			removeAppleInterchangeBrs();
+			touchClickEvent();
 
 			// iOS
 			if (Env.iOS) {
-				selectionChangeNodeChanged();
 				restoreFocusOnKeyDown();
 				bodyHeight();
+				tapLinksAndImages();
 			} else {
 				selectAll();
 			}
@@ -1031,6 +1221,8 @@ define("tinymce/util/Quirks", [
 
 		if (Env.ie >= 11) {
 			bodyHeight();
+			doubleTrailingBrElements();
+			disableBackspaceIntoATable();
 		}
 
 		if (Env.ie) {
@@ -1048,6 +1240,7 @@ define("tinymce/util/Quirks", [
 			removeGhostSelection();
 			showBrokenImageIcon();
 			blockCmdArrowNavigation();
+			disableBackspaceIntoATable();
 		}
 	};
 });

@@ -10,7 +10,7 @@
 
 /**
  * This class creates a color button control. This is a split button in which the main
- * button has a visual representation of the currently selected color. When clicked 
+ * button has a visual representation of the currently selected color. When clicked
  * the caret button displays a color picker, allowing the user to select a new color.
  *
  * @-x-less ColorButton.less
@@ -22,7 +22,7 @@ define("tinymce/ui/ColorButton", [
 	"tinymce/dom/DOMUtils"
 ], function(PanelButton, DomUtils) {
 	"use strict";
-	
+
 	var DOM = DomUtils.DOM;
 
 	return PanelButton.extend({
@@ -66,19 +66,19 @@ define("tinymce/ui/ColorButton", [
 			var image = self.settings.image ? ' style="background-image: url(\'' + self.settings.image + '\')"' : '';
 
 			return (
-				'<div id="' + id + '" class="' + self.classes() + '">' +
-					'<button role="presentation" hidefocus type="button" tabindex="-1">' +
+				'<div id="' + id + '" class="' + self.classes() + '" role="button" tabindex="-1" aria-haspopup="true">' +
+					'<button role="presentation" hidefocus="1" type="button" tabindex="-1">' +
 						(icon ? '<i class="' + icon + '"' + image + '></i>' : '') +
 						'<span id="' + id + '-preview" class="' + prefix + 'preview"></span>' +
 						(self._text ? (icon ? ' ' : '') + (self._text) : '') +
 					'</button>' +
-					'<button type="button" class="' + prefix + 'open" hidefocus tabindex="-1">' +
+					'<button type="button" class="' + prefix + 'open" hidefocus="1" tabindex="-1">' +
 						' <i class="' + prefix + 'caret"></i>' +
 					'</button>' +
 				'</div>'
 			);
 		},
-		
+
 		/**
 		 * Called after the control has been rendered.
 		 *
@@ -88,6 +88,10 @@ define("tinymce/ui/ColorButton", [
 			var self = this, onClickHandler = self.settings.onclick;
 
 			self.on('click', function(e) {
+				if (e.aria && e.aria.key == 'down') {
+					return;
+				}
+
 				if (e.control == self && !DOM.getParent(e.target, '.' + self.classPrefix + 'open')) {
 					e.stopImmediatePropagation();
 					onClickHandler.call(self, e);
@@ -98,6 +102,5 @@ define("tinymce/ui/ColorButton", [
 
 			return self._super();
 		}
-		
 	});
 });

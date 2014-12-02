@@ -10,7 +10,7 @@
 <script src="../../js/tinymce/plugins/spellchecker/plugin.dev.js"></script>
 <script>
 	tinymce.init({
-		selector: "textarea",
+		selector: "#elm1",
 		theme: "modern",
 		plugins: [
 			"advlist autolink link image lists charmap print preview hr anchor pagebreak spellchecker",
@@ -58,8 +58,13 @@
 		}
 	});
 </script>
+<style>
+#styles b {
+	font-weight: 700;
+}
+</style>
 </head>
-<body role="application">
+<body>
 <form method="post" action="http://www.tinymce.com/dump.php?example=true">
 	<textarea id="elm1" name="elm1" rows="15" cols="80" style="width: 80%">
 		<pre>Pre element</pre>
@@ -96,7 +101,7 @@
 		<a href="javascript:;" onclick="alert(tinymce.get('elm1').getContent());return false;">[Get contents]</a>
 		<a href="javascript:;" onclick="alert(tinymce.get('elm1').getContent({format: 'raw'}));return false;">[Get raw]</a>
 		<a href="javascript:;" onclick="alert(tinymce.get('elm1').selection.getContent());return false;">[Get selected HTML]</a>
-		<a href="javascript:;" onclick="alert(tinymce.get('elm1').selection.getContent({format : 'text'}));return false;">[Get selected text]</a>
+		<a href="javascript:;" onclick="alert(tinymce.get('elm1').selection.getContent({format: 'text'}));return false;">[Get selected text]</a>
 		<a href="javascript:;" onclick="alert(tinymce.get('elm1').selection.getNode().nodeName);return false;">[Get selected element]</a>
 		<a href="javascript:;" onclick="tinymce.execCommand('mceInsertContent',false,'<b>Hello world!!</b>');return false;">[Insert HTML]</a>
 		<a href="javascript:;" onclick="tinymce.execCommand('mceReplaceContent',false,'<b>{$selection}</b>');return false;">[Replace selection]</a>
@@ -127,6 +132,27 @@
 		<p><strong>abc</strong>def</p>
 		<p><strong>abc</strong>def</p>
 		<p><strong>abc</strong>def</p>
+	</div>
+	
+	<div>
+<textarea style="height: 140px">
+a
+b
+c
+
+d
+
+e
+</textarea>
+	<div id="styles" style="width: 200px">
+		<p>
+			<i>italic</i><b>bold</b>
+			<img style="float: right" src="data:image/gif;base64,R0lGODlhIAAgAIAAAGB7/wAAACH5BAAAAAAALAAAAAAgACAAAAIehI+py+0Po5y02ouz3rz7D4biSJbmiabqyrbuC5sFADs=">
+		</p>
+		<p>
+			abc
+		</p>
+	</div>
 	</div>
 </form>
 

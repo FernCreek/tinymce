@@ -27,8 +27,8 @@ mcmanager
 *.dev.js
 *.full.js
 *.min.css
+*.dev.less
 skin.less
-skin.dev.less
 skin.ie7.less
 skin.ie7.dev.less
 .MySCMServerInfo
