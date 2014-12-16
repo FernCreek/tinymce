@@ -32,9 +32,8 @@ define("tinymce/pasteplugin/Clipboard", [
 	"tinymce/dom/RangeUtils",
 	"tinymce/util/VK",
 	"tinymce/pasteplugin/Utils",
-	"tinymce/pasteplugin/SmartPaste",
 	"tinymce/util/Delay"
-], function(Env, RangeUtils, VK, Utils, SmartPaste, Delay) {
+], function(Env, RangeUtils, VK, Utils, Delay) {
 	return function(editor) {
 		var self = this, pasteBinElm, lastRng, keyboardPasteTimeStamp = 0, draggingInternally = false;
 		var pasteBinDefaultContent = '%MCEPASTEBIN%', keyboardPastePlainTextState;
@@ -68,7 +67,7 @@ define("tinymce/pasteplugin/Clipboard", [
 				}
 
 				if (!args.isDefaultPrevented()) {
-					SmartPaste.insertContent(editor, html);
+					editor.insertContent(html, {merge: editor.settings.paste_merge_formats !== false, data: {paste: true}});
 				}
 			}
 		}
@@ -391,6 +390,15 @@ define("tinymce/pasteplugin/Clipboard", [
 			function processItems(items) {
 				var i, item, reader, hadImage = false;
 
+				function pasteImage(reader) {
+					if (rng) {
+						editor.selection.setRng(rng);
+						rng = null;
+					}
+
+					pasteHtml('<img src="' + reader.result + '">');
+				}
+
 				if (items) {
 					for (i = 0; i < items.length; i++) {
 						item = items[i];
@@ -399,7 +407,7 @@ define("tinymce/pasteplugin/Clipboard", [
 							var blob = item.getAsFile ? item.getAsFile() : item;
 
 							reader = new FileReader();
-							reader.onload = pasteImage.bind(null, rng, reader, blob);
+							reader.onload = pasteImage.bind(null, reader);
 							reader.readAsDataURL(blob);
 
 							e.preventDefault();

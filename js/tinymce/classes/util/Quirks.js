@@ -717,13 +717,12 @@ define("tinymce/util/Quirks", [
 
 			editor.on('dragstart', function(e) {
 				dragStartRng = selection.getRng();
-				setMceInternalContent(e);
+				setMceInteralContent(e);
 			});
 
 			editor.on('drop', function(e) {
 				if (!isDefaultPrevented(e)) {
 					var internalContent = getMceInternalContent(e);
-
 					if (internalContent) {
 						e.preventDefault();
 
@@ -739,6 +738,8 @@ define("tinymce/util/Quirks", [
 								dragStartRng = null;
 								transactCustomDelete();
 							}
+
+							customDelete();
 
 							selection.setRng(pointRng);
 							insertClipboardContents(internalContent.html);
@@ -1635,13 +1636,12 @@ define("tinymce/util/Quirks", [
 		 */
 		function ieInternalDragAndDrop() {
 			editor.on('dragstart', function(e) {
-				setMceInternalContent(e);
+				setMceInteralContent(e);
 			});
 
 			editor.on('drop', function(e) {
 				if (!isDefaultPrevented(e)) {
 					var internalContent = getMceInternalContent(e);
-
 					if (internalContent && internalContent.id != editor.id) {
 						e.preventDefault();
 
@@ -1652,6 +1652,7 @@ define("tinymce/util/Quirks", [
 				}
 			});
 		}
+
 
 		function refreshContentEditable() {
 			// No-op since Mozilla seems to have fixed the caret repaint issues
