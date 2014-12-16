@@ -717,6 +717,10 @@ module.exports = function(grunt) {
 				"js/tinymce/plugins/spellchecker/plugin.js"
 			],
 
+			themes: [
+				"js/tinymce/themes/*/*.min.js"
+			],
+
 			skins: [
 				"js/tinymce/skins/**/*.min.css",
 				"js/tinymce/skins/**/*.dev.less"
