@@ -50,7 +50,7 @@ if( !$opt_c )
 {
    # Clean up the old builds
    print "Cleaning up old builds...\n";
-   $buildCommand = 'grunt clean:core clean:plugins clean:skins';
+   $buildCommand = 'grunt clean:core clean:plugins clean:skins clean:themes';
    system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
    print "done\n";
 
