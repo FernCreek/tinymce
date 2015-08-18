@@ -1,8 +1,8 @@
 /**
  * RangeUtils.js
  *
- * Copyright, Moxiecode Systems AB
  * Released under LGPL License.
+ * Copyright (c) 1999-2015 Ephox Corp. All rights reserved
  *
  * License: http://www.tinymce.com/license
  * Contributing: http://www.tinymce.com/contributing
@@ -37,6 +37,7 @@ define("tinymce/dom/RangeUtils", [
 		/**
 		 * Walks the specified range like object and executes the callback for each sibling collection it finds.
 		 *
+		 * @private
 		 * @method walk
 		 * @param {Object} rng Range like object.
 		 * @param {function} callback Callback function to execute for each sibling collection.
@@ -386,7 +387,7 @@ define("tinymce/dom/RangeUtils", [
 									container = node.parentNode;
 
 									// Put caret after image when moving the end point
-									if (node.nodeName ==  "IMG" && !directionLeft) {
+									if (node.nodeName == "IMG" && !directionLeft) {
 										offset++;
 									}
 
@@ -522,6 +523,18 @@ define("tinymce/dom/RangeUtils", [
 		}
 
 		return rng;
+	};
+
+	RangeUtils.getNode = function(container, offset) {
+		if (container.nodeType == 1 && container.hasChildNodes()) {
+			if (offset >= container.childNodes.length) {
+				offset = container.childNodes.length - 1;
+			}
+
+			container = container.childNodes[offset];
+		}
+
+		return container;
 	};
 
 	return RangeUtils;
