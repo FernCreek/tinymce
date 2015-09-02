@@ -479,6 +479,12 @@ define("tinymce/dom/Selection", [
 		getRng: function(w3c) {
 			var self = this, selection, rng, elm, doc, ieRng, evt;
 
+			//Sometimes self.win.document has already been set to undefined. So we must to a check. If it is undefined, then we will set
+			//the doc to the main document. That should help prevent crashing.
+			if(!doc) {
+				doc = document;
+			}
+
 			function tryCompareBoundaryPoints(how, sourceRange, destinationRange) {
 				try {
 					return sourceRange.compareBoundaryPoints(how, destinationRange);
