@@ -67,7 +67,12 @@ define("tinymce/UndoManager", [
 
 		function addNonTypingUndoLevel(e) {
 			self.typing = false;
-			self.add({}, e);
+			//Because a crash can happen when getting the range during the removal
+			//of the editor, we prevent the addition of an undo level if
+			//we are currently removing the editor.
+			if(!(e && e.removingEditor)) {
+				self.add({}, e);
+			}
 		}
 
 		// Add initial undo level when the editor is initialized
@@ -206,7 +211,7 @@ define("tinymce/UndoManager", [
 				level = level || {};
 				level.content = getContent();
 
-				if (locks || editor.removed) {
+				if (locks || editor.removed ) {
 					return null;
 				}
 
@@ -238,6 +243,7 @@ define("tinymce/UndoManager", [
 				}
 
 				// Get a non intrusive normalized bookmark
+
 				level.bookmark = editor.selection.getBookmark(2, true);
 
 				// Crop array if needed
