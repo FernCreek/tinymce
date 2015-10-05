@@ -11,8 +11,10 @@
 /*global tinymce:true */
 
 tinymce.PluginManager.add('autolink', function(editor) {
-	var AutoUrlDetectState;
-	var AutoLinkPattern = /^(https?:\/\/|ssh:\/\/|ftp:\/\/|file:\/|www\.|(?:mailto:)?[A-Z0-9._%+\-]+@)(.+)$/i;
+	var AutoUrlDetectState,
+	AutoLinkPattern = /\b(?:(?:ttstudio|sscm|ftp|http|https|nntp|telnet|file|doors):\/\/|(?:mailto|news):(?!\/)|www[0-9]?(?=\.)|ftp(?=\.))(?:[$_.+!*(),;\/\\?:@&~=-](?=[A-Za-z0-9%])|[A-Za-z0-9%*])(?:[A-Za-z0-9)]|[$_.+!*(,;\/\\?:@&~=-](?!\s|$)|%[A-Fa-f0-9]{2})*(?:#[\/a-zA-Z0-9][a-zA-Z0-9$_.+!*(),;\/\\?:@&~=%-]*)?/i,
+	hasProtocol = /^(?:ttstudio|sscm|doors|ftp|http|https|nntp|telnet|file):\/\/|(?:mailto|news):(?!\/)|ftp(?=\.)/i,
+	endsWithParen = /\b.*\)[,.!?'":;]?$/;
 
 	if (editor.settings.autolink_pattern) {
 		AutoLinkPattern = editor.settings.autolink_pattern;
@@ -41,21 +43,11 @@ tinymce.PluginManager.add('autolink', function(editor) {
 		return;
 	}
 
-	editor.on("keypress", function(e) {
-		if (e.keyCode == 41) {
-			return handleEclipse(editor);
-		}
-	});
-
 	editor.on("keyup", function(e) {
 		if (e.keyCode == 32) {
 			return handleSpacebar(editor);
 		}
 	});
-
-	function handleEclipse(editor) {
-		parseCurrentLine(editor, -1, '(', true);
-	}
 
 	function handleSpacebar(editor) {
 		parseCurrentLine(editor, 0, '', true);
@@ -66,7 +58,7 @@ tinymce.PluginManager.add('autolink', function(editor) {
 	}
 
 	function parseCurrentLine(editor, end_offset, delimiter) {
-		var rng, end, start, endContainer, bookmark, text, matches, prev, len, rngText;
+		var rng, end, start, endContainer, bookmark, text, matches, prev, len, rngText, linkText, idx;
 
 		function scopeIndex(container, index) {
 			if (index < 0) {
@@ -177,26 +169,53 @@ tinymce.PluginManager.add('autolink', function(editor) {
 			setEnd(endContainer, start);
 		}
 
-		// Exclude last . from word like "www.site.com."
-		text = rng.toString();
-		if (text.charAt(text.length - 1) == '.') {
-			setEnd(endContainer, start - 1);
-		}
-
 		text = rng.toString();
 		matches = text.match(AutoLinkPattern);
 
 		if (matches) {
-			if (matches[1] == 'www.') {
-				matches[1] = 'http://www.';
-			} else if (/@$/.test(matches[1]) && !/^mailto:/.test(matches[1])) {
-				matches[1] = 'mailto:' + matches[1];
+			// there is a URL in the text
+			linkText = matches[0];
+
+			// check if our link ends with a closing parenthesis, in which case remove unless there is an opening one in the
+			// link, this makes for a nicer user experience
+			if (endsWithParen.test(linkText)) {
+				// handle paren being both the last & second last character to match our native implementation
+				if (linkText.charAt(linkText.length - 2) === ')') {
+					if (linkText.indexOf('(') !== -1) {
+						linkText = linkText.substr(0, linkText.length - 1);
+					} else {
+						linkText = linkText.substr(0, linkText.length - 2);
+					}
+				} else if (text.charAt(text.length - 1 === ')')) {
+					if (linkText.indexOf('(') === -1) {
+						linkText = linkText.substr(0, linkText.length - 1);
+					}
+				}
+			}
+
+			if (linkText.length !== text.length) {
+				// not all of our text is a valid link, modify the range to only include the link text
+				idx = text.indexOf(linkText);
+
+				if (idx > 0) {
+					setStart(endContainer, idx);
+					text = rng.toString();
+				}
+
+				if (linkText.length !== text.length) {
+					setEnd(endContainer, linkText.length + rng.startOffset);
+				}
+			}
+
+			// if there isn't a protocol then assume http
+			if (!hasProtocol.test(linkText)) {
+				linkText = 'http://' + linkText;
 			}
 
 			bookmark = editor.selection.getBookmark();
 
 			editor.selection.setRng(rng);
-			editor.execCommand('createlink', false, matches[1] + matches[2]);
+			editor.execCommand('createlink', false, linkText);
 
 			if (editor.settings.default_link_target) {
 				editor.dom.setAttrib(editor.selection.getNode(), 'target', editor.settings.default_link_target);
