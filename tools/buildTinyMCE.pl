@@ -58,7 +58,7 @@ if( !$opt_c )
    print "Building TinyMCE...\n";
    $buildCommand = 'grunt minify';
    system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
-   $buildCommand = 'grunt bundle --themes modern --plugins autoresize,fullpage,lists,paste,seapine,sproutcore,table';
+   $buildCommand = 'grunt bundle --themes modern --plugins autoresize,autolink,fullpage,lists,paste,seapine,sproutcore,table';
    system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
    print "done\n";
 }
