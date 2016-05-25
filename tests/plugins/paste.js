@@ -188,7 +188,7 @@ test("Paste Office 365", function() {
 	equal(editor.getContent(), '<p>Test</p>');
 });
 
-test("Paste Google Docs", function() {
+test("Paste Google Docs 1", function() {
 	var rng = editor.dom.createRng();
 
 	editor.setContent('<p>1234</p>');
@@ -198,6 +198,28 @@ test("Paste Google Docs", function() {
 
 	editor.execCommand('mceInsertClipboardContent', false, {content: '<span id="docs-internal-guid-94e46f1a-1c88-b42b-d502-1d19da30dde7"></span><p dir="ltr>Test</p>'});
 	equal(editor.getContent(), '<p>Test</p>');
+});
+
+test("Paste Google Docs 2", function() {
+	var rng = editor.dom.createRng();
+
+	editor.setContent('<p>1234</p>');
+	rng.setStart(editor.getBody().firstChild.firstChild, 0);
+	rng.setEnd(editor.getBody().firstChild.firstChild, 4);
+	editor.selection.setRng(rng);
+
+	editor.execCommand('mceInsertClipboardContent', false, {
+		content: (
+			'<meta charset="utf-8">' +
+			'<b style="font-weight:normal;" id="docs-internal-guid-adeb6845-fec6-72e6-6831-5e3ce002727c">' +
+			'<p dir="ltr">a</p>' +
+			'<p dir="ltr">b</p>' +
+			'<p dir="ltr">c</p>' +
+			'</b>' +
+			'<br class="Apple-interchange-newline">'
+		)
+	});
+	equal(editor.getContent(), '<p>a</p><p>b</p><p>c</p>');
 });
 
 test("Paste Word without mso markings", function() {
@@ -328,7 +350,7 @@ test('paste nested (UL) word list', function() {
 
 	equal(
 		editor.getContent(),
-		'<ul>'+
+		'<ul>' +
 			'<li>a' +
 				'<ul>' +
 					'<li>b' +
@@ -368,7 +390,7 @@ test('paste nested (OL) word list', function() {
 
 	equal(
 		editor.getContent(),
-		'<ol>'+
+		'<ol>' +
 			'<li>a' +
 				'<ol>' +
 					'<li>b' +
@@ -396,7 +418,7 @@ test("Paste list start index", function() {
 		)
 	});
 	equal(editor.getContent(), '<ol start="10"><li>J</li></ol>');
-})
+});
 
 test("Paste paste_merge_formats: true", function() {
 	editor.settings.paste_merge_formats = true;
@@ -512,10 +534,10 @@ test('paste plain text with paragraphs', function() {
 test('paste data image with paste_data_images: false', function() {
 	editor.setContent('');
 
-	editor.execCommand('mceInsertClipboardContent', false, {content: '<img src="data:image/png;base64,...">'});
+	editor.execCommand('mceInsertClipboardContent', false, {content: '<img src="data:image/gif;base64,R0lGODlhAQABAPAAAP8REf///yH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==">'});
 	equal(editor.getContent(), '');
 
-	editor.execCommand('mceInsertClipboardContent', false, {content: '<img alt="alt" src="data:image/png;base64,...">'});
+	editor.execCommand('mceInsertClipboardContent', false, {content: '<img alt="alt" src="data:image/gif;base64,R0lGODlhAQABAPAAAP8REf///yH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==">'});
 	equal(editor.getContent(), '');
 });
 
@@ -523,9 +545,9 @@ test('paste data image with paste_data_images: true', function() {
 	editor.settings.paste_data_images = true;
 
 	editor.setContent('');
-	editor.execCommand('mceInsertClipboardContent', false, {content: '<img src="data:image/png;base64,...">'});
+	editor.execCommand('mceInsertClipboardContent', false, {content: '<img src="data:image/gif;base64,R0lGODlhAQABAPAAAP8REf///yH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==">'});
 
-	equal(editor.getContent(), '<p><img src="data:image/png;base64,..." alt="" /></p>');
+	equal(editor.getContent(), '<p><img src="data:image/gif;base64,R0lGODlhAQABAPAAAP8REf///yH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==" /></p>');
 });
 
 test('paste pre process text (event)', function() {
