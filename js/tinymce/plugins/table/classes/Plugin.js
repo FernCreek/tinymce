@@ -563,8 +563,8 @@ define("tinymce/tableplugin/Plugin", [
 			);
 		}
 
-		addButtons();
-		addToolbars();
+		//addButtons();
+		//addToolbars();
 
 		// Enable tab key cell navigation
 		if (editor.settings.table_tab_navigation !== false) {

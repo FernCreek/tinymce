@@ -68,8 +68,8 @@ if( !$opt_c )
 ############################
 ### tiny_mce_combined.js ###
 ############################
-print 'Copying tinymce.jquery.full.js to tiny_mce_combined.js...';
-$filename = 'js/tinymce/tinymce.jquery.full.js';
+print 'Copying tinymce.full.js to tiny_mce_combined.js...';
+$filename = 'js/tinymce/tinymce.full.js';
 $destination = '../../cgi/TTWeb/TTWeb/frameworks/tinymce-sproutcore/lib/tiny_mce_combined.js';
 unless (-e $filename) {
    print "\n***Build failed: Cannot find file $filename\n";
