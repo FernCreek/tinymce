@@ -571,7 +571,7 @@ define("tinymce/pasteplugin/Clipboard", [
 					return;
 				}
 
-				if (!hasHtmlOrText(clipboardContent) && pasteImageData(e, getLastRng())) {
+				if ((editor.settings.paste_prefer_images || !hasHtmlOrText(clipboardContent)) && pasteImageData(e, getLastRng())) {
 					removePasteBin();
 					return;
 				}
@@ -624,7 +624,7 @@ define("tinymce/pasteplugin/Clipboard", [
 
 				dropContent = getDataTransferItems(e.dataTransfer);
 
-				if ((!hasHtmlOrText(dropContent) || isPlainTextFileUrl(dropContent)) && pasteImageData(e, rng)) {
+				if ((editor.settings.paste_prefer_images || !hasHtmlOrText(dropContent) || isPlainTextFileUrl(dropContent)) && pasteImageData(e, rng)) {
 					return;
 				}
 
