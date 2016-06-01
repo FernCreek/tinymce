@@ -26,15 +26,11 @@ getopts('chwnd:');
 # Change to the tinymce directory
 chdir('../');
 
-$buildWeb = false;
-$buildNative = false;
+$buildWeb = $opt_w;
+$buildNative = $opt_n;
 
-if ( $opt_w || !($opt_w || $opt_n) ) {
-   $buildWeb = true;
-}
-
-if ( $opt_n ) {
-   $buildNative = true;
+if (!$opt_w && !$opt_n) {
+   $buildWeb = 1;
 }
 
 $baseDir = $opt_d;
