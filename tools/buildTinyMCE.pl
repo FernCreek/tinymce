@@ -31,6 +31,7 @@ $buildNative = $opt_n;
 
 if (!$opt_w && !$opt_n) {
    $buildWeb = 1;
+   $buildNative = 1;
 }
 
 $baseDir = $opt_d;
@@ -76,26 +77,43 @@ if( !$opt_c ) {
    print "Building TinyMCE...\n";
    $buildCommand = 'grunt minify';
    system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
-   $buildCommand = 'grunt bundle --themes modern --plugins advlist,autolink,autoresize,lists,link,image,imagetools,charmap,print,preview,anchor,searchreplace,visualblocks,code,fullpage,fullscreen,colorpicker,textcolor,insertdatetime,media,table,contextmenu,paste,seapine,sproutcore';
+   if ( $buildWeb ) {
+      print "Building TinyMCE for web...\n";
+      $buildCommand = 'grunt bundle --themes modern --plugins advlist,autolink,autoresize,hr,lists,link,image,imagetools,charmap,print,preview,anchor,searchreplace,visualblocks,code,fullpage,fullscreen,colorpicker,textcolor,insertdatetime,media,table,contextmenu,paste,seapine,seapinetable,sproutcore';
+      system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
+      copyBuiltFilesWeb();
+      print "done\n";
+   }
+   if ( $buildNative ) {
+      print "Building TinyMCE for native...\n";
+      $buildCommand = 'grunt bundle --themes modern --plugins advlist,autolink,autoresize,hr,lists,link,image,imagetools,charmap,print,preview,anchor,searchreplace,visualblocks,code,fullpage,fullscreen,colorpicker,textcolor,insertdatetime,media,table,contextmenu,paste,seapine,seapinetable,qtinterface';
+      system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
+      copyBuiltFilesNative();
+      print "done\n";
+   }
    #$buildCommand = 'grunt bundle --themes modern --plugins autoresize,autolink,fullpage,lists,paste,seapine,sproutcore,table';
-   system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
-   print "done\n";
-}
-# Copy files to ttweb directory
 
-############################
-### tiny_mce_combined.js ###
-############################
-print "Copying tinymce.full.js...\n";
-$tinymcePath = 'js/tinymce/tinymce.full.js';
-$scPath = "$baseDir/cgi/TTWeb/TTWeb/frameworks/tinymce-sproutcore/lib/tiny_mce_combined.js";
-
-unless (-e $tinymcePath) {
-   print "\n***Build failed: Cannot find file $tinymcePath\n";
-   exit 1;
+   print "Operation successful. Happy WYSIWYGing!\n\n";
+} else {
+   copyBuiltFilesWeb();
+   copyBuiltFilesNative();
 }
 
-if( $buildWeb ){
+sub copyBuiltFilesWeb {
+   # Copy files to ttweb directory
+
+   ############################
+   ### tiny_mce_combined.js ###
+   ############################
+   print "Copying tinymce.full.js...\n";
+   my $tinymcePath = 'js/tinymce/tinymce.full.js';
+   my $scPath = "$baseDir/cgi/TTWeb/TTWeb/frameworks/tinymce-sproutcore/lib/tiny_mce_combined.js";
+
+   unless (-e $tinymcePath) {
+      print "\n***Build failed: Cannot find file $tinymcePath\n";
+      exit 1;
+   }
+
    # Delete old file first
    if ( -e $scPath ) {
       unlink($scPath) or die "\n***Build failed: Cannot delete $scPath: $!"
@@ -103,68 +121,56 @@ if( $buildWeb ){
 
    print "Copy $tinymcePath to $scPath\n";
    copy($tinymcePath, $scPath) or die "\n***Copy failed: $!\n";
-}
 
-if ( $buildNative ) {
-   print "Insert tinymce copy step for the native client here\n";
-}
+   print "done\n";
 
-print "done\n";
+   ####################
+   ### skin.min.css ###
+   ####################
+   print "Copying skin.min.css...\n";
+   my $skinPath = 'js/tinymce/skins/lightgray/skin.min.css';
+   my $scPath = "$baseDir/cgi/TTWeb/TTWeb/frameworks/tinymce-sproutcore/resources/stylesheet/skin.min.css";
+   unless (-e $skinPath) {
+      print "\n***Build failed: Cannot find file $skinPath\n";
+      exit 1;
+   }
 
-####################
-### skin.min.css ###
-####################
-print "Copying skin.min.css...\n";
-$skinPath = 'js/tinymce/skins/lightgray/skin.min.css';
-$scPath = "$baseDir/cgi/TTWeb/TTWeb/frameworks/tinymce-sproutcore/resources/stylesheet/skin.min.css";
-unless (-e $skinPath) {
-   print "\n***Build failed: Cannot find file $skinPath\n";
-   exit 1;
-}
-
-if ( $buildWeb ) {
    # Delete old file first
    if ( -e $scPath ) {
       unlink($scPath) or die "\n***Build failed: Cannot delete $scPath: $!"
    }
 
    copy($skinPath, $scPath) or die "\n***Copy failed: $!\n";
-}
 
-if ( $buildNative ) {
-   print "Insert skin copy step for the native client here\n";
-}
+   print "done\n";
 
-print "done\n";
+   #######################
+   ### content.min.css ###
+   #######################
+   my $cssPath = 'js/tinymce/skins/lightgray/content.min.css';
+   my $scPath = "$baseDir/cgi/TTWeb/TTWeb/frameworks/tinymce-sproutcore/core.js";
+   my $ngPath = "$baseDir/angular/common/tt/WYSIWYGCSS.cnst.js";
+   print "Copying content.min.css...\n";
 
-#######################
-### content.min.css ###
-#######################
-$cssPath = 'js/tinymce/skins/lightgray/content.min.css';
-$scPath = "$baseDir/cgi/TTWeb/TTWeb/frameworks/tinymce-sproutcore/core.js";
-$ngPath = "$baseDir/angular/common/tt/WYSIWYGCSS.cnst.js";
-print "Copying content.min.css...\n";
+   unless (-e $cssPath) {
+      print "\n***Build failed: Cannot find file $cssPath\n";
+      exit 1;
+   }
 
-unless (-e $cssPath) {
-   print "\n***Build failed: Cannot find file $cssPath\n";
-   exit 1;
-}
+   unless (-e $scPath) {
+      print "\n***Build failed: Cannot find file $scPath\n";
+      exit 1;
+   }
 
-unless (-e $scPath) {
-   print "\n***Build failed: Cannot find file $scPath\n";
-   exit 1;
-}
+   unless (-e $ngPath) {
+      print "\n***Build failed: Cannot find file $ngPath\n";
+      exit 1;
+   }
 
-unless (-e $ngPath) {
-   print "\n***Build failed: Cannot find file $ngPath\n";
-   exit 1;
-}
+   #Get the css data into memory
+   $cssFile = path($cssPath);
+   $cssData = $cssFile->slurp_utf8;
 
-#Get the css data into memory
-$cssFile = path($cssPath);
-$cssData = $cssFile->slurp_utf8;
-
-if ( $buildWeb ) {
    #place css in the SproutCore file
    $scFile = path($scPath);
    $scData = $scFile->slurp_utf8;
@@ -176,12 +182,77 @@ if ( $buildWeb ) {
    $ngData = $ngFile->slurp_utf8;
    $ngData =~ s/WYSIWYGCSS\s*=\s*'[^']*'/WYSIWYGCSS = '$cssData'/g;
    $ngFile->spew_utf8($ngData);
+   
+   return;
 }
 
-if ( $buildNative ) {
-   print "Insert css copy step for the native client here\n";
+sub copyBuiltFilesNative {
+
+   ############################
+   ### tiny_mce_combined.js ###
+   ############################
+   print "Copying tinymce.full.js...\n";
+   my $tinymcePath = 'js/tinymce/tinymce.full.js';
+   my $qtPath = "$baseDir/client/TestTrack/tinymce/tiny_mce_combined.js";
+
+   unless (-e $tinymcePath) {
+      print "\n***Build failed: Cannot find file $tinymcePath\n";
+      exit 1;
+   }
+   # Delete old file first
+   if ( -e $qtPath ) {
+      unlink($qtPath) or die "\n***Build failed: Cannot delete $qtPath: $!"
+   }
+
+   print "Copy $tinymcePath to $qtPath\n";
+   copy($tinymcePath, $qtPath) or die "\n***Copy failed: $!\n"; 
+
+   print "done\n";
+
+   ####################
+   ### skin.min.css ###
+   ####################
+   print "Copying skin.min.css...\n";
+   my $skinPath = 'js/tinymce/skins/lightgray/skin.min.css';
+   my $qtPath = "$baseDir/client/TestTrack/tinymce/skins/lightgray/skin.min.css";
+   unless (-e $skinPath) {
+      print "\n***Build failed: Cannot find file $skinPath\n";
+      exit 1;
+   }
+   # Delete old file first
+   if ( -e $qtPath ) {
+      unlink($qtPath) or die "\n***Build failed: Cannot delete $qtPath: $!"
+   }
+
+   copy($skinPath, $qtPath) or die "\n***Copy failed: $!\n";
+
+   print "done\n";
+
+   #######################
+   ### content.min.css ###
+   #######################
+   my $cssPath = 'js/tinymce/skins/lightgray/content.min.css';
+   my $qtPath = "$baseDir/client/TestTrack/tinymce/tinymceEditorConfig.js";
+   print "Copying content.min.css...\n";
+
+   unless (-e $cssPath) {
+      print "\n***Build failed: Cannot find file $cssPath\n";
+      exit 1;
+   }
+   unless (-e $qtPath) {
+      print "\n***Build failed: Cannot find file $qtPath\n";
+      exit 1;
+   }
+
+   #Get the css data into memory
+   $cssFile = path($cssPath);
+   $cssData = $cssFile->slurp_utf8;
+   #place css in the index file
+   $qtFile = path($qtPath);
+   $qtData = $qtFile->slurp_utf8;
+   $qtData =~ s/content_style:\s*'[^']*'/content_style: '$cssData'/g;
+   $qtFile->spew_utf8($qtData);
+   return;
 }
 
-print "done\n";
 
-print "Operation successful. Happy WYSIWYGing!\n\n";
