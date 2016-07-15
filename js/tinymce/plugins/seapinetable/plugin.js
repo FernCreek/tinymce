@@ -7,7 +7,7 @@
  * License: http://tinymce.moxiecode.com/license
  */
 
-/* global tinymce, TinySC, $ */
+/* global tinymce, $ */
 
 (function () {
 	var defaults, getParam;
@@ -70,7 +70,15 @@
 			this.bottom = bottomBorder;
 		},
 
-		// TODO_KB document
+		/**
+		 * Creates a RowBorders object.
+		 * @param leftBorder {Border} The left border
+		 * @param topBorder {Border} The top border
+		 * @param rightBorder {Border} The right border
+		 * @param bottomBorder {Border} The bottom border
+		 * @param verticalBorder {Border} The the vertical border between the columns
+		 * @constructor
+     */
 		RowBorders: function (leftBorder, topBorder, rightBorder, bottomBorder, verticalBorder) {
 			this.left = leftBorder;
 			this.top = topBorder;
@@ -79,7 +87,16 @@
 			this.vertical = verticalBorder;
 		},
 
-		// TODO_KB document
+		/**
+		 * Creates a TableBorders object.
+		 * @param leftBorder {Border} The left border
+		 * @param topBorder {Border} The top border
+		 * @param rightBorder {Border} The right border
+		 * @param bottomBorder {Border} The bottom border
+		 * @param verticalBorder {Border} The vertical border between the columns
+		 * @param horizontalBorder {Border} The horizontal border between the rows
+		 * @constructor
+     */
 		TableBorders: function (leftBorder, topBorder, rightBorder, bottomBorder, verticalBorder, horizontalBorder) {
 			this.left = leftBorder;
 			this.top = topBorder;
@@ -89,7 +106,14 @@
 			this.horizontal = horizontalBorder;
 		},
 
-		// TODO_KB document
+		/**
+		 * Creates a cell margins object
+		 * @param leftMargin {Number} The left margin
+		 * @param topMargin {Number} The top margin
+		 * @param rightMargin {Number} The right margin
+		 * @param bottomMargin {Number} The bottom margin
+		 * @constructor
+     */
 		CellMargins: function (leftMargin, topMargin, rightMargin, bottomMargin) {
 			this.left = leftMargin;
 			this.top = topMargin;
@@ -97,7 +121,12 @@
 			this.bottom = bottomMargin;
 		},
 
-		// TODO_KB document
+		/**
+		 * Creates an alignment object
+		 * @param horizontalAlignment {String} The horizontal alignment
+		 * @param verticalAlignment {String The vertical alignment
+		 * @constructor
+     */
 		Alignment: function (horizontalAlignment, verticalAlignment) {
 			this.horizontal = horizontalAlignment;
 			this.vertical = verticalAlignment;
@@ -157,7 +186,7 @@
 		applyCellMargins: function (cellMargins, $cells) {
 			var i, paddingStr = '',
 					margins = [parseInt(cellMargins.top, 10), parseInt(cellMargins.right, 10),
-										 parseInt(cellMargins.bottom, 10), parseInt(cellMargins.left, 10)];
+										parseInt(cellMargins.bottom, 10), parseInt(cellMargins.left, 10)];
 
 			for (i = 0; i < margins.length; ++i) {
 				if (isNaN(margins[i])) {
@@ -426,6 +455,215 @@
 		},
 
 		/**
+		 * Creates a BorderStyle object
+		 * @param style {String} The border style 'full', 'grid', 'box', 'none', 'custom'
+		 * @param commonWidth {Number} The common border width if applicable
+		 * @param commonColor {String} The common border color if applicable
+		 * @constructor
+     */
+		BorderStyle: function (style, commonWidth, commonColor) {
+			this.style = style;
+			this.commonWidth = commonWidth;
+			this.commonColor = commonColor;
+		},
+
+		/**
+		 * Gets the border style for a given cell
+		 * @param cellBorders {CellBorders} The borders of the cell to get the style for
+		 * @returns {BorderStyle} The border style of the cell
+     */
+		getBorderStyleForCell: function (cellBorders) {
+			var commonWidth,
+					commonColor,
+					allBorders = [cellBorders.top, cellBorders.left, cellBorders.right, cellBorders.bottom],
+					border,
+					allMatching = true,
+					i, borderStyle;
+
+			border = allBorders[0];
+			commonWidth = border.width;
+			commonColor = border.color;
+
+			for (i = 1; i < allBorders.length && allMatching; ++i) {
+				border = allBorders[i];
+				if (commonWidth !== border.width || commonColor !== border.color) {
+					allMatching = false;
+				}
+			}
+
+			if (allMatching) {
+				if (commonWidth === 0) {
+					borderStyle = new this.BorderStyle('none');
+				} else {
+					borderStyle = new this.BorderStyle('full', commonWidth, commonColor);
+				}
+			} else {
+				borderStyle = new this.BorderStyle('custom');
+			}
+
+			return borderStyle;
+		},
+
+		/**
+		 * Gets the border style for a row
+		 * @param rowBorders {RowBorders} The borders of the row to get the style for
+		 * @returns {BorderStyle} The border style for the row
+     */
+		getBorderStyleForRow: function (rowBorders) {
+			var commonWidth,
+					commonColor,
+					allBorders = [rowBorders.top, rowBorders.left, rowBorders.right, rowBorders.bottom, rowBorders.vertical],
+					outerBorders = [rowBorders.top, rowBorders.left, rowBorders.right, rowBorders.bottom],
+					verticalBorder = rowBorders.vertical,
+					border, borderStyle,
+					allMatching = true,
+					outerMatching = true,
+					i;
+
+			border = allBorders[0];
+			commonWidth = border.width;
+			commonColor = border.color;
+
+			for (i = 1; i < allBorders.length && allMatching; ++i) {
+				border = allBorders[i];
+				if (commonWidth !== border.width || commonColor !== border.color) {
+					allMatching = false;
+				}
+			}
+			// If all of the borders match go ahead and set full or none accordingly
+			if (allMatching) {
+				if (commonWidth === 0) {
+					borderStyle.style = 'none';
+				} else {
+					borderStyle = new this.BorderStyle('full', commonWidth, commonColor);
+				}
+			} else {
+				// See if all of the outer borders are matching and determine if the style is box or grid
+				border = outerBorders[0];
+				commonWidth = border.width;
+				commonColor = border.color;
+				for (i = 1; i < outerBorders.length && outerMatching; ++i) {
+					border = outerBorders[i];
+					if (commonWidth !== border.width || commonColor !== border.color) {
+						outerMatching = false;
+					}
+				}
+
+				// If the outer borders match check the inner vertical border
+				if (outerMatching) {
+					if (verticalBorder.width === 0) {
+						// The vertical border has a width of 0, this is a box style
+						borderStyle = new this.BorderStyle('box', commonWidth, commonColor);
+					} else if (verticalBorder.color === commonColor) {
+						// If the color matches it could potentially be a grid style
+						if (verticalBorder.width === 1) {
+							// The vertical border has a width of 1, this is a grid style
+							borderStyle = new this.BorderStyle('grid', commonWidth);
+						} else {
+							// The vertical border has a custom width, this is a custom style
+							borderStyle = new this.BorderStyle('custom');
+						}
+						// Go ahead and set the color since the color of all of the borders matched
+						borderStyle.commonColor = commonColor;
+					} else {
+						// The outer borders match but the inner border has been customized
+						borderStyle = new this.BorderStyle('custom');
+					}
+				} else {
+					// If the outer borders are not matching this is custom
+					borderStyle = new this.BorderStyle('custom');
+				}
+			}
+
+			return borderStyle;
+		},
+
+		/**
+		 * Gets the border style for the given table
+		 * @param tableBorders {TableBorders} The borders of the table to get the style for
+		 * @returns {BorderStyle} The border style of the table
+     */
+		getBorderStyleForTable: function (tableBorders) {
+			var commonWidth,
+					commonColor,
+					allBorders = [tableBorders.top, tableBorders.left, tableBorders.right, tableBorders.bottom,
+												tableBorders.vertical, tableBorders.horizontal],
+					outerBorders = [tableBorders.top, tableBorders.left, tableBorders.right, tableBorders.bottom],
+					innerBorders = [tableBorders.vertical, tableBorders.horizontal],
+					border, borderStyle,
+					allMatching = true, outerMatching = true,
+					innerMatching = true,
+					innerColor, innerWidth, i;
+
+			border = allBorders[0];
+			commonWidth = border.width;
+			commonColor = border.color;
+
+			for (i = 1; i < allBorders.length && allMatching; ++i) {
+				border = allBorders[i];
+				if (commonWidth !== border.width || commonColor !== border.color) {
+					allMatching = false;
+				}
+			}
+			// If all of the borders match go ahead and set full or none accordingly
+			if (allMatching) {
+				if (commonWidth === 0) {
+					borderStyle = new this.BorderStyle('none');
+				} else {
+					borderStyle = new this.BorderStyle('full', commonWidth, commonColor);
+				}
+			} else {
+				// Check if the outer borders and inner borders are matching amongst themselves
+
+				border = outerBorders[0];
+				commonWidth = border.width;
+				commonColor = border.color;
+				for (i = 1; i < outerBorders.length && outerMatching; ++i) {
+					border = outerBorders[i];
+					if (commonWidth !== border.width || commonColor !== border.color) {
+						outerMatching = false;
+					}
+				}
+
+				border = innerBorders[0];
+				innerWidth = border.width;
+				innerColor = border.color;
+				for (i = 1; i < innerBorders.length && innerMatching; ++i) {
+					border = innerBorders[i];
+					if (innerWidth !== border.width || innerColor !== border.color) {
+						innerMatching = false;
+					}
+				}
+
+				if (outerMatching && innerMatching && commonWidth > 0) {
+					// This could be a box or grid style depending on the inner borders
+					if (innerWidth === 0) {
+						// The outer borders are consistent and the inner borders have a width of 0, this is a box style
+						borderStyle = new this.BorderStyle('box', commonWidth, commonColor);
+					} else if (commonColor === innerColor) {
+						if (innerWidth === 1) {
+							// The outer borders are consistent and the inner borders have a width of 1, this is a grid style
+							borderStyle = new this.BorderStyle('grid', commonWidth);
+						} else {
+							// The inner borders have a custom width, this is custom
+							borderStyle = new this.BorderStyle('custom');
+						}
+						// Go ahead and set the color since the color of all of the borders matched
+						borderStyle.commonColor = commonColor;
+					} else {
+						// The outer borders match but the inner borders have been customized
+						borderStyle = new this.BorderStyle('custom');
+					}
+				} else {
+					// The outer borders or inner borders don't match, this is custom
+					borderStyle = new this.BorderStyle('custom');
+				}
+			}
+
+			return borderStyle;
+		},
+
+		/**
 		 * Gets the CSS string representing a given border.
 		 *
 		 * @param border {String} The border to get the CSS string for
@@ -441,7 +679,14 @@
 			return str;
 		},
 
-		// TODO_KB document
+		/**
+		 * Saves the cell properties to the given cell in tinyMCE
+		 * @param node {HTMLElement} The cell to save the properties to
+		 * @param cellBorders {CellBorders} The borders of the cell
+		 * @param cellMargins {CellMargins} The margins of the cell
+		 * @param alignment {Alignment} The alignment of the cell
+     * @param bgColor {String} The background color of the cell
+     */
 		saveCellProperties: function (node, cellBorders, cellMargins, alignment, bgColor) {
 
 			var ed = tinymce.activeEditor,
@@ -486,7 +731,14 @@
 			ed.execCommand('mceAddUndoLevel');
 		},
 
-		// TODO_KB document
+		/**
+		 * Saves the row properties to the given row in tinyMCE
+		 * @param node {HTMLElement} The row to save the properties to
+		 * @param rowBorders {RowBorders} The borders of the row
+		 * @param cellMargins {CellMargins} The cell margins to use in the cells of the row
+		 * @param alignment {Alignment} The alignment of the row
+     * @param bgColor {String} The background color of the row
+     */
 		saveRowProperties: function (node, rowBorders, cellMargins, alignment, bgColor) {
 			var ed = tinymce.activeEditor,
 					$q, $row, $cells,
@@ -544,9 +796,22 @@
 			ed.execCommand('mceAddUndoLevel');
 		},
 
-		// TODO_KB document
-		insertOrSaveTable: function (node, rows, columns, width, tableBorders,
-																 alignment, cellSpacing, cellMargins, bgColor) {
+		/**
+		 * Inserts or saves the table into tinyMCE
+		 * @param node {HTMLElement} The table to save (undefined if inserting a new table}
+		 * @param rows {Number} The number of rows in the table
+		 * @param columns {Number} The number of columns in the table
+		 * @param width {Number} The widtdh of the table
+		 * @param tableBorders {TableBorders} The borders of the table
+		 * @param alignment {String} The horizontal alignment for the table
+		 * @param cellSpacing {Number} The spacing between the cells of the table, 0 if they are not separated
+		 * @param cellMargins {CellMargins} The margins to use for the cells
+     * @param bgColor {String} The background color of the table
+     */
+		insertOrSaveTable: function (node, rows, columns,
+                                 width, tableBorders, alignment,
+                                 cellSpacing, cellMargins, bgColor) {
+
 			var ed = tinymce.activeEditor,
 					i, $table, $cells,
 					currentRows, x, y, html,
