@@ -329,7 +329,9 @@
 		 */
 		_setupTablePropertiesDialog: function (ed, onsubmit) {
 			var viewClass, controller, selectedNode, tableElement, $tableElement,
-					cellSpacing, alignment, backgroundColor, margins, spTablePlugin;
+					cellSpacing, alignment, backgroundColor, margins, spTablePlugin,
+					topBorder, leftBorder, rightBorder, bottomBorder, verticalBorder, horizontalBorder,
+					tableBorders, borderStyle;
 
 			spTablePlugin = ed.plugins.seapinetable;
 			viewClass = TinySC.TablePropertiesPane;
@@ -350,24 +352,41 @@
 				alignment = tableElement.align || 'left';
 				backgroundColor = tableElement.bgColor || '#ffffff'; // TODO: RGBtoHex?
 
-				controller.set('topBorder', TinySC.Border.create(spTablePlugin.getBorderForTable(ed, $tableElement, 'top')));
-				controller.set('leftBorder', TinySC.Border.create(spTablePlugin.getBorderForTable(ed, $tableElement, 'left')));
-				controller.set('bottomBorder', TinySC.Border.create(spTablePlugin.getBorderForTable(ed, $tableElement, 'bottom')));
-				controller.set('rightBorder', TinySC.Border.create(spTablePlugin.getBorderForTable(ed, $tableElement, 'right')));
-				controller.set('horizontalBorder', TinySC.Border.create(spTablePlugin.getBorderForTable(ed, $tableElement, 'horizontal')));
-				controller.set('verticalBorder', TinySC.Border.create(spTablePlugin.getBorderForTable(ed, $tableElement, 'vertical')));
+				topBorder = spTablePlugin.getBorderForTable(ed, $tableElement, 'top');
+				leftBorder = spTablePlugin.getBorderForTable(ed, $tableElement, 'left');
+				bottomBorder = spTablePlugin.getBorderForTable(ed, $tableElement, 'bottom');
+				rightBorder = spTablePlugin.getBorderForTable(ed, $tableElement, 'right');
+				horizontalBorder = spTablePlugin.getBorderForTable(ed, $tableElement, 'horizontal');
+				verticalBorder = spTablePlugin.getBorderForTable(ed, $tableElement, 'vertical');
+
+				controller.set('topBorder', TinySC.Border.create(topBorder));
+				controller.set('leftBorder', TinySC.Border.create(leftBorder));
+				controller.set('bottomBorder', TinySC.Border.create(bottomBorder));
+				controller.set('rightBorder', TinySC.Border.create(rightBorder));
+				controller.set('horizontalBorder', TinySC.Border.create(horizontalBorder));
+				controller.set('verticalBorder', TinySC.Border.create(verticalBorder));
+
+				tableBorders = new spTablePlugin.TableBorders(leftBorder, topBorder, rightBorder, bottomBorder,
+																											verticalBorder, horizontalBorder);
 
 				margins = spTablePlugin.getMarginsForTable($tableElement);
 
+				// Determine the current border style based on the borders
+				borderStyle = spTablePlugin.getBorderStyleForTable(tableBorders);
 				controller.updateBorderContainerLists();
-				// Determine the current border style based on the borders and set it accordingly
-				controller.determineAndSetStyle();
+
+				if (borderStyle.commonColor) {
+					controller.set('borderColor', borderStyle.commonColor);
+				}
+				if (borderStyle.commonWidth) {
+					controller.set('borderWidth', borderStyle.commonWidth);
+				}
 
 				controller.beginPropertyChanges()
 						.set('insertMode', false)
 						.set('node', tableElement)
-						.set('rows', TinySC.Utils.countTableRows($tableElement))
-						.set('columns', TinySC.Utils.countTableColumns($tableElement))
+						.set('rows', spTablePlugin.countTableRows($tableElement))
+						.set('columns', spTablePlugin.countTableColumns($tableElement))
 						.set('width', tableElement.offsetWidth)
 						.set('cellSpacing', cellSpacing)
 						.set('topCellMargin', margins[0])
@@ -377,6 +396,7 @@
 						.set('alignment', alignment)
 						.set('backgroundColor', backgroundColor)
 						.set('onsubmit', onsubmit)
+						.set('borderStyle', borderStyle.style)
 						.endPropertyChanges();
 			} else {
 				controller.set('insertMode', true);
@@ -393,8 +413,11 @@
 		 * @return {TinySC.TableRowCellPropertiesPane} View class to create.
 		 */
 		_setupRowCellPropertiesDialog: function (ed, rowMode) {
-			var viewClass, controller, selectedNode, rowCellElement, horizontalAlignment, verticalAlignment, backgroundColor,
-					$jElement, margins, spTablePlugin;
+			var viewClass, controller, selectedNode, rowCellElement,
+					horizontalAlignment, verticalAlignment, backgroundColor,
+					$jElement, margins, spTablePlugin,
+					topBorder, leftBorder, rightBorder, bottomBorder, verticalBorder,
+					cellBorders, rowBorders, borderStyle;
 
 			spTablePlugin = ed.plugins.seapinetable;
 
@@ -408,25 +431,41 @@
 					viewClass = TinySC.TableRowPropertiesPane;
 					controller = TinySC.rowPropertiesController;
 
-					controller.set('topBorder', TinySC.Border.create(spTablePlugin.getBorderForRow(ed, $jElement, 'top')));
-					controller.set('leftBorder', TinySC.Border.create(spTablePlugin.getBorderForRow(ed, $jElement, 'left')));
-					controller.set('bottomBorder', TinySC.Border.create(spTablePlugin.getBorderForRow(ed, $jElement, 'bottom')));
-					controller.set('rightBorder', TinySC.Border.create(spTablePlugin.getBorderForRow(ed, $jElement, 'right')));
-					controller.set('verticalBorder', TinySC.Border.create(spTablePlugin.getBorderForRow(ed, $jElement, 'vertical')));
+					topBorder = spTablePlugin.getBorderForRow(ed, $jElement, 'top');
+					leftBorder = spTablePlugin.getBorderForRow(ed, $jElement, 'left');
+					rightBorder = spTablePlugin.getBorderForRow(ed, $jElement, 'right');
+					bottomBorder = spTablePlugin.getBorderForRow(ed, $jElement, 'bottom');
+					verticalBorder = spTablePlugin.getBorderForRow(ed, $jElement, 'vertical');
+
+					controller.set('topBorder', TinySC.Border.create(topBorder));
+					controller.set('leftBorder', TinySC.Border.create(leftBorder));
+					controller.set('bottomBorder', TinySC.Border.create(bottomBorder));
+					controller.set('rightBorder', TinySC.Border.create(rightBorder));
+					controller.set('verticalBorder', TinySC.Border.create(verticalBorder));
 
 					margins = spTablePlugin.getMarginsForRow($jElement);
+					// Determine the current border style based on the borders
+					rowBorders = new spTablePlugin.RowBorders(leftBorder, topBorder, rightBorder, bottomBorder, verticalBorder);
+					borderStyle = spTablePlugin.getBorderStyleForRow(rowBorders);
 
 				} else {
 					viewClass = TinySC.TableCellPropertiesPane;
 					controller = TinySC.cellPropertiesController;
 
-					// Get and top border info
-					controller.set('topBorder', TinySC.Border.create(spTablePlugin.getBorderForCell(ed, $jElement, 'top')));
-					controller.set('leftBorder', TinySC.Border.create(spTablePlugin.getBorderForCell(ed, $jElement, 'left')));
-					controller.set('bottomBorder', TinySC.Border.create(spTablePlugin.getBorderForCell(ed, $jElement, 'bottom')));
-					controller.set('rightBorder', TinySC.Border.create(spTablePlugin.getBorderForCell(ed, $jElement, 'right')));
+					topBorder = spTablePlugin.getBorderForCell(ed, $jElement, 'top');
+					leftBorder = spTablePlugin.getBorderForCell(ed, $jElement, 'left');
+					bottomBorder = spTablePlugin.getBorderForCell(ed, $jElement, 'bottom');
+					rightBorder = spTablePlugin.getBorderForCell(ed, $jElement, 'right');
+
+					controller.set('topBorder', TinySC.Border.create(topBorder));
+					controller.set('leftBorder', TinySC.Border.create(leftBorder));
+					controller.set('bottomBorder', TinySC.Border.create(bottomBorder));
+					controller.set('rightBorder', TinySC.Border.create(rightBorder));
 
 					margins = spTablePlugin.getMarginsForCell($jElement);
+					// Determine the current border style based on the borders
+					cellBorders = new spTablePlugin.CellBorders(leftBorder, topBorder, rightBorder, bottomBorder);
+					borderStyle = spTablePlugin.getBorderStyleForCell(cellBorders);
 
 				}
 
@@ -435,8 +474,13 @@
 				backgroundColor = rowCellElement.bgColor || '#ffffff'; // TODO: RGBtoHex?
 
 				controller.updateBorderContainerLists();
-				// Determine the current border style based on the borders and set it accordingly
-				controller.determineAndSetStyle();
+
+				if (borderStyle.commonColor) {
+					controller.set('borderColor', borderStyle.commonColor);
+				}
+				if (borderStyle.commonWidth) {
+					controller.set('borderWidth', borderStyle.commonWidth);
+				}
 
 				controller.beginPropertyChanges()
 					.set('rowMode', rowMode)
@@ -448,9 +492,9 @@
 					.set('rightCellMargin', margins[1])
 					.set('bottomCellMargin', margins[2])
 					.set('leftCellMargin', margins[3])
+					.set('borderStyle', borderStyle.style)
 					.endPropertyChanges();
 			}
-
 
 			return viewClass;
 		},
