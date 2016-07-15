@@ -1,5 +1,4 @@
 /**
- * TODO_KB Document
  *
  * Copyright 2016, Seapine Software Inc
  * Released under LGPL License.
