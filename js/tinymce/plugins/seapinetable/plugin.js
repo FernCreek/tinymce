@@ -38,12 +38,12 @@
     /**
      * Creates a Border object.
      *
-     * @param width {Number} The border width in px.
-     * @param color {String} The border color in hex.
+     * @param {Number} width The border width in px.
+     * @param {String} color The border color in hex.
      * @constructor
      */
     Border: function (width, color) {
-      if (width) {
+      if (width !== null && width !== undefined) {
         this.width = width;
       } else {
         this.width = 1;
@@ -57,10 +57,10 @@
 
     /**
      * Creates a CellBorders object.
-     * @param leftBorder {Border} The left border
-     * @param topBorder {Border} The top border
-     * @param rightBorder {Border} The right border
-     * @param bottomBorder {Border} The bottom border
+     * @param {Border} leftBorder The left border
+     * @param {Border} topBorder The top border
+     * @param {Border} rightBorder The right border
+     * @param {Border} bottomBorder The bottom border
      * @constructor
      */
     CellBorders: function (leftBorder, topBorder, rightBorder, bottomBorder) {
@@ -72,11 +72,11 @@
 
     /**
      * Creates a RowBorders object.
-     * @param leftBorder {Border} The left border
-     * @param topBorder {Border} The top border
-     * @param rightBorder {Border} The right border
-     * @param bottomBorder {Border} The bottom border
-     * @param verticalBorder {Border} The the vertical border between the columns
+     * @param {Border} leftBorder The left border
+     * @param {Border} topBorder The top border
+     * @param {Border} rightBorder The right border
+     * @param {Border} bottomBorder The bottom border
+     * @param {Border} verticalBorder The the vertical border between the columns
      * @constructor
      */
     RowBorders: function (leftBorder, topBorder, rightBorder, bottomBorder, verticalBorder) {
@@ -89,12 +89,12 @@
 
     /**
      * Creates a TableBorders object.
-     * @param leftBorder {Border} The left border
-     * @param topBorder {Border} The top border
-     * @param rightBorder {Border} The right border
-     * @param bottomBorder {Border} The bottom border
-     * @param verticalBorder {Border} The vertical border between the columns
-     * @param horizontalBorder {Border} The horizontal border between the rows
+     * @param {Border} leftBorder The left border
+     * @param {Border} topBorder The top border
+     * @param {Border} rightBorder The right border
+     * @param {Border} bottomBorder The bottom border
+     * @param {Border} verticalBorder The vertical border between the columns
+     * @param {Border} horizontalBorder The horizontal border between the rows
      * @constructor
      */
     TableBorders: function (leftBorder, topBorder, rightBorder, bottomBorder, verticalBorder, horizontalBorder) {
@@ -108,10 +108,10 @@
 
     /**
      * Creates a cell margins object
-     * @param leftMargin {Number} The left margin
-     * @param topMargin {Number} The top margin
-     * @param rightMargin {Number} The right margin
-     * @param bottomMargin {Number} The bottom margin
+     * @param {Number} leftMargin The left margin
+     * @param {Number} topMargin The top margin
+     * @param {Number} rightMargin The right margin
+     * @param {Number} bottomMargin The bottom margin
      * @constructor
      */
     CellMargins: function (leftMargin, topMargin, rightMargin, bottomMargin) {
@@ -119,12 +119,25 @@
       this.top = topMargin;
       this.right = rightMargin;
       this.bottom = bottomMargin;
+
+      this.getCSSString = function (defaultMargin) {
+
+        var i, paddingStr=  '', margins = [this.top, this.right, this.bottom, this.left];
+        for (i = 0; i < margins.length; ++i) {
+          if (isNaN(margins[i])) {
+            margins[i] = '' + defaultMargin;
+          }
+          paddingStr += margins[i] + 'px ';
+        }
+        return paddingStr;
+      };
+
     },
 
     /**
      * Creates an alignment object
-     * @param horizontalAlignment {String} The horizontal alignment
-     * @param verticalAlignment {String The vertical alignment
+     * @param {String} horizontalAlignment The horizontal alignment
+     * @param {String} verticalAlignment The vertical alignment
      * @constructor
      */
     Alignment: function (horizontalAlignment, verticalAlignment) {
@@ -139,7 +152,11 @@
      * @returns {Number} Count of table rows.
      */
     countTableRows: function ($table) {
-      return $table.find('tr').length;
+      var rows = 0;
+      if ($table) {
+        rows = $table.find('tr').length;
+      }
+      return rows;
     },
 
     /**
@@ -151,11 +168,13 @@
      */
     countTableColumns: function ($table) {
       var self = this,
-        numColumns = 0;
+          numColumns = 0;
 
-      $table.find('tr').each(function () {
-        numColumns = Math.max(self.countRowColumns($(this), numColumns));
-      });
+      if ($table) {
+        $table.find('tr').each(function () {
+          numColumns = Math.max(self.countRowColumns($(this), numColumns));
+        });
+      }
 
       return numColumns;
     },
@@ -170,9 +189,11 @@
     countRowColumns: function ($row) {
       var numColumns = 0;
 
-      $row.find('td').each(function () {
-        numColumns += $(this).prop('colSpan');
-      });
+      if ($row) {
+        $row.find('td').each(function () {
+          numColumns += $(this).prop('colSpan');
+        });
+      }
 
       return numColumns;
     },
@@ -180,21 +201,13 @@
     /**
      * Determines and applies the cell margins to the given cells.
      *
-     * @param cellMargins {CellMargins} The cell margins to apply.
-     * @param $cells {jQuery} The cells to apply the margins to.
+     * @param {CellMargins} cellMargins The cell margins to apply.
+     * @param {jQuery} $cells The cells to apply the margins to.
      */
     applyCellMargins: function (cellMargins, $cells) {
-      var i, paddingStr = '',
-          margins = [parseInt(cellMargins.top, 10), parseInt(cellMargins.right, 10),
-                    parseInt(cellMargins.bottom, 10), parseInt(cellMargins.left, 10)];
-
-      for (i = 0; i < margins.length; ++i) {
-        if (isNaN(margins[i])) {
-          margins[i] = '' + this.tableConstants.kDefaultCellMargin;
-        }
-        paddingStr += margins[i] + 'px ';
+      if (cellMargins && $cells) {
+        $cells.css('padding', cellMargins.getCSSString(this.tableConstants.kDefaultCellMargin));
       }
-      $cells.css('padding', paddingStr);
     },
 
     /**
@@ -205,10 +218,14 @@
      */
     getMarginsForCell: function ($cell) {
       var margins = [], defaultMargin = this.tableConstants.kDefaultCellMargin;
-      margins.push(this.getWidthFromPxString($cell.css('padding-top')) || defaultMargin);
-      margins.push(this.getWidthFromPxString($cell.css('padding-right')) || defaultMargin);
-      margins.push(this.getWidthFromPxString($cell.css('padding-bottom')) || defaultMargin);
-      margins.push(this.getWidthFromPxString($cell.css('padding-left')) || defaultMargin);
+      if ($cell) {
+        margins.push(this.getWidthFromPxString($cell.css('padding-top')) || defaultMargin);
+        margins.push(this.getWidthFromPxString($cell.css('padding-right')) || defaultMargin);
+        margins.push(this.getWidthFromPxString($cell.css('padding-bottom')) || defaultMargin);
+        margins.push(this.getWidthFromPxString($cell.css('padding-left')) || defaultMargin);
+      } else {
+        margins = [defaultMargin, defaultMargin, defaultMargin, defaultMargin];
+      }
       return margins;
     },
 
@@ -220,50 +237,56 @@
      * @returns {Array.<Number>} The cell margins for the row in the order of top, right, bottom, left.
      */
     getMarginsForRow: function ($row) {
-      var $cells, rowMargins, cellMargins,
+      var $cells, rowMargins, cellMargins, cellMarginsStr,
           i, sameMargins = true, defaultMargin = this.tableConstants.kDefaultCellMargin;
 
       rowMargins = [defaultMargin, defaultMargin, defaultMargin, defaultMargin];
 
-      $cells = $($row.find('td'));
-      cellMargins = this.getMarginsForCell($($cells[0]));
-      for (i = 1; i < $cells.length && sameMargins; ++i) {
-        if (cellMargins.toString() !== this.getMarginsForCell($($cells[i])).toString()) {
-          sameMargins = false;
+      if ($row) {
+        $cells = $row.find('td');
+        cellMargins = this.getMarginsForCell($($cells[0]));
+        cellMarginsStr = cellMargins.toString();
+        for (i = 1; i < $cells.length && sameMargins; ++i) {
+          if (cellMarginsStr !== this.getMarginsForCell($($cells[i])).toString()) {
+            sameMargins = false;
+          }
         }
-      }
 
-      // If all of the cell margins are the same use those instead of the default margins.
-      if (sameMargins) {
-        rowMargins = cellMargins;
+        // If all of the cell margins are the same use those instead of the default margins.
+        if (sameMargins) {
+          rowMargins = cellMargins;
+        }
       }
       return rowMargins;
     },
 
     /**
-     * Gets the margins for the cells of a table. If the cells margins in teh table do not match the default
+     * Gets the margins for the cells of a table. If the cells margins in the table do not match the default
      * cell margins will be returned.
      *
-     * @param $table {jQuery} The table to get the cell margins for.
+     * @param {jQuery} $table The table to get the cell margins for.
      * @returns {Array.<Number>} The cell margins for the table in the order of top, right, bottom, left.
      */
     getMarginsForTable: function ($table) {
-      var $rows, tableMargins, rowMargins,
+      var $rows, tableMargins, rowMargins, rowMarginsStr,
           i, sameMargins = true, defaultMargin = this.tableConstants.kDefaultCellMargin;
 
       tableMargins = [defaultMargin, defaultMargin, defaultMargin, defaultMargin];
 
-      $rows = $($table.find('tr'));
-      rowMargins = this.getMarginsForRow($($rows[0]));
-      for (i = 1; i < $rows.length && sameMargins; ++i) {
-        if (rowMargins.toString() !== this.getMarginsForRow($($rows[i])).toString()) {
-          sameMargins = false;
+      if ($table) {
+        $rows = $table.find('tr');
+        rowMargins = this.getMarginsForRow($($rows[0]));
+        rowMarginsStr = rowMargins.toString();
+        for (i = 1; i < $rows.length && sameMargins; ++i) {
+          if (rowMarginsStr !== this.getMarginsForRow($($rows[i])).toString()) {
+            sameMargins = false;
+          }
         }
-      }
 
-      // If all of the row margins are the same use those instead of the default margins.
-      if (sameMargins) {
-        tableMargins = rowMargins;
+        // If all of the row margins are the same use those instead of the default margins.
+        if (sameMargins) {
+          tableMargins = rowMargins;
+        }
       }
       return tableMargins;
     },
@@ -278,18 +301,24 @@
      */
     getBorderForCell: function (ed, $cell, borderStr) {
       var border = new this.Border(),
-          borderStyleStr = 'border-' + borderStr + '-',
-          borderWidthStr = $cell.css(borderStyleStr + 'width');
+          borderStyleStr,
+          borderWidthStr;
 
-      // Check if the border is hidden
-      if ($cell.css(borderStyleStr + 'style') === 'hidden') {
-        border.width = 0;
-      } else {
-        // Grab the width of the border if its not hidden
-        border.width = this.getWidthFromPxString(borderWidthStr);
-        if (border.width > 0) {
-          // If the border has a valid width go ahead and grab the color as well
-          border.color = ed.dom.toHex($cell.css(borderStyleStr + 'color'));
+      if (ed && $cell && borderStr) {
+
+        borderStyleStr = 'border-' + borderStr + '-';
+        borderWidthStr = $cell.css(borderStyleStr + 'width');
+
+        // Check if the border is hidden
+        if ($cell.css(borderStyleStr + 'style') === 'hidden' || $cell.css(borderStyleStr + 'style') === 'none') {
+          border.width = 0;
+        } else {
+          // Grab the width of the border if its not hidden
+          border.width = this.getWidthFromPxString(borderWidthStr);
+          if (border.width > 0) {
+            // If the border has a valid width go ahead and grab the color as well
+            border.color = ed.dom.toHex($cell.css(borderStyleStr + 'color'));
+          }
         }
       }
 
@@ -306,67 +335,74 @@
      */
     getBorderForRow: function (ed, $row, borderStr) {
       var border = new this.Border(),
-          borderStyleStr = 'border-' + borderStr + '-',
-          $cells = $row.find('td'),
+          borderStyleStr, $cells, $cell,
           commonColor, commonWidth,
           bLeft = 'border-left-', bRight = 'border-right-',
           i, matchingBorders = true;
 
-      switch (borderStr) {
-        case 'top':
-        case 'bottom':
-          // Grab the top or bottom border of all of the cells, set it if they are the same, if not use default
-          commonColor = $($cells[0]).css(borderStyleStr + 'color');
-          commonWidth = $($cells[0]).css(borderStyleStr + 'width');
-          for (i = 1; i < $cells.length && matchingBorders; ++i) {
-            if ($($cells[i]).css(borderStyleStr + 'color') !== commonColor ||
-                $($cells[i]).css(borderStyleStr + 'width') !== commonWidth) {
+      if (ed && $row && borderStr) {
+        borderStyleStr = 'border-' + borderStr + '-';
+        $cells = $row.find('td');
 
-              matchingBorders = false;
+        switch (borderStr) {
+          case 'top':
+          case 'bottom':
+            // Grab the top or bottom border of all of the cells, set it if they are the same, if not use default
+            commonColor = $($cells[0]).css(borderStyleStr + 'color');
+            commonWidth = $($cells[0]).css(borderStyleStr + 'width');
+            for (i = 1; i < $cells.length && matchingBorders; ++i) {
+              $cell = $($cells[i]);
+              if ($cell.css(borderStyleStr + 'color') !== commonColor ||
+                  $cell.css(borderStyleStr + 'width') !== commonWidth) {
+
+                matchingBorders = false;
+              }
             }
-          }
-          break;
-        case 'right':
-        case 'left':
-          // Grab the right border of the furthest right or left border of the furthest left
-          if (borderStr === 'right') {
-            $cells = $row.find('td:last-child');
-          } else {
-            $cells = $row.find('td:first-child');
-          }
-
-          commonWidth = $cells.css(borderStyleStr + 'width');
-          commonColor = $cells.css(borderStyleStr + 'color');
-          break;
-        case 'vertical':
-          // Grab the inner borders of all of the cells and set the vertical border if they are the same
-          commonColor = $($cells[0]).css(bRight + 'color');
-          commonWidth = $($cells[0]).css(bRight + 'width');
-
-          // Check the right border of all of the inner cells (except the right most)
-          for (i = 1; i < $cells.length - 1 && matchingBorders; ++i) {
-            if ($($cells[i]).css(bRight + 'color') !== commonColor ||
-                $($cells[i]).css(bRight + 'width') !== commonWidth) {
-              matchingBorders = false;
+            break;
+          case 'right':
+          case 'left':
+            // Grab the right border of the furthest right or left border of the furthest left
+            if (borderStr === 'right') {
+              $cells = $row.find('td:last-child');
+            } else {
+              $cells = $row.find('td:first-child');
             }
-          }
 
-          // Check the left border of all of the inner cells (except the left most)
-          for (i = 1; i < $cells.length && matchingBorders; ++i) {
-            if ($($cells[i]).css(bLeft + 'color') !== commonColor ||
-                $($cells[i]).css(bLeft + 'width') !== commonWidth) {
-              matchingBorders = false;
+            commonWidth = $cells.css(borderStyleStr + 'width');
+            commonColor = $cells.css(borderStyleStr + 'color');
+            break;
+          case 'vertical':
+            // Grab the inner borders of all of the cells and set the vertical border if they are the same
+            commonColor = $($cells[0]).css(bRight + 'color');
+            commonWidth = $($cells[0]).css(bRight + 'width');
+
+            // Check the right border of all of the inner cells (except the right most)
+            for (i = 1; i < $cells.length - 1 && matchingBorders; ++i) {
+              $cell = $($cells[i]);
+              if ($cell.css(bRight + 'color') !== commonColor ||
+                  $cell.css(bRight + 'width') !== commonWidth) {
+                matchingBorders = false;
+              }
             }
-          }
-          break;
-        default:
-          matchingBorders = false;
-          break;
-      }
 
-      if (matchingBorders) {
-        border.color = ed.dom.toHex(commonColor);
-        border.width = this.getWidthFromPxString(commonWidth);
+            // Check the left border of all of the inner cells (except the left most)
+            for (i = 1; i < $cells.length && matchingBorders; ++i) {
+              $cell = $($cells[i]);
+              if ($cell.css(bLeft + 'color') !== commonColor ||
+                  $cell.css(bLeft + 'width') !== commonWidth) {
+                matchingBorders = false;
+              }
+            }
+            break;
+          default:
+            matchingBorders = false;
+            break;
+        }
+
+        if (matchingBorders) {
+          border.color = ed.dom.toHex(commonColor);
+          border.width = this.getWidthFromPxString(commonWidth);
+        }
       }
 
       return border;
@@ -384,84 +420,88 @@
       var border = new this.Border(),
           rowBorder,
           commonColor, commonWidth,
-          $rows = $table.find('tr'), i,
+          $rows, i,
           matchingBorders = true;
 
-      switch (borderStr) {
-        case 'left':
-        case 'right':
-          rowBorder = this.getBorderForRow(ed, $($rows[0]), borderStr);
-          commonColor = rowBorder.color;
-          commonWidth = rowBorder.width;
-          for (i = 1; i < $rows.length -1 && matchingBorders; ++i) {
-            rowBorder = this.getBorderForRow(ed, $($rows[i]), borderStr);
-            if (commonColor !== rowBorder.color || commonWidth !== rowBorder.width) {
-              matchingBorders = false;
-            }
-          }
-          break;
-        case 'top':
-          rowBorder = this.getBorderForRow(ed, $($rows[0]), borderStr);
-          commonColor = rowBorder.color;
-          commonWidth = rowBorder.width;
-          break;
-        case 'bottom':
-          rowBorder  = this.getBorderForRow(ed, $($rows[$rows.length - 1]), borderStr);
-          commonColor = rowBorder.color;
-          commonWidth = rowBorder.width;
-          break;
-        case 'horizontal':
-          // Check the bottom border of all of the rows (except the most bottom)
-          rowBorder = this.getBorderForRow(ed, $($rows[0]), 'bottom');
-          commonColor = rowBorder.color;
-          commonWidth = rowBorder.width;
-          for (i = 1; i < $rows.length -1 && matchingBorders; ++i) {
-            rowBorder = this.getBorderForRow(ed, $($rows[i]), 'bottom');
-            if (commonColor !== rowBorder.color || commonWidth !== rowBorder.width) {
-              matchingBorders = false;
-            }
-          }
-          // Check the top border of all of the rows (except the most top)
-          for (i = 1; i < $rows.length && matchingBorders; ++i) {
-            rowBorder = this.getBorderForRow(ed, $($rows[i]), 'top');
-            if (commonColor !== rowBorder.color || commonWidth !== rowBorder.width) {
-              matchingBorders = false;
-            }
-          }
-          break;
-        case 'vertical':
-          rowBorder = this.getBorderForRow(ed, $($rows[0]), 'vertical');
-          commonColor = rowBorder.color;
-          commonWidth = rowBorder.width;
-          // Check that the vertical border of all of the rows match
-          for (i = 1; i < $rows.length - 1 && matchingBorders; ++i) {
-            rowBorder = this.getBorderForRow(ed, $($rows[i]), 'vertical');
-            if (commonColor !== rowBorder.color || commonWidth !== rowBorder.width) {
-              matchingBorders = false;
-            }
-          }
-          break;
-        default:
-          matchingBorders = false;
-          break;
-      }
+      if (ed && $table && borderStr) {
+        $rows = $table.find('tr')
 
-      if (matchingBorders) {
-        border.color = commonColor;
-        border.width = commonWidth;
+        switch (borderStr) {
+          case 'left':
+          case 'right':
+            rowBorder = this.getBorderForRow(ed, $($rows[0]), borderStr);
+            commonColor = rowBorder.color;
+            commonWidth = rowBorder.width;
+            for (i = 1; i < $rows.length - 1 && matchingBorders; ++i) {
+              rowBorder = this.getBorderForRow(ed, $($rows[i]), borderStr);
+              if (commonColor !== rowBorder.color || commonWidth !== rowBorder.width) {
+                matchingBorders = false;
+              }
+            }
+            break;
+          case 'top':
+            rowBorder = this.getBorderForRow(ed, $($rows[0]), borderStr);
+            commonColor = rowBorder.color;
+            commonWidth = rowBorder.width;
+            break;
+          case 'bottom':
+            rowBorder = this.getBorderForRow(ed, $($rows[$rows.length - 1]), borderStr);
+            commonColor = rowBorder.color;
+            commonWidth = rowBorder.width;
+            break;
+          case 'horizontal':
+            // Check the bottom border of all of the rows (except the most bottom)
+            rowBorder = this.getBorderForRow(ed, $($rows[0]), 'bottom');
+            commonColor = rowBorder.color;
+            commonWidth = rowBorder.width;
+            for (i = 1; i < $rows.length - 1 && matchingBorders; ++i) {
+              rowBorder = this.getBorderForRow(ed, $($rows[i]), 'bottom');
+              if (commonColor !== rowBorder.color || commonWidth !== rowBorder.width) {
+                matchingBorders = false;
+              }
+            }
+            // Check the top border of all of the rows (except the most top)
+            for (i = 1; i < $rows.length && matchingBorders; ++i) {
+              rowBorder = this.getBorderForRow(ed, $($rows[i]), 'top');
+              if (commonColor !== rowBorder.color || commonWidth !== rowBorder.width) {
+                matchingBorders = false;
+              }
+            }
+            break;
+          case 'vertical':
+            rowBorder = this.getBorderForRow(ed, $($rows[0]), 'vertical');
+            commonColor = rowBorder.color;
+            commonWidth = rowBorder.width;
+            // Check that the vertical border of all of the rows match
+            for (i = 1; i < $rows.length && matchingBorders; ++i) {
+              rowBorder = this.getBorderForRow(ed, $($rows[i]), 'vertical');
+              if (commonColor !== rowBorder.color || commonWidth !== rowBorder.width) {
+                matchingBorders = false;
+              }
+            }
+            break;
+          default:
+            matchingBorders = false;
+            break;
+        }
+
+        if (matchingBorders) {
+          border.color = commonColor;
+          border.width = commonWidth;
+        }
       }
 
       return border;
     },
 
     /**
-     * Creates a BorderStyle object
+     * Creates a SharedBorderStyle object
      * @param style {String} The border style 'full', 'grid', 'box', 'none', 'custom'
      * @param commonWidth {Number} The common border width if applicable
      * @param commonColor {String} The common border color if applicable
      * @constructor
      */
-    BorderStyle: function (style, commonWidth, commonColor) {
+    SharedBorderStyle: function (style, commonWidth, commonColor) {
       this.style = style;
       this.commonWidth = commonWidth;
       this.commonColor = commonColor;
@@ -493,12 +533,12 @@
 
       if (allMatching) {
         if (commonWidth === 0) {
-          borderStyle = new this.BorderStyle('none');
+          borderStyle = new this.SharedBorderStyle('none');
         } else {
-          borderStyle = new this.BorderStyle('full', commonWidth, commonColor);
+          borderStyle = new this.SharedBorderStyle('full', commonWidth, commonColor);
         }
       } else {
-        borderStyle = new this.BorderStyle('custom');
+        borderStyle = new this.SharedBorderStyle('custom');
       }
 
       return borderStyle;
@@ -535,7 +575,7 @@
         if (commonWidth === 0) {
           borderStyle.style = 'none';
         } else {
-          borderStyle = new this.BorderStyle('full', commonWidth, commonColor);
+          borderStyle = new this.SharedBorderStyle('full', commonWidth, commonColor);
         }
       } else {
         // See if all of the outer borders are matching and determine if the style is box or grid
@@ -553,25 +593,25 @@
         if (outerMatching) {
           if (verticalBorder.width === 0) {
             // The vertical border has a width of 0, this is a box style
-            borderStyle = new this.BorderStyle('box', commonWidth, commonColor);
+            borderStyle = new this.SharedBorderStyle('box', commonWidth, commonColor);
           } else if (verticalBorder.color === commonColor) {
             // If the color matches it could potentially be a grid style
             if (verticalBorder.width === 1) {
               // The vertical border has a width of 1, this is a grid style
-              borderStyle = new this.BorderStyle('grid', commonWidth);
+              borderStyle = new this.SharedBorderStyle('grid', commonWidth);
             } else {
               // The vertical border has a custom width, this is a custom style
-              borderStyle = new this.BorderStyle('custom');
+              borderStyle = new this.SharedBorderStyle('custom');
             }
             // Go ahead and set the color since the color of all of the borders matched
             borderStyle.commonColor = commonColor;
           } else {
             // The outer borders match but the inner border has been customized
-            borderStyle = new this.BorderStyle('custom');
+            borderStyle = new this.SharedBorderStyle('custom');
           }
         } else {
           // If the outer borders are not matching this is custom
-          borderStyle = new this.BorderStyle('custom');
+          borderStyle = new this.SharedBorderStyle('custom');
         }
       }
 
@@ -608,9 +648,9 @@
       // If all of the borders match go ahead and set full or none accordingly
       if (allMatching) {
         if (commonWidth === 0) {
-          borderStyle = new this.BorderStyle('none');
+          borderStyle = new this.SharedBorderStyle('none');
         } else {
-          borderStyle = new this.BorderStyle('full', commonWidth, commonColor);
+          borderStyle = new this.SharedBorderStyle('full', commonWidth, commonColor);
         }
       } else {
         // Check if the outer borders and inner borders are matching amongst themselves
@@ -639,24 +679,24 @@
           // This could be a box or grid style depending on the inner borders
           if (innerWidth === 0) {
             // The outer borders are consistent and the inner borders have a width of 0, this is a box style
-            borderStyle = new this.BorderStyle('box', commonWidth, commonColor);
+            borderStyle = new this.SharedBorderStyle('box', commonWidth, commonColor);
           } else if (commonColor === innerColor) {
             if (innerWidth === 1) {
               // The outer borders are consistent and the inner borders have a width of 1, this is a grid style
-              borderStyle = new this.BorderStyle('grid', commonWidth);
+              borderStyle = new this.SharedBorderStyle('grid', commonWidth);
             } else {
               // The inner borders have a custom width, this is custom
-              borderStyle = new this.BorderStyle('custom');
+              borderStyle = new this.SharedBorderStyle('custom');
             }
             // Go ahead and set the color since the color of all of the borders matched
             borderStyle.commonColor = commonColor;
           } else {
             // The outer borders match but the inner borders have been customized
-            borderStyle = new this.BorderStyle('custom');
+            borderStyle = new this.SharedBorderStyle('custom');
           }
         } else {
           // The outer borders or inner borders don't match, this is custom
-          borderStyle = new this.BorderStyle('custom');
+          borderStyle = new this.SharedBorderStyle('custom');
         }
       }
 
@@ -670,9 +710,9 @@
      * @returns {String} The CSS string for the border.
      */
     getCSSStringForBorder: function (border) {
-      var str = '0px';
+      var str = 'none';
 
-      if (border) {
+      if (border && border.width > 0) {
         str = border.width + 'px ' + border.color + ' solid';
       }
 
@@ -690,45 +730,50 @@
     saveCellProperties: function (node, cellBorders, cellMargins, alignment, bgColor) {
 
       var ed = tinymce.activeEditor,
-          $q, separatedBorders = false;
+          $cell, separatedBorders = false;
 
-      $q = $(node);
+      if (node) {
+        $cell = $(node);
 
-      if ($q.css('border-collapse') === 'separate') {
-        separatedBorders = true;
+        if ($cell.css('border-collapse') === 'separate') {
+          separatedBorders = true;
+        }
+
+        // Set the cell margins if override is checked
+        if (cellMargins) {
+          this.applyCellMargins(cellMargins, $cell);
+        }
+
+        // Set the top left right and bottom borders on the cell
+        if (cellBorders) {
+          $cell.css('border-left', this.getCSSStringForBorder(cellBorders.left));
+          $cell.css('border-top', this.getCSSStringForBorder(cellBorders.top));
+          $cell.css('border-right', this.getCSSStringForBorder(cellBorders.right));
+          $cell.css('border-bottom', this.getCSSStringForBorder(cellBorders.bottom));
+
+          if (!separatedBorders) {
+            // Set the right border on the cell to the left to match this cells left border
+            $cell.prev().css('border-right', this.getCSSStringForBorder(cellBorders.left));
+
+            // Set the left border on the cell to the right to match this cells right border
+            $cell.next().css('border-left', this.getCSSStringForBorder(cellBorders.left));
+
+            // Set the bottom border on the cell above to match this cells top border
+            $($cell.parent().prev().children()[$cell.index()]).css('border-bottom', this.getCSSStringForBorder(cellBorders.top));
+
+            // Set the top border on the cell below to match this cells bottom border
+            $($cell.parent().next().children()[$cell.index()]).css('border-top', this.getCSSStringForBorder(cellBorders.bottom));
+          }
+        }
+
+        if (alignment && bgColor) {
+          $cell.attr('align', alignment.horizontal)
+               .attr('vAlign', alignment.vertical)
+               .attr('bgColor', bgColor);
+        }
+
+        ed.execCommand('mceAddUndoLevel');
       }
-
-      // Set the cell margins if override is checked
-      if (cellMargins) {
-        this.applyCellMargins(cellMargins, $q);
-      }
-
-      // Set the top left right and bottom borders on the cell
-      $q.css('border-left', this.getCSSStringForBorder(cellBorders.left));
-      $q.css('border-top', this.getCSSStringForBorder(cellBorders.top));
-      $q.css('border-right', this.getCSSStringForBorder(cellBorders.right));
-      $q.css('border-bottom', this.getCSSStringForBorder(cellBorders.bottom));
-
-      if (!separatedBorders) {
-        // Set the right border on the cell to the left to match this cells left border
-        $q.prev().css('border-right', this.getCSSStringForBorder(cellBorders.left));
-
-        // Set the left border on the cell to the right to match this cells right border
-        $q.next().css('border-left', this.getCSSStringForBorder(cellBorders.left));
-
-        // Set the bottom border on the cell above to match this cells top border
-        $($q.parent().prev().children()[$q.index()]).css('border-bottom', this.getCSSStringForBorder(cellBorders.top));
-
-        // Set the top border on the cell below to match this cells bottom border
-        $($q.parent().next().children()[$q.index()]).css('border-top', this.getCSSStringForBorder(cellBorders.bottom));
-      }
-
-      $q
-        .attr('align', alignment.horizontal)
-        .attr('vAlign', alignment.vertical)
-        .attr('bgColor', bgColor);
-
-      ed.execCommand('mceAddUndoLevel');
     },
 
     /**
@@ -741,59 +786,64 @@
      */
     saveRowProperties: function (node, rowBorders, cellMargins, alignment, bgColor) {
       var ed = tinymce.activeEditor,
-          $q, $row, $cells,
+          $rowAndCells, $row, $cells, $edgeCell,
           separatedBorders = false;
 
-      $q = $(node).children('td').andSelf();
-      $row = $(node);
+      if (node) {
+        $rowAndCells = $(node).children('td').andSelf();
+        $row = $(node);
 
-      if ($row.css('border-collapse') === 'separate') {
-        separatedBorders = true;
-      }
+        if ($row.css('border-collapse') === 'separate') {
+          separatedBorders = true;
+        }
 
-      // Set the inner border on the cells
-      $cells = $row.find('td');
+        // Set the inner border on the cells
+        $cells = $row.find('td');
 
-      // Set the cell margins if override is checked
-      if (cellMargins) {
-        this.applyCellMargins(cellMargins, $cells);
-      }
+        // Set the cell margins if override is checked
+        if (cellMargins) {
+          this.applyCellMargins(cellMargins, $cells);
+        }
 
-      $cells.css('border-left', this.getCSSStringForBorder(rowBorders.vertical));
-      $cells.css('border-right', this.getCSSStringForBorder(rowBorders.vertical));
+        if (rowBorders) {
+          $cells.css('border-left', this.getCSSStringForBorder(rowBorders.vertical));
+          $cells.css('border-right', this.getCSSStringForBorder(rowBorders.vertical));
 
-      // Set the top border on the cells in the row
-      $cells.css('border-top', this.getCSSStringForBorder(rowBorders.top));
-      if (!separatedBorders) {
-        // Set the bottom border on the row above, if was bigger it needs to match this
-        $row.prev().find('td').css('border-bottom', this.getCSSStringForBorder(rowBorders.top));
-      }
+          // Set the top border on the cells in the row
+          $cells.css('border-top', this.getCSSStringForBorder(rowBorders.top));
+          if (!separatedBorders) {
+            // Set the bottom border on the row above, if was bigger it needs to match this
+            $row.prev().find('td').css('border-bottom', this.getCSSStringForBorder(rowBorders.top));
+          }
 
-      // Set the bottom border on the cells in the row
-      $cells.css('border-bottom', this.getCSSStringForBorder(rowBorders.bottom));
-      if (!separatedBorders) {
-        // Set the top border on the row below, if it was bigger it needs to match this
-        $row.next().find('td').css('border-top', this.getCSSStringForBorder(rowBorders.bottom));
-      }
+          // Set the bottom border on the cells in the row
+          $cells.css('border-bottom', this.getCSSStringForBorder(rowBorders.bottom));
+          if (!separatedBorders) {
+            // Set the top border on the row below, if it was bigger it needs to match this
+            $row.next().find('td').css('border-top', this.getCSSStringForBorder(rowBorders.bottom));
+          }
 
-      $cells.attr('align', alignment.horizontal)
+          $cells.attr('align', alignment.horizontal)
             .attr('vAlign', alignment.vertical)
             .attr('bgColor', bgColor);
 
-      // Set the left border on the left cell
-      $cells = $row.find('td:first-child');
-      $cells.css('border-left', this.getCSSStringForBorder(rowBorders.left));
+          // Set the left border on the left cell
+          $edgeCell = $row.find('td:first-child');
+          $edgeCell.css('border-left', this.getCSSStringForBorder(rowBorders.left));
 
-      // Set the right border on the right cell
-      $cells = $row.find('td:last-child');
-      $cells.css('border-right', this.getCSSStringForBorder(rowBorders.right));
+          // Set the right border on the right cell
+          $edgeCell = $row.find('td:last-child');
+          $edgeCell.css('border-right', this.getCSSStringForBorder(rowBorders.right));
+        }
 
-      $q
-        .attr('align', alignment.horizontal)
-        .attr('vAlign', alignment.vertical)
-        .attr('bgColor', bgColor);
+        if (alignment && bgColor) {
+          $rowAndCells.attr('align', alignment.horizontal)
+                      .attr('vAlign', alignment.vertical)
+                      .attr('bgColor', bgColor);
+        }
 
-      ed.execCommand('mceAddUndoLevel');
+        ed.execCommand('mceAddUndoLevel');
+      }
     },
 
     /**
@@ -822,7 +872,7 @@
       if (node) {
         $table = $(node);
         insertMode = false;
-      } else {
+      } else if (rows && columns) {
         // Copied from the TinyMCE table plugin.
         html = '<table id="tinysc-table"><tbody>';
 
@@ -890,38 +940,47 @@
           if (cellSpacing === 0) {
             $table.css('border-collapse', 'collapse');
           } else {
-            $table.css('borderSpacing', cellSpacing + 'px');
+            $table.css('border-spacing', cellSpacing + 'px');
             $table.css('border-collapse', 'separate');
           }
         }
-        // Set the cells to have the internal vertical and horizontal borders
+
         $cells = $table.find('td');
-        $cells.css('border-left', this.getCSSStringForBorder(tableBorders.vertical));
-        $cells.css('border-right', this.getCSSStringForBorder(tableBorders.vertical));
-        $cells.css('border-top', this.getCSSStringForBorder(tableBorders.horizontal));
-        $cells.css('border-bottom', this.getCSSStringForBorder(tableBorders.horizontal));
 
-        this.applyCellMargins(cellMargins, $cells);
+        if (cellMargins) {
+          this.applyCellMargins(cellMargins, $cells);
+        }
 
-        // Set the left border on the left cells
-        $cells = $table.find('tr td:first-child');
-        $cells.css('border-left', this.getCSSStringForBorder(tableBorders.left));
+        if (tableBorders) {
+          // Set the cells to have the internal vertical and horizontal borders
 
-        // Set the right border on the right cells
-        $cells = $table.find('tr td:last-child');
-        $cells.css('border-right', this.getCSSStringForBorder(tableBorders.right));
+          $cells.css('border-left', this.getCSSStringForBorder(tableBorders.vertical));
+          $cells.css('border-right', this.getCSSStringForBorder(tableBorders.vertical));
+          $cells.css('border-top', this.getCSSStringForBorder(tableBorders.horizontal));
+          $cells.css('border-bottom', this.getCSSStringForBorder(tableBorders.horizontal));
 
-        // Set the top border on the cells in the first row
-        $cells = $table.find('tr:first-child td');
-        $cells.css('border-top', this.getCSSStringForBorder(tableBorders.top));
+          // Set the left border on the left cells
+          $cells = $table.find('tr td:first-child');
+          $cells.css('border-left', this.getCSSStringForBorder(tableBorders.left));
 
-        // Set the bottom border on the bottom cells
-        $cells = $table.find('tr:last-child td');
-        $cells.css('border-bottom', this.getCSSStringForBorder(tableBorders.bottom));
-        $table
-          .prop('align', alignment)
-          .prop('bgColor', bgColor)
-          .removeAttr('id');
+          // Set the right border on the right cells
+          $cells = $table.find('tr td:last-child');
+          $cells.css('border-right', this.getCSSStringForBorder(tableBorders.right));
+
+          // Set the top border on the cells in the first row
+          $cells = $table.find('tr:first-child td');
+          $cells.css('border-top', this.getCSSStringForBorder(tableBorders.top));
+
+          // Set the bottom border on the bottom cells
+          $cells = $table.find('tr:last-child td');
+          $cells.css('border-bottom', this.getCSSStringForBorder(tableBorders.bottom));
+        }
+
+        if (alignment && bgColor) {
+          $table.prop('align', alignment)
+                .prop('bgColor', bgColor)
+                .removeAttr('id');
+        }
 
         // TODO_KB This functionality may need to change.
         // The visual aid class gets added regardless of the border because of the way the table is created.
@@ -960,11 +1019,15 @@
 
     /**
      * Gets the width from a css border width string.
-     * @param widthPx The width as a string, i.e. '10px'
+     * @param {String} widthPx The width as a string, i.e. '10px'
      * @returns {Number} The width.
      */
     getWidthFromPxString: function (widthPx) {
-      return parseInt(widthPx.substring(0, widthPx.indexOf('px')) || 0, 10);
+      var width = parseInt(widthPx.substring(0, widthPx.indexOf('px')), 10);
+      if (isNaN(width)) {
+        width = 0;
+      }
+      return width;
     },
 
     /**
