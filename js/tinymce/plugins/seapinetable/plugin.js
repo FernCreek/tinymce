@@ -982,7 +982,7 @@
                 .removeAttr('id');
         }
 
-        // TODO_KB This functionality may need to change.
+        // TODO_KB_TINYMCE - Enhancement Consideration: Potentially change drawing for no borders
         // The visual aid class gets added regardless of the border because of the way the table is created.
         // Toggle the class here based on the border.
         // if (border) {
