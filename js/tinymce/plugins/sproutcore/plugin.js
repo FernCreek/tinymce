@@ -396,7 +396,6 @@
             .set('alignment', alignment)
             .set('backgroundColor', backgroundColor)
             .set('onsubmit', onsubmit)
-            .set('borderStyle', borderStyle.style)
             .endPropertyChanges();
       } else {
         controller.set('insertMode', true);
@@ -492,7 +491,6 @@
           .set('rightCellMargin', margins[1])
           .set('bottomCellMargin', margins[2])
           .set('leftCellMargin', margins[3])
-          .set('borderStyle', borderStyle.style)
           .endPropertyChanges();
       }
 
