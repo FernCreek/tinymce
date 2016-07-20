@@ -756,7 +756,7 @@
             $cell.prev().css('border-right', this.getCSSStringForBorder(cellBorders.left));
 
             // Set the left border on the cell to the right to match this cells right border
-            $cell.next().css('border-left', this.getCSSStringForBorder(cellBorders.left));
+            $cell.next().css('border-left', this.getCSSStringForBorder(cellBorders.right));
 
             // Set the bottom border on the cell above to match this cells top border
             $($cell.parent().prev().children()[$cell.index()]).css('border-bottom', this.getCSSStringForBorder(cellBorders.top));

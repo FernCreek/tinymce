@@ -322,6 +322,26 @@
     },
 
     /**
+     * Gets the TinySC border style enum for the border style as a string
+     * @param {String} borderStyleStr The border style string
+     * @returns {TinySC.BorderStyles|Number} The border style
+     * @private
+     */
+    _getEnumForBorderStyleString: function (borderStyleStr) {
+      var borderStyle = TinySC.BorderStyles.none;
+      if (borderStyleStr === 'full') {
+        borderStyle = TinySC.BorderStyles.full;
+      } else if (borderStyleStr === 'box') {
+        borderStyle = TinySC.BorderStyles.box;
+      } else if (borderStyleStr === 'grid') {
+        borderStyle = TinySC.BorderStyles.grid;
+      } else if (borderStyleStr === 'custom') {
+        borderStyle = TinySC.BorderStyles.custom;
+      }
+      return borderStyle;
+    },
+
+    /**
      * Setup the table properties dialog.
      *
      * @param {tinymce.Editor} ed Editor instance.
@@ -395,6 +415,7 @@
             .set('leftCellMargin', margins[3])
             .set('alignment', alignment)
             .set('backgroundColor', backgroundColor)
+            .set('borderStyle', this._getEnumForBorderStyleString(borderStyle.style))
             .set('onsubmit', onsubmit)
             .endPropertyChanges();
       } else {
@@ -491,6 +512,7 @@
           .set('rightCellMargin', margins[1])
           .set('bottomCellMargin', margins[2])
           .set('leftCellMargin', margins[3])
+          .set('borderStyle', this._getEnumForBorderStyleString(borderStyle.style))
           .endPropertyChanges();
       }
 
