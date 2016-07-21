@@ -120,11 +120,16 @@
       this.right = rightMargin;
       this.bottom = bottomMargin;
 
+			/**
+			 * Determines the CSS string for this cells margins
+			 * @param {Number} defaultMargin The default margin to use should one of the margins be invalid
+			 * @returns {string} The CSS string for this cells margins
+       */
       this.getCSSString = function (defaultMargin) {
 
         var i, paddingStr=  '', margins = [this.top, this.right, this.bottom, this.left];
         for (i = 0; i < margins.length; ++i) {
-          if (isNaN(margins[i])) {
+          if (!margins[i] || !Number.isFinite(margins[i])) {
             margins[i] = '' + defaultMargin;
           }
           paddingStr += margins[i] + 'px ';
@@ -213,7 +218,7 @@
     /**
      * Gets the margins for the given cell.
      *
-     * @param $cell {jQuery} The cell to get the margins for.
+     * @param {jQuery} $cell The cell to get the margins for.
      * @returns {Array.<Number>} The margins for the cell in the order of top, right, bottom, left.
      */
     getMarginsForCell: function ($cell) {
@@ -233,7 +238,7 @@
      * Gets the margins for the cells in a particular row. If the cells margins in the row do not match the default
      * cell margins will be returned.
      *
-     * @param $row {jQuery} The row to get the cell margins for.
+     * @param {jQuery} $row The row to get the cell margins for.
      * @returns {Array.<Number>} The cell margins for the row in the order of top, right, bottom, left.
      */
     getMarginsForRow: function ($row) {
@@ -296,21 +301,23 @@
      *
      * @param {tinymce.Editor} ed Editor instance.
      * @param {jQuery} $cell Cell selector.
-     * @param borderStr {String} The border to get the information for. Should be 'top' 'left' 'right' or 'bottom'.
+     * @param {String} borderStr The border to get the information for. Should be 'top' 'left' 'right' or 'bottom'.
      * @returns {TinySC.Border} The filled in border object.
      */
     getBorderForCell: function (ed, $cell, borderStr) {
       var border = new this.Border(),
           borderStyleStr,
-          borderWidthStr;
+          borderWidthStr,
+					borderStyle;
 
       if (ed && $cell && borderStr) {
 
         borderStyleStr = 'border-' + borderStr + '-';
         borderWidthStr = $cell.css(borderStyleStr + 'width');
+				borderStyle = $cell.css(borderStyleStr + 'style');
 
         // Check if the border is hidden
-        if ($cell.css(borderStyleStr + 'style') === 'hidden' || $cell.css(borderStyleStr + 'style') === 'none') {
+        if (borderStyle === 'hidden' || borderStyle === 'none') {
           border.width = 0;
         } else {
           // Grab the width of the border if its not hidden
@@ -330,7 +337,7 @@
      *
      * @param {tinymce.Editor} ed Editor instance.
      * @param {jQuery} $row Row selector.
-     * @param borderStr {String} The border to get the information for.
+     * @param {String} borderStr The border to get the information for.
      * @returns {TinySC.Border} The filled in border object.
      */
     getBorderForRow: function (ed, $row, borderStr) {
@@ -348,8 +355,9 @@
           case 'top':
           case 'bottom':
             // Grab the top or bottom border of all of the cells, set it if they are the same, if not use default
-            commonColor = $($cells[0]).css(borderStyleStr + 'color');
-            commonWidth = $($cells[0]).css(borderStyleStr + 'width');
+						$cell = $($cells[0]);
+            commonColor = $cell.css(borderStyleStr + 'color');
+            commonWidth = $cell.css(borderStyleStr + 'width');
             for (i = 1; i < $cells.length && matchingBorders; ++i) {
               $cell = $($cells[i]);
               if ($cell.css(borderStyleStr + 'color') !== commonColor ||
@@ -373,8 +381,9 @@
             break;
           case 'vertical':
             // Grab the inner borders of all of the cells and set the vertical border if they are the same
-            commonColor = $($cells[0]).css(bRight + 'color');
-            commonWidth = $($cells[0]).css(bRight + 'width');
+						$cell = $($cells[0]);
+            commonColor = $cell.css(bRight + 'color');
+            commonWidth = $cell.css(bRight + 'width');
 
             // Check the right border of all of the inner cells (except the right most)
             for (i = 1; i < $cells.length - 1 && matchingBorders; ++i) {
@@ -413,7 +422,7 @@
      *
      * @param {tinymce.Editor} ed Editor instance.
      * @param $table {jQuery} The table selector.
-     * @param borderStr {String} The border to get the information for.
+     * @param {String} borderStr The border to get the information for.
      * @returns {TinySC.Border} The filled in border object.
      */
     getBorderForTable: function (ed, $table, borderStr) {
@@ -496,9 +505,9 @@
 
     /**
      * Creates a SharedBorderStyle object
-     * @param style {String} The border style 'full', 'grid', 'box', 'none', 'custom'
-     * @param commonWidth {Number} The common border width if applicable
-     * @param commonColor {String} The common border color if applicable
+     * @param {String} style The border style 'full', 'grid', 'box', 'none', 'custom'
+     * @param {Number} commonWidth The common border width if applicable
+     * @param {String} commonColor The common border color if applicable
      * @constructor
      */
     SharedBorderStyle: function (style, commonWidth, commonColor) {
@@ -509,7 +518,7 @@
 
     /**
      * Gets the border style for a given cell
-     * @param cellBorders {CellBorders} The borders of the cell to get the style for
+     * @param {CellBorders} cellBorders The borders of the cell to get the style for
      * @returns {BorderStyle} The border style of the cell
      */
     getBorderStyleForCell: function (cellBorders) {
@@ -546,7 +555,7 @@
 
     /**
      * Gets the border style for a row
-     * @param rowBorders {RowBorders} The borders of the row to get the style for
+     * @param {RowBorders} rowBorders The borders of the row to get the style for
      * @returns {BorderStyle} The border style for the row
      */
     getBorderStyleForRow: function (rowBorders) {
@@ -620,7 +629,7 @@
 
     /**
      * Gets the border style for the given table
-     * @param tableBorders {TableBorders} The borders of the table to get the style for
+     * @param {TableBorders} tableBorders The borders of the table to get the style for
      * @returns {BorderStyle} The border style of the table
      */
     getBorderStyleForTable: function (tableBorders) {
@@ -706,7 +715,7 @@
     /**
      * Gets the CSS string representing a given border.
      *
-     * @param border {String} The border to get the CSS string for
+     * @param {String} border The border to get the CSS string for
      * @returns {String} The CSS string for the border.
      */
     getCSSStringForBorder: function (border) {
@@ -721,11 +730,11 @@
 
     /**
      * Saves the cell properties to the given cell in tinyMCE
-     * @param node {HTMLElement} The cell to save the properties to
-     * @param cellBorders {CellBorders} The borders of the cell
-     * @param cellMargins {CellMargins} The margins of the cell
-     * @param alignment {Alignment} The alignment of the cell
-     * @param bgColor {String} The background color of the cell
+     * @param {HTMLElement} node The cell to save the properties to
+     * @param {CellBorders} cellBorders The borders of the cell
+     * @param {CellMargins} cellMargins The margins of the cell
+     * @param {Alignment} alignment The alignment of the cell
+     * @param {String} bgColor The background color of the cell
      */
     saveCellProperties: function (node, cellBorders, cellMargins, alignment, bgColor) {
 
@@ -778,11 +787,11 @@
 
     /**
      * Saves the row properties to the given row in tinyMCE
-     * @param node {HTMLElement} The row to save the properties to
-     * @param rowBorders {RowBorders} The borders of the row
-     * @param cellMargins {CellMargins} The cell margins to use in the cells of the row
-     * @param alignment {Alignment} The alignment of the row
-     * @param bgColor {String} The background color of the row
+     * @param {HTMLElement} node The row to save the properties to
+     * @param {RowBorders} rowBorders The borders of the row
+     * @param {CellMargins} cellMargins The cell margins to use in the cells of the row
+     * @param {Alignment} alignment The alignment of the row
+     * @param {String} bgColor The background color of the row
      */
     saveRowProperties: function (node, rowBorders, cellMargins, alignment, bgColor) {
       var ed = tinymce.activeEditor,
@@ -848,15 +857,15 @@
 
     /**
      * Inserts or saves the table into tinyMCE
-     * @param node {HTMLElement} The table to save (undefined if inserting a new table}
-     * @param rows {Number} The number of rows in the table
-     * @param columns {Number} The number of columns in the table
-     * @param width {Number} The widtdh of the table
-     * @param tableBorders {TableBorders} The borders of the table
-     * @param alignment {String} The horizontal alignment for the table
-     * @param cellSpacing {Number} The spacing between the cells of the table, 0 if they are not separated
-     * @param cellMargins {CellMargins} The margins to use for the cells
-     * @param bgColor {String} The background color of the table
+     * @param {HTMLElement} node The table to save (undefined if inserting a new table}
+     * @param {Number} rows The number of rows in the table
+     * @param {Number} columns The number of columns in the table
+     * @param {Number} width The widtdh of the table
+     * @param {TableBorders} tableBorders The borders of the table
+     * @param {String} alignment The horizontal alignment for the table
+     * @param {Number} cellSpacing The spacing between the cells of the table, 0 if they are not separated
+     * @param {CellMargins} cellMargins The margins to use for the cells
+     * @param {String} bgColor The background color of the table
      */
     insertOrSaveTable: function (node, rows, columns,
                                  width, tableBorders, alignment,
