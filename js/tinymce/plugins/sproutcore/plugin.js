@@ -364,7 +364,7 @@
         $tableElement = $(tableElement);
 
         if ($tableElement.css('border-collapse') === 'separate') {
-          cellSpacing = isFinite(spTablePlugin.getWidthFromPxString($tableElement.css('borderSpacing')));
+          cellSpacing = spTablePlugin.getWidthFromPxString($tableElement.css('border-spacing'));
         } else {
           cellSpacing = 0;
         }
