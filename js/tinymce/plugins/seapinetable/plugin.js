@@ -120,16 +120,16 @@
       this.right = rightMargin;
       this.bottom = bottomMargin;
 
-			/**
-			 * Determines the CSS string for this cells margins
-			 * @param {Number} defaultMargin The default margin to use should one of the margins be invalid
-			 * @returns {string} The CSS string for this cells margins
+      /**
+       * Determines the CSS string for this cells margins
+       * @param {Number} defaultMargin The default margin to use should one of the margins be invalid
+       * @returns {string} The CSS string for this cells margins
        */
       this.getCSSString = function (defaultMargin) {
 
         var i, paddingStr=  '', margins = [this.top, this.right, this.bottom, this.left];
         for (i = 0; i < margins.length; ++i) {
-          if (!margins[i] || !Number.isFinite(margins[i])) {
+          if (typeof margins[i] !== 'number' || !isFinite(margins[i])) {
             margins[i] = '' + defaultMargin;
           }
           paddingStr += margins[i] + 'px ';
@@ -308,13 +308,13 @@
       var border = new this.Border(),
           borderStyleStr,
           borderWidthStr,
-					borderStyle;
+          borderStyle;
 
       if (ed && $cell && borderStr) {
 
         borderStyleStr = 'border-' + borderStr + '-';
         borderWidthStr = $cell.css(borderStyleStr + 'width');
-				borderStyle = $cell.css(borderStyleStr + 'style');
+        borderStyle = $cell.css(borderStyleStr + 'style');
 
         // Check if the border is hidden
         if (borderStyle === 'hidden' || borderStyle === 'none') {
@@ -355,7 +355,7 @@
           case 'top':
           case 'bottom':
             // Grab the top or bottom border of all of the cells, set it if they are the same, if not use default
-						$cell = $($cells[0]);
+            $cell = $($cells[0]);
             commonColor = $cell.css(borderStyleStr + 'color');
             commonWidth = $cell.css(borderStyleStr + 'width');
             for (i = 1; i < $cells.length && matchingBorders; ++i) {
@@ -381,7 +381,7 @@
             break;
           case 'vertical':
             // Grab the inner borders of all of the cells and set the vertical border if they are the same
-						$cell = $($cells[0]);
+            $cell = $($cells[0]);
             commonColor = $cell.css(bRight + 'color');
             commonWidth = $cell.css(bRight + 'width');
 
