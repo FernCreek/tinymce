@@ -1,5 +1,6 @@
 /**
- * TODO_KB Document
+ * plugin.js
+ * Plugin to interface with the TestTrack native client's Qt interface.
  *
  * Copyright 2016, Seapine Software Inc
  * Released under LGPL License.
@@ -7,7 +8,7 @@
  * License: http://tinymce.moxiecode.com/license
  */
 
-/*global tinymce:true, $, SPTinyMCEInterface */
+/*global tinymce, $, SPTinyMCEInterface */
 
 (function () {
   var defaults, getParam;
@@ -46,6 +47,8 @@
         // TODO_KB extend here as needed
       });
     },
+
+    cachedTableElement: null,
 
     /**
      * Callback for when the node changes
@@ -179,15 +182,21 @@
       }
     },
 
-    insertTable: function (json) {
-      console.log('insertTable');
+    insertOrSaveTable: function (json, insertTable) {
 
-      var spTablePlugin = tinymce.activeEditor.plugins.seapinetable,
+      var ed = tinymce.activeEditor,
+          spTablePlugin = ed.plugins.seapinetable,
           borders = json['borders'],
           topBorder, leftBorder, rightBorder, bottomBorder,
           horizontalBorder, verticalBorder,
-          tableBorders, cellMargins;
+          tableBorders, cellMargins, table;
       if (spTablePlugin) {
+
+        if (insertTable) {
+          table = undefined;
+        } else {
+          table = this.cachedTableElement;
+        }
 
         cellMargins = new spTablePlugin.CellMargins(json['cellMargins']['left'], json['cellMargins']['top'],
                                                     json['cellMargins']['right'], json['cellMargins']['bottom']);
@@ -202,7 +211,7 @@
         tableBorders = new spTablePlugin.TableBorders(leftBorder, topBorder, rightBorder, bottomBorder,
                                                       verticalBorder, horizontalBorder);
 
-        spTablePlugin.insertOrSaveTable(undefined, json['rows'], json['columns'],
+        spTablePlugin.insertOrSaveTable(table, json['rows'], json['columns'],
                                         parseInt(json['width'], 10),
                                         tableBorders, json['alignment'],
                                         parseInt(json['cellSpacing'], 10),
@@ -211,7 +220,6 @@
     },
 
     requestTableProperties: function () {
-      console.log('requestTableProperties');
 
       var ed = tinymce.activeEditor, spTablePlugin = ed.plugins.seapinetable,
           json = {}, jsonBorders, tableBorders,
@@ -221,6 +229,7 @@
 
       selectedNode = ed.selection.getNode();
       tableElement = ed.dom.getParent(selectedNode, 'table');
+      this.cachedTableElement = tableElement;
 
       if (tableElement && spTablePlugin) {
         $tableElement = $(tableElement);
@@ -231,7 +240,7 @@
 
 
         if ($tableElement.css('border-collapse') === 'separate') {
-          cellSpacing = isFinite(parseInt(spTablePlugin.getWidthFromPxString($tableElement.css('borderSpacing')), 10) || 0);
+          cellSpacing = spTablePlugin.getWidthFromPxString($tableElement.css('borderSpacing'));
         } else {
           cellSpacing = 0;
         }
@@ -277,11 +286,114 @@
         if (borderStyle.commonWidth) {
           json['borderWidth'] = borderStyle.commonWidth;
         }
+      }
+    },
 
-        console.log(json);
-        SPTinyMCEInterface.signalResponseTableProperties(json);
+    requestRowProperties: function () {
+
+      var ed = tinymce.activeEditor, spTablePlugin = ed.plugins.seapinetable,
+          json = {}, jsonBorders, rowBorders,
+          selectedNode, rowElement, $rowElement,
+          cellSpacing, alignment, margins, backgroundColor, borderStyle,
+          topBorder, leftBorder, bottomBorder, rightBorder, verticalBorder;
+
+      selectedNode = ed.selection.getNode();
+      rowElement = ed.dom.getParent(selectedNode, 'tr');
+
+      if (rowElement && spTablePlugin) {
+        $rowElement = $(rowElement);
+
+        json['borders'] = {};
+        json['cellMargins'] = {};
+        jsonBorders = json['borders'];
+
+        alignment = rowElement.align || 'left';
+        json['alignment'] = alignment;
+        backgroundColor = rowElement.bgColor || '#ffffff'; // TODO: RGBtoHex?
+        json['bgColor'] = backgroundColor;
+
+        topBorder = spTablePlugin.getBorderForRow(ed, $rowElement, 'top');
+        jsonBorders['top'] = topBorder;
+        leftBorder = spTablePlugin.getBorderForRow(ed, $rowElement, 'left');
+        jsonBorders['left'] = leftBorder;
+        bottomBorder = spTablePlugin.getBorderForRow(ed, $rowElement, 'bottom');
+        jsonBorders['bottom'] = bottomBorder;
+        rightBorder = spTablePlugin.getBorderForRow(ed, $rowElement, 'right');
+        jsonBorders['right'] = rightBorder;
+        verticalBorder = spTablePlugin.getBorderForRow(ed, $rowElement, 'vertical');
+        jsonBorders['vertical'] = verticalBorder;
+
+        rowBorders = new spTablePlugin.RowBorders(leftBorder, topBorder, rightBorder, bottomBorder, verticalBorder);
+
+        margins = spTablePlugin.getMarginsForRow($rowElement);
+        json['cellMargins']['top'] = margins[0];
+        json['cellMargins']['right'] = margins[1];
+        json['cellMargins']['bottom'] = margins[2];
+        json['cellMargins']['left'] = margins[3];
+
+        // Determine the current border style based on the borders
+        borderStyle = spTablePlugin.getBorderStyleForRow(rowBorders);
+        json['borderStyle'] = borderStyle.style;
+        if (borderStyle.commonColor) {
+          json['borderColor'] = borderStyle.commonColor;
+        }
+        if (borderStyle.commonWidth) {
+          json['borderWidth'] = borderStyle.commonWidth;
+        }
       }
 
+    },
+
+    requestCellProperties: function () {
+
+      var ed = tinymce.activeEditor, spTablePlugin = ed.plugins.seapinetable,
+          json = {}, jsonBorders, cellBorders,
+          selectedNode, cellElement, $cellElement,
+          cellSpacing, alignment, margins, backgroundColor, borderStyle,
+          topBorder, leftBorder, bottomBorder, rightBorder;
+
+      selectedNode = ed.selection.getNode();
+      cellElement = ed.dom.getParent(selectedNode, 'td');
+
+      if (cellElement && spTablePlugin) {
+        $cellElement = $(cellElement);
+
+        json['borders'] = {};
+        json['cellMargins'] = {};
+        jsonBorders = json['borders'];
+
+        alignment = cellElement.align || 'left';
+        json['alignment'] = alignment;
+        backgroundColor = cellElement.bgColor || '#ffffff'; // TODO: RGBtoHex?
+        json['bgColor'] = backgroundColor;
+
+        topBorder = spTablePlugin.getBorderForCell(ed, $cellElement, 'top');
+        jsonBorders['top'] = topBorder;
+        leftBorder = spTablePlugin.getBorderForCell(ed, $cellElement, 'left');
+        jsonBorders['left'] = leftBorder;
+        bottomBorder = spTablePlugin.getBorderForCell(ed, $cellElement, 'bottom');
+        jsonBorders['bottom'] = bottomBorder;
+        rightBorder = spTablePlugin.getBorderForCell(ed, $cellElement, 'right');
+        jsonBorders['right'] = rightBorder;
+
+        cellBorders = new spTablePlugin.RowBorders(leftBorder, topBorder, rightBorder, bottomBorder);
+
+        margins = spTablePlugin.getMarginsForCell($cellElement);
+        json['cellMargins']['top'] = margins[0];
+        json['cellMargins']['right'] = margins[1];
+        json['cellMargins']['bottom'] = margins[2];
+        json['cellMargins']['left'] = margins[3];
+
+        // Determine the current border style based on the borders
+        borderStyle = spTablePlugin.getBorderStyleForCell(cellBorders);
+        json['borderStyle'] = borderStyle.style;
+        if (borderStyle.commonColor) {
+          json['borderColor'] = borderStyle.commonColor;
+        }
+        if (borderStyle.commonWidth) {
+          json['borderWidth'] = borderStyle.commonWidth;
+        }
+      }
     },
 
     fireTableCommand: function (cmd) {

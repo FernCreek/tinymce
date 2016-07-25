@@ -30,7 +30,7 @@ $buildWeb = $opt_w;
 $buildNative = $opt_n;
 
 if (!$opt_w && !$opt_n) {
-   $buildWeb = 1;
+   $buildWeb = 0;
    $buildNative = 1;
 }
 
@@ -86,7 +86,7 @@ if( !$opt_c ) {
    }
    if ( $buildNative ) {
       print "Building TinyMCE for native...\n";
-      $buildCommand = 'grunt bundle --themes modern --plugins advlist,autolink,autoresize,hr,lists,link,image,imagetools,charmap,print,preview,anchor,searchreplace,visualblocks,code,fullpage,fullscreen,colorpicker,textcolor,insertdatetime,media,table,contextmenu,paste,seapine,seapinetable,qtinterface';
+      $buildCommand = 'grunt bundle --themes nativemodern --plugins advlist,autolink,autoresize,hr,lists,link,image,imagetools,charmap,print,preview,anchor,searchreplace,visualblocks,code,fullpage,fullscreen,colorpicker,textcolor,insertdatetime,media,table,contextmenu,paste,seapine,seapinetable,qtinterface';
       system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
       copyBuiltFilesNative();
       print "done\n";
@@ -250,6 +250,7 @@ sub copyBuiltFilesNative {
    #place css in the index file
    $qtFile = path($qtPath);
    $qtData = $qtFile->slurp_utf8;
+   $cssData =~ s/body{/body{margin:3px;/g;
    $qtData =~ s/content_style:\s*'[^']*'/content_style: '$cssData'/g;
    $qtFile->spew_utf8($qtData);
    return;
