@@ -1,4 +1,5 @@
 /**
+ * plugin.js
  * Plugin for handling with enhanced table functionality in tinyMCE.
  *
  * Copyright 2016, Seapine Software Inc

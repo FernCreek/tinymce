@@ -286,6 +286,8 @@
         if (borderStyle.commonWidth) {
           json['borderWidth'] = borderStyle.commonWidth;
         }
+
+        SPTinyMCEInterface.signalResponseTableProperties(json);
       }
     },
 
@@ -340,6 +342,8 @@
         if (borderStyle.commonWidth) {
           json['borderWidth'] = borderStyle.commonWidth;
         }
+
+        SPTinyMCEInterface.signalResponseRowProperties(json);
       }
 
     },
@@ -393,6 +397,8 @@
         if (borderStyle.commonWidth) {
           json['borderWidth'] = borderStyle.commonWidth;
         }
+
+        SPTinyMCEInterface.signalResponseCellProperties(json);
       }
     },
 

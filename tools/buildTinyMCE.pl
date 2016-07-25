@@ -193,7 +193,9 @@ sub copyBuiltFilesNative {
    ############################
    print "Copying tinymce.full.js...\n";
    my $tinymcePath = 'js/tinymce/tinymce.full.js';
+   my $tinymceMinPath = 'js/tinymce/tinymce.full.min.js';
    my $qtPath = "$baseDir/client/TestTrack/tinymce/tiny_mce_combined.js";
+   my $bfPath = "$baseDir/BuildFiles/tinymce/tiny_mce_combined_min.js";
 
    unless (-e $tinymcePath) {
       print "\n***Build failed: Cannot find file $tinymcePath\n";
@@ -203,9 +205,19 @@ sub copyBuiltFilesNative {
    if ( -e $qtPath ) {
       unlink($qtPath) or die "\n***Build failed: Cannot delete $qtPath: $!"
    }
-
    print "Copy $tinymcePath to $qtPath\n";
    copy($tinymcePath, $qtPath) or die "\n***Copy failed: $!\n"; 
+   
+   unless (-e $tinymceMinPath) {
+      print "\n***Build failed: Cannot find file $tinymceMinPath\n";
+      exit 1;
+   }
+   # Delete old file first
+   if ( -e $bfPath ) {
+      unlink($bfPath) or die "\n***Build failed: Cannot delete $bfPath: $!"
+   }
+   print "Copy $tinymceMinPath to $bfPath\n";
+   copy($tinymceMinPath, $bfPath) or die "\n***Copy failed: $!\n"; 
 
    print "done\n";
 
@@ -215,6 +227,7 @@ sub copyBuiltFilesNative {
    print "Copying skin.min.css...\n";
    my $skinPath = 'js/tinymce/skins/lightgray/skin.min.css';
    my $qtPath = "$baseDir/client/TestTrack/tinymce/skins/lightgray/skin.min.css";
+   my $bfPath = "$baseDir/BuildFiles/tinymce/skins/lightgray/skin.min.css";
    unless (-e $skinPath) {
       print "\n***Build failed: Cannot find file $skinPath\n";
       exit 1;
@@ -223,8 +236,12 @@ sub copyBuiltFilesNative {
    if ( -e $qtPath ) {
       unlink($qtPath) or die "\n***Build failed: Cannot delete $qtPath: $!"
    }
-
    copy($skinPath, $qtPath) or die "\n***Copy failed: $!\n";
+   
+   if ( -e $bfPath ) {
+      unlink($bfPath) or die "\n***Build failed: Cannot delete $bfPath: $!"
+   }
+   copy($skinPath, $bfPath) or die "\n***Copy failed: $!\n";
 
    print "done\n";
 
@@ -233,6 +250,7 @@ sub copyBuiltFilesNative {
    #######################
    my $cssPath = 'js/tinymce/skins/lightgray/content.min.css';
    my $qtPath = "$baseDir/client/TestTrack/tinymce/tinymceEditorConfig.js";
+   my $bfPath = "$baseDir/BuildFiles/tinymce/tinymceEditorConfig.js";
    print "Copying content.min.css...\n";
 
    unless (-e $cssPath) {
@@ -241,6 +259,10 @@ sub copyBuiltFilesNative {
    }
    unless (-e $qtPath) {
       print "\n***Build failed: Cannot find file $qtPath\n";
+      exit 1;
+   }
+   unless (-e $bfPath) {
+      print "\n***Build failed: Cannot find file $bfPath\n";
       exit 1;
    }
 
@@ -253,6 +275,7 @@ sub copyBuiltFilesNative {
    $cssData =~ s/body{/body{margin:3px;/g;
    $qtData =~ s/content_style:\s*'[^']*'/content_style: '$cssData'/g;
    $qtFile->spew_utf8($qtData);
+   copy($qtPath, $bfPath) or die "\n***Copy failed: $!\n";
    return;
 }
 
