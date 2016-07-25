@@ -2,8 +2,8 @@
  * theme.js
  *
  * Released under LGPL License.
- * Copyright (c) 2016 Seapine Software, Inc.
- * Copyright (c) 1999-2015 Ephox Corp. All rights reserved
+ * Original work Copyright (c) 1999-2015 Ephox Corp. All rights reserved
+ * Modified work Copyright (c) 2016 Seapine Software, Inc.
  *
  * License: http://www.tinymce.com/license
  * Contributing: http://www.tinymce.com/contributing
