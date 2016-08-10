@@ -38,15 +38,27 @@
 
     cachedCellElement: null,
 
+    _cachedFontFamily: null,
+
+    _cachedFontSize: null,
+
+    // TODO_KB Potentially implement bookmarking
     // _bookmark: null,
-    //
     // setBookmark: function (bm) { this._bookmark = bm; },
-    //
     // getBookmark: function () { return this._bookmark; },
 
+    // These defaults are invalid, they are the default used if with tinyMCE we can not find an specified font size
+    // or family we will just allow the one assigned in the CSS to be used
     _defaultFontValue: '',
 
     _defaultFontSize: 0,
+
+    // TODO_KB
+    // These will be changed to properly determine if the font size or family in a spawn is actually
+    // our CSS default so that the family and size menus can be set correctly
+    _qtDefaultFontFamily: '',
+
+    _qtDefaultFontSize: 0,
 
     _supportedFontSizes:  [
       // { name: '', ptvalue: '' },
@@ -184,6 +196,7 @@
           }
         } else {
           SPTinyMCEInterface.signalCursorFontFamily(state);
+          this._cachedFontFamily = state;
         }
 
         // Font size
@@ -221,6 +234,8 @@
             foundIt = true;
           }
         }
+
+        // console.log('Size: ' + state + ' sizeName: ' + sizeName + ' foundIt: ' + foundIt);
         if (!foundIt) {
           if (state === this._defaultFontSize && (sizeName === this._defaultFontSize || sizeName === '')) {
             // If there is a selection where part of it specifies a font size set to not supported
@@ -229,6 +244,7 @@
             } else {
               // The default font size is being used, no other size is specified
               SPTinyMCEInterface.signalCursorDefaultFontSize();
+              this._cachedFontSize = null;
             }
           } else {
             // There was a valid font size, it is just not supported by us
@@ -237,6 +253,7 @@
         } else {
           // A valid font size was found
           SPTinyMCEInterface.signalCursorFontSize(state);
+          this._cachedFontSize = state;
         }
 
         // Font color - new to TTWeb
@@ -260,11 +277,11 @@
         listNode = ed.dom.getParent(element, 'ul,ol');
 
         // Bulleted (Unordered) List
-        state = (!!listNode) && (listNode.nodeName === 'UL');
+        state = !!listNode && listNode.nodeName === 'UL';
         SPTinyMCEInterface.signalCursorInBulletedList(state);
 
         // Numbered (Ordered) List
-        state = (!!listNode) && (listNode.nodeName === 'OL');
+        state = !!listNode && listNode.nodeName === 'OL';
         SPTinyMCEInterface.signalCursorInNumberedList(state);
 
         // Links
@@ -293,11 +310,12 @@
     },
 
     setAlign: function (alignment) {
-      var alignTypes = ['alignleft', 'alignright', 'aligncenter', 'alignfull'];
+      var ed = this.editor,
+          alignTypes = ['alignleft', 'alignright', 'aligncenter', 'alignfull'];
 
       // First turn off all alignment styles
       alignTypes.forEach( function (align) {
-        this.editor.formatter.remove(align);
+        ed.formatter.remove(align);
       });
 
       this.editor.execCommand('justify' + alignment);
@@ -347,8 +365,10 @@
       if (font) {
         this.editor.execCommand('FontName', false, font);
       } else {
-        // Set default font
-        // TODO_KB
+        if (this._cachedFontFamily) {
+          this.editor.execCommand('FontName', false, this._cachedFontFamily);
+        }
+        this._cachedFontFamily = null;
       }
     },
 
@@ -356,8 +376,26 @@
       if (size) {
         this.editor.execCommand('FontSize', false, size + 'pt');
       } else {
-        // Set default font size
-        // TODO_KB
+        if (this._cachedFontSize) {
+          this.editor.execCommand('FontSize', false, this._cachedFontSize + 'pt');
+        }
+        this._cachedFontSize = null;
+      }
+    },
+
+    loadDefaultFont: function (fontJSON) {
+      var family = fontJSON['family'], ptSize = fontJSON['ptSize'],
+          bodyClass = '.tinymce-native', $editorBody;
+      // Save off these defaults for span comparison when text is copy/pasted with default font settings
+      this._qtDefaultFontFamily = family;
+      this._qtDefaultFontSize = ptSize;
+
+      // console.log('family: ' + family + ' ptSize: ' + ptSize);
+
+      $editorBody = $('#content_ifr').contents().find(bodyClass);
+      if ($editorBody && $editorBody.length) {
+        $editorBody.css('font-family', family);
+        $editorBody.css('font-size', ptSize + 'pt');
       }
     },
 
@@ -425,7 +463,7 @@
     },
 
     setRowProperties: function (json) {
-      console.log('setRowProperties: ' + JSON.stringify(json));
+      // console.log('setRowProperties: ' + JSON.stringify(json));
       var ed = this.editor,
           spTablePlugin = ed.plugins.seapinetable,
           borders = json['borders'],
@@ -451,7 +489,7 @@
     },
 
     setCellProperties: function (json) {
-      console.log('setCellProperties: ' + JSON.stringify(json));
+      // console.log('setCellProperties: ' + JSON.stringify(json));
       var ed = this.editor,
           spTablePlugin = ed.plugins.seapinetable,
           borders = json['borders'],
@@ -544,14 +582,14 @@
           json['borderWidth'] = borderStyle.commonWidth;
         }
 
-        console.log('Requested table properties: ' + JSON.stringify(json));
+        // console.log('Requested table properties: ' + JSON.stringify(json));
         SPTinyMCEInterface.signalResponseTableProperties(json);
       }
     },
 
     requestRowProperties: function () {
 
-      console.log('requestRowProperties');
+      // console.log('requestRowProperties');
 
       var ed = this.editor, spTablePlugin = ed.plugins.seapinetable,
           json = {}, jsonBorders, rowBorders,
@@ -603,7 +641,7 @@
           json['borderWidth'] = borderStyle.commonWidth;
         }
 
-        console.log('Requested row properties: ' + JSON.stringify(json));
+        // console.log('Requested row properties: ' + JSON.stringify(json));
         SPTinyMCEInterface.signalResponseTableRowProperties(json);
       }
 
@@ -661,7 +699,7 @@
           json['borderWidth'] = borderStyle.commonWidth;
         }
 
-        console.log('Requested cell properties: ' + JSON.stringify(json));
+        // console.log('Requested cell properties: ' + JSON.stringify(json));
         SPTinyMCEInterface.signalResponseTableCellProperties(json);
       }
     },
@@ -797,6 +835,11 @@
       ed.execCommand('mceInsertContent', false, linkHTML, {skip_focus: true});
       ed.execCommand('mceAddUndoLevel');
     },
+
+
+
+
+
 
     /**
      * Returns information about the plugin as a name/value array.
