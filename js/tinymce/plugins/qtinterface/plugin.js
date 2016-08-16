@@ -836,10 +836,56 @@
       ed.execCommand('mceAddUndoLevel');
     },
 
+    reloadImage: function (imgSrc) {
+      var bodyClass = '.tinymce-native', $images;
 
+      $images = $('#content_ifr').contents().find(bodyClass).find('img');
+      $images.each(function () {
+        var src = $(this).attr('src'), idx;
+        idx = src.indexOf(imgSrc);
+        if (idx !== -1 && src.substr(idx) === imgSrc) {
+          $(this).attr('src', src + '?1');
+        }
+      });
+      this.editor.execCommand('mceRepaint');
+    },
 
+    escapeRegEg: function (str) {
+      return str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, '\\$1');
+    },
 
+    _cachedWidthSetting: -1,
 
+    setFixedWidthEditor: function (width) {
+      var bodyClass = '.tinymce-native', $editorBody;
+      // Only set a fixed width if we are not already set to that fixed width
+      if (this._cachedWidthSetting !== width) {
+        $editorBody = $('#content_ifr').contents().find(bodyClass);
+        $editorBody.css('width', width + 'px');
+        $editorBody.css('overflow', 'hidden');
+        this._cachedWidthSetting = width;
+      }
+    },
+
+    clearFixedWidthEditor: function () {
+      var bodyClass = '.tinymce-native', $editorBody;
+      // Only clear the fixed with if we currently have a fixed width
+      if (this._cachedWidthSetting !== -1) {
+        $editorBody = $('#content_ifr').contents().find(bodyClass);
+        // Remove the width and overflow settings
+        $editorBody.css('width', '');
+        $editorBody.css('overflow', '');
+        this._cachedWidthSetting = -1;
+      }
+    },
+
+    setReadOnly: function (bReadOnly) {
+      if (bReadOnly) {
+        this.editor.setMode('readonly');
+      } else {
+        this.editor.setMode('design');
+      }
+    },
 
     /**
      * Returns information about the plugin as a name/value array.
