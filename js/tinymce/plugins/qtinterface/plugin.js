@@ -30,30 +30,32 @@
    */
   tinymce.create('tinymce.plugins.QtInterfacePlugin', {
 
-    editor: null,
+    _editor: null,
 
-    cachedTableElement: null,
+    _cachedTableElement: null,
 
-    cachedRowElement: null,
+    _cachedRowElement: null,
 
-    cachedCellElement: null,
+    _cachedCellElement: null,
+
+    _cachedSelectedImage: null,
 
     _cachedFontFamily: null,
 
     _cachedFontSize: null,
 
-    // TODO_KB Potentially implement bookmarking
+    // TODO_KB Potentially implement custom bookmarking
     // _bookmark: null,
     // setBookmark: function (bm) { this._bookmark = bm; },
     // getBookmark: function () { return this._bookmark; },
 
-    // These defaults are invalid, they are the default used if with tinyMCE we can not find an specified font size
+    // These defaults are invalid. They are the default used when with tinyMCE we can not find an specified font size
     // or family we will just allow the one assigned in the CSS to be used
     _defaultFontValue: '',
 
     _defaultFontSize: 0,
 
-    // TODO_KB
+    // TODO_KB Improved font family/size handling
     // These will be changed to properly determine if the font size or family in a spawn is actually
     // our CSS default so that the family and size menus can be set correctly
     _qtDefaultFontFamily: '',
@@ -82,7 +84,7 @@
 
     QtInterfacePlugin: function (ed) {
       // Class Constructor
-      this.editor = ed;
+      this._editor = ed;
     },
 
     /**
@@ -129,7 +131,7 @@
      * @param target
      */
     activateLink: function (target) {
-      var ed = this.editor,
+      var ed = this._editor,
           $el = this.findClosestAnchorNode($(target));
 
       if ($el && ed) {
@@ -145,7 +147,7 @@
       var state = false, foundIt = false,
           listNode, parent, fontFamily, sizeName,
           supFontSizes = this._supportedFontSizes,
-          i, ed = this.editor;
+          i, tableCell, ed = this._editor;
 
       if (SPTinyMCEInterface && ed) {
         state = ed.queryCommandState('bold');
@@ -262,6 +264,7 @@
         // Images
         state = element.tagName === 'IMG';
         SPTinyMCEInterface.signalCursorOnImage(state);
+        this._cachedSelectedImage = state ? element : null;
 
         // Insert/Edit Table
         parent = ed.dom.getParent(element, 'td,th,caption');
@@ -272,6 +275,18 @@
           state = false;
         }
         SPTinyMCEInterface.signalCursorInTable(state);
+
+        state = ed.dom.select('td[data-mce-selected],th[data-mce-selected]');
+        SPTinyMCEInterface.signalCursorInMultipleCells(state.length > 1);
+        if (state.length === 1) {
+          tableCell = state[0];
+          SPTinyMCEInterface.signalCursorInMergedCell(tableCell.rowSpan > 1 || tableCell.colSpan > 1);
+        } else {
+          // Not in a single cell, we can't be in a merged cell
+          SPTinyMCEInterface.signalCursorInMergedCell(false);
+        }
+
+        SPTinyMCEInterface.signalHasRowToPaste(this._hasRowToPaste);
 
         // Lists
         listNode = ed.dom.getParent(element, 'ul,ol');
@@ -287,6 +302,15 @@
         // Links
         parent = ed.dom.getParent(element, 'a');
         SPTinyMCEInterface.signalCursorInHyperlink(!!parent);
+
+        this.editorResized();
+
+        SPTinyMCEInterface.signalUndoAvailable(ed.undoManager.hasUndo());
+        SPTinyMCEInterface.signalRedoAvailable(ed.undoManager.hasRedo());
+        SPTinyMCEInterface.signalCursorHasSelection(ed.selection.getContent().length > 0);
+        // console.log('UndoManager HasUndo: ' + ed.undoManager.hasUndo());
+        // console.log('UndoManager HasRedo: ' + ed.undoManager.hasRedo());
+        // console.log('Selection: ' + ed.selection.getContent());
       }
     },
 
@@ -294,23 +318,23 @@
     // Wysiwyg toolbar button interactions
     //////////////////////////////////////////////////////////////////////////
     toggleBold: function (bBold) {
-      this.editor.execCommand('bold', bBold);
+      this._editor.execCommand('bold', bBold);
     },
 
     toggleItalic: function (bItalic) {
-      this.editor.execCommand('italic', bItalic);
+      this._editor.execCommand('italic', bItalic);
     },
 
     toggleUnderline: function (bULine) {
-      this.editor.execCommand('underline', bULine);
+      this._editor.execCommand('underline', bULine);
     },
 
     toggleStrikethrough: function (bStriked) {
-      this.editor.execCommand('strikethrough', bStriked);
+      this._editor.execCommand('strikethrough', bStriked);
     },
 
     setAlign: function (alignment) {
-      var ed = this.editor,
+      var ed = this._editor,
           alignTypes = ['alignleft', 'alignright', 'aligncenter', 'alignfull'];
 
       // First turn off all alignment styles
@@ -318,55 +342,55 @@
         ed.formatter.remove(align);
       });
 
-      this.editor.execCommand('justify' + alignment);
+      this._editor.execCommand('justify' + alignment);
     },
 
     decreaseIndent: function () {
-      this.editor.execCommand('outdent');
+      this._editor.execCommand('outdent');
     },
 
     increaseIndent: function () {
-      this.editor.execCommand('indent');
+      this._editor.execCommand('indent');
     },
 
     insertHorizontalRule: function () {
-      this.editor.execCommand('InsertHorizontalRule', false, true);
+      this._editor.execCommand('InsertHorizontalRule', false, true);
     },
 
     clearFormatting: function () {
-      this.editor.execCommand('RemoveFormat');
+      this._editor.execCommand('RemoveFormat');
     },
 
     setFontColor: function (color) {
       if (color === '') {
-        this.editor.formatter.remove('forecolor');
+        this._editor.formatter.remove('forecolor');
       } else {
-        this.editor.execCommand('ForeColor', false, color);
+        this._editor.execCommand('ForeColor', false, color);
       }
     },
 
     setHilightColor: function (color) {
       if (color === '') {
-        this.editor.formatter.remove('hilitecolor');
+        this._editor.formatter.remove('hilitecolor');
       } else {
-        this.editor.execCommand('HiliteColor', false, color);
+        this._editor.execCommand('HiliteColor', false, color);
       }
     },
 
     bulletList: function (bInList) {
-      this.editor.execCommand('InsertUnorderedList', false, bInList);
+      this._editor.execCommand('InsertUnorderedList', false, bInList);
     },
 
     numberList: function (bInList) {
-      this.editor.execCommand('InsertOrderedList', false, bInList);
+      this._editor.execCommand('InsertOrderedList', false, bInList);
     },
 
     setFont: function (font) {
       if (font) {
-        this.editor.execCommand('FontName', false, font);
+        this._editor.execCommand('FontName', false, font);
       } else {
         if (this._cachedFontFamily) {
-          this.editor.execCommand('FontName', false, this._cachedFontFamily);
+          this._editor.execCommand('FontName', false, this._cachedFontFamily);
         }
         this._cachedFontFamily = null;
       }
@@ -374,10 +398,10 @@
 
     setFontSize: function (size) {
       if (size) {
-        this.editor.execCommand('FontSize', false, size + 'pt');
+        this._editor.execCommand('FontSize', false, size + 'pt');
       } else {
         if (this._cachedFontSize) {
-          this.editor.execCommand('FontSize', false, this._cachedFontSize + 'pt');
+          this._editor.execCommand('FontSize', false, this._cachedFontSize + 'pt');
         }
         this._cachedFontSize = null;
       }
@@ -399,23 +423,54 @@
       }
     },
 
+    _windowReadOnlyColor: '',
+    _windowEditColor: '',
+    _textEditColor: '',
+    _textReadOnlyColor: '',
+
+    loadPalette: function (windowEdit, windowReadOnly, textEdit, textReadOnly) {
+      var bodyClass = '.tinymce-native', $editorBody;
+      console.log('Loading palette');
+      this._windowEditColor = windowEdit;
+      this._windowReadOnlyColor = windowReadOnly;
+      this._textEditColor = textEdit;
+      this._textReadOnlyColor = textReadOnly;
+      $editorBody = $('#content_ifr').contents().find(bodyClass);
+      if (this._cachedReadOnly) {
+        // Go ahead and apply the readonly styles to the body
+        $editorBody.css('color', textReadOnly);
+        $editorBody.css('background-color', windowReadOnly);
+      } else {
+        // Go ahead and apply the editable styles to the body
+        $editorBody.css('color', textEdit);
+        $editorBody.css('background-color', windowEdit);
+      }
+    },
+
     //////////////////////////////////////////////////////////////////////////
     // Wysiwyg table interactions
     //////////////////////////////////////////////////////////////////////////
 
-    fireTableCommand: function (cmd) {
-      this.editor.execCommand(cmd);
-    },
+    _hasRowToPaste: false,
 
-    mergeCells: function () {
-      // Only merge cells if they already have a selection
-      if (!this.editor.dom.select('td[data-mce-selected],th[data-mce-selected]').length) {
-        this.fireTableCommand('mceTableMergeCells');
+    fireTableCommand: function (cmd) {
+      this._editor.execCommand(cmd);
+      switch (cmd) {
+        case 'mceTableCutRow':
+        case 'mceTableCopyRow':
+          this._hasRowToPaste = true;
+          break;
+        case 'mceTablePasteRowBefore':
+        case 'mceTablePasteRowAfter':
+          this._hasRowToPaste = false;
+          break;
+        default:
+          break;
       }
     },
 
     getBorderFromJSON: function (jsonBorder) {
-      var border, spTablePlugin = this.editor.plugins.seapinetable;
+      var border, spTablePlugin = this._editor.plugins.seapinetable;
       if (jsonBorder) {
         border = new spTablePlugin.Border(jsonBorder['width'], jsonBorder['color']);
       } else {
@@ -424,10 +479,9 @@
       return border;
     },
 
-
     insertOrSaveTable: function (json, insertTable) {
 
-      var ed = this.editor,
+      var ed = this._editor,
           spTablePlugin = ed.plugins.seapinetable,
           borders = json['borders'],
           topBorder, leftBorder, rightBorder, bottomBorder,
@@ -438,7 +492,7 @@
         if (insertTable) {
           table = undefined;
         } else {
-          table = this.cachedTableElement;
+          table = this._cachedTableElement;
         }
 
         cellMargins = new spTablePlugin.CellMargins(json['cellMargins']['left'], json['cellMargins']['top'],
@@ -464,13 +518,13 @@
 
     setRowProperties: function (json) {
       // console.log('setRowProperties: ' + JSON.stringify(json));
-      var ed = this.editor,
+      var ed = this._editor,
           spTablePlugin = ed.plugins.seapinetable,
           borders = json['borders'],
           topBorder, leftBorder, rightBorder, bottomBorder,
           verticalBorder, rowBorders, cellMargins, alignment;
 
-      if (spTablePlugin && this.cachedRowElement) {
+      if (spTablePlugin && this._cachedRowElement) {
         cellMargins = new spTablePlugin.CellMargins(json['cellMargins']['left'], json['cellMargins']['top'],
                                                     json['cellMargins']['right'], json['cellMargins']['bottom']);
 
@@ -483,20 +537,20 @@
         rowBorders = new spTablePlugin.RowBorders(leftBorder, topBorder, rightBorder, bottomBorder, verticalBorder);
         alignment = new spTablePlugin.Alignment(json['alignment'], json['alignmentV']);
 
-        spTablePlugin.saveRowProperties(this.cachedRowElement, rowBorders, cellMargins, alignment, json['bgColor']);
+        spTablePlugin.saveRowProperties(this._cachedRowElement, rowBorders, cellMargins, alignment, json['bgColor']);
       }
 
     },
 
     setCellProperties: function (json) {
       // console.log('setCellProperties: ' + JSON.stringify(json));
-      var ed = this.editor,
+      var ed = this._editor,
           spTablePlugin = ed.plugins.seapinetable,
           borders = json['borders'],
           topBorder, leftBorder, rightBorder, bottomBorder,
           rowBorders, cellMargins, alignment;
 
-      if (spTablePlugin && this.cachedCellElement) {
+      if (spTablePlugin && this._cachedCellElement) {
         cellMargins = new spTablePlugin.CellMargins(json['cellMargins']['left'], json['cellMargins']['top'],
                                                     json['cellMargins']['right'], json['cellMargins']['bottom']);
 
@@ -508,7 +562,7 @@
         rowBorders = new spTablePlugin.CellBorders(leftBorder, topBorder, rightBorder, bottomBorder);
         alignment = new spTablePlugin.Alignment(json['alignment'], json['alignmentV']);
 
-        spTablePlugin.saveCellProperties(this.cachedRowElement, rowBorders, cellMargins, alignment, json['bgColor']);
+        spTablePlugin.saveCellProperties(this._cachedRowElement, rowBorders, cellMargins, alignment, json['bgColor']);
       }
 
     },
@@ -516,7 +570,7 @@
 
     requestTableProperties: function () {
 
-      var ed = this.editor, spTablePlugin = ed.plugins.seapinetable,
+      var ed = this._editor, spTablePlugin = ed.plugins.seapinetable,
           json = {}, jsonBorders, tableBorders,
           selectedNode, tableElement, $tableElement,
           cellSpacing, alignment, margins, backgroundColor, borderStyle,
@@ -524,7 +578,7 @@
 
       selectedNode = ed.selection.getNode();
       tableElement = ed.dom.getParent(selectedNode, 'table');
-      this.cachedTableElement = tableElement;
+      this._cachedTableElement = tableElement;
 
       if (tableElement && spTablePlugin) {
         $tableElement = $(tableElement);
@@ -591,7 +645,7 @@
 
       // console.log('requestRowProperties');
 
-      var ed = this.editor, spTablePlugin = ed.plugins.seapinetable,
+      var ed = this._editor, spTablePlugin = ed.plugins.seapinetable,
           json = {}, jsonBorders, rowBorders,
           selectedNode, rowElement, $rowElement,
           cellSpacing, margins, borderStyle,
@@ -599,7 +653,7 @@
 
       selectedNode = ed.selection.getNode();
       rowElement = ed.dom.getParent(selectedNode, 'tr');
-      this.cachedRowElement = rowElement;
+      this._cachedRowElement = rowElement;
 
       if (rowElement && spTablePlugin) {
         $rowElement = $(rowElement);
@@ -651,7 +705,7 @@
 
       console.log('requestCellProperties');
 
-      var ed = this.editor, spTablePlugin = ed.plugins.seapinetable,
+      var ed = this._editor, spTablePlugin = ed.plugins.seapinetable,
           json = {}, jsonBorders, cellBorders,
           selectedNode, cellElement, $cellElement,
           cellSpacing, margins, borderStyle,
@@ -659,7 +713,7 @@
 
       selectedNode = ed.selection.getNode();
       cellElement = ed.dom.getParent(selectedNode, 'td');
-      this.cachedCellElement = cellElement;
+      this._cachedCellElement = cellElement;
 
       if (cellElement && spTablePlugin) {
         $cellElement = $(cellElement);
@@ -708,15 +762,15 @@
     // Wysiwyg context menu/event handling interactions
     /////////////////////////////////////////////////////////////////////////
     undo: function () {
-      this.editor.execCommand('Undo');
+      this._editor.execCommand('Undo');
     },
 
     redo: function () {
-      this.editor.execCommand('Redo');
+      this._editor.execCommand('Redo');
     },
 
     selectAll: function () {
-      this.editor.execCommand('selectAll');
+      this._editor.execCommand('selectAll');
     },
 
     //////////////////////////////////////////////////////////////////////////
@@ -753,11 +807,11 @@
     },
 
     unlink: function () {
-      this.editor.execCommand('unlink', true);
+      this._editor.execCommand('unlink', true);
     },
 
     selectLink: function () {
-      var ed = this.editor,
+      var ed = this._editor,
           selectedNode, anchorNode;
 
       selectedNode = ed.selection.getNode();
@@ -769,7 +823,7 @@
     },
 
     requestOpenLink: function () {
-      var ed = this.editor,
+      var ed = this._editor,
           url, selectedNode, anchorNode;
 
       selectedNode = ed.selection.getNode();
@@ -782,7 +836,7 @@
     },
 
     requestInsertEditLink: function () {
-      var ed = this.editor,
+      var ed = this._editor,
           selectedNode, anchorNode,
           tmpDiv, $nonAnchorTextQuery,
           url, displayText, displayTextEditable = true, insertMode = true;
@@ -824,7 +878,7 @@
     },
 
     insertLink: function (url, displayText) {
-      var ed = this.editor, linkHTML;
+      var ed = this._editor, linkHTML;
       linkHTML = ed.dom.createHTML('a', {
         href: url.replace(' ', '%20'),
         title: 'Open ' + url,
@@ -834,6 +888,13 @@
       // ed.restoreSelection();
       ed.execCommand('mceInsertContent', false, linkHTML, {skip_focus: true});
       ed.execCommand('mceAddUndoLevel');
+    },
+
+    //////////////////////////////////////////////////////////////////////////
+    // Image handling
+    /////////////////////////////////////////////////////////////////////////
+    insertImage: function (imgSrc) {
+      this._editor.execCommand('mceInsertContent', false, imgSrc);
     },
 
     reloadImage: function (imgSrc) {
@@ -847,13 +908,79 @@
           $(this).attr('src', src + '?1');
         }
       });
-      this.editor.execCommand('mceRepaint');
+      this._editor.execCommand('mceRepaint');
     },
 
     escapeRegEg: function (str) {
       return str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, '\\$1');
     },
 
+    detectImagesLoaded: function () {
+      var editor = this._editor,
+        bodyClass = '.tinymce-native', $images, waitImgDone;
+
+      $images = $('#content_ifr').contents().find(bodyClass).find('img');
+
+      waitImgDone = function (loadedImg, bWasError) {
+        console.log('Image has been loaded: ' + loadedImg.src + ' at: ' + new Date().getTime() + ' error: ' + bWasError );
+        editor.execCommand('mceRepaint');
+        if (!bWasError) {
+          SPTinyMCEInterface.signalImageLoadedInBrowser(loadedImg.src);
+        }
+      };
+
+      $images.each(function () {
+        var tmpImg = new Image();
+        tmpImg.onload = function () {
+          waitImgDone(this, false);
+        };
+        tmpImg.onerror = function () {
+          waitImgDone(this, true);
+        };
+        tmpImg.src = $(this).attr('src');
+        console.log('Image: ' + tmpImg.src + ' setup at: ' + new Date().getTime());
+      });
+    },
+
+    requestEditImage: function (bForResize) {
+      var json = {};
+      if (this._cachedSelectedImage) {
+        json['src'] = this._cachedSelectedImage.src;
+        json['width'] = this._cachedSelectedImage.width;
+        json['height'] = this._cachedSelectedImage.height;
+        if (bForResize) {
+          console.log('Response edit image size');
+          SPTinyMCEInterface.signalResponseEditImageSize(json);
+        } else {
+          console.log('Response edit image');
+          SPTinyMCEInterface.signalResponseEditImage(json);
+        }
+      }
+    },
+
+    setEditImageSize: function (width, height) {
+      if (this._cachedSelectedImage) {
+        this._cachedSelectedImage.width = width;
+        this._cachedSelectedImage.height = height;
+        this._editor.execCommand('mceRepaint');
+        this._editor.undoManager.add(); // Manually add an undo event for the resize
+      }
+    },
+
+    setEditImage: function (src, width, height) {
+      if (this._cachedSelectedImage) {
+        this._cachedSelectedImage.src = src;
+        this._cachedSelectedImage.setAttribute('data-mce-src', src);
+        this._cachedSelectedImage.width = width;
+        this._cachedSelectedImage.height = height;
+        this._editor.execCommand('mceRepaint');
+        this._editor.undoManager.add(); // Manually add an undo event for the new image
+      }
+    },
+
+    //////////////////////////////////////////////////////////////////////////
+    // Editor configuration settings
+    /////////////////////////////////////////////////////////////////////////
     _cachedWidthSetting: -1,
 
     setFixedWidthEditor: function (width) {
@@ -879,12 +1006,49 @@
       }
     },
 
-    setReadOnly: function (bReadOnly) {
-      if (bReadOnly) {
-        this.editor.setMode('readonly');
-      } else {
-        this.editor.setMode('design');
+    _cachedEditorHeight: '',
+
+    editorResized: function () {
+      var bodyClass = '.tinymce-native', $editorBody, currHeight;
+      $editorBody = $('#content_ifr').contents().find(bodyClass);
+      currHeight = parseInt($editorBody.css('height'), 10);
+      if (currHeight !== this._cachedEditorHeight) {
+        this._cachedEditorHeight = currHeight;
+        console.log('editorResized: ' + currHeight);
+        SPTinyMCEInterface.signalEditorHeightChanged(currHeight);
       }
+    },
+
+    _cachedReadOnly: null,
+
+    setReadOnly: function (bReadOnly) {
+      var bodyClass = '.tinymce-native', $editorBody;
+      // Only apply the new value if it isn't our cached value
+      if (bReadOnly !== this._cachedReadOnly) {
+        $editorBody = $('#content_ifr').contents().find(bodyClass);
+        if (bReadOnly) {
+          this._editor.setMode('readonly');
+          // If we have settings for the palette in this mode apply them
+          if (this._windowReadOnlyColor && this._textReadOnlyColor) {
+            // Go ahead and apply the readonly styles to the body
+            $editorBody.css('font', this._textReadOnlyColor);
+            $editorBody.css('background-color', this._windowReadOnlyColor);
+          }
+        } else {
+          this._editor.setMode('design');
+          // If we have settings for the palette in this mode apply them
+          if (this._windowEditColor && this._textEditColor) {
+            // Go ahead and apply the editable styles to the body
+            $editorBody.css('font', this._textEditColor);
+            $editorBody.css('background-color', this._windowEditColor);
+          }
+        }
+        this._cachedReadOnly = bReadOnly;
+      }
+    },
+
+    pasteText: function (strText) {
+      this._editor.execCommand('mceInsertContent', false, strText);
     },
 
     /**
