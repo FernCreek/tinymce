@@ -2,7 +2,8 @@
  * UndoManager.js
  *
  * Released under LGPL License.
- * Copyright (c) 1999-2015 Ephox Corp. All rights reserved
+ * Original work Copyright (c) 1999-2015 Ephox Corp. All rights reserved
+ * Modified work Copyright (c) 2016 Seapine Software, Inc.
  *
  * License: http://www.tinymce.com/license
  * Contributing: http://www.tinymce.com/contributing
@@ -165,6 +166,34 @@ define("tinymce/UndoManager", [
 			 * @field {Boolean} typing
 			 */
 			typing: false,
+
+			/**
+			 * Populates an object represtenting the internal state of the undo manager.
+			 * @returns {Object} Contains the current undo manager state.
+			 */
+			getUndoManagerState: function () {
+				var state = {};
+				state['index'] = index;
+				state['data'] = data;
+				state['typing'] = self.typing;
+				state['beforeBookmark'] = beforeBookmark;
+				state['isFirstTypedCharacter'] = isFirstTypedCharacter;
+				state['locks'] = locks;
+				return state;
+			},
+
+			/**
+			 * Sets the internal undo manager state to a provided state.
+			 * @param {JSON Object} stateJSON The undomanager state to set as this undo managers state.
+			 */
+			setUndoManagerState: function (stateJSON) {
+				index = stateJSON['index'];
+				data = stateJSON['data'];
+				self.typing = stateJSON['typing'];
+				beforeBookmark = state['beforeBookmark'];
+				isFirstTypedCharacter = state['isFirstTypedCharacter'];
+				locks = state['locaks'];
+			},
 
 			/**
 			 * Stores away a bookmark to be used when performing an undo action so that the selection is before
