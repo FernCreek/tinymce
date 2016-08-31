@@ -170,6 +170,11 @@ tinymce.PluginManager.add('autolink', function(editor) {
 		}
 
 		text = rng.toString();
+		if (text.charAt(text.length - 1) == '.') {
+			setEnd(endContainer, start - 1);
+		}
+
+		text = rng.toString();
 		matches = text.match(AutoLinkPattern);
 
 		if (matches) {
