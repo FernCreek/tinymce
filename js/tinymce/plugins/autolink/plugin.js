@@ -12,8 +12,7 @@
 
 tinymce.PluginManager.add('autolink', function(editor) {
   var AutoUrlDetectState,
-      AutoLinkPattern, // This should not be set by our editor configuration it is not used.
-      linkRegExp = /\b(?:(?:ttstudio|sscm|ftp|http|https|nntp|telnet|file|doors):\/\/|(?:mailto|news):(?!\/)|www[0-9]?(?=\.)|ftp(?=\.))(?:[$_.+!*(),;\/\\?:@&~=-](?=[A-Za-z0-9%])|[A-Za-z0-9%*])(?:[A-Za-z0-9)]|[$_.+!*(,;\/\\?:@&~=-](?!\s|$)|%[A-Fa-f0-9]{2})*(?:#[\/a-zA-Z0-9][a-zA-Z0-9$_.+!*(),;\/\\?:@&~=%-]*)?/i,
+      AutoLinkPattern = /\b(?:(?:ttstudio|sscm|ftp|http|https|nntp|telnet|file|doors):\/\/|(?:mailto|news):(?!\/)|www[0-9]?(?=\.)|ftp(?=\.))(?:[$_.+!*(),;\/\\?:@&~=-](?=[A-Za-z0-9%])|[A-Za-z0-9%*])(?:[A-Za-z0-9)]|[$_.+!*(,;\/\\?:@&~=-](?!\s|$)|%[A-Fa-f0-9]{2})*(?:#[\/a-zA-Z0-9][a-zA-Z0-9$_.+!*(),;\/\\?:@&~=%-]*)?/i,
       hasProtocol = /^(?:ttstudio|sscm|doors|ftp|http|https|nntp|telnet|file):\/\/|(?:mailto|news):(?!\/)|ftp(?=\.)/i,
       endsWithParen = /\b.*\)[,.!?'":;]?$/;
 
@@ -177,7 +176,7 @@ tinymce.PluginManager.add('autolink', function(editor) {
     }
 
     text = rng.toString();
-    matches = linkRegExp.exec(text);
+    matches = text.match(AutoLinkPattern);
 
     if (matches) {
       // there is a URL in the text
