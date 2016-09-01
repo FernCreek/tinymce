@@ -130,8 +130,10 @@
 
         var i, paddingStr=  '', margins = [this.top, this.right, this.bottom, this.left];
         for (i = 0; i < margins.length; ++i) {
-          if (typeof margins[i] !== 'number' || !isFinite(margins[i])) {
-            margins[i] = '' + defaultMargin;
+          if (typeof margins[i] !== 'number') {
+            if (!isFinite(margins[i]) || isNaN(parseInt(margins[i], 10))) {
+              margins[i] = '' + defaultMargin;
+            }
           }
           paddingStr += margins[i] + 'px ';
         }
