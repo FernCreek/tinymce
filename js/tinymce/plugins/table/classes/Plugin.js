@@ -378,15 +378,7 @@ define("tinymce/tableplugin/Plugin", [
 			},
 
 			mceTableMergeCells: function(grid) {
-				var cell;
-
-				cell = editor.dom.getParent(editor.selection.getStart(), 'th,td');
-
-				if (!editor.dom.select('td[data-mce-selected],th[data-mce-selected]').length) {
-					dialogs.merge(grid, cell);
-				} else {
-					grid.merge();
-				}
+				grid.merge();
 			},
 
 			mceTableInsertRowBefore: function(grid) {

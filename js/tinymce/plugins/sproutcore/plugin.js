@@ -279,14 +279,11 @@
           // Row Properties
           viewClass = this._setupRowCellPropertiesDialog(editor, true);
           break;
-        case 'Merge cells':
-          // Merge Cells
-          viewClass = this._setupMergeCellsDialog(editor, args.onsubmit);
-          break;
         case 'Source code':
           // HTML editor, used in debug
           viewClass = this._setupSourceEditorDialog(editor);
           break;
+        case 'Merge cells':
         default:
           // no-op
         }
@@ -515,22 +512,6 @@
           .set('borderStyle', this._getEnumForBorderStyleString(borderStyle.style))
           .endPropertyChanges();
       }
-
-      return viewClass;
-    },
-
-    /**
-     * Setup the merge cells dialog.
-     *
-     * @param {tinymce.Editor} ed Editor instance.
-     * @param {Function} mergeAction Function that does the cell merge.
-     * @return {TinySC.TableMergeCellsPane} View class to create.
-     */
-    _setupMergeCellsDialog: function (ed, mergeAction) {
-      var viewClass = TinySC.TableMergeCellsPane,
-          controller = TinySC.tableMergeCellsController;
-
-      controller.set('mergeAction', mergeAction);
 
       return viewClass;
     },
