@@ -127,8 +127,8 @@
     },
 
     /**
-     * Call back for when a link is clicked or double clicked
-     * @param target
+     * Callback for when the editor is clicked or double clicked
+     * @param {Event.target} target
      */
     activateLink: function (target) {
       var ed = this._editor,
@@ -165,7 +165,7 @@
         } else if (ed.queryCommandState('justifyright')) {
           SPTinyMCEInterface.signalCursorAlignRight();
         } else if (ed.queryCommandState('justifyfull')) {
-          SPTinyMCEInterface.signalCursorAlignJustify(state);
+          SPTinyMCEInterface.signalCursorAlignJustify();
         }
 
         // Font family
@@ -257,9 +257,6 @@
           SPTinyMCEInterface.signalCursorFontSize(state);
           this._cachedFontSize = state;
         }
-
-        // Font color - new to TTWeb
-        // BG color - new to TTWeb
 
         // Images
         state = element.tagName === 'IMG';
