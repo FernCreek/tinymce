@@ -665,6 +665,10 @@
         cellMargins = new spTablePlugin.CellMargins(json['cellMargins']['left'], json['cellMargins']['top'],
                                                     json['cellMargins']['right'], json['cellMargins']['bottom']);
 
+        // No borders provided, called with none set for borders
+        if (!borders) {
+          borders = {};
+        }
         topBorder = this.getBorderFromJSON(borders['top']);
         leftBorder = this.getBorderFromJSON(borders['left']);
         rightBorder = this.getBorderFromJSON(borders['right']);
@@ -699,6 +703,10 @@
         cellMargins = new spTablePlugin.CellMargins(json['cellMargins']['left'], json['cellMargins']['top'],
                                                     json['cellMargins']['right'], json['cellMargins']['bottom']);
 
+        // No borders provided, called with none set for borders
+        if (!borders) {
+          borders = {};
+        }
         topBorder = this.getBorderFromJSON(borders['top']);
         leftBorder = this.getBorderFromJSON(borders['left']);
         rightBorder = this.getBorderFromJSON(borders['right']);
@@ -728,7 +736,10 @@
       if (spTablePlugin && this._cachedCellElement) {
         cellMargins = new spTablePlugin.CellMargins(json['cellMargins']['left'], json['cellMargins']['top'],
                                                     json['cellMargins']['right'], json['cellMargins']['bottom']);
-
+        // No borders provided, called with none set for borders
+        if (!borders) {
+          borders = {};
+        }
         topBorder = this.getBorderFromJSON(borders['top']);
         leftBorder = this.getBorderFromJSON(borders['left']);
         rightBorder = this.getBorderFromJSON(borders['right']);
