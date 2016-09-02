@@ -188,7 +188,7 @@
           supFontSizes = this._supportedFontSizes,
           i, tableCell, ed = this._editor,
           singleCell = false, singleRow = false,
-					mergedCell = false, matchingParent;
+          mergedCell = false, matchingParent;
 
       if (SPTinyMCEInterface && ed) {
         state = ed.queryCommandState('bold');
@@ -322,8 +322,8 @@
           singleRow = true;
           mergedCell = tableCell.rowSpan > 1 || tableCell.colSpan > 1;
         } else if (state.length > 1) {
-					// In multiple cells
-					SPTinyMCEInterface.signalCursorInMergedCell(false);
+          // In multiple cells
+          SPTinyMCEInterface.signalCursorInMergedCell(false);
           // Check if all of the cells selected are in the same row
           matchingParent = true;
           parent = state[0].parentNode;
@@ -340,14 +340,14 @@
         if (!singleCell && state.length === 0) {
           tableCell = ed.dom.getParent(ed.selection.getNode(), 'td');
           if (tableCell) {
-						// If the cursor is within a cell a single cell, a single row is selected inherently
-						singleCell = true;
-						singleRow = true;
-						mergedCell = tableCell.rowSpan > 1 || tableCell.colSpan > 1;
-					}
+            // If the cursor is within a cell a single cell, a single row is selected inherently
+            singleCell = true;
+            singleRow = true;
+            mergedCell = tableCell.rowSpan > 1 || tableCell.colSpan > 1;
+          }
         }
 
-				SPTinyMCEInterface.signalCursorInMergedCell(mergedCell);
+        SPTinyMCEInterface.signalCursorInMergedCell(mergedCell);
         SPTinyMCEInterface.signalCursorInSingleCell(singleCell);
         SPTinyMCEInterface.signalCursorInSingleRow(singleRow);
 
@@ -737,7 +737,7 @@
         rowBorders = new spTablePlugin.CellBorders(leftBorder, topBorder, rightBorder, bottomBorder);
         alignment = new spTablePlugin.Alignment(json['alignment'], json['alignmentV']);
 
-        spTablePlugin.saveCellProperties(this._cachedRowElement, rowBorders, cellMargins, alignment, json['bgColor']);
+        spTablePlugin.saveCellProperties(this._cachedCellElement, rowBorders, cellMargins, alignment, json['bgColor']);
       }
 
     },
