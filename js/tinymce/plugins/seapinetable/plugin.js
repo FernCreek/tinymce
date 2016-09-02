@@ -585,7 +585,7 @@
       // If all of the borders match go ahead and set full or none accordingly
       if (allMatching) {
         if (commonWidth === 0) {
-          borderStyle.style = 'none';
+          borderStyle = new this.SharedBorderStyle('none');
         } else {
           borderStyle = new this.SharedBorderStyle('full', commonWidth, commonColor);
         }
@@ -742,7 +742,7 @@
     saveCellProperties: function (node, cellBorders, cellMargins, alignment, bgColor) {
 
       var ed = tinymce.activeEditor,
-          $cell, separatedBorders = false;
+          $cell, $cellTmp, separatedBorders = false;
 
       if (node) {
         $cell = $(node);
@@ -764,17 +764,25 @@
           $cell.css('border-bottom', this.getCSSStringForBorder(cellBorders.bottom));
 
           if (!separatedBorders) {
+            $cellTmp = $cell.prev();
             // Set the right border on the cell to the left to match this cells left border
-            $cell.prev().css('border-right', this.getCSSStringForBorder(cellBorders.left));
+            $cellTmp.css('border-right', this.getCSSStringForBorder(cellBorders.left));
+            $cellTmp.removeAttr('data-mce-style');
 
             // Set the left border on the cell to the right to match this cells right border
+            $cellTmp = $cell.next();
             $cell.next().css('border-left', this.getCSSStringForBorder(cellBorders.right));
+            $cellTmp.removeAttr('data-mce-style');
 
             // Set the bottom border on the cell above to match this cells top border
-            $($cell.parent().prev().children()[$cell.index()]).css('border-bottom', this.getCSSStringForBorder(cellBorders.top));
+            $cellTmp = $($cell.parent().prev().children()[$cell.index()]);
+            $cellTmp.css('border-bottom', this.getCSSStringForBorder(cellBorders.top));
+            $cellTmp.removeAttr('data-mce-style');
 
             // Set the top border on the cell below to match this cells bottom border
-            $($cell.parent().next().children()[$cell.index()]).css('border-top', this.getCSSStringForBorder(cellBorders.bottom));
+            $cellTmp = $($cell.parent().next().children()[$cell.index()]);
+            $cellTmp.css('border-top', this.getCSSStringForBorder(cellBorders.bottom));
+            $cellTmp.removeAttr('data-mce-style');
           }
         }
 
@@ -783,6 +791,7 @@
                .attr('vAlign', alignment.vertical)
                .attr('bgColor', bgColor);
         }
+        $cell.removeAttr('data-mce-style');
 
         ed.execCommand('mceAddUndoLevel');
       }
@@ -798,11 +807,13 @@
      */
     saveRowProperties: function (node, rowBorders, cellMargins, alignment, bgColor) {
       var ed = tinymce.activeEditor,
-          $rowAndCells, $row, $cells, $edgeCell,
+          $rowAndCells, $row, $cells, $edgeCell, $tmpCells,
           separatedBorders = false;
 
       if (node) {
         $rowAndCells = $(node).children('td').andSelf();
+        // Clear out any previous TinyMCE data it needs to be recomputed after these changes
+        $rowAndCells.removeAttr('data-mce-style');
         $row = $(node);
 
         if ($row.css('border-collapse') === 'separate') {
@@ -825,19 +836,25 @@
           $cells.css('border-top', this.getCSSStringForBorder(rowBorders.top));
           if (!separatedBorders) {
             // Set the bottom border on the row above, if was bigger it needs to match this
-            $row.prev().find('td').css('border-bottom', this.getCSSStringForBorder(rowBorders.top));
+            $tmpCells = $row.prev().find('td');
+            // Clear out any previous TinyMCE data it needs to be recomputed after these changes
+            $tmpCells.removeAttr('data-mce-style');
+            $tmpCells.css('border-bottom', this.getCSSStringForBorder(rowBorders.top));
           }
 
           // Set the bottom border on the cells in the row
           $cells.css('border-bottom', this.getCSSStringForBorder(rowBorders.bottom));
           if (!separatedBorders) {
             // Set the top border on the row below, if it was bigger it needs to match this
-            $row.next().find('td').css('border-top', this.getCSSStringForBorder(rowBorders.bottom));
+            $tmpCells = $row.next().find('td');
+            // Clear out any previous TinyMCE data it needs to be recomputed after these changes
+            $tmpCells.removeAttr('data-mce-style');
+            $tmpCells.css('border-top', this.getCSSStringForBorder(rowBorders.bottom));
           }
 
           $cells.attr('align', alignment.horizontal)
-            .attr('vAlign', alignment.vertical)
-            .attr('bgColor', bgColor);
+                .attr('vAlign', alignment.vertical)
+                .attr('bgColor', bgColor);
 
           // Set the left border on the left cell
           $edgeCell = $row.find('td:first-child');
@@ -958,6 +975,9 @@
         }
 
         $cells = $table.find('td');
+        // Clear out any previous TinyMCE data it needs to be recomputed after these changes
+        $table.removeAttr('data-mce-style');
+        $cells.removeAttr('data-mce-style');
 
         if (cellMargins) {
           this.applyCellMargins(cellMargins, $cells);
@@ -970,6 +990,11 @@
           $cells.css('border-right', this.getCSSStringForBorder(tableBorders.vertical));
           $cells.css('border-top', this.getCSSStringForBorder(tableBorders.horizontal));
           $cells.css('border-bottom', this.getCSSStringForBorder(tableBorders.horizontal));
+
+          // Cells need to have their bgColor so when the tables is set it overrides the cells
+          if (bgColor) {
+            $cells.prop('bgColor', bgColor);
+          }
 
           // Set the left border on the left cells
           $cells = $table.find('tr td:first-child');
