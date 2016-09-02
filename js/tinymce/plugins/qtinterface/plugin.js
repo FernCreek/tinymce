@@ -186,7 +186,9 @@
       var state = false, foundIt = false,
           listNode, parent, fontFamily, sizeName,
           supFontSizes = this._supportedFontSizes,
-          i, tableCell, ed = this._editor;
+          i, tableCell, ed = this._editor,
+          singleCell = false, singleRow = false,
+					mergedCell = false, matchingParent;
 
       if (SPTinyMCEInterface && ed) {
         state = ed.queryCommandState('bold');
@@ -316,11 +318,38 @@
         SPTinyMCEInterface.signalCursorInMultipleCells(state.length > 1);
         if (state.length === 1) {
           tableCell = state[0];
-          SPTinyMCEInterface.signalCursorInMergedCell(tableCell.rowSpan > 1 || tableCell.colSpan > 1);
-        } else {
-          // Not in a single cell, we can't be in a merged cell
-          SPTinyMCEInterface.signalCursorInMergedCell(false);
+          singleCell = true;
+          singleRow = true;
+          mergedCell = tableCell.rowSpan > 1 || tableCell.colSpan > 1;
+        } else if (state.length > 1) {
+					// In multiple cells
+					SPTinyMCEInterface.signalCursorInMergedCell(false);
+          // Check if all of the cells selected are in the same row
+          matchingParent = true;
+          parent = state[0].parentNode;
+          for (i = 1; i < state.length && matchingParent; ++i) {
+            if (!parent.isEqualNode(state[i].parentNode)) {
+              matchingParent = false;
+            }
+          }
+          // If all of the parents of the td's matching they are all in the same row
+          singleRow = matchingParent;
         }
+
+        // If a single cell isn't selected see if the cursor is within a cell
+        if (!singleCell && state.length === 0) {
+          tableCell = ed.dom.getParent(ed.selection.getNode(), 'td');
+          if (tableCell) {
+						// If the cursor is within a cell a single cell, a single row is selected inherently
+						singleCell = true;
+						singleRow = true;
+						mergedCell = tableCell.rowSpan > 1 || tableCell.colSpan > 1;
+					}
+        }
+
+				SPTinyMCEInterface.signalCursorInMergedCell(mergedCell);
+        SPTinyMCEInterface.signalCursorInSingleCell(singleCell);
+        SPTinyMCEInterface.signalCursorInSingleRow(singleRow);
 
         SPTinyMCEInterface.signalHasRowToPaste(this._hasRowToPaste);
 
