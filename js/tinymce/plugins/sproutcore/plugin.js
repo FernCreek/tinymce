@@ -345,7 +345,7 @@
      * @return {TinySC.TablePropertiesPane} View class to create.
      */
     _setupTablePropertiesDialog: function (ed, onsubmit) {
-      var viewClass, controller, selectedNode, tableElement, $tableElement,
+      var viewClass, controller, selectedNode, tableElement, $tableElement, $cells,
           cellSpacing, alignment, backgroundColor, margins, spTablePlugin,
           topBorder, leftBorder, rightBorder, bottomBorder, verticalBorder, horizontalBorder,
           tableBorders, borderStyle;
@@ -359,6 +359,7 @@
 
       if (tableElement && spTablePlugin) {
         $tableElement = $(tableElement);
+        $cells = $tableElement.find('td');
 
         if ($tableElement.css('border-collapse') === 'separate') {
           cellSpacing = spTablePlugin.getWidthFromPxString($tableElement.css('border-spacing'));
@@ -367,7 +368,7 @@
         }
 
         alignment = tableElement.align || 'left';
-        backgroundColor = tableElement.bgColor || '#ffffff'; // TODO: RGBtoHex?
+        backgroundColor = $cells.attr('bgColor') || '#ffffff'; // TODO: RGBtoHex?
 
         topBorder = spTablePlugin.getBorderForTable(ed, $tableElement, 'top');
         leftBorder = spTablePlugin.getBorderForTable(ed, $tableElement, 'left');
@@ -432,7 +433,7 @@
     _setupRowCellPropertiesDialog: function (ed, rowMode) {
       var viewClass, controller, selectedNode, rowCellElement,
           horizontalAlignment, verticalAlignment, backgroundColor,
-          $jElement, margins, spTablePlugin,
+          $jElement, $cells, margins, spTablePlugin,
           topBorder, leftBorder, rightBorder, bottomBorder, verticalBorder,
           cellBorders, rowBorders, borderStyle;
 
@@ -464,6 +465,7 @@
           // Determine the current border style based on the borders
           rowBorders = new spTablePlugin.RowBorders(leftBorder, topBorder, rightBorder, bottomBorder, verticalBorder);
           borderStyle = spTablePlugin.getBorderStyleForRow(rowBorders);
+          $cells = $jElement;
 
         } else {
           viewClass = TinySC.TableCellPropertiesPane;
@@ -483,12 +485,12 @@
           // Determine the current border style based on the borders
           cellBorders = new spTablePlugin.CellBorders(leftBorder, topBorder, rightBorder, bottomBorder);
           borderStyle = spTablePlugin.getBorderStyleForCell(cellBorders);
-
+          $cells = $jElement.find('td');
         }
 
-        horizontalAlignment = rowCellElement.align || 'left';
-        verticalAlignment = rowCellElement.vAlign || 'middle';
-        backgroundColor = rowCellElement.bgColor || '#ffffff'; // TODO: RGBtoHex?
+        horizontalAlignment = $cells.attr('align') || 'left';
+        verticalAlignment = $cells.attr('vAlign') || 'middle';
+        backgroundColor = $cells.attr('bgColor') || '#ffffff'; // TODO: RGBtoHex?
 
         controller.updateBorderContainerLists();
 

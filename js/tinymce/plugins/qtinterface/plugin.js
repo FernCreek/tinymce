@@ -760,7 +760,7 @@
 
       var ed = this._editor, spTablePlugin = ed.plugins.seapinetable,
           json = {}, jsonBorders, tableBorders,
-          selectedNode, tableElement, $tableElement,
+          selectedNode, tableElement, $tableElement, $cells,
           cellSpacing, alignment, margins, backgroundColor, borderStyle,
           topBorder, leftBorder, bottomBorder, rightBorder, horizontalBorder, verticalBorder;
 
@@ -770,6 +770,7 @@
 
       if (tableElement && spTablePlugin) {
         $tableElement = $(tableElement);
+        $cells = $tableElement.find('td');
 
         json['borders'] = {};
         json['cellMargins'] = {};
@@ -785,7 +786,7 @@
 
         alignment = tableElement.align || 'left';
         json['alignment'] = alignment;
-        backgroundColor = tableElement.bgColor || '#ffffff'; // TODO: RGBtoHex?
+        backgroundColor = $cells.attr('bgColor') || '#ffffff'; // TODO: RGBtoHex?
         json['bgColor'] = backgroundColor;
 
         json['rows'] = spTablePlugin.countTableRows($tableElement);
@@ -838,7 +839,7 @@
 
       var ed = this._editor, spTablePlugin = ed.plugins.seapinetable,
           json = {}, jsonBorders, rowBorders,
-          selectedNode, rowElement, $rowElement,
+          selectedNode, rowElement, $rowElement, $cells,
           cellSpacing, margins, borderStyle,
           topBorder, leftBorder, bottomBorder, rightBorder, verticalBorder;
 
@@ -848,14 +849,15 @@
 
       if (rowElement && spTablePlugin) {
         $rowElement = $(rowElement);
+        $cells = $rowElement.find('td');
 
         json['borders'] = {};
         json['cellMargins'] = {};
         jsonBorders = json['borders'];
 
-        json['alignment'] = rowElement.align || 'left';
-        json['alignmentV'] = rowElement.vAlign || 'middle';
-        json['bgColor'] = rowElement.bgColor || '#ffffff'; // TODO: RGBtoHex?
+        json['alignment'] = $cells.attr('align') || 'left';
+        json['alignmentV'] = $cells.attr('vAlign') || 'middle';
+        json['bgColor'] = $cells.attr('bgColor') || '#ffffff'; // TODO: RGBtoHex?
 
         topBorder = spTablePlugin.getBorderForRow(ed, $rowElement, 'top');
         jsonBorders['top'] = topBorder;
