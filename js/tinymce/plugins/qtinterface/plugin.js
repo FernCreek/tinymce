@@ -30,24 +30,47 @@
    */
   tinymce.create('tinymce.plugins.QtInterfacePlugin', {
 
+    /**
+     * The TinyMCE editor object
+     * @type {tinymce.Editor}
+     */
     _editor: null,
 
+    /**
+     * The current table element being worked with
+     * @type {HTMLElement}
+     */
     _cachedTableElement: null,
 
+    /**
+     * The current row element being worked with
+     * @type {HTMLElement}
+     */
     _cachedRowElement: null,
 
+    /**
+     * The current cell element being worked with
+     * @type {HTMLElement}
+     */
     _cachedCellElement: null,
 
+    /**
+     * The currently selected image
+     * @type {HTMLElement}
+     */
     _cachedSelectedImage: null,
 
+    /**
+     * The current font family
+     * @type {String}
+     */
     _cachedFontFamily: null,
 
+    /**
+     * The current font size
+     * @type {String}
+     */
     _cachedFontSize: null,
-
-    // TODO_KB Potentially implement custom bookmarking
-    // _bookmark: null,
-    // setBookmark: function (bm) { this._bookmark = bm; },
-    // getBookmark: function () { return this._bookmark; },
 
     // These defaults are invalid. They are the default used when with tinyMCE we can not find an specified font size
     // or family we will just allow the one assigned in the CSS to be used
@@ -55,15 +78,26 @@
 
     _defaultFontSize: 0,
 
-    // TODO_KB Improved font family/size handling
-    // These will be changed to properly determine if the font size or family in a spawn is actually
-    // our CSS default so that the family and size menus can be set correctly
+    // TODO_FUTURE Improved font family/size handling
+    // These should be changed to properly determine if the font size or family in a span is actually
+    // our CSS default so that the family and size menus can be set more accurately.
+    /**
+     * The default font family set by the client
+     * @type {String}
+     */
     _qtDefaultFontFamily: '',
 
+    /**
+     * the default font size set by the client
+     * @type {Number}
+     */
     _qtDefaultFontSize: 0,
 
+    /**
+     * The supported font sizes for the editor.
+     * @type {Array.<Object>} Array of name, point value associations for font sizes
+     */
     _supportedFontSizes:  [
-      // { name: '', ptvalue: '' },
       { name: 'xx-small', ptvalue: '8pt'  },
       { name: undefined, ptvalue: '9pt' },
       { name: 'x-small', ptvalue: '10pt' },
@@ -82,6 +116,11 @@
       { name: undefined, ptvalue: '72pt' }
     ],
 
+    /**
+     * Constructor that takes in an editor instance
+     * @param {tinymce.Editor} ed The editor instance to use.
+     * @constructor
+     */
     QtInterfacePlugin: function (ed) {
       // Class Constructor
       this._editor = ed;
@@ -314,22 +353,42 @@
     //////////////////////////////////////////////////////////////////////////
     // Wysiwyg toolbar button interactions
     //////////////////////////////////////////////////////////////////////////
+    /**
+     * Toggles bold on the editor
+     * @param {Boolean} bBold Whether to toggle bold on/off
+     */
     toggleBold: function (bBold) {
       this._editor.execCommand('bold', bBold);
     },
 
+    /**
+     * Toggles italic on the editor
+     * @param {Boolean} bItalic Whether to toggle italic on/off
+     */
     toggleItalic: function (bItalic) {
       this._editor.execCommand('italic', bItalic);
     },
 
+    /**
+     * Toggles underline on the editor
+     * @param {Boolean} bULine Wether to toggle underline on/off
+     */
     toggleUnderline: function (bULine) {
       this._editor.execCommand('underline', bULine);
     },
 
+    /**
+     * Toggles strikethough on the editor
+     * @param {Boolean} bStriked Whether to toggle strikethrough on/off
+     */
     toggleStrikethrough: function (bStriked) {
       this._editor.execCommand('strikethrough', bStriked);
     },
 
+    /**
+     * Sets the current alignment on the editor
+     * @param {String} alignment The alignment to set on the editor
+     */
     setAlign: function (alignment) {
       var ed = this._editor,
           alignTypes = ['alignleft', 'alignright', 'aligncenter', 'alignfull'];
@@ -342,22 +401,38 @@
       this._editor.execCommand('justify' + alignment);
     },
 
+    /**
+     * Decreases the current indent level
+     */
     decreaseIndent: function () {
       this._editor.execCommand('outdent');
     },
 
+    /**
+     * Increases the current indent level
+     */
     increaseIndent: function () {
       this._editor.execCommand('indent');
     },
 
+    /**
+     * Inserts a horizontal rule
+     */
     insertHorizontalRule: function () {
       this._editor.execCommand('InsertHorizontalRule', false, true);
     },
 
+    /**
+     * Clears the formatting of the current selection
+     */
     clearFormatting: function () {
       this._editor.execCommand('RemoveFormat');
     },
 
+    /**
+     * Sets the font color to the given font color
+     * @param {String} color The font color to set
+     */
     setFontColor: function (color) {
       if (color === '') {
         this._editor.formatter.remove('forecolor');
@@ -366,6 +441,10 @@
       }
     },
 
+    /**
+     * Sets the hilite color to the given color
+     * @param {String} color The hiliTe color to set
+     */
     setHilightColor: function (color) {
       if (color === '') {
         this._editor.formatter.remove('hilitecolor');
@@ -374,14 +453,26 @@
       }
     },
 
+    /**
+     * Toggles bullet list mode on/off
+     * @param {Boolean} bInList Whether to toggle bullet list mode on/off
+     */
     bulletList: function (bInList) {
       this._editor.execCommand('InsertUnorderedList', false, bInList);
     },
 
+    /**
+     * Toggles numbered list mode on/off
+     * @param {Boolean} bInList Whether to toggle number list mode on/off
+     */
     numberList: function (bInList) {
       this._editor.execCommand('InsertOrderedList', false, bInList);
     },
 
+    /**
+     * Sets the font family
+     * @param {String} font The font family to use
+     */
     setFont: function (font) {
       if (font) {
         this._editor.execCommand('FontName', false, font);
@@ -393,6 +484,10 @@
       }
     },
 
+    /**
+     * Sets the font size
+     * @param {Number} size The font size to use
+     */
     setFontSize: function (size) {
       if (size) {
         this._editor.execCommand('FontSize', false, size + 'pt');
@@ -404,6 +499,10 @@
       }
     },
 
+    /**
+     * Loads the default font settings and applies them to the iframe's body
+     * @param {JSON} fontJSON JSON object containing the default font family and size information to set
+     */
     loadDefaultFont: function (fontJSON) {
       var family = fontJSON['family'], ptSize = fontJSON['ptSize'],
           bodyClass = '.tinymce-native', $editorBody;
@@ -412,7 +511,6 @@
       this._qtDefaultFontSize = ptSize;
 
       // console.log('family: ' + family + ' ptSize: ' + ptSize);
-
       $editorBody = $('#content_ifr').contents().find(bodyClass);
       if ($editorBody && $editorBody.length) {
         $editorBody.css('font-family', family);
@@ -420,14 +518,39 @@
       }
     },
 
-    _windowReadOnlyColor: '',
-    _windowEditColor: '',
+    /**
+     * The text color to use when in edit mode
+     * @type {String}
+     */
     _textEditColor: '',
+
+    /**
+     * The text color to use when in readonly mode
+     * @type {String}
+     */
     _textReadOnlyColor: '',
 
+    /**
+     * The window color to use when in readonly mode
+     * @type {String}
+     */
+    _windowReadOnlyColor: '',
+
+    /**
+     * The window color to use when in edit mode
+     * @type {String}
+     */
+    _windowEditColor: '',
+
+    /**
+     * Loads the client's palette settings into the editor
+     * @param {String} windowEdit The window color for edit mode
+     * @param {String} windowReadOnly The window color for readonly mode
+     * @param {String} textEdit The text color for edit mode
+     * @param {String} textReadOnly The text color for readonly mode
+     */
     loadPalette: function (windowEdit, windowReadOnly, textEdit, textReadOnly) {
       var bodyClass = '.tinymce-native', $editorBody;
-      console.log('Loading palette');
       this._windowEditColor = windowEdit;
       this._windowReadOnlyColor = windowReadOnly;
       this._textEditColor = textEdit;
@@ -448,8 +571,16 @@
     // Wysiwyg table interactions
     //////////////////////////////////////////////////////////////////////////
 
+    /**
+     * Whether or not there is a currently a row on the TinyMCE clipboard that can be pasted
+     * @type {Boolean}
+     */
     _hasRowToPaste: false,
 
+    /**
+     * Executes the provided table command and updates whether a row is available for pasting accordingly
+     * @param {String} cmd The table command to execute
+     */
     fireTableCommand: function (cmd) {
       this._editor.execCommand(cmd);
       switch (cmd) {
@@ -466,6 +597,11 @@
       }
     },
 
+    /**
+     * Creates a SeapineTable border from the provided JSON border information
+     * @param {JSON} jsonBorder JSON object containing the border infromation
+     * @returns {SeapineTable.Border} The border object
+     */
     getBorderFromJSON: function (jsonBorder) {
       var border, spTablePlugin = this._editor.plugins.seapinetable;
       if (jsonBorder) {
@@ -476,6 +612,11 @@
       return border;
     },
 
+    /**
+     * Inserts a new table or applies different settings to the current table in the editor
+     * @param {JSON} json JSON object containing the table information to insert or apply
+     * @param {Boolean} insertTable Whether to insert a new table or apply the information to the current table
+     */
     insertOrSaveTable: function (json, insertTable) {
 
       var ed = this._editor,
@@ -513,6 +654,10 @@
       }
     },
 
+    /**
+     * Applies the given properties to the current row in the editor
+     * @param {JSON} json JSON object containing the properties to set on the current row
+     */
     setRowProperties: function (json) {
       // console.log('setRowProperties: ' + JSON.stringify(json));
       var ed = this._editor,
@@ -539,6 +684,10 @@
 
     },
 
+    /**
+     * Applies the given cell properties to the current cell in the editor
+     * @param {JSON} json JSON object containing the properties to set on the current cell
+     */
     setCellProperties: function (json) {
       // console.log('setCellProperties: ' + JSON.stringify(json));
       var ed = this._editor,
@@ -564,7 +713,9 @@
 
     },
 
-
+    /**
+     * Determines and emits a signal to the interface containing the properties of the currently selected table
+     */
     requestTableProperties: function () {
 
       var ed = this._editor, spTablePlugin = ed.plugins.seapinetable,
@@ -638,6 +789,9 @@
       }
     },
 
+    /**
+     * Determines and emits a signal to the interface containing the properties of the currently selected row
+     */
     requestRowProperties: function () {
 
       // console.log('requestRowProperties');
@@ -698,14 +852,17 @@
 
     },
 
+    /**
+     * Determines and emits a signal to the interface containing the properties of the currently selected cell
+     */
     requestCellProperties: function () {
 
-      console.log('requestCellProperties');
+      // console.log('requestCellProperties');
 
       var ed = this._editor, spTablePlugin = ed.plugins.seapinetable,
           json = {}, jsonBorders, cellBorders,
           selectedNode, cellElement, $cellElement,
-          cellSpacing, margins, borderStyle,
+          margins, borderStyle,
           topBorder, leftBorder, bottomBorder, rightBorder;
 
       selectedNode = ed.selection.getNode();
@@ -758,14 +915,23 @@
     //////////////////////////////////////////////////////////////////////////
     // Wysiwyg context menu/event handling interactions
     /////////////////////////////////////////////////////////////////////////
+    /**
+     * Tells the editor to perform an undo
+     */
     undo: function () {
       this._editor.execCommand('Undo');
     },
 
+    /**
+     * Tells the editor to perform a redo
+     */
     redo: function () {
       this._editor.execCommand('Redo');
     },
 
+    /**
+     * Tells the editor to select all of its contents
+     */
     selectAll: function () {
       this._editor.execCommand('selectAll');
     },
@@ -783,7 +949,7 @@
      */
     findClosestAnchorNode: function ($el) {
       var q = $el.closest('a');
-      return (q && q.length) ? q[0] : null;
+      return q && q.length ? q[0] : null;
     },
 
     /**
@@ -795,18 +961,22 @@
     findChildAnchorNode: function ($el) {
       var childAnchors = $el.find('a'),
         foundAnchor = null;
-
       if (childAnchors && childAnchors.length) {
         foundAnchor = childAnchors[0];
       }
-
       return foundAnchor;
     },
 
+    /**
+     * Tells the editor to unlink the current link
+     */
     unlink: function () {
       this._editor.execCommand('unlink', true);
     },
 
+    /**
+     * Tells the editor to select the current link
+     */
     selectLink: function () {
       var ed = this._editor,
           selectedNode, anchorNode;
@@ -819,6 +989,9 @@
       }
     },
 
+    /**
+     * Determines the URL and emits a signal to the interface so the client can open the current link.
+     */
     requestOpenLink: function () {
       var ed = this._editor,
           url, selectedNode, anchorNode;
@@ -832,6 +1005,10 @@
       }
     },
 
+    /**
+     * Determines the information for inserting or editing a link for the current location and
+     * emits a corresponding signal to the interface.
+     */
     requestInsertEditLink: function () {
       var ed = this._editor,
           selectedNode, anchorNode,
@@ -874,6 +1051,11 @@
       }
     },
 
+    /**
+     * Inserts a link in the editor with the provided information
+     * @param {String} url The URL to link to
+     * @param {String} displayText The text to display for the link
+     */
     insertLink: function (url, displayText) {
       var ed = this._editor, linkHTML;
       linkHTML = ed.dom.createHTML('a', {
@@ -890,10 +1072,18 @@
     //////////////////////////////////////////////////////////////////////////
     // Image handling
     /////////////////////////////////////////////////////////////////////////
+    /**
+     * Inserts an image into the editor
+     * @param {String} imgSrc The HTML to insert for the iamge
+     */
     insertImage: function (imgSrc) {
       this._editor.execCommand('mceInsertContent', false, imgSrc);
     },
 
+    /**
+     * Reloads a provided image in the editor by cachebustering the image
+     * @param {String} imgSrc The image source that needs to be reloaded
+     */
     reloadImage: function (imgSrc) {
       var bodyClass = '.tinymce-native', $images;
 
@@ -908,16 +1098,29 @@
       this._editor.execCommand('mceRepaint');
     },
 
+    /**
+     * Helper function to escape a regular expression
+     * @param {String} str The regular expression string to escape
+     * @returns {String} The escaped regular expression string
+     */
     escapeRegEg: function (str) {
       return str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, '\\$1');
     },
 
+    /**
+     * Function that sets up callbacks so a signal is emitted to the interface when an image is successfully loaded
+     */
     detectImagesLoaded: function () {
       var editor = this._editor,
         bodyClass = '.tinymce-native', $images, waitImgDone;
 
       $images = $('#content_ifr').contents().find(bodyClass).find('img');
 
+      /**
+       * Function called when an image has been loaded by the browser
+       * @param {String} loadedImg The image that was loaded
+       * @param {Boolean} bWasError Whether there was an error loading the image
+       */
       waitImgDone = function (loadedImg, bWasError) {
         console.log('Image has been loaded: ' + loadedImg.src + ' at: ' + new Date().getTime() + ' error: ' + bWasError );
         editor.execCommand('mceRepaint');
@@ -939,6 +1142,10 @@
       });
     },
 
+    /**
+     * Emits a signal to the interface containing the information about the currently selected image to edit or resize
+     * @param {Boolean} bForResize Whether to emit the signal for an image edit or image resize
+     */
     requestEditImage: function (bForResize) {
       var json = {};
       if (this._cachedSelectedImage) {
@@ -955,6 +1162,11 @@
       }
     },
 
+    /**
+     * Sets the size of the selected image in the editor
+     * @param {Number} width The width to set on the image
+     * @param {Number} height The height to set on the image
+     */
     setEditImageSize: function (width, height) {
       if (this._cachedSelectedImage) {
         this._cachedSelectedImage.width = width;
@@ -964,6 +1176,12 @@
       }
     },
 
+    /**
+     * Changes the selected image in the editor to be the provided new image
+     * @param {String} src The source of the new image
+     * @param {Number} width The width to set on the image
+     * @param {Number} height The height to set on the image
+     */
     setEditImage: function (src, width, height) {
       if (this._cachedSelectedImage) {
         this._cachedSelectedImage.src = src;
@@ -978,8 +1196,16 @@
     //////////////////////////////////////////////////////////////////////////
     // Editor configuration settings
     /////////////////////////////////////////////////////////////////////////
+    /**
+     * The current width setting of the editor (-1 represents variable width)
+     * @type {Number}
+     */
     _cachedWidthSetting: -1,
 
+    /**
+     * Sets the editor to be a fixed width
+     * @param {Number} width The fixed width to set
+     */
     setFixedWidthEditor: function (width) {
       var bodyClass = '.tinymce-native', $editorBody;
       // Only set a fixed width if we are not already set to that fixed width
@@ -991,6 +1217,9 @@
       }
     },
 
+    /**
+     * Sets the editor to be a varaible width again by clearing the fixed width
+     */
     clearFixedWidthEditor: function () {
       var bodyClass = '.tinymce-native', $editorBody;
       // Only clear the fixed with if we currently have a fixed width
@@ -1003,8 +1232,15 @@
       }
     },
 
+    /**
+     * The current editor height
+     * @type {Number}
+     */
     _cachedEditorHeight: '',
 
+    /**
+     * Function that emits a signal to the interface when the editor's height changes
+     */
     editorResized: function () {
       var bodyClass = '.tinymce-native', $editorBody, currHeight;
       $editorBody = $('#content_ifr').contents().find(bodyClass);
@@ -1016,8 +1252,16 @@
       }
     },
 
+    /**
+     * Whether the editor is currently readonly
+     * @type {Boolean}
+     */
     _cachedReadOnly: null,
 
+    /**
+     * Sets the editor to be readonly or edit mode (if it different from the current setting)
+     * @param {Boolean} bReadOnly Whether to set the editor to readonly or edit mode
+     */
     setReadOnly: function (bReadOnly) {
       var bodyClass = '.tinymce-native', $editorBody;
       // Only apply the new value if it isn't our cached value
@@ -1044,6 +1288,10 @@
       }
     },
 
+    /**
+     * Pastes the provided string as text into the editor
+     * @param {String} strText The text to paste into the editor
+     */
     pasteText: function (strText) {
       this._editor.execCommand('mceInsertContent', false, strText);
     },
