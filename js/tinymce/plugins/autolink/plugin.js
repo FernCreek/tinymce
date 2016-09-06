@@ -58,7 +58,6 @@ tinymce.PluginManager.add('autolink', function(editor) {
   }
 
   function parseCurrentLine(editor, end_offset, delimiter) {
-    console.log('autoLink plugin parseCurrentLine');
     var rng, end, start, endContainer, bookmark, text, matches, prev, len, rngText, linkText, idx;
 
     function scopeIndex(container, index) {
