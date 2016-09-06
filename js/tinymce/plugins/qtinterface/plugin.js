@@ -37,6 +37,12 @@
     _editor: null,
 
     /**
+     * The TinyMCE alignment types supported
+     * @type {Array.<String>}
+     */
+    _alignTypes: ['alignleft', 'alignright', 'aligncenter', 'alignfull'],
+
+    /**
      * The current table element being worked with
      * @type {HTMLElement}
      */
@@ -420,7 +426,7 @@
      */
     setAlign: function (alignment) {
       var ed = this._editor,
-          alignTypes = ['alignleft', 'alignright', 'aligncenter', 'alignfull'];
+          alignTypes = this._alignTypes;
 
       // First turn off all alignment styles
       alignTypes.forEach( function (align) {
@@ -455,7 +461,11 @@
      * Clears the formatting of the current selection
      */
     clearFormatting: function () {
-      this._editor.execCommand('RemoveFormat');
+      var ed = this._editor;
+      ed.execCommand('RemoveFormat');
+      this._alignTypes.forEach( function (align) {
+        ed.formatter.remove(align);
+      });
     },
 
     /**
