@@ -465,7 +465,7 @@
           // Determine the current border style based on the borders
           rowBorders = new spTablePlugin.RowBorders(leftBorder, topBorder, rightBorder, bottomBorder, verticalBorder);
           borderStyle = spTablePlugin.getBorderStyleForRow(rowBorders);
-          $cells = $jElement;
+          $cells = $jElement.find('td');
 
         } else {
           viewClass = TinySC.TableCellPropertiesPane;
@@ -485,7 +485,7 @@
           // Determine the current border style based on the borders
           cellBorders = new spTablePlugin.CellBorders(leftBorder, topBorder, rightBorder, bottomBorder);
           borderStyle = spTablePlugin.getBorderStyleForCell(cellBorders);
-          $cells = $jElement.find('td');
+          $cells = $jElement;
         }
 
         horizontalAlignment = $cells.attr('align') || 'left';
