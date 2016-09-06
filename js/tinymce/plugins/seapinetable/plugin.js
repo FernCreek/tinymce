@@ -867,8 +867,8 @@
 
         if (alignment && bgColor) {
           $row.attr('align', alignment.horizontal)
-							.attr('vAlign', alignment.vertical)
-							.attr('bgColor', bgColor);
+              .attr('vAlign', alignment.vertical)
+              .attr('bgColor', bgColor);
         }
 
         ed.execCommand('mceAddUndoLevel');
