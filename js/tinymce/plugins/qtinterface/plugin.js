@@ -1348,6 +1348,8 @@
       this._editor.execCommand('mceInsertContent', false, strText);
     },
 
+    },
+
     /**
      * Returns information about the plugin as a name/value array.
      * The current keys are longname, author, authorurl, infourl and version.
