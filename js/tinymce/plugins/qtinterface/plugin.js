@@ -481,7 +481,7 @@
     clearFormatting: function () {
       var ed = this._editor;
       ed.execCommand('RemoveFormat');
-			// Clear out any alignment
+      // Clear out any alignment
       ed.execCommand('justifynone');
     },
 
@@ -1129,14 +1129,20 @@
      */
     insertLink: function (url, displayText) {
       var ed = this._editor, linkHTML;
-      linkHTML = ed.dom.createHTML('a', {
-        href: url.replace(' ', '%20'),
-        title: 'Open ' + url,
-        target: '_blank'
-      }, displayText);
 
-      // ed.restoreSelection();
-      ed.execCommand('mceInsertContent', false, linkHTML, {skip_focus: true});
+      if (url.length === 0) { // Remove the link
+        ed.execCommand('mceInsertContent', false, displayText, {skip_focus: true});
+      } else {
+        linkHTML = ed.dom.createHTML('a', {
+          href: url.replace(' ', '%20'),
+          title: 'Open ' + url,
+          target: '_blank'
+        }, displayText);
+
+        // ed.restoreSelection();
+        ed.execCommand('mceInsertContent', false, linkHTML, {skip_focus: true});
+      }
+
       ed.execCommand('mceAddUndoLevel');
     },
 
