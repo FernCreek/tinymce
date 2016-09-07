@@ -1348,6 +1348,9 @@
       this._editor.execCommand('mceInsertContent', false, strText);
     },
 
+    insertText: function (strText) {
+      this._editor.selection.collapse();
+      this._editor.execCommand('mceInsertContent', false, strText);
     },
 
     /**
