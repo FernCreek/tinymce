@@ -1374,6 +1374,14 @@
     },
 
     /**
+     * Pastes the provided HTML string into the editor
+     * @param {String} strHTML The HTML to paste into the editor
+     */
+    pasteHTML: function (strHTML) {
+      this._editor.execCommand('mceInsertClipboardContent', false, { content: strHTML });
+    },
+
+    /**
      * Inserts the provided string as text into the editor
      * @param {String} strText The text to insert into the editor
      */
@@ -1384,7 +1392,7 @@
 
     /**
      * Inserts the provided HTML string into the editor
-     * @param {String} strText The HTML to insert into the editor
+     * @param {String} strHTML The HTML to insert into the editor
      */
     insertHTML: function (strHTML) {
       this._editor.selection.collapse();
