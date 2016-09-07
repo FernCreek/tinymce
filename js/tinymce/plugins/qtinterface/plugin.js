@@ -37,12 +37,6 @@
     _editor: null,
 
     /**
-     * The TinyMCE alignment types supported
-     * @type {Array.<String>}
-     */
-    _alignTypes: ['alignleft', 'alignright', 'aligncenter', 'alignfull'],
-
-    /**
      * The current table element being worked with
      * @type {HTMLElement}
      */
@@ -78,8 +72,8 @@
      */
     _cachedFontSize: null,
 
-    // These defaults are invalid. They are the default used when with tinyMCE we can not find an specified font size
-    // or family we will just allow the one assigned in the CSS to be used
+    // These defaults are invalid. They are the defaults used when we can not find an specified font size
+    // or family. In this case just allow the one assigned in the CSS to be used.
     _defaultFontValue: '',
 
     _defaultFontSize: 0,
@@ -94,7 +88,7 @@
     _qtDefaultFontFamily: '',
 
     /**
-     * the default font size set by the client
+     * The default font size set by the client
      * @type {Number}
      */
     _qtDefaultFontSize: 0,
@@ -194,7 +188,8 @@
           supFontSizes = this._supportedFontSizes,
           i, tableCell, ed = this._editor,
           singleCell = false, singleRow = false,
-          mergedCell = false, matchingParent;
+          mergedCell = false, matchingParent,
+          alignments = 0, lastAlignment = '';
 
       if (SPTinyMCEInterface && ed) {
         state = ed.queryCommandState('bold');
@@ -205,14 +200,45 @@
         SPTinyMCEInterface.signalCursorIsUnderline(state);
         state = ed.queryCommandState('strikethrough');
         SPTinyMCEInterface.signalCursorIsStrikethrough(state);
+
         if (ed.queryCommandState('justifyleft')) {
-          SPTinyMCEInterface.signalCursorAlignLeft();
-        } else if (ed.queryCommandState('justifycenter')) {
-          SPTinyMCEInterface.signalCursorAlignCenter();
-        } else if (ed.queryCommandState('justifyright')) {
-          SPTinyMCEInterface.signalCursorAlignRight();
-        } else if (ed.queryCommandState('justifyfull')) {
-          SPTinyMCEInterface.signalCursorAlignJustify();
+          lastAlignment = 'left';
+          ++alignments;
+        }
+        if (ed.queryCommandState('justifycenter')) {
+          lastAlignment = 'center';
+          ++alignments;
+        }
+        if (ed.queryCommandState('justifyright')) {
+          lastAlignment = 'right';
+          ++alignments;
+        }
+        if (ed.queryCommandState('justifyfull')) {
+          lastAlignment = 'justify';
+          ++alignments;
+        }
+
+        if (alignments === 0) {
+          SPTinyMCEInterface.signalCursorAlignNone();
+        } else if (alignments > 1) {
+          SPTinyMCEInterface.signalCursorAlignMultiple();
+        } else {
+          switch (lastAlignment) {
+            case 'left':
+              SPTinyMCEInterface.signalCursorAlignLeft();
+              break;
+            case 'center':
+              SPTinyMCEInterface.signalCursorAlignCenter();
+              break;
+            case 'right':
+              SPTinyMCEInterface.signalCursorAlignRight();
+              break;
+            case 'justify':
+              SPTinyMCEInterface.signalCursorAlignJustify();
+              break;
+            default:
+              break;
+          }
         }
 
         // Font family
@@ -357,12 +383,10 @@
         SPTinyMCEInterface.signalCursorInSingleCell(singleCell);
         SPTinyMCEInterface.signalCursorInSingleRow(singleRow);
 
-        SPTinyMCEInterface.signalHasRowToPaste(this._hasRowToPaste);
-
         // Lists
         listNode = ed.dom.getParent(element, 'ul,ol');
 
-        // Bulleted (Unordered) List
+        // Bullet (Unordered) List
         state = !!listNode && listNode.nodeName === 'UL';
         SPTinyMCEInterface.signalCursorInBulletedList(state);
 
@@ -425,14 +449,8 @@
      * @param {String} alignment The alignment to set on the editor
      */
     setAlign: function (alignment) {
-      var ed = this._editor,
-          alignTypes = this._alignTypes;
-
-      // First turn off all alignment styles
-      alignTypes.forEach( function (align) {
-        ed.formatter.remove(align);
-      });
-
+      // Clear out any alignments that have been set with justify none command
+      this._editor.execCommand('justifynone');
       this._editor.execCommand('justify' + alignment);
     },
 
@@ -463,9 +481,8 @@
     clearFormatting: function () {
       var ed = this._editor;
       ed.execCommand('RemoveFormat');
-      this._alignTypes.forEach( function (align) {
-        ed.formatter.remove(align);
-      });
+			// Clear out any alignment
+      ed.execCommand('justifynone');
     },
 
     /**
@@ -634,6 +651,8 @@
         default:
           break;
       }
+
+      SPTinyMCEInterface.signalHasRowToPaste(this._hasRowToPaste);
     },
 
     /**
