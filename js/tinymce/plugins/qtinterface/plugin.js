@@ -1367,6 +1367,10 @@
       this._editor.execCommand('mceInsertContent', false, strText);
     },
 
+    /**
+     * Inserts the provided string as text into the editor
+     * @param {String} strText The text to insert into the editor
+     */
     insertText: function (strText) {
       this._editor.selection.collapse();
       this._editor.execCommand('mceInsertContent', false, strText);
