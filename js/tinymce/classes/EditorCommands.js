@@ -681,6 +681,9 @@ define("tinymce/EditorCommands", [
 			// Override justify commands
 			'JustifyLeft,JustifyCenter,JustifyRight,JustifyFull': function(command) {
 				var name = 'align' + command.substring(7);
+				if (command == 'justifyfull') {
+					name = 'alignjustify';
+				}
 				var nodes = selection.isCollapsed() ? [dom.getParent(selection.getNode(), dom.isBlock)] : selection.getSelectedBlocks();
 				var matches = map(nodes, function(node) {
 					return !!formatter.matchNode(node, name);
