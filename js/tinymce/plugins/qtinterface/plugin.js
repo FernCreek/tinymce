@@ -1377,6 +1377,15 @@
     },
 
     /**
+     * Inserts the provided HTML string into the editor
+     * @param {String} strText The HTML to insert into the editor
+     */
+    insertHTML: function (strHTML) {
+      this._editor.selection.collapse();
+      this._editor.execCommand('mceInsertClipboardContent', false, { content: strHTML });
+    },
+
+    /**
      * Returns information about the plugin as a name/value array.
      * The current keys are longname, author, authorurl, infourl and version.
      *
