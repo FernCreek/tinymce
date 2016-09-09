@@ -985,6 +985,11 @@
         $table.removeAttr('data-mce-style');
         $cells.removeAttr('data-mce-style');
 
+        // Clear out deprecated table attributes, since we are storing them in CSS
+        $table.removeAttr('border');
+        $table.removeAttr('cellspacing');
+        $table.removeAttr('cellpadding');
+
         if (cellMargins) {
           this.applyCellMargins(cellMargins, $cells);
         }
