@@ -33,7 +33,8 @@
     },
 
     tableConstants: {
-      kDefaultCellMargin: 3
+      kDefaultCellMargin: 3,
+      kDefaultMaxMargin: 300
     },
 
     /**
@@ -225,12 +226,17 @@
      * @returns {Array.<Number>} The margins for the cell in the order of top, right, bottom, left.
      */
     getMarginsForCell: function ($cell) {
-      var margins = [], defaultMargin = this.tableConstants.kDefaultCellMargin;
+      var margins = [], defaultMargin = this.tableConstants.kDefaultCellMargin,
+          marginNames = ['top', 'right', 'bottom', 'left'], marginValue,
+          maxMargin = this.tableConstants.kDefaultMaxMargin;
       if ($cell) {
-        margins.push(this.getWidthFromPxString($cell.css('padding-top')) || defaultMargin);
-        margins.push(this.getWidthFromPxString($cell.css('padding-right')) || defaultMargin);
-        margins.push(this.getWidthFromPxString($cell.css('padding-bottom')) || defaultMargin);
-        margins.push(this.getWidthFromPxString($cell.css('padding-left')) || defaultMargin);
+        marginNames.forEach( function (name) {
+          marginValue = this.getWidthFromPxString($cell.css('padding-' + name)) || defaultMargin;
+          if (marginValue > maxMargin) {
+            marginValue = maxMargin;
+          }
+          margins.push(marginValue);
+        });
       } else {
         margins = [defaultMargin, defaultMargin, defaultMargin, defaultMargin];
       }
