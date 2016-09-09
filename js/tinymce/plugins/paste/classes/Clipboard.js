@@ -358,11 +358,10 @@ define("tinymce/pasteplugin/Clipboard", [
 						rng = null;
 					}
 
-					var blobCache = editor.editorUpload.blobCache;
-					var blobInfo = blobCache.create(uniqueId(), blob, getBase64FromUri(reader.result));
-					blobCache.add(blobInfo);
+					// Due to supporting IE9 we do not support URL.createObjectURL
+					// Because of this we cannot use the blobInfo.blobUri
 
-					pasteHtml('<img src="' + blobInfo.blobUri() + '">');
+					pasteHtml('<img src="' + reader.result + '">');
 				}
 
 				if (items) {
