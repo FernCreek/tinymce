@@ -335,7 +335,7 @@
           border.width = this.getWidthFromPxString(borderWidthStr);
           if (border.width > 0) {
             // If the border has a valid width go ahead and grab the color as well
-            border.color = ed.dom.toHex($cell.css(borderStyleStr + 'color'));
+            border.color = ed.dom.toHex($cell.css(borderStyleStr + 'color')).toUpperCase();
           }
         }
       }
@@ -420,7 +420,7 @@
         }
 
         if (matchingBorders) {
-          border.color = ed.dom.toHex(commonColor);
+          border.color = ed.dom.toHex(commonColor).toUpperCase();
           border.width = this.getWidthFromPxString(commonWidth);
         }
       }
@@ -444,7 +444,7 @@
           matchingBorders = true;
 
       if (ed && $table && borderStr) {
-        $rows = $table.find('tr')
+        $rows = $table.find('tr');
 
         switch (borderStr) {
           case 'left':
