@@ -227,11 +227,13 @@
      */
     getMarginsForCell: function ($cell) {
       var margins = [], defaultMargin = this.tableConstants.kDefaultCellMargin,
-          marginNames = ['top', 'right', 'bottom', 'left'], marginValue,
-          maxMargin = this.tableConstants.kDefaultMaxMargin;
+          marginNames = ['top', 'right', 'bottom', 'left'],
+          maxMargin = this.tableConstants.kDefaultMaxMargin,
+           marginValue, self = this, tmpPadding;
       if ($cell) {
         marginNames.forEach( function (name) {
-          marginValue = this.getWidthFromPxString($cell.css('padding-' + name)) || defaultMargin;
+          tmpPadding = $cell.css('padding-' + name);
+          marginValue = tmpPadding ? self.getWidthFromPxString(tmpPadding) : defaultMargin;
           if (marginValue > maxMargin) {
             marginValue = maxMargin;
           }
