@@ -1032,16 +1032,6 @@
                 .removeAttr('id');
         }
 
-        // TODO_KB_TINYMCE - Enhancement Consideration: Potentially change drawing for no borders
-        // The visual aid class gets added regardless of the border because of the way the table is created.
-        // Toggle the class here based on the border.
-        // if (border) {
-        //   // $table.removeClass(ed.settings.visual_table_class);
-        // } else {
-        //   // $table.addClass(ed.settings.visual_table_class);
-        // }
-        $table.removeClass(ed.settings.visual_table_class);
-
         if (!insertMode) {
           // Check if selection is in a cell still. If not, it means the cell was removed
           // by this table edit, and we need to put the cursor in the first cell.
