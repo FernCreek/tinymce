@@ -815,7 +815,7 @@
 
         alignment = tableElement.align || 'left';
         json['alignment'] = alignment;
-        backgroundColor = $cells.attr('bgColor') || '#ffffff'; // TODO: RGBtoHex?
+        backgroundColor = ($cells.attr('bgColor') || '#ffffff').toUpperCase(); // TODO: RGBtoHex?
         json['bgColor'] = backgroundColor;
 
         json['rows'] = spTablePlugin.countTableRows($tableElement);
@@ -886,7 +886,7 @@
 
         json['alignment'] = $cells.attr('align') || 'left';
         json['alignmentV'] = $cells.attr('vAlign') || 'middle';
-        json['bgColor'] = $cells.attr('bgColor') || '#ffffff'; // TODO: RGBtoHex?
+        json['bgColor'] = ($cells.attr('bgColor') || '#ffffff').toUpperCase(); // TODO: RGBtoHex?
 
         topBorder = spTablePlugin.getBorderForRow(ed, $rowElement, 'top');
         jsonBorders['top'] = topBorder;
@@ -949,7 +949,7 @@
 
         json['alignment'] = cellElement.align || 'left';
         json['alignmentV'] = cellElement.vAlign || 'middle';
-        json['bgColor'] = cellElement.bgColor || '#ffffff'; // TODO: RGBtoHex?;
+        json['bgColor'] = (cellElement.bgColor || '#ffffff').toUpperCase(); // TODO: RGBtoHex?;
 
         topBorder = spTablePlugin.getBorderForCell(ed, $cellElement, 'top');
         jsonBorders['top'] = topBorder;

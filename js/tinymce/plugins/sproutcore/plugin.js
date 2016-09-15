@@ -368,7 +368,7 @@
         }
 
         alignment = tableElement.align || 'left';
-        backgroundColor = $cells.attr('bgColor') || '#ffffff'; // TODO: RGBtoHex?
+        backgroundColor = ($cells.attr('bgColor') || '#ffffff').toUpperCase(); // TODO: RGBtoHex?
 
         topBorder = spTablePlugin.getBorderForTable(ed, $tableElement, 'top');
         leftBorder = spTablePlugin.getBorderForTable(ed, $tableElement, 'left');
@@ -490,7 +490,7 @@
 
         horizontalAlignment = $cells.attr('align') || 'left';
         verticalAlignment = $cells.attr('vAlign') || 'middle';
-        backgroundColor = $cells.attr('bgColor') || '#ffffff'; // TODO: RGBtoHex?
+        backgroundColor = ($cells.attr('bgColor') || '#ffffff').toUpperCase(); // TODO: RGBtoHex?
 
         controller.updateBorderContainerLists();
 
