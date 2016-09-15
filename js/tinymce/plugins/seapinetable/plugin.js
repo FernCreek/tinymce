@@ -308,6 +308,31 @@
     },
 
     /**
+     * Gets the border width string for the given cell.
+     *
+     * NOTE TTBugs #41231
+     * This is needed because FireFox getComputedStyle returns an incorrect value when querying the top and left borders
+     * of a cell in a table where border-collapse is on. This causes jquery to return the same incorrect value.
+     *
+     * Due to this we are pulling the value directly off of the style on the cell. If the borders are set not on
+     * the cell elements this, and large amounts of the border styling functionality will break.
+     *
+     * @param {jQuery} $cell Cell selector, should only contain one HTMLElement.
+     * @param {String} borderCSSStyleStr The CSS style property to get the information for.
+     * @returns {String} The string containing the border width information.
+     */
+    getBorderWidthForCell: function ($cell, borderCSSStyleStr) {
+      var borderWidth = '0px', tmpString;
+      if ($cell && $cell.length === 1) {
+        tmpString = $cell[0].style[borderCSSStyleStr];
+        if (tmpString) {
+          borderWidth = tmpString;
+        }
+      }
+      return borderWidth;
+    },
+
+    /**
      * Gets the border information for a particular cell
      *
      * @param {tinymce.Editor} ed Editor instance.
@@ -324,7 +349,8 @@
       if (ed && $cell && borderStr) {
 
         borderStyleStr = 'border-' + borderStr + '-';
-        borderWidthStr = $cell.css(borderStyleStr + 'width');
+        // Please see note on getBorderWidthForCell before changing
+        borderWidthStr = this.getBorderWidthForCell($cell, borderStyleStr + 'width');
         borderStyle = $cell.css(borderStyleStr + 'style');
 
         // Check if the border is hidden
@@ -368,12 +394,11 @@
             // Grab the top or bottom border of all of the cells, set it if they are the same, if not use default
             $cell = $($cells[0]);
             commonColor = $cell.css(borderStyleStr + 'color');
-            commonWidth = $cell.css(borderStyleStr + 'width');
+            commonWidth = this.getBorderWidthForCell($cell, borderStyleStr + 'width');
             for (i = 1; i < $cells.length && matchingBorders; ++i) {
               $cell = $($cells[i]);
               if ($cell.css(borderStyleStr + 'color') !== commonColor ||
-                  $cell.css(borderStyleStr + 'width') !== commonWidth) {
-
+                  this.getBorderWidthForCell($cell, borderStyleStr + 'width') !== commonWidth) {
                 matchingBorders = false;
               }
             }
@@ -382,25 +407,25 @@
           case 'left':
             // Grab the right border of the furthest right or left border of the furthest left
             if (borderStr === 'right') {
-              $cells = $row.find('td:last-child');
+              $cell = $row.find('td:last-child');
             } else {
-              $cells = $row.find('td:first-child');
+              $cell = $row.find('td:first-child');
             }
 
-            commonWidth = $cells.css(borderStyleStr + 'width');
-            commonColor = $cells.css(borderStyleStr + 'color');
+            commonWidth = this.getBorderWidthForCell($cell, borderStyleStr + 'width');
+            commonColor = $cell.css(borderStyleStr + 'color');
             break;
           case 'vertical':
             // Grab the inner borders of all of the cells and set the vertical border if they are the same
             $cell = $($cells[0]);
             commonColor = $cell.css(bRight + 'color');
-            commonWidth = $cell.css(bRight + 'width');
+            commonWidth = this.getBorderWidthForCell($cell, bRight + 'width');
 
             // Check the right border of all of the inner cells (except the right most)
             for (i = 1; i < $cells.length - 1 && matchingBorders; ++i) {
               $cell = $($cells[i]);
               if ($cell.css(bRight + 'color') !== commonColor ||
-                  $cell.css(bRight + 'width') !== commonWidth) {
+                  this.getBorderWidthForCell($cell, bRight + 'width') !== commonWidth) {
                 matchingBorders = false;
               }
             }
@@ -409,7 +434,7 @@
             for (i = 1; i < $cells.length && matchingBorders; ++i) {
               $cell = $($cells[i]);
               if ($cell.css(bLeft + 'color') !== commonColor ||
-                  $cell.css(bLeft + 'width') !== commonWidth) {
+                  this.getBorderWidthForCell($cell, bLeft + 'width') !== commonWidth) {
                 matchingBorders = false;
               }
             }
