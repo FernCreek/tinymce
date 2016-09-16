@@ -327,6 +327,10 @@
         tmpString = $cell[0].style[borderCSSStyleStr];
         if (tmpString) {
           borderWidth = tmpString;
+        } else {
+          // On old tables the border may not be set on the cell itself. In this case fall back to
+          // the computed value for the cell.
+          borderWidth = $cell.css(borderCSSStyleStr);
         }
       }
       return borderWidth;
