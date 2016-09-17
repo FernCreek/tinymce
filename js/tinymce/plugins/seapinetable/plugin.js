@@ -37,6 +37,13 @@
       kDefaultMaxMargin: 300
     },
 
+    tableMargins: {
+      kTop: 0,
+      kBottom: 1,
+      kLeft: 2,
+      kRight: 3
+    },
+
     /**
      * Creates a Border object.
      *
@@ -110,17 +117,31 @@
 
     /**
      * Creates a cell margins object
-     * @param {Number} leftMargin The left margin
      * @param {Number} topMargin The top margin
-     * @param {Number} rightMargin The right margin
      * @param {Number} bottomMargin The bottom margin
+     * @param {Number} leftMargin The left margin
+     * @param {Number} rightMargin The right margin
      * @constructor
      */
-    CellMargins: function (leftMargin, topMargin, rightMargin, bottomMargin) {
-      this.left = leftMargin;
+    CellMargins: function (topMargin, bottomMargin, leftMargin, rightMargin) {
       this.top = topMargin;
-      this.right = rightMargin;
       this.bottom = bottomMargin;
+      this.left = leftMargin;
+      this.right = rightMargin;
+
+      this.isValid = function () {
+        var i, margins = [this.top, this.right, this.bottom, this.left], isValid = true;
+        for (i = 0; isValid && i < margins.length; ++i) {
+          if (typeof margins[i] !== 'number') {
+            if (!isFinite(margins[i]) || isNaN(parseInt(margins[i], 10))) {
+              isValid = false;
+            }
+          } else if (margins[i] < 0) {
+            isValid = false;
+          }
+        }
+        return isValid;
+      };
 
       /**
        * Determines the CSS string for this cells margins
@@ -128,7 +149,6 @@
        * @returns {string} The CSS string for this cells margins
        */
       this.getCSSString = function (defaultMargin) {
-
         var i, paddingStr=  '', margins = [this.top, this.right, this.bottom, this.left];
         for (i = 0; i < margins.length; ++i) {
           if (typeof margins[i] !== 'number') {
@@ -208,103 +228,289 @@
     },
 
     /**
-     * Determines and applies the cell margins to the given cells.
+     * Determines and applies the cell margins to the given table.
      *
-     * @param {CellMargins} cellMargins The cell margins to apply.
-     * @param {jQuery} $cells The cells to apply the margins to.
+     * @param {CellMargins} margins The margins to apply.
+     * @param {jQuery} $table The table to apply the margins to.
      */
-    applyCellMargins: function (cellMargins, $cells) {
-      if (cellMargins && $cells) {
-        $cells.css('padding', cellMargins.getCSSString(this.tableConstants.kDefaultCellMargin));
+    applyTableMargins: function (margins, $table) {
+      var $rows, $row, $cells, $cell, countRow, countCell, cssOld, cssNew;
+      if (margins && $table) {
+        if (this.isPaddingExplicitlySet($table)) {
+          cssOld = this.getElementMarginsCSS($table);
+        }
+        cssNew = margins.getCSSString(this.tableConstants.kDefaultCellMargin);
+        $table.css('padding', cssNew);
+
+        // Now, process each row. Any that do not contain their own padding must be processed.
+        $rows = $table.find('tr');
+        if ($rows) {
+          for (countRow = 0; countRow < $rows.length; ++countRow) {
+            $row = $($rows[countRow]);
+            if ($row && !this.isPaddingExplicitlySet($row)) { // If a row is overriding our margins, don't mess with it.
+              $cells = $row.find('td');
+              if ($cells) {
+                // We know this row doesn't override our margins. So for any of its cells, check to see if they match
+                // our old margins. If they do, then our margins weren't actually overridden, so apply the new margins.
+                for (countCell = 0; countCell < $cells.length; ++countCell) {
+                  $cell = $($cells[countCell]);
+                  if ($cell && ((!cssOld && !this.isPaddingExplicitlySet($cell)) || this.doesCellMatchMargins($cell, cssOld))) {
+                    $cell.css('padding', cssNew);
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
 
     /**
-     * Gets the margins for the given cell.
+     * Determines and applies the row margins to the given row.
      *
-     * @param {jQuery} $cell The cell to get the margins for.
-     * @returns {Array.<Number>} The margins for the cell in the order of top, right, bottom, left.
+     * @param {CellMargins} margins The margins to apply.
+     * @param {jQuery} $row The row to apply the margins to.
      */
-    getMarginsForCell: function ($cell) {
-      var margins = [], defaultMargin = this.tableConstants.kDefaultCellMargin,
-          marginNames = ['top', 'right', 'bottom', 'left'],
-          maxMargin = this.tableConstants.kDefaultMaxMargin,
-           marginValue, self = this, tmpPadding;
-      if ($cell) {
-        marginNames.forEach( function (name) {
-          tmpPadding = $cell.css('padding-' + name);
-          marginValue = tmpPadding ? self.getWidthFromPxString(tmpPadding) : defaultMargin;
-          if (marginValue > maxMargin) {
-            marginValue = maxMargin;
+    applyRowMargins: function (margins, $row) {
+      var $cells, $cell, countCell, cssOld, cssNew;
+      if ($row && margins && margins.isValid()) {
+        cssOld = this.convertMarginsArrayToCSS(this.getRowMarginsArray($row));
+        cssNew = margins.getCSSString(this.tableConstants.kDefaultCellMargin);
+        $row.css('padding', cssNew);
+
+        // Now, process all of the row's cells. Any that don't match the old row padding should be reset.
+        $cells = $row.find('td');
+        if ($cells) {
+          for (countCell = 0; countCell < $cells.length; ++countCell) {
+            $cell = $($cells[countCell]);
+            if ($cell && (!cssOld || this.doesCellMatchMargins($cell, cssOld))) {
+              $cell.css('padding', cssNew);
+            }
           }
-          margins.push(marginValue);
+        }
+      }
+    },
+
+    /**
+     * Determines and applies the cell margins to the given cell.
+     *
+     * @param {CellMargins} margins The margins to apply.
+     * @param {jQuery} $cell The cell to apply the margins to.
+     */
+    applyCellMargins: function (margins, $cell) {
+      if ($cell && margins && margins.isValid()) {
+        $cell.css('padding', margins.getCSSString(this.tableConstants.kDefaultCellMargin));
+      }
+    },
+
+    /**
+     * Gets the margins for the table. If the table is not explicitly set, it tries to get the margins from the rows.
+     * If none of the rows match, then it gives up and returns the default table margins for a newly inserted table.
+     *
+     * @param {jQuery} $table The table to get the cell margins for.
+     * @returns {Array.<Number>} The cell margins for the table in the order of top, bottom, left, right.
+     */
+    getTableMarginsArray: function ($table) {
+      var $rows, $row, i, strCompare, marginDefault = this.tableConstants.kDefaultCellMargin,
+        useDefaults = true, allMatch = true, margins = [];
+      if ($table && $table.length === 1) {
+        if (this.isPaddingExplicitlySet($table)) {
+          margins = this.getElementMarginsArray($table);
+          useDefaults = false;
+        } else { // Padding is not set on the table element, we need to check and see if our row arrays match or not.
+          $rows = $table.find('tr');
+          if ($rows && $rows.length > 0) {
+            // Get the first row's margins and CSS string, then compare the other rows to it to see if they match.
+            $row = $($rows[0]);
+            if ($row) {
+              margins = this.getRowMarginsArray($row);
+              if (margins && margins.length === 4) {
+                strCompare = margins.toString();
+                for (i = 1; allMatch && i < $rows.length; ++i) {
+                  $row = $($rows[i]);
+                  if ($row) {
+                    margins = this.getRowMarginsArray($row);
+                    if (!margins || margins.toString() !== strCompare) {
+                      allMatch = false;
+                    }
+                  }
+                }
+                useDefaults = !allMatch;
+              }
+            }
+          }
+        }
+      }
+      return ((!useDefaults && margins && margins.length == 4) ? margins : [marginDefault, marginDefault, marginDefault, marginDefault]);
+    },
+
+    /**
+     * Gets the margins for the row. If the row is not explicitly set, it tries to get the margins set on the table.
+     * If the table is not set, then it checks to see if the cells in the row match. If they match, the cell margins are
+     * returned; if they do not match, then the default cell margins are returned instead.
+     *
+     * @param {jQuery} $row The row to get the cell margins for.
+     * @returns {Array.<Number>} The cell margins for the row in the order of top, bottom, left, right.
+     */
+    getRowMarginsArray: function ($row) {
+      var $table, $cells, $cell, i, strCompare, marginDefault = this.tableConstants.kDefaultCellMargin,
+        useDefaults = true, allMatch = true, margins = [];
+      if ($row && $row.length === 1) {
+        if (this.isPaddingExplicitlySet($row)) {
+          margins = this.getElementMarginsArray($row);
+          useDefaults = false;
+        } else { // Padding is not set on the row element, we need to check and see if the table is set explicitly.
+          $table = $row.closest('table');
+          if ($table && this.isPaddingExplicitlySet($table)) {
+            margins = this.getElementMarginsArray($table);
+            useDefaults = false;
+          } else { // Table is not explicitly set, look to see if our cells have matching padding styles.
+            $cells = $row.find('td');
+            if ($cells && $cells.length > 0) {
+              // Get the first cell's margins and CSS string, then compare the other cells to it to see if they match.
+              $cell = $($cells[0]);
+              if ($cell) {
+                margins = this.getElementMarginsArray($cell);
+                if (margins && margins.length === 4) {
+                  strCompare = margins.toString();
+                  for (i = 1; allMatch && i < $cells.length; ++i) {
+                    $cell = $($cells[i]);
+                    if ($cell) {
+                      margins = this.getElementMarginsArray($cell);
+                      if (!margins || margins.toString() !== strCompare) {
+                        allMatch = false;
+                      }
+                    }
+                  }
+                  useDefaults = !allMatch;
+                }
+              }
+            }
+          }
+        }
+      }
+      return ((!useDefaults && margins && margins.length == 4) ? margins : [marginDefault, marginDefault, marginDefault, marginDefault]);
+    },
+
+    /**
+     * Determines if the given cell is overriding the rest of the table's margins or not.
+     *
+     * @param {jQuery} $cell The cell to query
+     * @returns {Boolean} Whether the margins are explicitly overridden for the given cell
+     */
+    doesCellOverrideMargins: function ($cell) {
+      var $row, $table, cssCell, cssDefault;
+      if ($cell && $cell.length === 1 && this.isPaddingExplicitlySet($cell)) {
+        cssCell = this.getElementMarginsCSS($cell);
+        $row = $cell.closest('tr');
+        if ($row && this.isPaddingExplicitlySet($row)) {
+          cssDefault = this.getElementMarginsCSS($row);
+        } else {
+          $table = $cell.closest('table');
+          if ($table && this.isPaddingExplicitlySet($table)) {
+            cssDefault = this.getElementMarginsCSS($table);
+          }
+        }
+      }
+      return (cssCell ? cssCell !== cssDefault : !!cssDefault);
+    },
+
+    /**
+     * Determines if the given cell's padding matches the given CSS padding or not.
+     *
+     * @param {jQuery} $cell The cell to query
+     * @param {String} cssPadding The CSS padding string to compare with the cell's padding
+     * @returns {Boolean} Whether the css passed in matches the cell's padding or not
+     */
+    doesCellMatchMargins: function ($cell, cssPadding) {
+      var cssCell, matches = true;
+      if ($cell && $cell.length === 1 && this.isPaddingExplicitlySet($cell)) {
+        cssCell = this.getElementMarginsCSS($cell);
+        if (cssCell && cssCell !== cssPadding) {
+          matches = false;
+        }
+      }
+      return matches;
+    },
+
+    /**
+     * Returns whether padding is explicitly set on an element or not.
+     *
+     * @param {jQuery} $element The element to query
+     * @returns {Boolean} Whether padding is explicitly set or not.
+     */
+    isPaddingExplicitlySet: function ($element) {
+      var marginNames = ['top', 'bottom', 'left', 'right'], padding,
+        isExplicitlySet = false;
+      if ($element && $element.length === 1) {
+        padding = $element[0].style['padding'];
+        if (padding) {
+          isExplicitlySet = true;
+        } else {
+          marginNames.forEach( function (name) {
+            padding = $element[0].style['padding-' + name];
+            if (padding) {
+              isExplicitlySet = true;
+            }
+          });
+        }
+      }
+      return isExplicitlySet;
+    },
+
+    /**
+     * Returns the configured margins of an element.
+     *
+     * @param {jQuery} $element The element to query
+     * @returns {Array.<Number>} The margins for the element in the order of top, bottom, left, right.
+     */
+    getElementMarginsArray: function ($element) {
+      var marginNames = ['top', 'bottom', 'left', 'right'], marginDefault = this.tableConstants.kDefaultCellMargin,
+        padding, margin, self = this,
+        margins = [];
+      if ($element && $element.length === 1) {
+        marginNames.forEach( function (name) {
+          padding = $element.css('padding-' + name);
+          margin = (padding ? self.getWidthFromPxString(padding) : marginDefault);
+          if (margin > self.tableConstants.kDefaultMaxMargin) {
+            margin = self.tableConstants.kDefaultMaxMargin;
+          }
+          margins.push(margin);
         });
       } else {
-        margins = [defaultMargin, defaultMargin, defaultMargin, defaultMargin];
+        margins = [marginDefault, marginDefault, marginDefault, marginDefault];
       }
       return margins;
     },
 
     /**
-     * Gets the margins for the cells in a particular row. If the cells margins in the row do not match the default
-     * cell margins will be returned.
+     * Returns the configured margins of an element in a CSS string form.
      *
-     * @param {jQuery} $row The row to get the cell margins for.
-     * @returns {Array.<Number>} The cell margins for the row in the order of top, right, bottom, left.
+     * @param {jQuery} $element The element to query
+     * @returns {String} The string representing the margins CSS
      */
-    getMarginsForRow: function ($row) {
-      var $cells, rowMargins, cellMargins, cellMarginsStr,
-          i, sameMargins = true, defaultMargin = this.tableConstants.kDefaultCellMargin;
-
-      rowMargins = [defaultMargin, defaultMargin, defaultMargin, defaultMargin];
-
-      if ($row) {
-        $cells = $row.find('td');
-        cellMargins = this.getMarginsForCell($($cells[0]));
-        cellMarginsStr = cellMargins.toString();
-        for (i = 1; i < $cells.length && sameMargins; ++i) {
-          if (cellMarginsStr !== this.getMarginsForCell($($cells[i])).toString()) {
-            sameMargins = false;
-          }
-        }
-
-        // If all of the cell margins are the same use those instead of the default margins.
-        if (sameMargins) {
-          rowMargins = cellMargins;
-        }
+    getElementMarginsCSS: function ($element) {
+      var marginsArray, marginsObj, marginsCSS;
+      if ($element && $element.length === 1) {
+        marginsCSS = this.convertMarginsArrayToCSS(this.getElementMarginsArray($element));
       }
-      return rowMargins;
+      return marginsCSS;
     },
 
     /**
-     * Gets the margins for the cells of a table. If the cells margins in the table do not match the default
-     * cell margins will be returned.
+     * Converts a margins array into a CSS string form.
      *
-     * @param {jQuery} $table The table to get the cell margins for.
-     * @returns {Array.<Number>} The cell margins for the table in the order of top, right, bottom, left.
+     * @param {Array.<Number>} marginsArray The margins array to convert
+     * @returns {String} The string representing the margins CSS
      */
-    getMarginsForTable: function ($table) {
-      var $rows, tableMargins, rowMargins, rowMarginsStr,
-          i, sameMargins = true, defaultMargin = this.tableConstants.kDefaultCellMargin;
-
-      tableMargins = [defaultMargin, defaultMargin, defaultMargin, defaultMargin];
-
-      if ($table) {
-        $rows = $table.find('tr');
-        rowMargins = this.getMarginsForRow($($rows[0]));
-        rowMarginsStr = rowMargins.toString();
-        for (i = 1; i < $rows.length && sameMargins; ++i) {
-          if (rowMarginsStr !== this.getMarginsForRow($($rows[i])).toString()) {
-            sameMargins = false;
-          }
-        }
-
-        // If all of the row margins are the same use those instead of the default margins.
-        if (sameMargins) {
-          tableMargins = rowMargins;
-        }
+    convertMarginsArrayToCSS: function (marginsArray) {
+      var marginsObj, marginsCSS;
+      if (marginsArray && marginsArray.length == 4) {
+        marginsObj = new this.CellMargins(marginsArray[this.tableMargins.kTop], marginsArray[this.tableMargins.kBottom],
+                                          marginsArray[this.tableMargins.kLeft], marginsArray[this.tableMargins.kRight]);
+        marginsCSS = marginsObj.getCSSString(this.tableConstants.kDefaultCellMargin);
       }
-      return tableMargins;
+      return marginsCSS;
     },
 
     /**
@@ -857,13 +1063,13 @@
           separatedBorders = true;
         }
 
-        // Set the inner border on the cells
-        $cells = $row.find('td');
-
         // Set the cell margins if override is checked
         if (cellMargins) {
-          this.applyCellMargins(cellMargins, $cells);
+          this.applyRowMargins(cellMargins, $row);
         }
+
+        // Set the inner border on the cells
+        $cells = $row.find('td');
 
         if (rowBorders) {
           $cells.css('border-left', this.getCSSStringForBorder(rowBorders.vertical));
@@ -1022,7 +1228,7 @@
         $table.removeAttr('cellpadding');
 
         if (cellMargins) {
-          this.applyCellMargins(cellMargins, $cells);
+          this.applyTableMargins(cellMargins, $table);
         }
 
         if (tableBorders) {
