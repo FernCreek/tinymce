@@ -691,8 +691,8 @@
           table = this._cachedTableElement;
         }
 
-        cellMargins = new spTablePlugin.CellMargins(json['cellMargins']['left'], json['cellMargins']['top'],
-                                                    json['cellMargins']['right'], json['cellMargins']['bottom']);
+        cellMargins = new spTablePlugin.CellMargins(json['cellMargins']['top'], json['cellMargins']['bottom'],
+                                                    json['cellMargins']['left'], json['cellMargins']['right']);
 
         // No borders provided, called with none set for borders
         if (!borders) {
@@ -729,8 +729,8 @@
           verticalBorder, rowBorders, cellMargins, alignment;
 
       if (spTablePlugin && this._cachedRowElement) {
-        cellMargins = new spTablePlugin.CellMargins(json['cellMargins']['left'], json['cellMargins']['top'],
-                                                    json['cellMargins']['right'], json['cellMargins']['bottom']);
+        cellMargins = new spTablePlugin.CellMargins(json['cellMargins']['top'], json['cellMargins']['bottom'],
+                                                    json['cellMargins']['left'], json['cellMargins']['right']);
 
         // No borders provided, called with none set for borders
         if (!borders) {
@@ -763,8 +763,8 @@
           rowBorders, cellMargins, alignment;
 
       if (spTablePlugin && this._cachedCellElement) {
-        cellMargins = new spTablePlugin.CellMargins(json['cellMargins']['left'], json['cellMargins']['top'],
-                                                    json['cellMargins']['right'], json['cellMargins']['bottom']);
+        cellMargins = new spTablePlugin.CellMargins(json['cellMargins']['top'], json['cellMargins']['bottom'],
+                                                    json['cellMargins']['left'], json['cellMargins']['right']);
         // No borders provided, called with none set for borders
         if (!borders) {
           borders = {};
@@ -838,11 +838,11 @@
         tableBorders = new spTablePlugin.TableBorders(leftBorder, topBorder, rightBorder, bottomBorder,
                                                       verticalBorder, horizontalBorder);
 
-        margins = spTablePlugin.getMarginsForTable($tableElement);
-        json['cellMargins']['top'] = margins[0];
-        json['cellMargins']['right'] = margins[1];
-        json['cellMargins']['bottom'] = margins[2];
-        json['cellMargins']['left'] = margins[3];
+        margins = spTablePlugin.getTableMarginsArray($tableElement);
+        json['cellMargins']['top'] = margins[spTablePlugin.tableMargins.kTop];
+        json['cellMargins']['bottom'] = margins[spTablePlugin.tableMargins.kBottom];
+        json['cellMargins']['left'] = margins[spTablePlugin.tableMargins.kLeft];
+        json['cellMargins']['right'] = margins[spTablePlugin.tableMargins.kRight];
 
         // Determine the current border style based on the borders
         borderStyle = spTablePlugin.getBorderStyleForTable(tableBorders);
@@ -901,11 +901,12 @@
 
         rowBorders = new spTablePlugin.RowBorders(leftBorder, topBorder, rightBorder, bottomBorder, verticalBorder);
 
-        margins = spTablePlugin.getMarginsForRow($rowElement);
-        json['cellMargins']['top'] = margins[0];
-        json['cellMargins']['right'] = margins[1];
-        json['cellMargins']['bottom'] = margins[2];
-        json['cellMargins']['left'] = margins[3];
+        margins = spTablePlugin.getRowMarginsArray($rowElement);
+        json['cellMargins']['top'] = margins[spTablePlugin.tableMargins.kTop];
+        json['cellMargins']['bottom'] = margins[spTablePlugin.tableMargins.kBottom];
+        json['cellMargins']['left'] = margins[spTablePlugin.tableMargins.kLeft];
+        json['cellMargins']['right'] = margins[spTablePlugin.tableMargins.kRight];
+        json['overrideMargins'] = spTablePlugin.isPaddingExplicitlySet($rowElement);
 
         // Determine the current border style based on the borders
         borderStyle = spTablePlugin.getBorderStyleForRow(rowBorders);
@@ -962,11 +963,12 @@
 
         cellBorders = new spTablePlugin.RowBorders(leftBorder, topBorder, rightBorder, bottomBorder);
 
-        margins = spTablePlugin.getMarginsForCell($cellElement);
-        json['cellMargins']['top'] = margins[0];
-        json['cellMargins']['right'] = margins[1];
-        json['cellMargins']['bottom'] = margins[2];
-        json['cellMargins']['left'] = margins[3];
+        margins = spTablePlugin.getElementMarginsArray($cellElement);
+        json['cellMargins']['top'] = margins[spTablePlugin.tableMargins.kTop];
+        json['cellMargins']['bottom'] = margins[spTablePlugin.tableMargins.kBottom];
+        json['cellMargins']['left'] = margins[spTablePlugin.tableMargins.kLeft];
+        json['cellMargins']['right'] = margins[spTablePlugin.tableMargins.kRight];
+        json['overrideMargins'] = spTablePlugin.doesCellOverrideMargins($cellElement);
 
         // Determine the current border style based on the borders
         borderStyle = spTablePlugin.getBorderStyleForCell(cellBorders);

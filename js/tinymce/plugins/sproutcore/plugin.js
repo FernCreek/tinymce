@@ -387,7 +387,7 @@
         tableBorders = new spTablePlugin.TableBorders(leftBorder, topBorder, rightBorder, bottomBorder,
                                                       verticalBorder, horizontalBorder);
 
-        margins = spTablePlugin.getMarginsForTable($tableElement);
+        margins = spTablePlugin.getTableMarginsArray($tableElement);
 
         // Determine the current border style based on the borders
         borderStyle = spTablePlugin.getBorderStyleForTable(tableBorders);
@@ -407,10 +407,10 @@
             .set('columns', spTablePlugin.countTableColumns($tableElement))
             .set('width', tableElement.offsetWidth)
             .set('cellSpacing', cellSpacing)
-            .set('topCellMargin', margins[0])
-            .set('rightCellMargin', margins[1])
-            .set('bottomCellMargin', margins[2])
-            .set('leftCellMargin', margins[3])
+            .set('topCellMargin', margins[spTablePlugin.tableMargins.kTop])
+            .set('bottomCellMargin', margins[spTablePlugin.tableMargins.kBottom])
+            .set('leftCellMargin', margins[spTablePlugin.tableMargins.kLeft])
+            .set('rightCellMargin', margins[spTablePlugin.tableMargins.kRight])
             .set('alignment', alignment)
             .set('backgroundColor', backgroundColor)
             .set('borderStyle', this._getEnumForBorderStyleString(borderStyle.style))
@@ -433,7 +433,7 @@
     _setupRowCellPropertiesDialog: function (ed, rowMode) {
       var viewClass, controller, selectedNode, rowCellElement,
           horizontalAlignment, verticalAlignment, backgroundColor,
-          $jElement, $cells, margins, spTablePlugin,
+          $jElement, $cells, margins, overrideMargins, spTablePlugin,
           topBorder, leftBorder, rightBorder, bottomBorder, verticalBorder,
           cellBorders, rowBorders, borderStyle;
 
@@ -461,7 +461,8 @@
           controller.set('rightBorder', TinySC.Border.create(rightBorder));
           controller.set('verticalBorder', TinySC.Border.create(verticalBorder));
 
-          margins = spTablePlugin.getMarginsForRow($jElement);
+          margins = spTablePlugin.getRowMarginsArray($jElement);
+          overrideMargins = spTablePlugin.isPaddingExplicitlySet($jElement);
           // Determine the current border style based on the borders
           rowBorders = new spTablePlugin.RowBorders(leftBorder, topBorder, rightBorder, bottomBorder, verticalBorder);
           borderStyle = spTablePlugin.getBorderStyleForRow(rowBorders);
@@ -481,7 +482,8 @@
           controller.set('bottomBorder', TinySC.Border.create(bottomBorder));
           controller.set('rightBorder', TinySC.Border.create(rightBorder));
 
-          margins = spTablePlugin.getMarginsForCell($jElement);
+          margins = spTablePlugin.getElementMarginsArray($jElement);
+          overrideMargins = spTablePlugin.doesCellOverrideMargins($jElement);
           // Determine the current border style based on the borders
           cellBorders = new spTablePlugin.CellBorders(leftBorder, topBorder, rightBorder, bottomBorder);
           borderStyle = spTablePlugin.getBorderStyleForCell(cellBorders);
@@ -507,10 +509,11 @@
           .set('horizontalAlignment', horizontalAlignment)
           .set('verticalAlignment', verticalAlignment)
           .set('backgroundColor', backgroundColor)
-          .set('topCellMargin', margins[0])
-          .set('rightCellMargin', margins[1])
-          .set('bottomCellMargin', margins[2])
-          .set('leftCellMargin', margins[3])
+          .set('topCellMargin', margins[spTablePlugin.tableMargins.kTop])
+          .set('bottomCellMargin', margins[spTablePlugin.tableMargins.kBottom])
+          .set('leftCellMargin', margins[spTablePlugin.tableMargins.kLeft])
+          .set('rightCellMargin', margins[spTablePlugin.tableMargins.kRight])
+          .set('overrideMargins', overrideMargins)
           .set('borderStyle', this._getEnumForBorderStyleString(borderStyle.style))
           .endPropertyChanges();
       }
