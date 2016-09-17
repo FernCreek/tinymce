@@ -298,8 +298,22 @@
      * @param {jQuery} $cell The cell to apply the margins to.
      */
     applyCellMargins: function (margins, $cell) {
-      if ($cell && margins && margins.isValid()) {
-        $cell.css('padding', margins.getCSSString(this.tableConstants.kDefaultCellMargin));
+      var $row, $table, css = '';
+      if ($cell && margins) {
+        if (margins.isValid()) {
+          css = margins.getCSSString(this.tableConstants.kDefaultCellMargin);
+        } else { // Invalid margins, we need to determine the default margins, and apply them as necessary.
+          $row = $cell.closest('tr');
+          if ($row && this.isPaddingExplicitlySet($row)) {
+            css = this.getElementMarginsCSS($row);
+          } else { // Row is not explicitly set, check the table
+            $table = $cell.closest('table');
+            if ($table && this.isPaddingExplicitlySet($table)) {
+              css = this.getElementMarginsCSS($table);
+            }
+          }
+        }
+        $cell.css('padding', css);
       }
     },
 
