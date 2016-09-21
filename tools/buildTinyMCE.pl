@@ -2,14 +2,15 @@
 ##########################################################################
 ## Filename:      buildTinyMCE.pl
 ## Description:   Builds TinyMCE and copies output files to the correct 
-##                TTWeb directories
+##                TTWeb and Native directories
 ##
 ## Copyright (c) 1996-2016 Seapine Software, Inc.
 ## All contents of this file are considered Seapine Software proprietary.
 ##########################################################################   
 
-# This script must be run from the TTPro/WebControls/tinymce/tools directory, and is assuming that
-# a complete TestTrack repository is already in place
+# This script must be run from the Git TinyMCESource/tools directory, and is assuming that
+# a complete TestTrack repository is already in place.
+# NOTE: If you made changes to the TinyMCE skin the native configuration Common/Qt/TinyMCE must also be rebuilt
 
 use File::Copy qw(copy);    
 use Cwd;
@@ -35,9 +36,9 @@ if (!$opt_w && !$opt_n) {
 }
 
 $baseDir = $opt_d;
-
+# Since the TinyMCE source is on Git it could be located anywhere, a base directory is needed.
 unless ( -e $baseDir ) {
-   $baseDir = '../../';
+   die "No base directory specified. Exiting.\n"
 }
 
 $baseDir =~ s/\\/\//g;
@@ -48,11 +49,11 @@ if ( $opt_h ) {
    print "\n****************************************************************************************************\n";
    print "* buildTinyMCE.pl build file\n";
    print "*\n";
-   print "* Performs a build of TinyMCE and copies output files to their required locations in the TTWeb\n";
+   print "* Performs a build of TinyMCE and copies output files to their required locations in the TTWeb and Native Client\n";
    print "* heirearchy.\n";
    print "* \n";
    print "* Options:\n";
-   print "*    -d Root directory for TestTrack. Base for where to put the built TinyMCE files\n";
+   print "*    -d Required: Root directory for TestTrack. Base for where to put the built TinyMCE files\n";
    print "*    -n Build TinyMCE and copy it into the native client directory\n";
    print "*    -w Build TinyMCE and copy it into the web client directory\n";
    print "*    -c Only copy output files (does not build TinyMCE)\n";
@@ -86,7 +87,7 @@ if( !$opt_c ) {
    }
    if ( $buildNative ) {
       print "Building TinyMCE for native...\n";
-      $buildCommand = 'grunt bundle --themes nativemodern --plugins advlist,autolink,autoresize,hr,lists,link,image,imagetools,charmap,print,preview,anchor,searchreplace,visualblocks,code,fullpage,fullscreen,colorpicker,textcolor,insertdatetime,media,table,contextmenu,paste,seapine,seapinetable,qtinterface';
+      $buildCommand = 'grunt bundle --themes nativemodern --plugins advlist,autolink,autoresize,hr,lists,link,image,imagetools,charmap,print,preview,anchor,searchreplace,visualblocks,code,fullpage,fullscreen,colorpicker,textcolor,insertdatetime,media,table,contextmenu,paste,seapine,seapinetable,qtinterface,qtinterfaceeditor';
       system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
       copyBuiltFilesNative();
       print "done\n";
@@ -210,7 +211,8 @@ sub copyBuiltFilesNative {
       unlink($bfPath) or die "\n***Build failed: Cannot delete $bfPath: $!"
    }
    print "Copy $tinymceMinPath to $bfPath\n";
-   copy($tinymceMinPath, $bfPath) or die "\n***Copy failed: $!\n"; 
+   copy($tinymceMinPath, $bfPath) or die "\n***Copy failed: $!\n";
+   #Uncomment the line below to copy over the non-minified version of TinyMCE
    #copy($tinymcePath, $bfPath) or die "\n***Copy failed: $!\n"; 
 
    print "done\n";
@@ -237,7 +239,7 @@ sub copyBuiltFilesNative {
    ### content.min.css ###
    #######################
    my $cssPath = 'js/tinymce/skins/lightgray/content.min.css';
-   my $qtPath = "$baseDir/BuildFiles/tinymce/tinymceEditorConfig.js";
+   my $qtPath = "$baseDir/common/Qt/TinyMCE/src/tinymceCommonConfig.js";
    print "Copying content.min.css...\n";
 
    unless (-e $cssPath) {
@@ -262,6 +264,7 @@ sub copyBuiltFilesNative {
    $cssData =~ s/body\{/body\{margin:3px;/g;
    $qtData =~ s/content_style:\s*'[^']*'/content_style: '$cssData'/g;
    $qtFile->spew_utf8($qtData);
+   print "\n***Please be sure to rebuild the native configuration $baseDir/common/Qt/TinyMCE\n";
    return;
 }
 
