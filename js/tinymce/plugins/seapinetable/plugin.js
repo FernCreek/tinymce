@@ -244,20 +244,16 @@
 
         // Now, process each row. Any that do not contain their own padding must be processed.
         $rows = $table.find('tr');
-        if ($rows) {
-          for (countRow = 0; countRow < $rows.length; ++countRow) {
-            $row = $($rows[countRow]);
-            if ($row && !this.isPaddingExplicitlySet($row)) { // If a row is overriding our margins, don't mess with it.
-              $cells = $row.find('td');
-              if ($cells) {
-                // We know this row doesn't override our margins. So for any of its cells, check to see if they match
-                // our old margins. If they do, then our margins weren't actually overridden, so apply the new margins.
-                for (countCell = 0; countCell < $cells.length; ++countCell) {
-                  $cell = $($cells[countCell]);
-                  if ($cell && ((!cssOld && !this.isPaddingExplicitlySet($cell)) || this.doesCellMatchMargins($cell, cssOld))) {
-                    $cell.css('padding', cssNew);
-                  }
-                }
+        for (countRow = 0; countRow < $rows.length; ++countRow) {
+          $row = $($rows[countRow]);
+          if (!this.isPaddingExplicitlySet($row)) { // If a row is overriding our margins, don't mess with it.
+            // We know this row doesn't override our margins. So for any of its cells, check to see if they match
+            // our old margins. If they do, then our margins weren't actually overridden, so apply the new margins.
+            $cells = $row.find('td');
+            for (countCell = 0; countCell < $cells.length; ++countCell) {
+              $cell = $($cells[countCell]);
+              if ((!cssOld && !this.isPaddingExplicitlySet($cell)) || this.doesCellMatchMargins($cell, cssOld)) {
+                $cell.css('padding', cssNew);
               }
             }
           }
@@ -280,12 +276,10 @@
 
         // Now, process all of the row's cells. Any that don't match the old row padding should be reset.
         $cells = $row.find('td');
-        if ($cells) {
-          for (countCell = 0; countCell < $cells.length; ++countCell) {
-            $cell = $($cells[countCell]);
-            if ($cell && (!cssOld || this.doesCellMatchMargins($cell, cssOld))) {
-              $cell.css('padding', cssNew);
-            }
+        for (countCell = 0; countCell < $cells.length; ++countCell) {
+          $cell = $($cells[countCell]);
+          if (!cssOld || this.doesCellMatchMargins($cell, cssOld)) {
+            $cell.css('padding', cssNew);
           }
         }
       }
@@ -304,11 +298,11 @@
           css = margins.getCSSString(this.tableConstants.kDefaultCellMargin);
         } else { // Invalid margins, we need to determine the default margins, and apply them as necessary.
           $row = $cell.closest('tr');
-          if ($row && this.isPaddingExplicitlySet($row)) {
+          if (this.isPaddingExplicitlySet($row)) {
             css = this.getElementMarginsCSS($row);
           } else { // Row is not explicitly set, check the table
             $table = $cell.closest('table');
-            if ($table && this.isPaddingExplicitlySet($table)) {
+            if (this.isPaddingExplicitlySet($table)) {
               css = this.getElementMarginsCSS($table);
             }
           }
@@ -333,29 +327,25 @@
           useDefaults = false;
         } else { // Padding is not set on the table element, we need to check and see if our row arrays match or not.
           $rows = $table.find('tr');
-          if ($rows && $rows.length > 0) {
+          if ($rows.length > 0) {
             // Get the first row's margins and CSS string, then compare the other rows to it to see if they match.
             $row = $($rows[0]);
-            if ($row) {
-              margins = this.getRowMarginsArray($row);
-              if (margins && margins.length === 4) {
-                strCompare = margins.toString();
-                for (i = 1; allMatch && i < $rows.length; ++i) {
-                  $row = $($rows[i]);
-                  if ($row) {
-                    margins = this.getRowMarginsArray($row);
-                    if (!margins || margins.toString() !== strCompare) {
-                      allMatch = false;
-                    }
-                  }
+            margins = this.getRowMarginsArray($row);
+            if (margins && margins.length === 4) {
+              strCompare = margins.toString();
+              for (i = 1; allMatch && i < $rows.length; ++i) {
+                $row = $($rows[i]);
+                margins = this.getRowMarginsArray($row);
+                if (!margins || margins.toString() !== strCompare) {
+                  allMatch = false;
                 }
-                useDefaults = !allMatch;
               }
+              useDefaults = !allMatch;
             }
           }
         }
       }
-      return ((!useDefaults && margins && margins.length == 4) ? margins : [marginDefault, marginDefault, marginDefault, marginDefault]);
+      return !useDefaults && margins && margins.length === 4 ? margins : [marginDefault, marginDefault, marginDefault, marginDefault];
     },
 
     /**
@@ -375,35 +365,31 @@
           useDefaults = false;
         } else { // Padding is not set on the row element, we need to check and see if the table is set explicitly.
           $table = $row.closest('table');
-          if ($table && this.isPaddingExplicitlySet($table)) {
+          if (this.isPaddingExplicitlySet($table)) {
             margins = this.getElementMarginsArray($table);
             useDefaults = false;
           } else { // Table is not explicitly set, look to see if our cells have matching padding styles.
             $cells = $row.find('td');
-            if ($cells && $cells.length > 0) {
+            if ($cells.length > 0) {
               // Get the first cell's margins and CSS string, then compare the other cells to it to see if they match.
               $cell = $($cells[0]);
-              if ($cell) {
-                margins = this.getElementMarginsArray($cell);
-                if (margins && margins.length === 4) {
-                  strCompare = margins.toString();
-                  for (i = 1; allMatch && i < $cells.length; ++i) {
-                    $cell = $($cells[i]);
-                    if ($cell) {
-                      margins = this.getElementMarginsArray($cell);
-                      if (!margins || margins.toString() !== strCompare) {
-                        allMatch = false;
-                      }
-                    }
+              margins = this.getElementMarginsArray($cell);
+              if (margins && margins.length === 4) {
+                strCompare = margins.toString();
+                for (i = 1; allMatch && i < $cells.length; ++i) {
+                  $cell = $($cells[i]);
+                  margins = this.getElementMarginsArray($cell);
+                  if (!margins || margins.toString() !== strCompare) {
+                    allMatch = false;
                   }
-                  useDefaults = !allMatch;
                 }
+                useDefaults = !allMatch;
               }
             }
           }
         }
       }
-      return ((!useDefaults && margins && margins.length == 4) ? margins : [marginDefault, marginDefault, marginDefault, marginDefault]);
+      return !useDefaults && margins && margins.length === 4 ? margins : [marginDefault, marginDefault, marginDefault, marginDefault];
     },
 
     /**
@@ -417,16 +403,16 @@
       if ($cell && $cell.length === 1 && this.isPaddingExplicitlySet($cell)) {
         cssCell = this.getElementMarginsCSS($cell);
         $row = $cell.closest('tr');
-        if ($row && this.isPaddingExplicitlySet($row)) {
+        if (this.isPaddingExplicitlySet($row)) {
           cssDefault = this.getElementMarginsCSS($row);
         } else {
           $table = $cell.closest('table');
-          if ($table && this.isPaddingExplicitlySet($table)) {
+          if (this.isPaddingExplicitlySet($table)) {
             cssDefault = this.getElementMarginsCSS($table);
           }
         }
       }
-      return (cssCell ? cssCell !== cssDefault : !!cssDefault);
+      return cssCell ? cssCell !== cssDefault : !!cssDefault;
     },
 
     /**
@@ -485,7 +471,7 @@
       if ($element && $element.length === 1) {
         marginNames.forEach( function (name) {
           padding = $element.css('padding-' + name);
-          margin = (padding ? self.getWidthFromPxString(padding) : marginDefault);
+          margin = padding ? self.getWidthFromPxString(padding) : marginDefault;
           if (margin > self.tableConstants.kDefaultMaxMargin) {
             margin = self.tableConstants.kDefaultMaxMargin;
           }
@@ -504,7 +490,7 @@
      * @returns {String} The string representing the margins CSS
      */
     getElementMarginsCSS: function ($element) {
-      var marginsArray, marginsObj, marginsCSS;
+      var marginsCSS;
       if ($element && $element.length === 1) {
         marginsCSS = this.convertMarginsArrayToCSS(this.getElementMarginsArray($element));
       }
@@ -519,7 +505,7 @@
      */
     convertMarginsArrayToCSS: function (marginsArray) {
       var marginsObj, marginsCSS;
-      if (marginsArray && marginsArray.length == 4) {
+      if (marginsArray && marginsArray.length === 4) {
         marginsObj = new this.CellMargins(marginsArray[this.tableMargins.kTop], marginsArray[this.tableMargins.kBottom],
                                           marginsArray[this.tableMargins.kLeft], marginsArray[this.tableMargins.kRight]);
         marginsCSS = marginsObj.getCSSString(this.tableConstants.kDefaultCellMargin);
