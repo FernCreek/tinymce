@@ -264,7 +264,7 @@ sub copyBuiltFilesNative {
    $cssData =~ s/body\{/body\{margin:3px;/g;
    $qtData =~ s/content_style:\s*'[^']*'/content_style: '$cssData'/g;
    $qtFile->spew_utf8($qtData);
-   print "\n***Please be sure to rebuild the native configuration $baseDir/common/Qt/TinyMCE\n";
+   print "***If you changed the skin,please be sure to rebuild the native configuration $baseDir/common/Qt/TinyMCE\n\n";
    return;
 }
 
