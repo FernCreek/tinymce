@@ -2,7 +2,8 @@
  * UndoManager.js
  *
  * Released under LGPL License.
- * Copyright (c) 1999-2015 Ephox Corp. All rights reserved
+ * Original work Copyright (c) 1999-2015 Ephox Corp. All rights reserved
+ * Modified work Copyright (c) 2016 Seapine Software, Inc.
  *
  * License: http://www.tinymce.com/license
  * Contributing: http://www.tinymce.com/contributing
@@ -14,339 +15,368 @@
  * @class tinymce.UndoManager
  */
 define("tinymce/UndoManager", [
-	"tinymce/util/VK",
-	"tinymce/Env"
+  "tinymce/util/VK",
+  "tinymce/Env"
 ], function(VK, Env) {
-	return function(editor) {
-		var self = this, index = 0, data = [], beforeBookmark, isFirstTypedCharacter, locks = 0;
+  return function(editor) {
+    var self = this, index = 0, data = [], beforeBookmark, isFirstTypedCharacter, locks = 0;
 
-		function getContent() {
-			return editor.serializer.getTrimmedContent();
-		}
+    function getContent() {
+      return editor.serializer.getTrimmedContent();
+    }
 
-		function setDirty(state) {
-			editor.setDirty(state);
-		}
+    function setDirty(state) {
+      editor.setDirty(state);
+    }
 
-		function addNonTypingUndoLevel(e) {
-			self.typing = false;
-			//Because a crash can happen when getting the range during the removal
-			//of the editor, we prevent the addition of an undo level if
-			//we are currently removing the editor.
-			if(!(e && e.removingEditor)) {
-				self.add({}, e);
-			}
-		}
+    function addNonTypingUndoLevel(e) {
+      self.typing = false;
+      //Because a crash can happen when getting the range during the removal
+      //of the editor, we prevent the addition of an undo level if
+      //we are currently removing the editor.
+      if(!(e && e.removingEditor)) {
+        self.add({}, e);
+      }
+    }
 
-		// Add initial undo level when the editor is initialized
-		editor.on('init', function() {
-			self.add();
-		});
+    // Add initial undo level when the editor is initialized
+    editor.on('init', function() {
+      self.add();
+    });
 
-		// Get position before an execCommand is processed
-		editor.on('BeforeExecCommand', function(e) {
-			var cmd = e.command;
+    // Get position before an execCommand is processed
+    editor.on('BeforeExecCommand', function(e) {
+      var cmd = e.command;
 
-			if (cmd != 'Undo' && cmd != 'Redo' && cmd != 'mceRepaint') {
-				self.beforeChange();
-			}
-		});
+      if (cmd != 'Undo' && cmd != 'Redo' && cmd != 'mceRepaint') {
+        self.beforeChange();
+      }
+    });
 
-		// Add undo level after an execCommand call was made
-		editor.on('ExecCommand', function(e) {
-			var cmd = e.command;
+    // Add undo level after an execCommand call was made
+    editor.on('ExecCommand', function(e) {
+      var cmd = e.command;
 
-			if (cmd != 'Undo' && cmd != 'Redo' && cmd != 'mceRepaint') {
-				addNonTypingUndoLevel(e);
-			}
-		});
+      if (cmd != 'Undo' && cmd != 'Redo' && cmd != 'mceRepaint') {
+        addNonTypingUndoLevel(e);
+      }
+    });
 
-		editor.on('ObjectResizeStart Cut', function() {
-			self.beforeChange();
-		});
+    editor.on('ObjectResizeStart Cut', function() {
+      self.beforeChange();
+    });
 
-		editor.on('SaveContent ObjectResized blur', addNonTypingUndoLevel);
-		editor.on('DragEnd', addNonTypingUndoLevel);
+    editor.on('SaveContent ObjectResized blur', addNonTypingUndoLevel);
+    editor.on('DragEnd', addNonTypingUndoLevel);
 
-		editor.on('KeyUp', function(e) {
-			var keyCode = e.keyCode;
+    editor.on('KeyUp', function(e) {
+      var keyCode = e.keyCode;
 
-			// If key is prevented then don't add undo level
-			// This would happen on keyboard shortcuts for example
-			if (e.isDefaultPrevented()) {
-				return;
-			}
+      // If key is prevented then don't add undo level
+      // This would happen on keyboard shortcuts for example
+      if (e.isDefaultPrevented()) {
+        return;
+      }
 
-			if ((keyCode >= 33 && keyCode <= 36) || (keyCode >= 37 && keyCode <= 40) || keyCode == 45 || keyCode == 13 || e.ctrlKey) {
-				addNonTypingUndoLevel();
-				editor.nodeChanged();
-			}
+      if ((keyCode >= 33 && keyCode <= 36) || (keyCode >= 37 && keyCode <= 40) || keyCode == 45 || keyCode == 13 || e.ctrlKey) {
+        addNonTypingUndoLevel();
+        editor.nodeChanged();
+      }
 
-			if (keyCode == 46 || keyCode == 8 || (Env.mac && (keyCode == 91 || keyCode == 93))) {
-				editor.nodeChanged();
-			}
+      if (keyCode == 46 || keyCode == 8 || (Env.mac && (keyCode == 91 || keyCode == 93))) {
+        editor.nodeChanged();
+      }
 
-			// Fire a TypingUndo event on the first character entered
-			if (isFirstTypedCharacter && self.typing) {
-				// Make it dirty if the content was changed after typing the first character
-				if (!editor.isDirty()) {
-					setDirty(data[0] && getContent() != data[0].content);
+      // Fire a TypingUndo event on the first character entered
+      if (isFirstTypedCharacter && self.typing) {
+        // Make it dirty if the content was changed after typing the first character
+        if (!editor.isDirty()) {
+          setDirty(data[0] && getContent() != data[0].content);
 
-					// Fire initial change event
-					if (editor.isDirty()) {
-						editor.fire('change', {level: data[0], lastLevel: null});
-					}
-				}
+          // Fire initial change event
+          if (editor.isDirty()) {
+            editor.fire('change', {level: data[0], lastLevel: null});
+          }
+        }
 
-				editor.fire('TypingUndo');
-				isFirstTypedCharacter = false;
-				editor.nodeChanged();
-			}
-		});
+        editor.fire('TypingUndo');
+        isFirstTypedCharacter = false;
+        editor.nodeChanged();
+      }
+    });
 
-		editor.on('KeyDown', function(e) {
-			var keyCode = e.keyCode;
+    editor.on('KeyDown', function(e) {
+      var keyCode = e.keyCode;
 
-			// If key is prevented then don't add undo level
-			// This would happen on keyboard shortcuts for example
-			if (e.isDefaultPrevented()) {
-				return;
-			}
+      // If key is prevented then don't add undo level
+      // This would happen on keyboard shortcuts for example
+      if (e.isDefaultPrevented()) {
+        return;
+      }
 
-			// Is character position keys left,right,up,down,home,end,pgdown,pgup,enter
-			if ((keyCode >= 33 && keyCode <= 36) || (keyCode >= 37 && keyCode <= 40) || keyCode == 45) {
-				if (self.typing) {
-					addNonTypingUndoLevel(e);
-				}
+      // Is character position keys left,right,up,down,home,end,pgdown,pgup,enter
+      if ((keyCode >= 33 && keyCode <= 36) || (keyCode >= 37 && keyCode <= 40) || keyCode == 45) {
+        if (self.typing) {
+          addNonTypingUndoLevel(e);
+        }
 
-				return;
-			}
+        return;
+      }
 
-			// If key isn't Ctrl+Alt/AltGr
-			var modKey = (e.ctrlKey && !e.altKey) || e.metaKey;
-			if ((keyCode < 16 || keyCode > 20) && keyCode != 224 && keyCode != 91 && !self.typing && !modKey) {
-				self.beforeChange();
-				self.typing = true;
-				self.add({}, e);
-				isFirstTypedCharacter = true;
-			}
-		});
+      // If key isn't Ctrl+Alt/AltGr
+      var modKey = (e.ctrlKey && !e.altKey) || e.metaKey;
+      if ((keyCode < 16 || keyCode > 20) && keyCode != 224 && keyCode != 91 && !self.typing && !modKey) {
+        self.beforeChange();
+        self.typing = true;
+        self.add({}, e);
+        isFirstTypedCharacter = true;
+      }
+    });
 
-		editor.on('MouseDown', function(e) {
-			if (self.typing) {
-				addNonTypingUndoLevel(e);
-			}
-		});
+    editor.on('MouseDown', function(e) {
+      if (self.typing) {
+        addNonTypingUndoLevel(e);
+      }
+    });
 
-		// Add keyboard shortcuts for undo/redo keys
-		editor.addShortcut('meta+z', '', 'Undo');
-		editor.addShortcut('meta+y,meta+shift+z', '', 'Redo');
+    // Add keyboard shortcuts for undo/redo keys
+    editor.addShortcut('meta+z', '', 'Undo');
+    editor.addShortcut('meta+y,meta+shift+z', '', 'Redo');
 
-		editor.on('AddUndo Undo Redo ClearUndos', function(e) {
-			if (!e.isDefaultPrevented()) {
-				editor.nodeChanged();
-			}
-		});
+    editor.on('AddUndo Undo Redo ClearUndos', function(e) {
+      if (!e.isDefaultPrevented()) {
+        editor.nodeChanged();
+      }
+    });
 
-		/*eslint consistent-this:0 */
-		self = {
-			// Explode for debugging reasons
-			data: data,
+    /*eslint consistent-this:0 */
+    self = {
+      // Explode for debugging reasons
+      data: data,
 
-			/**
-			 * State if the user is currently typing or not. This will add a typing operation into one undo
-			 * level instead of one new level for each keystroke.
-			 *
-			 * @field {Boolean} typing
-			 */
-			typing: false,
+      /**
+       * State if the user is currently typing or not. This will add a typing operation into one undo
+       * level instead of one new level for each keystroke.
+       *
+       * @field {Boolean} typing
+       */
+      typing: false,
 
-			/**
-			 * Stores away a bookmark to be used when performing an undo action so that the selection is before
-			 * the change has been made.
-			 *
-			 * @method beforeChange
-			 */
-			beforeChange: function() {
-				if (!locks) {
-					beforeBookmark = editor.selection.getBookmark(2, true);
-				}
-			},
+      /**
+       * Populates an object represtenting the internal state of the undo manager.
+       * @returns {Object} Contains the current undo manager state.
+       */
+      getUndoManagerState: function () {
+        var state = {};
+        state['index'] = index;
+        state['data'] = data;
+        state['typing'] = self.typing;
+        state['beforeBookmark'] = beforeBookmark;
+        state['isFirstTypedCharacter'] = isFirstTypedCharacter;
+        state['locks'] = locks;
+        return state;
+      },
 
-			/**
-			 * Adds a new undo level/snapshot to the undo list.
-			 *
-			 * @method add
-			 * @param {Object} level Optional undo level object to add.
-			 * @param {DOMEvent} event Optional event responsible for the creation of the undo level.
-			 * @return {Object} Undo level that got added or null it a level wasn't needed.
-			 */
-			add: function(level, event) {
-				var i, settings = editor.settings, lastLevel;
+      /**
+       * Sets the internal undo manager state to a provided state.
+       * @param {JSON Object} stateJSON The undomanager state to set as this undo managers state.
+       */
+      setUndoManagerState: function (stateJSON) {
+        console.log('setUndoManagerState');
+        index = stateJSON['index'];
+        data = stateJSON['data'];
+        self.typing = stateJSON['typing'];
+        beforeBookmark = state['beforeBookmark'];
+        isFirstTypedCharacter = state['isFirstTypedCharacter'];
+        locks = state['locaks'];
+      },
 
-				level = level || {};
-				level.content = getContent();
+      /**
+       * Stores away a bookmark to be used when performing an undo action so that the selection is before
+       * the change has been made.
+       *
+       * @method beforeChange
+       */
+      beforeChange: function() {
+        if (!locks) {
+          beforeBookmark = editor.selection.getBookmark(2, true);
+        }
+      },
 
-				if (locks || editor.removed ) {
-					return null;
-				}
+      /**
+       * Adds a new undo level/snapshot to the undo list.
+       *
+       * @method add
+       * @param {Object} level Optional undo level object to add.
+       * @param {DOMEvent} event Optional event responsible for the creation of the undo level.
+       * @return {Object} Undo level that got added or null it a level wasn't needed.
+       */
+      add: function(level, event) {
+        var i, settings = editor.settings, lastLevel;
 
-				lastLevel = data[index];
-				if (editor.fire('BeforeAddUndo', {level: level, lastLevel: lastLevel, originalEvent: event}).isDefaultPrevented()) {
-					return null;
-				}
+        level = level || {};
+        level.content = getContent();
 
-				// Add undo level if needed
-				if (lastLevel && lastLevel.content == level.content) {
-					return null;
-				}
+        if (locks || editor.removed ) {
+          return null;
+        }
 
-				// Set before bookmark on previous level
-				if (data[index]) {
-					data[index].beforeBookmark = beforeBookmark;
-				}
+        lastLevel = data[index];
+        if (editor.fire('BeforeAddUndo', {level: level, lastLevel: lastLevel, originalEvent: event}).isDefaultPrevented()) {
+          return null;
+        }
 
-				// Time to compress
-				if (settings.custom_undo_redo_levels) {
-					if (data.length > settings.custom_undo_redo_levels) {
-						for (i = 0; i < data.length - 1; i++) {
-							data[i] = data[i + 1];
-						}
+        // Add undo level if needed
+        if (lastLevel && lastLevel.content == level.content) {
+          return null;
+        }
 
-						data.length--;
-						index = data.length;
-					}
-				}
+        // Set before bookmark on previous level
+        if (data[index]) {
+          data[index].beforeBookmark = beforeBookmark;
+        }
 
-				// Get a non intrusive normalized bookmark
+        // Time to compress
+        if (settings.custom_undo_redo_levels) {
+          if (data.length > settings.custom_undo_redo_levels) {
+            for (i = 0; i < data.length - 1; i++) {
+              data[i] = data[i + 1];
+            }
 
-				level.bookmark = editor.selection.getBookmark(2, true);
+            data.length--;
+            index = data.length;
+          }
+        }
 
-				// Crop array if needed
-				if (index < data.length - 1) {
-					data.length = index + 1;
-				}
+        // Get a non intrusive normalized bookmark
 
-				data.push(level);
-				index = data.length - 1;
+        level.bookmark = editor.selection.getBookmark(2, true);
 
-				var args = {level: level, lastLevel: lastLevel, originalEvent: event};
+        // Crop array if needed
+        if (index < data.length - 1) {
+          data.length = index + 1;
+        }
 
-				editor.fire('AddUndo', args);
+        data.push(level);
+        index = data.length - 1;
 
-				if (index > 0) {
-					setDirty(true);
-					editor.fire('change', args);
-				}
+        var args = {level: level, lastLevel: lastLevel, originalEvent: event};
 
-				return level;
-			},
+        editor.fire('AddUndo', args);
 
-			/**
-			 * Undoes the last action.
-			 *
-			 * @method undo
-			 * @return {Object} Undo level or null if no undo was performed.
-			 */
-			undo: function() {
-				var level;
+        if (index > 0) {
+          setDirty(true);
+          editor.fire('change', args);
+        }
 
-				if (self.typing) {
-					self.add();
-					self.typing = false;
-				}
+        return level;
+      },
 
-				if (index > 0) {
-					level = data[--index];
+      /**
+       * Undoes the last action.
+       *
+       * @method undo
+       * @return {Object} Undo level or null if no undo was performed.
+       */
+      undo: function() {
+        var level;
 
-					editor.setContent(level.content, {format: 'raw'});
-					editor.selection.moveToBookmark(level.beforeBookmark);
-					setDirty(true);
+        if (self.typing) {
+          self.add();
+          self.typing = false;
+        }
 
-					editor.fire('undo', {level: level});
-				}
+        if (index > 0) {
+          level = data[--index];
 
-				return level;
-			},
+          editor.setContent(level.content, {format: 'raw'});
+          editor.selection.moveToBookmark(level.beforeBookmark);
+          setDirty(true);
 
-			/**
-			 * Redoes the last action.
-			 *
-			 * @method redo
-			 * @return {Object} Redo level or null if no redo was performed.
-			 */
-			redo: function() {
-				var level;
+          editor.fire('undo', {level: level});
+        }
 
-				if (index < data.length - 1) {
-					level = data[++index];
+        return level;
+      },
 
-					editor.setContent(level.content, {format: 'raw'});
-					editor.selection.moveToBookmark(level.bookmark);
-					setDirty(true);
+      /**
+       * Redoes the last action.
+       *
+       * @method redo
+       * @return {Object} Redo level or null if no redo was performed.
+       */
+      redo: function() {
+        var level;
 
-					editor.fire('redo', {level: level});
-				}
+        if (index < data.length - 1) {
+          level = data[++index];
 
-				return level;
-			},
+          editor.setContent(level.content, {format: 'raw'});
+          editor.selection.moveToBookmark(level.bookmark);
+          setDirty(true);
 
-			/**
-			 * Removes all undo levels.
-			 *
-			 * @method clear
-			 */
-			clear: function() {
-				data = [];
-				index = 0;
-				self.typing = false;
-				editor.fire('ClearUndos');
-			},
+          editor.fire('redo', {level: level});
+        }
 
-			/**
-			 * Returns true/false if the undo manager has any undo levels.
-			 *
-			 * @method hasUndo
-			 * @return {Boolean} true/false if the undo manager has any undo levels.
-			 */
-			hasUndo: function() {
-				// Has undo levels or typing and content isn't the same as the initial level
-				return index > 0 || (self.typing && data[0] && getContent() != data[0].content);
-			},
+        return level;
+      },
 
-			/**
-			 * Returns true/false if the undo manager has any redo levels.
-			 *
-			 * @method hasRedo
-			 * @return {Boolean} true/false if the undo manager has any redo levels.
-			 */
-			hasRedo: function() {
-				return index < data.length - 1 && !this.typing;
-			},
+      /**
+       * Removes all undo levels.
+       *
+       * @method clear
+       */
+      clear: function() {
+        data = [];
+        index = 0;
+        self.typing = false;
+        editor.fire('ClearUndos');
+      },
 
-			/**
-			 * Executes the specified function in an undo translation. The selection
-			 * before the modification will be stored to the undo stack and if the DOM changes
-			 * it will add a new undo level. Any methods within the translation that adds undo levels will
-			 * be ignored. So a translation can include calls to execCommand or editor.insertContent.
-			 *
-			 * @method transact
-			 * @param {function} callback Function to execute dom manipulation logic in.
-			 */
-			transact: function(callback) {
-				self.beforeChange();
+      /**
+       * Returns true/false if the undo manager has any undo levels.
+       *
+       * @method hasUndo
+       * @return {Boolean} true/false if the undo manager has any undo levels.
+       */
+      hasUndo: function() {
+        // Has undo levels or typing and content isn't the same as the initial level
+        return index > 0 || (self.typing && data[0] && getContent() != data[0].content);
+      },
 
-				try {
-					locks++;
-					callback();
-				} finally {
-					locks--;
-				}
+      /**
+       * Returns true/false if the undo manager has any redo levels.
+       *
+       * @method hasRedo
+       * @return {Boolean} true/false if the undo manager has any redo levels.
+       */
+      hasRedo: function() {
+        return index < data.length - 1 && !this.typing;
+      },
 
-				self.add();
-			}
-		};
+      /**
+       * Executes the specified function in an undo translation. The selection
+       * before the modification will be stored to the undo stack and if the DOM changes
+       * it will add a new undo level. Any methods within the translation that adds undo levels will
+       * be ignored. So a translation can include calls to execCommand or editor.insertContent.
+       *
+       * @method transact
+       * @param {function} callback Function to execute dom manipulation logic in.
+       */
+      transact: function(callback) {
+        self.beforeChange();
 
-		return self;
-	};
+        try {
+          locks++;
+          callback();
+        } finally {
+          locks--;
+        }
+
+        self.add();
+      }
+    };
+
+    return self;
+  };
 });
