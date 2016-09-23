@@ -322,12 +322,19 @@ tinymce.PluginManager.add('lists', function(editor) {
 		}
 
 		function outdent(li) {
-			var ul = li.parentNode, ulParent = ul.parentNode, newBlock;
+			var ul = li.parentNode, ulParent, newBlock;
 
 			function removeEmptyLi(li) {
 				if (isEmpty(li)) {
 					dom.remove(li);
 				}
+			}
+
+			if (ul) {
+				ulParent = ul.parentNode;
+			} else {
+				removeEmptyLi(li);
+				return true;
 			}
 
 			if (isEditorBody(ul)) {
