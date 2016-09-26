@@ -157,18 +157,18 @@
       return foundAnchor;
     },
 
-		/**
-		 * Callback for when the editor is clicked or double clicked
-		 * @param {Event.target} target
-		 */
-		activateLink: function (target) {
-			var ed = this._editor,
-				$el = this.findClosestAnchorNode($(target));
+    /**
+     * Callback for when the editor is clicked or double clicked
+     * @param {Event.target} target
+     */
+    activateLink: function (target) {
+      var ed = this._editor,
+        $el = this.findClosestAnchorNode($(target));
 
-			if ($el && ed) {
-				SPTinyMCEInterface.signalResponseOpenHyperlink($el.href);
-			}
-		},
+      if ($el && ed) {
+        SPTinyMCEInterface.signalResponseOpenHyperlink($el.href);
+      }
+    },
 
     //////////////////////////////////////////////////////////////////////////
     // Image handling
