@@ -385,10 +385,10 @@
         parent = ed.dom.getParent(element, 'a');
         SPTinyMCEInterface.signalCursorInHyperlink(!!parent);
 
-				// Tell the base qtinterface plugin to handle the resizing
-				if (this._editor.plugins.qtinterface) {
-					this._editor.plugins.qtinterface.editorResized();
-				}
+        // Tell the base qtinterface plugin to handle the resizing
+        if (this._editor.plugins.qtinterface) {
+          this._editor.plugins.qtinterface.editorResized();
+        }
 
         SPTinyMCEInterface.signalUndoAvailable(ed.undoManager.hasUndo());
         SPTinyMCEInterface.signalRedoAvailable(ed.undoManager.hasRedo());
@@ -476,27 +476,57 @@
     },
 
     /**
-     * Sets the font color to the given font color
-     * @param {String} color The font color to set
+     * Removes the given format from the current selection.
+     * @param {String} format The format to remove (font color or background color)
      */
-    setFontColor: function (color) {
+    removeColorFormat: function (format) {
+      var ed = this._editor;
+      ed.undoManager.transact(function () {
+        ed.focus();
+        ed.formatter.remove(format, {value: null}, null, true);
+        ed.nodeChanged();
+      });
+    },
+
+    /**
+     * Applies the given color format to the current selection.
+     * @param {String} format The format to apply (font color or background color)
+     * @param {String} value The color to apply
+     */
+    applyColorFormat: function (format, value) {
+      var ed = this._editor;
+      ed.undoManager.transact(function () {
+        ed.focus();
+        ed.formatter.remove(format, {value: null}, null, true);
+        ed.formatter.apply(format, {value: value});
+        ed.nodeChanged();
+      });
+    },
+
+    setColor: function (color, bForFont) {
+      var styleColorStr = bForFont ? 'forecolor' : 'hilitecolor';
       if (color === '') {
-        this._editor.formatter.remove('forecolor');
+        this.removeColorFormat(styleColorStr);
       } else {
-        this._editor.execCommand('ForeColor', false, color);
+        // They are setting a color besides the default go ahead and apply it
+        this.applyColorFormat(styleColorStr, color);
       }
     },
 
     /**
+     * Sets the font color to the given font color
+     * @param {String} color The font color to set
+     */
+    setFontColor: function (color) {
+      this.setColor(color, true);
+    },
+
+    /**
      * Sets the hilite color to the given color
-     * @param {String} color The hiliTe color to set
+     * @param {String} color The hilite color to set
      */
     setHilightColor: function (color) {
-      if (color === '') {
-        this._editor.formatter.remove('hilitecolor');
-      } else {
-        this._editor.execCommand('HiliteColor', false, color);
-      }
+      this.setColor(color, false);
     },
 
     /**
@@ -553,10 +583,10 @@
       // Save off these defaults for span comparison when text is copy/pasted with default font settings
       this._qtDefaultFontFamily = fontJSON['family'];
       this._qtDefaultFontSize = fontJSON['ptSize'];
-			if (this._editor.plugins.qtinterface) {
-				// Tell the base plugin to go ahead and adjust the display settings for the default font
-				this._editor.plugins.qtinterface.loadDefaultFont(fontJSON);
-			}
+      if (this._editor.plugins.qtinterface) {
+        // Tell the base plugin to go ahead and adjust the display settings for the default font
+        this._editor.plugins.qtinterface.loadDefaultFont(fontJSON);
+      }
     },
 
     //////////////////////////////////////////////////////////////////////////
