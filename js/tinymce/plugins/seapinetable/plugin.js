@@ -1226,6 +1226,7 @@
         $table.removeAttr('border');
         $table.removeAttr('cellspacing');
         $table.removeAttr('cellpadding');
+        $table.css('border-style', 'none');
 
         if (cellMargins) {
           this.applyTableMargins(cellMargins, $table);
