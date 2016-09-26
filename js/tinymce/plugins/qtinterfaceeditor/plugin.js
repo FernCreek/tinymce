@@ -503,6 +503,11 @@
       });
     },
 
+    /**
+     * Function to set either the font or background color
+     * @param {String} color The color to set
+     * @param {Boolean} bForFont True to set the font color, false to set the background color
+     */
     setColor: function (color, bForFont) {
       var styleColorStr = bForFont ? 'forecolor' : 'hilitecolor';
       if (color === '') {
