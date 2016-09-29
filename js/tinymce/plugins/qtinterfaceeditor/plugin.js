@@ -60,24 +60,6 @@
      */
     _cachedSelectedImage: null,
 
-    /**
-     * The current font family
-     * @type {String}
-     */
-    _cachedFontFamily: null,
-
-    /**
-     * The current font size
-     * @type {String}
-     */
-    _cachedFontSize: null,
-
-    // These defaults are invalid. They are the defaults used when we can not find an specified font size
-    // or family. In this case just allow the one assigned in the CSS to be used.
-    _defaultFontValue: '',
-
-    _defaultFontSize: 0,
-
     // TODO_FUTURE Improved font family/size handling
     // These should be changed to properly determine if the font size or family in a span is actually
     // our CSS default so that the family and size menus can be set more accurately.
@@ -171,12 +153,12 @@
      */
     nodeChanged: function (element) {
       var state = false, foundIt = false,
-          listNode, parent, fontFamily, sizeName,
+          listNode, parent,
           supFontSizes = this._supportedFontSizes,
           i, tableCell, ed = this._editor,
           singleCell = false, singleRow = false,
           mergedCell = false, matchingParent,
-          alignments = 0, lastAlignment = '';
+          alignments = 0, lastAlignment = '', familyAndSize;
 
       if (SPTinyMCEInterface && ed) {
         state = ed.queryCommandState('bold');
@@ -228,94 +210,38 @@
           }
         }
 
-        // Font family
-        state = ed.queryCommandValue('fontname');
-        if (state === 0 || state === undefined) {
-          state = this._defaultFontValue;
-        } else if (state === '' && element) {
-          // FontFamily not on this node, recurse the parent nodes for a style. If we get to the <body>, end it
-          parent = element.parentNode;
-          while (parent && !foundIt && !$(parent).is('body')) {
-            if (parent.style && parent.style.fontFamily) {
-              // Font family is a string something like 'font name', 'font name2', 'font name3'. The first
-              // replace will strip the single quotes, the second replace will remove the space after the
-              // comma so that the final string matches the values stored in our dropdown
-              fontFamily = parent.style.fontFamily;
-              state = fontFamily.replace(/["']+/g, '').replace(/, /g, ',').toLowerCase();
-              foundIt = true;
-            } else {
-              parent = parent.parentNode;
-            }
-          }
-        }
+        // Font family and size, see the Seapine plugin for how this is determined.
 
-        if (state === this._defaultFontValue) {
-          // If there is a selection where part of it specifies a font family set to not supported
-          if (ed.selection.getContent().indexOf('font-family:') !== -1) {
-            SPTinyMCEInterface.signalCursorFontFamily(0);
-          } else {
-            SPTinyMCEInterface.signalCursorDefaultFontFamily();
-          }
+        familyAndSize = ed.determineCurrentFontAndSize(element);
+        state = familyAndSize.fontFamily;
+        if (state === ed._fontValues.defaultFont) {
+          // No fonts are specified, this must bhe the default font only
+          SPTinyMCEInterface.signalCursorDefaultFontFamily();
+        } else if (state === ed._fontValues.multipleFonts) {
+          SPTinyMCEInterface.signalCursorFontFamily(0);
         } else {
           SPTinyMCEInterface.signalCursorFontFamily(state);
-          this._cachedFontFamily = state;
         }
 
-        // Font size
-        foundIt = false;
-        state = this._defaultFontSize;
-        sizeName = ed.queryCommandValue('fontsize');
-
-        // Sometimes after applying styles our selection isn't perfect so queryCommandValue doesn't
-        // work as expected. Check to see if this is a <span> and try to get the font size there.
-        // http://www.tinymce.com/develop/bugtracker_view.php?id=6017
-        // If the TinyMCE bug is ever fixed, we can probably remove this block
-        if ($(element).is('span') && element.style && element.style.fontSize) {
-          sizeName = element.style.fontSize;
-        }
-
-        // If we have no value for sizeName...
-        if ((sizeName === '' || sizeName === 0) && element) {
-          // FontSize not on this node, check the parentNode for a style. If we get to the <body>, end it
-          parent = element.parentNode;
-          while (parent && !foundIt && !$(parent).is('body')) {
-            if (parent.style && parent.style.fontSize) {
-              // Get font pt size from parent node
-              sizeName = parent.style.fontSize;
+        state = familyAndSize.fontSize;
+        // There is a valid font size and there are not multiple fonts selected
+        if (state !== ed._fontValues.multipleFonts) {
+          foundIt = false;
+          for (i = 0; i < supFontSizes.length && !foundIt; ++i) {
+            if (state === supFontSizes[i].name || state === supFontSizes[i].ptvalue) {
+              state = supFontSizes[i].ptvalue.replace(/pt/, '');
               foundIt = true;
-            } else {
-              parent = parent.parentNode;
             }
           }
         }
 
-        foundIt = false;
-        for (i = 0; i < supFontSizes.length && !foundIt; ++i) {
-          if (sizeName === supFontSizes[i].name || sizeName === supFontSizes[i].ptvalue) {
-            state = supFontSizes[i].ptvalue.replace(/pt/, '');
-            foundIt = true;
-          }
-        }
-
-        // console.log('Size: ' + state + ' sizeName: ' + sizeName + ' foundIt: ' + foundIt);
-        if (!foundIt) {
-          if (state === this._defaultFontSize && (sizeName === this._defaultFontSize || sizeName === '')) {
-            // If there is a selection where part of it specifies a font size set to not supported
-            if (ed.selection.getContent().indexOf('font-size:') !== -1) {
-              SPTinyMCEInterface.signalCursorFontSize(0);
-            } else {
-              // The default font size is being used, no other size is specified
-              SPTinyMCEInterface.signalCursorDefaultFontSize();
-              this._cachedFontSize = null;
-            }
-          } else {
-            // There was a valid font size, it is just not supported by us
-            SPTinyMCEInterface.signalCursorFontSize(sizeName);
-          }
+        if (state === ed._fontValues.defaultFont) {
+          // The default font size is being used, no other size is specified
+          SPTinyMCEInterface.signalCursorDefaultFontSize();
+        } else if (state === ed._fontValues.multipleFonts) {
+          SPTinyMCEInterface.signalCursorFontSize(0);
         } else {
-          // A valid font size was found
           SPTinyMCEInterface.signalCursorFontSize(state);
-          this._cachedFontSize = state;
         }
 
         // Images
@@ -325,7 +251,7 @@
 
         // Insert/Edit Table
         parent = ed.dom.getParent(element, 'td,th,caption');
-        state = (element.nodeName === 'TABLE' || !!parent);
+        state = element.nodeName === 'TABLE' || !!parent;
 
         // Disable table tools if we are in caption
         if (parent && parent.nodeName === 'CAPTION') {
@@ -439,9 +365,12 @@
      * @param {String} alignment The alignment to set on the editor
      */
     setAlign: function (alignment) {
-      // Clear out any alignments that have been set with justify none command
-      this._editor.execCommand('justifynone');
-      this._editor.execCommand('justify' + alignment);
+      var ed = this._editor;
+      ed.undoManager.transact(function () {
+        // Clear out any alignments that have been set with justify none command
+        ed.execCommand('justifynone');
+        ed.execCommand('justify' + alignment);
+      });
     },
 
     /**
@@ -470,16 +399,18 @@
      */
     clearFormatting: function () {
       var ed = this._editor;
-      ed.execCommand('RemoveFormat');
-      // Clear out any alignment
-      ed.execCommand('justifynone');
+      ed.undoManager.transact(function () {
+        ed.execCommand('RemoveFormat');
+        // Clear out any alignment
+        ed.execCommand('justifynone');
+      });
     },
 
     /**
      * Removes the given format from the current selection.
-     * @param {String} format The format to remove (font color or background color)
+     * @param {String} format The format to remove
      */
-    removeColorFormat: function (format) {
+    removeFormat: function (format) {
       var ed = this._editor;
       ed.undoManager.transact(function () {
         ed.focus();
@@ -490,10 +421,10 @@
 
     /**
      * Applies the given color format to the current selection.
-     * @param {String} format The format to apply (font color or background color)
-     * @param {String} value The color to apply
+     * @param {String} format The format to apply
+     * @param {String} value The value to apply
      */
-    applyColorFormat: function (format, value) {
+    applyFormat: function (format, value) {
       var ed = this._editor;
       ed.undoManager.transact(function () {
         ed.focus();
@@ -511,10 +442,10 @@
     setColor: function (color, bForFont) {
       var styleColorStr = bForFont ? 'forecolor' : 'hilitecolor';
       if (color === '') {
-        this.removeColorFormat(styleColorStr);
+        this.removeFormat(styleColorStr);
       } else {
         // They are setting a color besides the default go ahead and apply it
-        this.applyColorFormat(styleColorStr, color);
+        this.applyFormat(styleColorStr, color);
       }
     },
 
@@ -555,13 +486,14 @@
      * @param {String} font The font family to use
      */
     setFont: function (font) {
+      var ed = this._editor;
       if (font) {
-        this._editor.execCommand('FontName', false, font);
+        ed.undoManager.transact(function () {
+          ed.formatter.remove('removefontname');
+          ed.execCommand('FontName', false, font);
+        });
       } else {
-        if (this._cachedFontFamily) {
-          this._editor.execCommand('FontName', false, this._cachedFontFamily);
-        }
-        this._cachedFontFamily = null;
+        ed.formatter.remove('removefontname');
       }
     },
 
@@ -570,13 +502,14 @@
      * @param {Number} size The font size to use
      */
     setFontSize: function (size) {
+      var ed = this._editor;
       if (size) {
-        this._editor.execCommand('FontSize', false, size + 'pt');
+        ed.undoManager.transact(function () {
+          ed.formatter.remove('removefontsize');
+          ed.execCommand('FontSize', false, size + 'pt');
+        });
       } else {
-        if (this._cachedFontSize) {
-          this._editor.execCommand('FontSize', false, this._cachedFontSize + 'pt');
-        }
-        this._cachedFontSize = null;
+        ed.formatter.remove('removefontsize');
       }
     },
 
@@ -588,10 +521,6 @@
       // Save off these defaults for span comparison when text is copy/pasted with default font settings
       this._qtDefaultFontFamily = fontJSON['family'];
       this._qtDefaultFontSize = fontJSON['ptSize'];
-      if (this._editor.plugins.qtinterface) {
-        // Tell the base plugin to go ahead and adjust the display settings for the default font
-        this._editor.plugins.qtinterface.loadDefaultFont(fontJSON);
-      }
     },
 
     //////////////////////////////////////////////////////////////////////////
@@ -628,7 +557,7 @@
 
     /**
      * Creates a SeapineTable border from the provided JSON border information
-     * @param {JSON} jsonBorder JSON object containing the border infromation
+     * @param {JSON} jsonBorder JSON object containing the border information
      * @returns {SeapineTable.Border} The border object
      */
     getBorderFromJSON: function (jsonBorder) {
@@ -840,7 +769,7 @@
       var ed = this._editor, spTablePlugin = ed.plugins.seapinetable,
           json = {}, jsonBorders, rowBorders,
           selectedNode, rowElement, $rowElement, $cells,
-          cellSpacing, margins, borderStyle,
+          margins, borderStyle,
           topBorder, leftBorder, bottomBorder, rightBorder, verticalBorder;
 
       selectedNode = ed.selection.getNode();
@@ -1080,7 +1009,7 @@
       displayText = ed.selection.getContent({ format: 'text' });
 
       $nonAnchorTextQuery = $(tmpDiv).find('*').andSelf().contents().filter(function () {
-        return (this.nodeType !== Node.TEXT_NODE && this.tagName !== 'A');
+        return this.nodeType !== Node.TEXT_NODE && this.tagName !== 'A';
       });
 
       if ($nonAnchorTextQuery.length) {
@@ -1141,10 +1070,8 @@
         json['width'] = this._cachedSelectedImage.width;
         json['height'] = this._cachedSelectedImage.height;
         if (bForResize) {
-          console.log('Response edit image size');
           SPTinyMCEInterface.signalResponseEditImageSize(json);
         } else {
-          console.log('Response edit image');
           SPTinyMCEInterface.signalResponseEditImage(json);
         }
       }
