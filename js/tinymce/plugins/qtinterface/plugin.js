@@ -126,6 +126,20 @@
       }
     },
 
+    /**
+     * Modifies the TinyMCE editor's body tag to either enable or disable dragging
+     * @param {String} enable Whether native drag operations should be enabled
+     */
+    setDragEnabled: function (enable) {
+      var bodyClass = '.tinymce-native', $editorBody;
+      $editorBody = $('#content_ifr').contents().find(bodyClass);
+      if (enable) {
+        $editorBody.removeAttribute('ondragstart');
+      } else {
+        $editorBody.attr('ondragstart', 'return false;');
+      }
+    },
+
     //////////////////////////////////////////////////////////////////////////
     // Hyperlink handling interactions
     /////////////////////////////////////////////////////////////////////////
