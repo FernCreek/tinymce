@@ -482,15 +482,51 @@
     },
 
     /**
-     * Sets the font family
-     * @param {String} font The font family to use
+     * Sets the font
+     * @param {JSON} fontJSON JSON object containing the font information to set
      */
-    setFont: function (font) {
+    setFont: function (fontJSON) {
+      var ed = this._editor, family = fontJSON['family'], size = fontJSON['ptSize'], bold = fontJSON['bold'],
+        italic = fontJSON['italic'], underline = fontJSON['underline'], strikethrough = fontJSON['strikethrough'];
+      ed.undoManager.transact(function () {
+        // Set the font family
+        ed.formatter.remove('removefontname');
+        if (family) {
+          ed.execCommand('FontName', false, family);
+        }
+
+        // Set the font size
+        ed.formatter.remove('removefontsize');
+        if (size) {
+          ed.execCommand('FontSize', false, size + 'pt');
+        }
+
+        // Set the other style properties
+        if (ed.queryCommandState('bold') !== bold) {
+          ed.execCommand('bold', bold);
+        }
+        if (ed.queryCommandState('italic') !== italic) {
+          ed.execCommand('italic', italic);
+        }
+        if (ed.queryCommandState('underline') !== underline) {
+          ed.execCommand('underline', underline);
+        }
+        if (ed.queryCommandState('strikethrough') !== strikethrough) {
+          ed.execCommand('strikethrough', strikethrough);
+        }
+      });
+    },
+
+    /**
+     * Sets the font family
+     * @param {String} family The font family to use
+     */
+    setFontFamily: function (family) {
       var ed = this._editor;
-      if (font) {
+      if (family) {
         ed.undoManager.transact(function () {
           ed.formatter.remove('removefontname');
-          ed.execCommand('FontName', false, font);
+          ed.execCommand('FontName', false, family);
         });
       } else {
         ed.formatter.remove('removefontname');
