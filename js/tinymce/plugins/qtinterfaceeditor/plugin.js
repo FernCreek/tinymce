@@ -525,11 +525,13 @@
       var ed = this._editor;
       if (family) {
         ed.undoManager.transact(function () {
-          ed.formatter.remove('removefontname');
-          ed.execCommand('FontName', false, family);
+          //ed.formatter.remove('removefontname');
+          ed.formatter.remove('fontname', {value: null}, null, true);
+          ed.execCommand('FontName', false, font);
         });
       } else {
-        ed.formatter.remove('removefontname');
+        //ed.formatter.remove('removefontname');
+        ed.formatter.remove('fontname', {value: null}, null, true);
       }
     },
 
@@ -541,11 +543,13 @@
       var ed = this._editor;
       if (size) {
         ed.undoManager.transact(function () {
-          ed.formatter.remove('removefontsize');
+          //ed.formatter.apply('removefontsize', {value: null});
+          ed.formatter.remove('fontsize', {value: null}, null, true);
           ed.execCommand('FontSize', false, size + 'pt');
         });
       } else {
-        ed.formatter.remove('removefontsize');
+        //ed.formatter.apply('removefontsize', {value: null});
+        ed.formatter.remove('fontsize', {value: null}, null, true);
       }
     },
 
