@@ -529,7 +529,9 @@
           ed.execCommand('FontName', false, font);
         });
       } else {
-        ed.formatter.remove('removefontname', {value: null}, null, true);
+        ed.undoManager.transact(function () {
+          ed.formatter.remove('removefontname', {value: null}, null, true);
+        });
       }
     },
 
@@ -545,7 +547,9 @@
           ed.execCommand('FontSize', false, size + 'pt');
         });
       } else {
-        ed.formatter.remove('removefontsize', {value: null}, null, true);
+        ed.undoManager.transact(function () {
+          ed.formatter.remove('removefontsize', {value: null}, null, true);
+        });
       }
     },
 
