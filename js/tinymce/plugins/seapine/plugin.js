@@ -56,31 +56,10 @@
             {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li', attributes : {'align' : 'justify'}}
           ],
 
-          removefontname: [
-            {
-              selector: 'b,strong,em,i,font,u,strike,sub,sup,dfn,code,samp,kbd,var,cite,mark,q,del,ins',
-              remove: 'fontFamily',
-              split: true,
-              expand: false,
-              block_expand: true,
-              deep: true
-            },
-            {selector: 'span', attributes: ['style', 'class'], remove: 'empty', split: true, expand: false, deep: true},
-            {selector: '*', attributes: ['style', 'class'], split: false, expand: false, deep: true}
-          ],
+          removefontsize: {inline: 'span', styles: {fontSize: ''}, links: true, remove_similar: true},
 
-          removefontsize: [
-            {
-              selector: 'b,strong,em,i,font,u,strike,sub,sup,dfn,code,samp,kbd,var,cite,mark,q,del,ins',
-              remove: 'fontSize',
-              split: true,
-              expand: false,
-              block_expand: true,
-              deep: true
-            },
-            {selector: 'span', attributes: ['style', 'class'], remove: 'empty', split: true, expand: false, deep: true},
-            {selector: '*', attributes: ['style', 'class'], split: false, expand: false, deep: true}
-          ]
+          removefontname: {inline: 'span', styles: {fontFamily: ''}, links: true, remove_similar: true}
+
         });
       });
 

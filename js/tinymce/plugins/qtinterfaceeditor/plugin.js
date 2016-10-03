@@ -490,13 +490,13 @@
         italic = fontJSON['italic'], underline = fontJSON['underline'], strikethrough = fontJSON['strikethrough'];
       ed.undoManager.transact(function () {
         // Set the font family
-        ed.formatter.remove('removefontname');
+        ed.formatter.remove('removefontname', {value: null}, null, true);
         if (family) {
           ed.execCommand('FontName', false, family);
         }
 
         // Set the font size
-        ed.formatter.remove('removefontsize');
+        ed.formatter.remove('removefontsize', {value: null}, null, true);
         if (size) {
           ed.execCommand('FontSize', false, size + 'pt');
         }
@@ -525,13 +525,11 @@
       var ed = this._editor;
       if (family) {
         ed.undoManager.transact(function () {
-          //ed.formatter.remove('removefontname');
-          ed.formatter.remove('fontname', {value: null}, null, true);
+          ed.formatter.remove('removefontname', {value: null}, null, true);
           ed.execCommand('FontName', false, font);
         });
       } else {
-        //ed.formatter.remove('removefontname');
-        ed.formatter.remove('fontname', {value: null}, null, true);
+        ed.formatter.remove('removefontname', {value: null}, null, true);
       }
     },
 
@@ -543,13 +541,11 @@
       var ed = this._editor;
       if (size) {
         ed.undoManager.transact(function () {
-          //ed.formatter.apply('removefontsize', {value: null});
-          ed.formatter.remove('fontsize', {value: null}, null, true);
+          ed.formatter.remove('removefontsize', {value: null}, null, true);
           ed.execCommand('FontSize', false, size + 'pt');
         });
       } else {
-        //ed.formatter.apply('removefontsize', {value: null});
-        ed.formatter.remove('fontsize', {value: null}, null, true);
+        ed.formatter.remove('removefontsize', {value: null}, null, true);
       }
     },
 
