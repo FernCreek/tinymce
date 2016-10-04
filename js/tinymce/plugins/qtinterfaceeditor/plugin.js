@@ -1158,6 +1158,11 @@
     bypassDragEvents: function () {
       var bodyClass = '.tinymce-native', $editorBody, self = this;
       $editorBody = $('#content_ifr').contents().find(bodyClass);
+      $editorBody.on('dragstart', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        return self.onDragStart();
+      });
     },
 
     /**
