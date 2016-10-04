@@ -1149,6 +1149,31 @@
     },
 
     //////////////////////////////////////////////////////////////////////////
+    // Drag and drop interactions
+    //////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Modifies the TinyMCE editor's body tag to prevent drag events from being handled natively
+     */
+    bypassDragEvents: function () {
+      var bodyClass = '.tinymce-native', $editorBody, self = this;
+      $editorBody = $('#content_ifr').contents().find(bodyClass);
+    },
+
+    /**
+     * Initiates a bypassed drag operation, allowing the host application to handle it instead of the browser
+     * @return {Boolean} Always returns false, so the ondragstart event is killed
+     */
+    onDragStart: function () {
+      var content = '';
+      if (tinymce.activeEditor) {
+        content = tinymce.activeEditor.selection.getContent();
+        SPTinyMCEInterface.signalStartDrag(content);
+      }
+      return false;
+    },
+
+    //////////////////////////////////////////////////////////////////////////
     // Editor configuration settings
     /////////////////////////////////////////////////////////////////////////
 
