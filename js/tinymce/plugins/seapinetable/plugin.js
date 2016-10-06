@@ -989,6 +989,7 @@
 
       if (node) {
         $cell = $(node);
+        this.translateOldTableProperties($cell.closest('table'));
 
         if ($cell.css('border-collapse') === 'separate') {
           separatedBorders = true;
@@ -1058,6 +1059,7 @@
         // Clear out any previous TinyMCE data it needs to be recomputed after these changes
         $rowAndCells.removeAttr('data-mce-style');
         $row = $(node);
+        this.translateOldTableProperties($row.closest('table'));
 
         if ($row.css('border-collapse') === 'separate') {
           separatedBorders = true;
@@ -1144,6 +1146,7 @@
       if (node) {
         $table = $(node);
         insertMode = false;
+        this.translateOldTableProperties($table);
       } else if (rows && columns) {
         // Copied from the TinyMCE table plugin.
         html = '<table id="tinysc-table"><tbody>';
@@ -1211,6 +1214,7 @@
         if (!isNaN(cellSpacing)) {
           if (cellSpacing === 0) {
             $table.css('border-collapse', 'collapse');
+            $table.css('border-spacing', '');
           } else {
             $table.css('border-spacing', cellSpacing + 'px');
             $table.css('border-collapse', 'separate');
@@ -1221,12 +1225,6 @@
         // Clear out any previous TinyMCE data it needs to be recomputed after these changes
         $table.removeAttr('data-mce-style');
         $cells.removeAttr('data-mce-style');
-
-        // Clear out deprecated table attributes, since we are storing them in CSS
-        $table.removeAttr('border');
-        $table.removeAttr('cellspacing');
-        $table.removeAttr('cellpadding');
-        $table.css('border-style', 'none');
 
         if (cellMargins) {
           this.applyTableMargins(cellMargins, $table);
@@ -1291,6 +1289,51 @@
 
         ed.execCommand('mceAddUndoLevel', undefined, undefined, {skip_focus: true});
       }
+    },
+
+    /**
+     * Translates old table properties previously attributes to the style of the table
+     * @param {jQuery} $table jQuery selector for the table to translate the attributes to styles
+     */
+    translateOldTableProperties: function ($table) {
+      // Clear out deprecated table attributes, since they will be stored in the style
+      var borderWidth = $table.attr('border'), cellSpacing = $table.attr('cellSpacing'),
+          cellPadding = $table.attr('cellPadding'),
+          newBorder, newMargins, $cells;
+
+      // Apply the old attributes in the new styling
+      // Note: Only make apply the changes if the old attribute is actually present
+
+      if (cellSpacing !== undefined) {
+        cellSpacing = parseInt(cellSpacing, 10);
+        if (cellSpacing === 0) {
+          $table.css('border-collapse', 'collapse');
+          $table.css('border-spacing', '');
+        } else {
+          $table.css('border-collapse', 'separate');
+          $table.css('border-spacing', cellSpacing + 'px');
+        }
+        $table.removeAttr('cellspacing');
+      }
+
+      if (cellPadding !== undefined) {
+        cellPadding = parseInt(cellPadding, 10);
+        newMargins = new this.CellMargins(cellPadding, cellPadding, cellPadding, cellPadding);
+        this.applyTableMargins(newMargins, $table);
+        $table.removeAttr('cellpadding');
+      }
+
+      if (borderWidth !== undefined) {
+        borderWidth = parseInt(borderWidth, 10);
+        newBorder = new this.Border(borderWidth);
+        $cells = $table.find('td');
+        $cells.css('border', this.getCSSStringForBorder(newBorder));
+        $table.removeAttr('border');
+        $table.css('border-style', '');
+      }
+
+      $table.removeAttr('data-mce-style');
+      $table.addClass('mce-item-table');
     },
 
     /**
