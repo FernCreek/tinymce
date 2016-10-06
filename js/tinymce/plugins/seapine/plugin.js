@@ -356,7 +356,7 @@
          * @returns {String} The effective font size of the selection
          */
         determineCurrentFontSize: function (element, frag) {
-          var sizeName, parent, childrenFont;
+          var sizeName, parent, childrenFont, bCameFromElement = false;
 
           // Start with what TinyMCE thinks to be the current font size
           sizeName = this.queryCommandValue('fontsize');
@@ -367,6 +367,7 @@
           // If the TinyMCE bug is ever fixed, we can probably remove this block
           if (element && $(element).is('span') && element.style && element.style.fontSize) {
             sizeName = element.style.fontSize;
+            bCameFromElement = true;
           } else if (frag && frag.childNodes.length === 1) {
             parent = frag.childNodes[0];
             if (parent.style && parent.style.fontSize) {
@@ -392,7 +393,7 @@
 
           // Verify all of the children are consistent in any fonts specified as the parent
           if (frag && frag.childNodes && frag.childNodes.length > 0) {
-            if (sizeName === this._fontValues.defaultFont) {
+            if (sizeName === this._fontValues.defaultFont || bCameFromElement) {
               // The parent is not specified (default) the children can not mix inherit and specified
               childrenFont = this.getChildrenFont(frag, false, false);
               // All of the children match a consistent font TinyMCE did not find, use that
