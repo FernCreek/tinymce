@@ -1195,7 +1195,11 @@
      * @param {String} strHTML The HTML to paste into the editor
      */
     pasteHTML: function (strHTML) {
-      this._editor.execCommand('mceInsertClipboardContent', false, { content: strHTML });
+      var ed = this._editor, self = this;
+      ed.undoManager.transact(function () {
+        ed.execCommand('mceInsertClipboardContent', false, { content: strHTML });
+        self.removeCommentsFromContent();
+      });
     },
 
     /**
@@ -1212,8 +1216,39 @@
      * @param {String} strHTML The HTML to insert into the editor
      */
     insertHTML: function (strHTML) {
-      this._editor.selection.collapse();
-      this._editor.execCommand('mceInsertClipboardContent', false, { content: strHTML });
+      var ed = this._editor, self = this;
+      ed.undoManager.transact(function () {
+        ed.selection.collapse();
+        ed.execCommand('mceInsertClipboardContent', false, { content: strHTML });
+        self.removeCommentsFromContent();
+      });
+    },
+
+    /**
+     * Recursively removes comment nodes from the given node and its children
+     * @param {HTMLElement} node The node to remove comment nodes from
+     */
+    removeCommentNodes: function (node) {
+      var childNodes = node.childNodes, i;
+      if (node.nodeType === Node.COMMENT_NODE) {
+        $(node).remove();
+      }
+      if (childNodes) {
+        for (i = 0; i < childNodes.length; ++i) {
+          this.removeCommentNodes(childNodes[i]);
+        }
+      }
+    },
+
+    /**
+     * Removes comment nodes from the editors content.
+     */
+    removeCommentsFromContent: function () {
+      var bodyClass = '.tinymce-native', contents, i;
+      contents = $('#content_ifr').contents().find(bodyClass).contents();
+      for (i = 0; i < contents.length; ++i) {
+        this.removeCommentNodes(contents[i]);
+      }
     },
 
     /**
