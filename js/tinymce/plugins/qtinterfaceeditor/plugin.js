@@ -1070,7 +1070,7 @@
      * @param {String} displayText The text to display for the link
      */
     insertLink: function (url, displayText) {
-      var ed = this._editor, linkHTML;
+      var ed = this._editor, linkHTML, $link;
 
       if (url.length === 0) { // Remove the link
         ed.execCommand('mceInsertContent', false, displayText, {skip_focus: true});
@@ -1078,11 +1078,17 @@
         linkHTML = ed.dom.createHTML('a', {
           href: url.replace(' ', '%20'),
           title: 'Open ' + url,
-          target: '_blank'
+          target: '_blank',
+          id: 'tinysc-link'
         }, displayText);
 
         // ed.restoreSelection();
         ed.execCommand('mceInsertContent', false, linkHTML, {skip_focus: true});
+        $link = $(ed.dom.select('#tinysc-link'));
+        if ($link.length === 1) {
+          ed.selection.setCursorLocation($link[0], 1);
+        }
+        $link.removeAttr('id');
       }
 
       ed.execCommand('mceAddUndoLevel');
