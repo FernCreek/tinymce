@@ -470,7 +470,7 @@
         margins = [];
       if ($element && $element.length === 1) {
         marginNames.forEach( function (name) {
-          padding = $element.css('padding-' + name);
+          padding = $element[0].style['padding-' + name];
           margin = padding ? self.getWidthFromPxString(padding) : marginDefault;
           if (margin > self.tableConstants.kDefaultMaxMargin) {
             margin = self.tableConstants.kDefaultMaxMargin;
