@@ -282,13 +282,16 @@
         }
 
         // If a single cell isn't selected see if the cursor is within a cell
+        this._cachedCellElement = null;
         if (!singleCell && state.length === 0) {
-          tableCell = ed.dom.getParent(ed.selection.getNode(), 'td');
+          tableCell = element.nodeName === 'TD' ? element : ed.dom.getParent(element, 'td');
           if (tableCell) {
             // If the cursor is within a cell a single cell, a single row is selected inherently
             singleCell = true;
             singleRow = true;
             mergedCell = tableCell.rowSpan > 1 || tableCell.colSpan > 1;
+            // Because we cannot trust the selection.getNode() in requestCellProperties, cache the selection now.
+            this._cachedCellElement = tableCell;
           }
         }
 
@@ -719,7 +722,6 @@
 
         spTablePlugin.saveCellProperties(this._cachedCellElement, rowBorders, cellMargins, alignment, json['bgColor']);
       }
-
     },
 
     /**
@@ -877,10 +879,7 @@
           margins, borderStyle,
           topBorder, leftBorder, bottomBorder, rightBorder;
 
-      selectedNode = ed.selection.getNode();
-      cellElement = ed.dom.getParent(selectedNode, 'td');
-      this._cachedCellElement = cellElement;
-
+      cellElement = this._cachedCellElement;
       if (cellElement && spTablePlugin) {
         $cellElement = $(cellElement);
 
