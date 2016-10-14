@@ -307,7 +307,7 @@
             fontName = this._fontValues.defaultFont;
             // FontFamily not on this node, recurse the parent nodes for a style. If we get to the <body>, end it
             if (element) {
-              parent = element.parentNode;
+              parent = element;
               while (parent && fontName === this._fontValues.defaultFont && !$(parent).is('body')) {
                 if (parent.style && parent.style.fontFamily) {
                   fontName = parent.style.fontFamily.replace(/["']+/g, '').replace(/, /g, ',').toLowerCase();
@@ -379,7 +379,7 @@
             sizeName = this._fontValues.defaultFont;
             // FontSize not on this node, check the parentNode for a style. If we get to the <body>, end it
             if (element) {
-              parent = element.parentNode;
+              parent = element;
               while (parent && sizeName === this._fontValues.defaultFont && !$(parent).is('body')) {
                 if (parent.style && parent.style.fontSize) {
                   // Get font pt size from parent node
