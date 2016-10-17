@@ -195,7 +195,7 @@ sub copyBuiltFilesNative {
    print "Copying tinymce.full.js...\n";
    my $tinymcePath = 'js/tinymce/tinymce.full.js';
    my $tinymceMinPath = 'js/tinymce/tinymce.full.min.js';
-   my $bfPath = "$baseDir/BuildFiles/tinymce/tiny_mce_combined_min.js";
+   my $bfPath = "$baseDir/BuildFiles/tinymce/tiny_mce_combined.min.js";
 
    unless (-e $tinymcePath) {
       print "\n***Build failed: Cannot find file $tinymcePath\n";
