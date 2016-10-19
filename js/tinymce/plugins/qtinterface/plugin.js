@@ -322,6 +322,12 @@
         if (bReadOnly) {
           this._editor.setMode('readonly');
           this._editor.settings.object_resizing = false;
+          // In setMode, TinyMCE creates a '_clickBlocker' object, that does exactly what you'd expect for anchor tags.
+          // Since in the native client, we still want the user to be able to click hyperlinks, we need to unbind this.
+          if (this._editor._clickBlocker) {
+            this._editor._clickBlocker.unbind();
+            this._editor._clickBlocker = null;
+          }
           // If we have settings for the palette in this mode apply them
           if (this._windowReadOnlyColor && this._textReadOnlyColor) {
             // Go ahead and apply the readonly styles to the body
