@@ -321,6 +321,7 @@
         $editorBody = $('#content_ifr').contents().find(bodyClass);
         if (bReadOnly) {
           this._editor.setMode('readonly');
+          this._editor.settings.object_resizing = false;
           // If we have settings for the palette in this mode apply them
           if (this._windowReadOnlyColor && this._textReadOnlyColor) {
             // Go ahead and apply the readonly styles to the body
@@ -329,6 +330,7 @@
           }
         } else {
           this._editor.setMode('design');
+          this._editor.settings.object_resizing = true;
           // If we have settings for the palette in this mode apply them
           if (this._windowEditColor && this._textEditColor) {
             // Go ahead and apply the editable styles to the body
