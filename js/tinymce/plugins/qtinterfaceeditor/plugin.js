@@ -948,6 +948,13 @@
       this._editor.execCommand('selectAll');
     },
 
+    /**
+     * Tells the editor to delete the current selection
+     */
+    deleteSelection: function () {
+      this._editor.execCommand('delete');
+    },
+
     //////////////////////////////////////////////////////////////////////////
     // Hyperlink handling interactions
     /////////////////////////////////////////////////////////////////////////
