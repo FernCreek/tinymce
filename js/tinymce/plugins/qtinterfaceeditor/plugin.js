@@ -99,6 +99,13 @@
     ],
 
     /**
+     * Stores a bookmark for the selection when a drag is initiated from our editor. If the drop is internal, this may
+     * be needed to re-select the correct selection if the user dragged over another editor between drag and drop.
+     * @type {Object} bookmark object
+     */
+    _bookmarkDragStart: null,
+
+    /**
      * Constructor that takes in an editor instance
      * @param {tinymce.Editor} ed The editor instance to use.
      * @constructor
@@ -1183,11 +1190,36 @@
      */
     onDragStart: function () {
       var content = '';
-      if (tinymce.activeEditor) {
-        content = tinymce.activeEditor.selection.getContent();
+      if (this._editor) {
+        this._bookmarkDragStart = this._editor.selection.getBookmark();
+        content = this._editor.selection.getContent();
         SPTinyMCEInterface.signalStartDrag(content);
       }
       return false;
+    },
+
+    /**
+     * Handles dropped HTML that was originally dragged from this same editor
+     * @param {String} strHTML The HTML content that was dragged within the editor
+     * @param {Number} posX The x-axis position of the cursor
+     * @param {Number} posY The y-axis position of the cursor
+     */
+    handleInternalDrop: function (strHTML, posX, posY) {
+      var rng, ed = this._editor;
+      if (strHTML && posX && posY) {
+        if (this._bookmarkDragStart) {
+          ed.selection.moveToBookmark(this._bookmarkDragStart);
+          this._bookmarkDragStart = null;
+        }
+        rng = tinymce.dom.RangeUtils.getCaretRangeFromPoint(posX, posY, this._editor.getDoc());
+        if (rng) {
+          ed.undoManager.transact(function () {
+            ed.execCommand('delete');
+            ed.selection.setRng(rng);
+            ed.execCommand('mceInsertClipboardContent', false, { content: strHTML });
+          });
+        }
+      }
     },
 
     //////////////////////////////////////////////////////////////////////////
