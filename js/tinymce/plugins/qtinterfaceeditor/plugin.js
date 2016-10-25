@@ -123,6 +123,7 @@
      * @param {tinymce.Editor} ed Editor instance that the plugin is initialized in.
      */
     init: function (ed) {
+      var self = this;
 
       tinymce.extend(ed, {
         /**
@@ -151,6 +152,12 @@
           this.plugins.qtinterfaceeditor.setBookmark(null);
         }
 
+      });
+
+      ed.on('keyup', function () {
+        if (self._editor.plugins.qtinterface) {
+          self._editor.plugins.qtinterface.editorResized();
+        }
       });
     },
 
