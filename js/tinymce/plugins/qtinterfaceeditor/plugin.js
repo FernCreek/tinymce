@@ -123,8 +123,6 @@
      * @param {tinymce.Editor} ed Editor instance that the plugin is initialized in.
      */
     init: function (ed) {
-      var self = this;
-
       tinymce.extend(ed, {
         /**
          * Stores the editor's current selection.
@@ -150,13 +148,6 @@
 
           // After we restore the selection, remove the bookmark
           this.plugins.qtinterfaceeditor.setBookmark(null);
-        }
-
-      });
-
-      ed.on('keyup', function () {
-        if (self._editor.plugins.qtinterface) {
-          self._editor.plugins.qtinterface.editorResized();
         }
       });
     },
@@ -329,9 +320,7 @@
         SPTinyMCEInterface.signalCursorInHyperlink(!!parent);
 
         // Tell the base qtinterface plugin to handle the resizing
-        if (this._editor.plugins.qtinterface) {
-          this._editor.plugins.qtinterface.editorResized();
-        }
+        this.editorResized();
 
         SPTinyMCEInterface.signalUndoAvailable(ed.undoManager.hasUndo());
         SPTinyMCEInterface.signalRedoAvailable(ed.undoManager.hasRedo());
@@ -339,6 +328,26 @@
         // console.log('UndoManager HasUndo: ' + ed.undoManager.hasUndo());
         // console.log('UndoManager HasRedo: ' + ed.undoManager.hasRedo());
         // console.log('Selection: ' + ed.selection.getContent());
+      }
+    },
+
+    /**
+     * The current editor height
+     * @type {Number}
+     */
+    _cachedEditorHeight: '',
+
+    /**
+     * Function that emits a signal to the interface when the editor's height changes
+     */
+    editorResized: function () {
+      var height, doc = this._editor.getDoc();
+      if (doc && doc.body) {
+        height = doc.body.offsetHeight;
+        if (height !== this._cachedEditorHeight) {
+          this._cachedEditorHeight = height;
+          SPTinyMCEInterface.signalEditorHeightChanged(height);
+        }
       }
     },
 
