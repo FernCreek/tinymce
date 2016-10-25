@@ -285,26 +285,6 @@
     },
 
     /**
-     * The current editor height
-     * @type {Number}
-     */
-    _cachedEditorHeight: '',
-
-    /**
-     * Function that emits a signal to the interface when the editor's height changes
-     */
-    editorResized: function () {
-      var height, doc = this._editor.getDoc();
-      if (doc) {
-        height = doc.body.offsetHeight;
-        if (height !== this._cachedEditorHeight) {
-          this._cachedEditorHeight = height;
-          SPTinyMCEInterface.signalEditorHeightChanged(height);
-        }
-      }
-    },
-
-    /**
      * Whether the editor is currently readonly
      * @type {Boolean}
      */
