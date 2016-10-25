@@ -294,13 +294,13 @@
      * Function that emits a signal to the interface when the editor's height changes
      */
     editorResized: function () {
-      var bodyClass = '.tinymce-native', $editorBody, currHeight;
-      $editorBody = $('#content_ifr').contents().find(bodyClass);
-      currHeight = parseInt($editorBody.css('height'), 10);
-      if (currHeight !== this._cachedEditorHeight) {
-        this._cachedEditorHeight = currHeight;
-        console.log('editorResized: ' + currHeight);
-        SPTinyMCEInterface.signalEditorHeightChanged(currHeight);
+      var height, doc = this._editor.getDoc();
+      if (doc) {
+        height = doc.body.offsetHeight;
+        if (height !== this._cachedEditorHeight) {
+          this._cachedEditorHeight = height;
+          SPTinyMCEInterface.signalEditorHeightChanged(height);
+        }
       }
     },
 
