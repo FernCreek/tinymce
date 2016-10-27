@@ -58,7 +58,9 @@
 
           removefontsize: {inline: 'span', styles: {fontSize: ''}, links: true, remove_similar: true},
 
-          removefontname: {inline: 'span', styles: {fontFamily: ''}, links: true, remove_similar: true}
+          removefontname: {inline: 'span', styles: {fontFamily: ''}, links: true, remove_similar: true},
+
+          emptyspan: {selector: 'span', attributes: ['style', 'class'], remove: 'empty', split: true, expand: false, deep: true}
 
         });
       });

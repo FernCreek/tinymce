@@ -1273,6 +1273,7 @@
       ed.undoManager.transact(function () {
         ed.execCommand('mceInsertClipboardContent', false, { content: strHTML });
         self.removeCommentsFromContent();
+        self.removeAppleSpace();
       });
     },
 
@@ -1296,6 +1297,7 @@
         ed.selection.collapse();
         ed.execCommand('mceInsertClipboardContent', false, { content: strHTML });
         self.removeCommentsFromContent();
+        self.removeAppleSpace();
       });
     },
 
@@ -1323,6 +1325,25 @@
       contents = $('#content_ifr').contents().find(bodyClass).contents();
       for (i = 0; i < contents.length; ++i) {
         this.removeCommentNodes(contents[i]);
+      }
+    },
+
+    /**
+     * Removes 'Apple-converted-space' class that Qt clipboard inserts
+     */
+    removeAppleSpace: function () {
+      var bodyClass = '.tinymce-native', appleSpaceClass = 'Apple-converted-space',
+          ed = this._editor, $apples, i;
+      $apples = $('#content_ifr').contents().find(bodyClass).contents().find('.' + appleSpaceClass);
+      if ($apples.length && ed) {
+        ed.undoManager.transact(function () {
+          // Remove the Apple-converted-space class
+          $apples.removeClass(appleSpaceClass);
+          for (i = 0; i < $apples.length; ++i) {
+            // Remove any now empty spans after removing the class
+            ed.formatter.remove('emptyspan', null, $apples[i]);
+          }
+        });
       }
     },
 
