@@ -28,7 +28,7 @@ define("tinymce/EnterKey", [
 			moveCaretBeforeOnEnterElementsMap = schema.getMoveCaretBeforeOnEnterElements();
 
 		function handleEnterKey(evt) {
-			var rng, tmpRng, editableRoot, container, offset, parentBlock, documentMode, shiftKey,
+			var rng, tmpRng, editableRoot, container, offset, parentBlock, documentMode, shiftKey, adjustCaretForHR,
 				newBlock, fragment, containerBlock, parentBlockName, containerBlockName, newBlockName, isAfterLastNodeInContainer;
 
 			// Returns true if the block can be split into two blocks or not
@@ -204,7 +204,7 @@ define("tinymce/EnterKey", [
 			function createNewBlock(name) {
 				var node = container, block, clonedNode, caretNode, textInlineElements = schema.getTextInlineElements();
 
-				if (name || parentBlockName == "TABLE") {
+				if (name || parentBlockName == "TABLE" || parentBlockName == "HR") {
 					block = dom.create(name || newBlockName);
 					setForcedBlockAttrs(block);
 				} else {
@@ -246,7 +246,7 @@ define("tinymce/EnterKey", [
 
 			// Returns true/false if the caret is at the start/end of the parent block element
 			function isCaretAtStartOrEndOfBlock(start) {
-				var walker, node, name;
+				var walker, node, name, elemsToCheck, i;
 
 				// Caret is in the middle of a text node like "a|b"
 				if (container.nodeType == 3 && (start ? offset > 0 : offset < container.nodeValue.length)) {
@@ -263,9 +263,12 @@ define("tinymce/EnterKey", [
 					return true;
 				}
 
-				// Caret can be before/after a table
-				if (container.nodeName === "TABLE" || (container.previousSibling && container.previousSibling.nodeName == "TABLE")) {
-					return (isAfterLastNodeInContainer && !start) || (!isAfterLastNodeInContainer && start);
+				// Caret can be before/after a table or a hr
+				elemsToCheck = ['TABLE', 'HR'];
+				for (i = 0; i < elemsToCheck.length; ++ i) {
+					if (container.nodeName === elemsToCheck[i] || (container.previousSibling && container.previousSibling.nodeName == elemsToCheck[i])) {
+						return (isAfterLastNodeInContainer && !start) || (!isAfterLastNodeInContainer && start);
+					}
 				}
 
 				// Walk the DOM and look for text nodes or non empty elements
@@ -640,9 +643,10 @@ define("tinymce/EnterKey", [
 				insertNewBlockAfter();
 			} else if (isCaretAtStartOrEndOfBlock(true)) {
 				// Insert new block before
+				adjustCaretForHR = parentBlockName === 'HR' || (container.previousSibling && container.previousSibling.nodeName === 'HR');
 				newBlock = parentBlock.parentNode.insertBefore(createNewBlock(), parentBlock);
 				renderBlockOnIE(newBlock);
-				moveToCaretPosition(parentBlock);
+				adjustCaretForHR ? moveToCaretPosition(newBlock) : moveToCaretPosition(parentBlock);
 			} else {
 				// Extract after fragment and insert it after the current block
 				tmpRng = rng.cloneRange();
