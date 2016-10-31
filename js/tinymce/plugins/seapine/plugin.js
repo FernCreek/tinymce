@@ -37,23 +37,47 @@
       ed.on('init', function () {
         this.formatter.register({
           alignleft : [
-            {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li', attributes : {'align' : 'left'}},
+            {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', attributes : {'align' : 'left'}},
+            {selector : 'li', styles: {'list-style-position': '', 'text-align': 'left'},
+              remove_similar: true,
+              expand: true,
+              split: true,
+              deep: true,
+              inherit: false},
             {selector : 'img,table', collapsed : false, styles : {'float' : 'left'}}
           ],
 
           aligncenter : [
-            {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li', attributes: {'align' : 'center'}},
+            {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', attributes: {'align' : 'center'}},
+            {selector : 'li', styles: {'list-style-position': 'inside', 'text-align': 'center'},
+              remove_similar: true,
+              expand: true,
+              split: true,
+              deep: true,
+              inherit: false},
             {selector : 'img', collapsed : false, styles : {display : 'block', marginLeft : 'auto', marginRight : 'auto'}},
             {selector : 'table', collapsed : false, styles : {marginLeft : 'auto', marginRight : 'auto'}}
           ],
 
           alignright : [
-            {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li', attributes : {'align' : 'right'}},
+            {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', attributes : {'align' : 'right'}},
+            {selector : 'li', styles: {'list-style-position': 'inside', 'text-align': 'right'},
+              remove_similar: true,
+              expand: true,
+              split: true,
+              deep: true,
+              inherit: false},
             {selector : 'img,table', collapsed : false, styles : {'float' : 'right'}}
           ],
 
           alignfull : [
-            {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li', attributes : {'align' : 'justify'}}
+            {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', attributes : {'align' : 'justify'}},
+            {selector : 'li', styles: {'list-style-position': '', 'text-align': 'justify'},
+              remove_similar: true,
+              expand: true,
+              split: true,
+              deep: true,
+              inherit: false}
           ],
 
           removefontsize: {inline: 'span', styles: {fontSize: ''}, links: true, remove_similar: true},
