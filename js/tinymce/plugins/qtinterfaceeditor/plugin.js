@@ -1239,6 +1239,55 @@
     },
 
     //////////////////////////////////////////////////////////////////////////
+    // Cut/Copy Handling
+    //////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Modifies the TinyMCE editor's body tag to prevent cut/copy events from being handled natively
+     */
+    bypassCutCopyEvents: function () {
+      var bodyClass = '.tinymce-native', $editorBody, self = this;
+      $editorBody = $('#content_ifr').contents().find(bodyClass);
+      $editorBody.on('cut', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        return self.onCut();
+      });
+      $editorBody.on('copy', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        return self.onCopy();
+      });
+    },
+
+    /**
+     * Initiates a bypassed cut operation, allowing the host application to handle it instead of the browser
+     * @return {Boolean} Always returns false, so the cut event is killed
+     */
+    onCut: function () {
+      var content = '';
+      if (this._editor) {
+        content = this._editor.selection.getContent();
+        SPTinyMCEInterface.signalCopyToClipboard(content);
+        this._editor.execCommand('delete');
+      }
+      return false;
+    },
+
+    /**
+     * Initiates a bypassed copy operation, allowing the host application to handle it instead of the browser
+     * @return {Boolean} Always returns false, so the copy event is killed
+     */
+    onCopy: function () {
+      var content = '';
+      if (this._editor) {
+        content = this._editor.selection.getContent();
+        SPTinyMCEInterface.signalCopyToClipboard(content);
+      }
+      return false;
+    },
+
+    //////////////////////////////////////////////////////////////////////////
     // Editor configuration settings
     /////////////////////////////////////////////////////////////////////////
 
