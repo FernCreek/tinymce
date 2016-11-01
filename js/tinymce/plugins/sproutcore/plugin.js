@@ -597,6 +597,12 @@
       // Try to find the selected anchor node.
       selectedNode = ed.selection.getNode();
       anchorNode = TinySC.Utils.findClosestAnchorNode($(selectedNode));
+      if (!anchorNode) {
+        // There is an edge case on IE and Edge (pun intended) where the selection node is the entire editor body.
+        // If there is a link at the start of the editor, check the start of the selection as well.
+        selectedNode = ed.selection.getStart();
+        anchorNode = TinySC.Utils.findClosestAnchorNode($(selectedNode));
+      }
 
       // Create a temporary div with the selected HTML so we can do some inspection.
       tmpDiv = document.createElement('div');
