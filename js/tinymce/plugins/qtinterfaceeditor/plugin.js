@@ -1292,25 +1292,11 @@
     /////////////////////////////////////////////////////////////////////////
 
     /**
-     * Encodes the given plain text lines and combines them with line breaks that are not encoded.
-     * @param {Array.<String>} strText array of plain text lines to encode and combine
-     */
-    encodePlainText: function (strText) {
-      var ed = this._editor, i, strHTML='';
-      for (i = 0; i < strText.length -1; ++i) {
-        strHTML += ed.dom.encode(strText[i]);
-        strHTML += '<br/>';
-      }
-      strHTML += ed.dom.encode(strText[strText.length -1]);
-      return strHTML;
-    },
-
-    /**
      * Pastes the provided string as text into the editor
      * @param {String} strText The text to paste into the editor
      */
     pasteText: function (strText) {
-      this._editor.execCommand('mceInsertContent', false, this.encodePlainText(strText));
+      this._editor.execCommand('mceInsertClipboardContent', false, { text: strText });
     },
 
     /**
@@ -1332,8 +1318,10 @@
      */
     insertText: function (strText) {
       var ed = this._editor;
-      ed.selection.collapse();
-      ed.execCommand('mceInsertContent', false, this.encodePlainText(strText));
+      ed.undomanager.transact(function () {
+        ed.selection.collapse();
+        ed._editor.execCommand('mceInsertClipboardContent', false, { text: strText });
+      });
     },
 
     /**
