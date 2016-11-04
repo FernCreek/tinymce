@@ -79,7 +79,7 @@ define("tinymce/pasteplugin/Clipboard", [
 		 * @param {String} text Text to paste as the current selection location.
 		 */
 		function pasteText(text) {
-			text = editor.dom.encode(text).replace(/\r\n/g, '\n');
+			text = editor.dom.encode(text).replace(/\r\n/g, '\n').replace(/[^\S\n]/g, '&nbsp;').replace(/&nbsp;&nbsp;/g, '&nbsp; ');
 
 			var startBlock = editor.dom.getParent(editor.selection.getStart(), editor.dom.isBlock);
 
@@ -97,7 +97,7 @@ define("tinymce/pasteplugin/Clipboard", [
 				]);
 			} else {
 				text = Utils.filter(text, [
-					[/\n\n/g, "</p>" + forcedRootBlockStartHtml],
+					[/\n\n/g, "</p>" + forcedRootBlockStartHtml + "<br />"],
 					[/^(.*<\/p>)(<p>)$/, forcedRootBlockStartHtml + '$1'],
 					[/\n/g, "<br />"]
 				]);
