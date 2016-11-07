@@ -304,7 +304,10 @@ define("tinymce/pasteplugin/Clipboard", [
 				if (dataTransfer.types) {
 					for (var i = 0; i < dataTransfer.types.length; i++) {
 						var contentType = dataTransfer.types[i];
-						items[contentType] = dataTransfer.getData(contentType);
+						// IE (not Edge) ONLY supports 'Text' or 'URL' passed into getData and will throw an exception if anything else is used.
+						if (tinymce.isIE === 0 || tinymce.isIE > 11 || contentType === 'Text' || contentType === 'URL') {
+							items[contentType] = dataTransfer.getData(contentType);
+						}
 					}
 				}
 			}
@@ -605,7 +608,11 @@ define("tinymce/pasteplugin/Clipboard", [
 			});
 
 			editor.on('dragstart dragend', function(e) {
-				draggingInternally = e.type == 'dragstart';
+				// There is no need to set the draggingInternally flag to true if we are not editable. This is fired on mousedown
+				// when content is not editable, which can leave us in a state were drops always fail because dragend is never fired.
+				if (!e.target || e.target.contentEditable === 'true') {
+					draggingInternally = e.type == 'dragstart';
+				}
 			});
 
 			function isPlainTextFileUrl(content) {
