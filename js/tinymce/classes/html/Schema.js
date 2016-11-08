@@ -252,7 +252,7 @@ define("tinymce/html/Schema", [
 			addAttrs("input", "usemap align");
 			addAttrs("select", "onchange");
 			addAttrs("textarea");
-			addAttrs("h1 h2 h3 h4 h5 h6 div p legend caption", "align");
+			addAttrs("h1 h2 h3 h4 h5 h6 div p legend caption li", "align");
 			addAttrs("ul", "type compact");
 			addAttrs("li", "type");
 			addAttrs("ol dl menu dir", "compact");
