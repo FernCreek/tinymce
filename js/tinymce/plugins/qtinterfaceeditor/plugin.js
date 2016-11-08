@@ -1205,11 +1205,12 @@
      * @return {Boolean} Always returns false, so the ondragstart event is killed
      */
     onDragStart: function () {
-      var content = '';
+      var html = '', text = '';
       if (this._editor) {
         this._bookmarkDragStart = this._editor.selection.getBookmark();
-        content = this._editor.selection.getContent();
-        SPTinyMCEInterface.signalStartDrag(content);
+        html = this._editor.selection.getContent();
+        text = this._editor.selection.getContent({ format: 'text' });
+        SPTinyMCEInterface.signalStartDrag(html, text);
       }
       return false;
     },
@@ -1265,10 +1266,11 @@
      * @return {Boolean} Always returns false, so the cut event is killed
      */
     onCut: function () {
-      var content = '';
+      var html = '', text = '';
       if (this._editor) {
-        content = this._editor.selection.getContent();
-        SPTinyMCEInterface.signalCopyToClipboard(content);
+        html = this._editor.selection.getContent();
+        text = this._editor.selection.getContent({ format: 'text' });
+        SPTinyMCEInterface.signalCopyToClipboard(html, text);
         this._editor.execCommand('delete');
       }
       return false;
@@ -1279,10 +1281,11 @@
      * @return {Boolean} Always returns false, so the copy event is killed
      */
     onCopy: function () {
-      var content = '';
+      var html = '', text = '';
       if (this._editor) {
-        content = this._editor.selection.getContent();
-        SPTinyMCEInterface.signalCopyToClipboard(content);
+        html = this._editor.selection.getContent();
+        text = this._editor.selection.getContent({ format: 'text' });
+        SPTinyMCEInterface.signalCopyToClipboard(html, text);
       }
       return false;
     },
