@@ -256,7 +256,7 @@
 
         // Insert/Edit Table
         parent = ed.dom.getParent(element, 'td,th,caption');
-        state = element.nodeName === 'TABLE' || !!parent;
+        state = (ed.dom.getParent(ed.selection.getStart(true), 'table') || !!parent);
 
         // Disable table tools if we are in caption
         if (parent && parent.nodeName === 'CAPTION') {
@@ -278,7 +278,7 @@
           matchingParent = true;
           parent = state[0].parentNode;
           for (i = 1; i < state.length && matchingParent; ++i) {
-            if (!parent.isEqualNode(state[i].parentNode)) {
+            if (parent.rowIndex !== state[i].parentNode.rowIndex) {
               matchingParent = false;
             }
           }
