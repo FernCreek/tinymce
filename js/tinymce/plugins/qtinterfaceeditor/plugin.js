@@ -278,7 +278,7 @@
           matchingParent = true;
           parent = state[0].parentNode;
           for (i = 1; i < state.length && matchingParent; ++i) {
-            if (parent.rowIndex !== state[i].parentNode.rowIndex) {
+            if (!parent.isSameNode(state[i].parentNode)) {
               matchingParent = false;
             }
           }
