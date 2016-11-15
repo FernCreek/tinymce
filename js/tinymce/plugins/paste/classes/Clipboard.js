@@ -305,7 +305,7 @@ define("tinymce/pasteplugin/Clipboard", [
 					for (var i = 0; i < dataTransfer.types.length; i++) {
 						var contentType = dataTransfer.types[i];
 						// IE (not Edge) ONLY supports 'Text' or 'URL' passed into getData and will throw an exception if anything else is used.
-						if (tinymce.isIE === 0 || tinymce.isIE > 11 || contentType === 'Text' || contentType === 'URL') {
+						if (!tinymce.isIE || tinymce.isIE > 11 || contentType === 'Text' || contentType === 'URL') {
 							items[contentType] = dataTransfer.getData(contentType);
 						}
 					}

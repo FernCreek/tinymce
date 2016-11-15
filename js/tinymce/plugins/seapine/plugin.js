@@ -38,53 +38,31 @@
         this.formatter.register({
           alignleft : [
             {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', attributes : {'align' : 'left'}},
-            {selector : 'li', styles: {'list-style-position': '', 'text-align': 'left'},
-              remove_similar: true,
-              expand: true,
-              split: true,
-              deep: true,
-              inherit: false},
+            {selector : 'li', styles: {'list-style-position': '', 'text-align': 'left'}},
             {selector : 'img,table', collapsed : false, styles : {'float' : 'left'}}
           ],
 
           aligncenter : [
             {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', attributes: {'align' : 'center'}},
-            {selector : 'li', styles: {'list-style-position': 'inside', 'text-align': 'center'},
-              remove_similar: true,
-              expand: true,
-              split: true,
-              deep: true,
-              inherit: false},
+            {selector : 'li', styles: {'list-style-position': 'inside', 'text-align': 'center'}},
             {selector : 'img', collapsed : false, styles : {display : 'block', marginLeft : 'auto', marginRight : 'auto'}},
             {selector : 'table', collapsed : false, styles : {marginLeft : 'auto', marginRight : 'auto'}}
           ],
 
           alignright : [
             {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', attributes : {'align' : 'right'}},
-            {selector : 'li', styles: {'list-style-position': 'inside', 'text-align': 'right'},
-              remove_similar: true,
-              expand: true,
-              split: true,
-              deep: true,
-              inherit: false},
+            {selector : 'li', styles: {'list-style-position': 'inside', 'text-align': 'right'}},
             {selector : 'img,table', collapsed : false, styles : {'float' : 'right'}}
           ],
 
           alignfull : [
             {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', attributes : {'align' : 'justify'}},
-            {selector : 'li', styles: {'list-style-position': '', 'text-align': 'justify'},
-              remove_similar: true,
-              expand: true,
-              split: true,
-              deep: true,
-              inherit: false}
+            {selector : 'li', styles: {'list-style-position': '', 'text-align': 'justify'}}
           ],
 
           removefontsize: {inline: 'span', styles: {fontSize: ''}, links: true, remove_similar: true},
 
-          removefontname: {inline: 'span', styles: {fontFamily: ''}, links: true, remove_similar: true},
-
-          emptyspan: {selector: 'span', attributes: ['style', 'class'], remove: 'empty', split: true, expand: false, deep: true}
+          removefontname: {inline: 'span', styles: {fontFamily: ''}, links: true, remove_similar: true}
 
         });
       });
