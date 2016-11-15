@@ -1205,11 +1205,11 @@
      * @return {Boolean} Always returns false, so the ondragstart event is killed
      */
     onDragStart: function () {
-      var html = '', text = '';
-      if (this._editor) {
+      var html = '', text = '', ed = this._editor;
+      if (ed) {
         this._bookmarkDragStart = this._editor.selection.getBookmark();
-        html = this._editor.selection.getContent();
-        text = this._editor.selection.getContent({ format: 'text' });
+        html = ed.selection.getSelectionWithFormatting();
+        text = ed.selection.getContent({ format: 'text' });
         SPTinyMCEInterface.signalStartDrag(html, text);
       }
       return false;
@@ -1254,7 +1254,7 @@
         event.stopPropagation();
         return self.onCut();
       });
-      $editorBody.on('copy', function (event) {
+      $editorBody.bind('copy', function (event) {
         event.preventDefault();
         event.stopPropagation();
         return self.onCopy();
@@ -1266,12 +1266,12 @@
      * @return {Boolean} Always returns false, so the cut event is killed
      */
     onCut: function () {
-      var html = '', text = '';
-      if (this._editor) {
-        html = this._editor.selection.getContent();
-        text = this._editor.selection.getContent({ format: 'text' });
+      var html = '', text = '', ed = this._editor;
+      if (ed) {
+        html = ed.selection.getSelectionWithFormatting();
+        text = ed.selection.getContent({ format: 'text' });
         SPTinyMCEInterface.signalCopyToClipboard(html, text);
-        this._editor.execCommand('delete');
+        ed.execCommand('delete');
       }
       return false;
     },
@@ -1281,10 +1281,10 @@
      * @return {Boolean} Always returns false, so the copy event is killed
      */
     onCopy: function () {
-      var html = '', text = '';
-      if (this._editor) {
-        html = this._editor.selection.getContent();
-        text = this._editor.selection.getContent({ format: 'text' });
+      var html = '', text = '', ed = this._editor;
+      if (ed) {
+        html = ed.selection.getSelectionWithFormatting();
+        text = ed.selection.getContent({ format: 'text' });
         SPTinyMCEInterface.signalCopyToClipboard(html, text);
       }
       return false;
@@ -1373,7 +1373,8 @@
      */
     removeAppleSpace: function () {
       var bodyClass = '.tinymce-native', appleSpaceClass = 'Apple-converted-space',
-          ed = this._editor, $apples, i;
+          ed = this._editor, $apples, i,
+          emptyspan = {selector: 'span', attributes: ['style', 'class'], remove: 'empty', split: true, expand: false, deep: true};
       $apples = $('#content_ifr').contents().find(bodyClass).contents().find('.' + appleSpaceClass);
       if ($apples.length && ed) {
         ed.undoManager.transact(function () {
@@ -1381,7 +1382,9 @@
           $apples.removeClass(appleSpaceClass);
           for (i = 0; i < $apples.length; ++i) {
             // Remove any now empty spans after removing the class
+            ed.formatter.register('emptyspan', emptyspan);
             ed.formatter.remove('emptyspan', null, $apples[i]);
+            ed.formatter.unregister('emptyspan');
           }
         });
       }

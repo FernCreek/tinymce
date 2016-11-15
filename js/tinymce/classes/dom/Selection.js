@@ -827,6 +827,83 @@ define("tinymce/dom/Selection", [
 			return selectedBlocks;
 		},
 
+		getStylesFromBlockForNode: function (node, block) {
+			var children, foundOwner = false, style = '', i;
+			if (block) {
+				// Add this block's styling if any is present
+				if (block.style && block.style.cssText)
+					style += block.style.cssText;
+
+				// Recursively add the styling of the child nodes that contain the selected node
+				children = block.childNodes;
+				for (i = 0; i < children.length && !foundOwner; ++i) {
+					if (children[i].isSameNode(node)) {
+						// We've hit the bottom (the selected node), don't add any more styles
+						foundOwner = true;
+					} else if (children[i].contains(node)) {
+						foundOwner = true;
+						// Recurse the newly found block
+						style += this.getStylesFromBlockForNode(node, children[i]);
+					}
+				}
+
+			}
+			return style;
+		},
+
+		isNodeWithinStrong: function (node, block) {
+			var children, foundOwner = false, isInStrong = false, i;
+			if (block) { // Is the given block a strong
+				if (block.nodeName === 'STRONG') {
+					foundOwner = true;
+					isInStrong = true;
+				}
+				children = block.childNodes;
+				for (i = 0; i < children.length && !foundOwner && !isInStrong; ++i) {
+					if (children[i].isSameNode(node)) {
+						// We've hit the bottom last chance to be a strong.
+						foundOwner = true;
+						if (children[i].nodeName === 'STRONG') {
+							isInStrong = true;
+						}
+					} else if (children[i].contains(node)) {
+						foundOwner = true;
+						if (children[i].nodeName === 'STRONG') {
+							isInStrong = true;
+						} else {
+							isInStrong = this.isNodeWithinStrong(node, children[i]);
+						}
+					}
+				}
+			}
+			return isInStrong;
+		},
+
+		getSelectionWithFormatting: function () {
+			var content = this.getContent(), node = this.getNode(), blocks = this.getSelectedBlocks(),
+					selection, style = '', span = this.dom.create('span'), strong;
+			if (blocks && blocks.length === 1) {
+				span.style.cssText = this.getStylesFromBlockForNode(node, blocks[0]);
+				if (node.style && node.style.cssText)
+					span.style.cssText += node.style.cssText;
+				span.innerHTML =  content;
+				// If the node is within a strong, go ahead and wrap the span within a new strong tag
+				if (this.isNodeWithinStrong(node, blocks[0])) {
+					strong = this.dom.create('strong');
+					strong.appendChild(span);
+					selection = strong;
+				} else {
+					// Not within a strong, the selection is the span
+					selection = span;
+				}
+				// Grab the actual HTML from the created HTMLElement
+				selection = selection.outerHTML;
+			} else {
+				selection = content;
+			}
+			return selection;
+		},
+
 		isForward: function() {
 			var dom = this.dom, sel = this.getSel(), anchorRange, focusRange;
 
