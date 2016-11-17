@@ -879,13 +879,35 @@ define("tinymce/dom/Selection", [
 			return isInStrong;
 		},
 
+		combineTextDecorations: function (style) {
+			var adjustedStyle = style, textDecorations = '',
+					regex = /text-decoration:([^;]+);/gi, textDec = null;
+			while ((textDec = regex.exec(style)) !== null) {
+				// Needed to avoid infinite loops with zero-width matches
+				if (textDec.index === regex.lastIndex)
+					regex.lastIndex++;
+				// Add the text decoration itself if present to our combined list
+				if (textDec[1] && textDec[1].length > 0)
+					textDecorations += textDec[1] + ' ';
+			}
+			if (textDecorations.length > 0) {
+				textDecorations = ' text-decoration: ' + textDecorations + ';';
+				// Remove all of the text decorations from the style
+				adjustedStyle = style.replace(regex, '');
+				// Add in our combined text decoration styling
+				adjustedStyle += textDecorations;
+			}
+			return adjustedStyle;
+		},
+
 		getSelectionWithFormatting: function () {
 			var content = this.getContent(), node = this.getNode(), blocks = this.getSelectedBlocks(),
 					selection, style = '', span = this.dom.create('span'), strong;
 			if (blocks && blocks.length === 1) {
-				span.style.cssText = this.getStylesFromBlockForNode(node, blocks[0]);
+				style = this.getStylesFromBlockForNode(node, blocks[0]);
 				if (node.style && node.style.cssText)
-					span.style.cssText += node.style.cssText;
+					style += node.style.cssText;
+				span.style.cssText = this.combineTextDecorations(style);
 				span.innerHTML =  content;
 				// If the node is within a strong, go ahead and wrap the span within a new strong tag
 				if (this.isNodeWithinStrong(node, blocks[0])) {
