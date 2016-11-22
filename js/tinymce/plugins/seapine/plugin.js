@@ -37,27 +37,27 @@
       ed.on('init', function () {
         this.formatter.register({
           alignleft : [
-            {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', attributes : {'align' : 'left'}},
-            {selector : 'li', styles: {'list-style-position': '', 'text-align': 'left'}},
-            {selector : 'img,table', collapsed : false, styles : {'float' : 'left'}}
+            {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', styles : {'text-align' : 'left'}, attributes : {'align' : ''}},
+            {selector : 'li', styles : {'list-style-position': '', 'text-align' : 'left'}},
+            {selector : 'img,table', collapsed : false, styles : {'float' : 'left'}, attributes : {'align' : ''}}
           ],
 
           aligncenter : [
-            {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', attributes: {'align' : 'center'}},
-            {selector : 'li', styles: {'list-style-position': 'inside', 'text-align': 'center'}},
+            {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', styles: {'text-align' : 'center'}, attributes: {'align' : ''}},
+            {selector : 'li', styles : {'list-style-position' : 'inside', 'text-align' : 'center'}},
             {selector : 'img', collapsed : false, styles : {display : 'block', marginLeft : 'auto', marginRight : 'auto'}},
-            {selector : 'table', collapsed : false, styles : {marginLeft : 'auto', marginRight : 'auto'}}
+            {selector : 'table', collapsed : false, styles : { float : 'none', marginLeft : 'auto', marginRight : 'auto'}, attributes : {'align' : ''}}
           ],
 
           alignright : [
-            {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', attributes : {'align' : 'right'}},
-            {selector : 'li', styles: {'list-style-position': 'inside', 'text-align': 'right'}},
-            {selector : 'img,table', collapsed : false, styles : {'float' : 'right'}}
+            {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', styles : {'text-align' : 'right'}, attributes : {'align' : ''}},
+            {selector : 'li', styles : {'list-style-position' : 'inside', 'text-align' : 'right'}},
+            {selector : 'img,table', collapsed : false, styles : {'float' : 'right'}, attributes : {'align' : ''}}
           ],
 
           alignfull : [
-            {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', attributes : {'align' : 'justify'}},
-            {selector : 'li', styles: {'list-style-position': '', 'text-align': 'justify'}}
+            {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', styles : {'text-align' : 'justify'}, attributes : {'align' : ''}},
+            {selector : 'li', styles : {'list-style-position' : '', 'text-align' : 'justify'}}
           ],
 
           removefontsize: {inline: 'span', styles: {fontSize: ''}, links: true, remove_similar: true},

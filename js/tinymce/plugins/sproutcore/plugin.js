@@ -345,7 +345,7 @@
      * @return {TinySC.TablePropertiesPane} View class to create.
      */
     _setupTablePropertiesDialog: function (ed, onsubmit) {
-      var viewClass, controller, selectedNode, tableElement, $tableElement, $cells,
+      var viewClass, controller, selectedNode, tableElement, $tableElement,
           cellSpacing, alignment, backgroundColor, margins, spTablePlugin,
           topBorder, leftBorder, rightBorder, bottomBorder, verticalBorder, horizontalBorder,
           tableBorders, borderStyle;
@@ -359,7 +359,6 @@
 
       if (tableElement && spTablePlugin) {
         $tableElement = $(tableElement);
-        $cells = $tableElement.find('td');
 
         if ($tableElement.css('border-collapse') === 'separate') {
           cellSpacing = spTablePlugin.getWidthFromPxString($tableElement.css('border-spacing'));
@@ -367,8 +366,8 @@
           cellSpacing = 0;
         }
 
-        alignment = tableElement.align || 'left';
-        backgroundColor = ($cells.attr('bgColor') || '#ffffff').toUpperCase(); // TODO: RGBtoHex?
+        alignment = spTablePlugin.getTableAlignment($tableElement) || 'left';
+        backgroundColor = (spTablePlugin.getTableBackgroundColor($tableElement) || '#ffffff').toUpperCase();
 
         topBorder = spTablePlugin.getBorderForTable(ed, $tableElement, 'top');
         leftBorder = spTablePlugin.getBorderForTable(ed, $tableElement, 'left');
@@ -490,9 +489,9 @@
           $cells = $jElement;
         }
 
-        horizontalAlignment = $cells.attr('align') || 'left';
-        verticalAlignment = $cells.attr('vAlign') || 'middle';
-        backgroundColor = ($cells.attr('bgColor') || '#ffffff').toUpperCase(); // TODO: RGBtoHex?
+        horizontalAlignment = spTablePlugin.getTableCellsTextAlignment($cells) || 'left';
+        verticalAlignment = spTablePlugin.getTableCellsTextAlignmentVertical($cells) || 'middle';
+        backgroundColor = (spTablePlugin.getTableCellsBackgroundColor($cells) || '#ffffff').toUpperCase();
 
         controller.updateBorderContainerLists();
 
