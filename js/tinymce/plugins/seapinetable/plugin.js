@@ -514,6 +514,103 @@
     },
 
     /**
+     * Returns the effective table alignment string
+     *
+     * @param {jQuery} $table Table selector, should only contain one HTMLElement.
+     * @returns {String} The string representing the alignment
+     */
+    getTableAlignment: function ($table) {
+      var float, align = '';
+      if ($table && $table.length === 1) {
+        float = $table.css('float');
+        if (float === 'left') {
+          align = 'left';
+        } else if (float === 'right') {
+          align = 'right';
+        } else if (float === 'none' && $table[0].style['margin-left'] === 'auto' && $table[0].style['margin-right'] === 'auto') {
+          align = 'center';
+        } else {
+          align = $table.attr('align');
+        }
+      }
+      return align;
+    },
+
+    /**
+     * Returns the text alignment for the passed in cells
+     *
+     * @param {jQuery} $cells Table cells selector.
+     * @returns {String} The string representing the text alignment
+     */
+    getTableCellsTextAlignment: function ($cells) {
+      var align = '';
+      if ($cells[0].style['text-align']) {
+        align = $cells.css('text-align');
+      } else {
+        align = $cells.attr('align');
+      }
+      return align;
+    },
+
+    /**
+     * Returns the vertical text alignment for the passed in cells
+     *
+     * @param {jQuery} $cells Table cells selector.
+     * @returns {String} The string representing the vertical text alignment
+     */
+    getTableCellsTextAlignmentVertical: function ($cells) {
+      var align = '';
+      if ($cells[0].style['vertical-align']) {
+        align = $cells.css('vertical-align');
+      } else {
+        align = $cells.attr('vAlign');
+      }
+      return align;
+    },
+
+    /**
+     * Returns the effective table background color in hex
+     *
+     * @param {jQuery} $table Table selector, should only contain one HTMLElement.
+     * @returns {String} The string representing the background color
+     */
+    getTableBackgroundColor: function ($table) {
+      var $cells, hex, value = '';
+      if ($table && $table.length === 1) {
+        if ($table[0].style['background-color']) {
+          value = $table.css('background-color');
+          hex = tinymce.activeEditor.dom.toHex(value);
+        } else {
+          hex = $table.attr('bgColor');
+          if (!hex) {
+            $cells = $table.find('td');
+            hex = getTableCellsBackgroundColor($cells);
+          }
+        }
+      }
+      return hex;
+    },
+
+    /**
+     * Returns the effective table cells background color in hex
+     *
+     * @param {jQuery} $cells Table cells selector.
+     * @returns {String} The string representing the background color
+     */
+    getTableCellsBackgroundColor: function ($cells) {
+      var hex, value = '';
+      if ($cells) {
+        if ($cells[0].style['background-color']) {
+          value = $cells.css('background-color');
+          hex = tinymce.activeEditor.dom.toHex(value);
+        } else {
+          hex = $cells.attr('bgColor');
+        }
+      }
+      return hex;
+    },
+
+    /**
      * Gets the border width string for the given cell.
      *
      * NOTE TTBugs #41231
@@ -1030,11 +1127,18 @@
           }
         }
 
-        if (alignment && bgColor) {
-          $cell.attr('align', alignment.horizontal)
-               .attr('vAlign', alignment.vertical)
-               .attr('bgColor', bgColor);
+        if (alignment) {
+          $cell.css('text-align', alignment.horizontal);
+          $cell.css('vertical-align', alignment.vertical);
+          $cell.removeAttr('align');
+          $cell.removeAttr('vAlign');
         }
+
+        if (bgColor) {
+          $cell.css('background-color', bgColor);
+          $cell.removeAttr('bgColor');
+        }
+
         $cell.removeAttr('data-mce-style');
 
         ed.execCommand('mceAddUndoLevel');
@@ -1097,9 +1201,18 @@
             $tmpCells.css('border-top', this.getCSSStringForBorder(rowBorders.bottom));
           }
 
-          $cells.attr('align', alignment.horizontal)
-                .attr('vAlign', alignment.vertical)
-                .attr('bgColor', bgColor);
+          if (alignment) {
+            $cells.css('text-align', alignment.horizontal);
+            $cells.css('vertical-align', alignment.vertical);
+            $cells.removeAttr('align');
+            $cells.removeAttr('vAlign');
+          }
+
+          if (bgColor) {
+            $cells.css('background-color', bgColor);
+            $cells.removeAttr('bgColor');
+          }
+
 
           // Set the left border on the left cell
           $edgeCell = $row.find('td:first-child');
@@ -1110,10 +1223,16 @@
           $edgeCell.css('border-right', this.getCSSStringForBorder(rowBorders.right));
         }
 
-        if (alignment && bgColor) {
-          $row.attr('align', alignment.horizontal)
-              .attr('vAlign', alignment.vertical)
-              .attr('bgColor', bgColor);
+        if (alignment) {
+          $row.css('text-align', alignment.horizontal);
+          $row.css('vertical-align', alignment.vertical);
+          $row.removeAttr('align');
+          $row.removeAttr('vAlign');
+        }
+
+        if (bgColor) {
+          $row.css('background-color', bgColor);
+          $row.removeAttr('bgColor');
         }
 
         ed.execCommand('mceAddUndoLevel');
@@ -1263,11 +1382,22 @@
           $cells.css('border-bottom', this.getCSSStringForBorder(tableBorders.bottom));
         }
 
-        if (alignment && bgColor) {
-          $table.prop('align', alignment)
-                .prop('bgColor', bgColor)
-                .removeAttr('id');
+        if (alignment) {
+          if (alignment === 'left' || alignment === 'right') {
+            $table.css('float', alignment);
+          } else if (alignment === 'center') {
+            $table.css('float', 'none');
+            $table.css('margin-left', 'auto');
+            $table.css('margin-right', 'auto');
+          }
+          $table.removeAttr('align');
         }
+
+        if (bgColor) {
+          $table.css('background-color', bgColor);
+          $table.removeAttr('bgColor');
+        }
+        $table.removeAttr('id');
 
         if (!insertMode) {
           // Check if selection is in a cell still. If not, it means the cell was removed

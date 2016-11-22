@@ -754,7 +754,7 @@
 
       var ed = this._editor, spTablePlugin = ed.plugins.seapinetable,
           json = {}, jsonBorders, tableBorders,
-          selectedNode, tableElement, $tableElement, $cells,
+          selectedNode, tableElement, $tableElement,
           cellSpacing, alignment, margins, backgroundColor, borderStyle,
           topBorder, leftBorder, bottomBorder, rightBorder, horizontalBorder, verticalBorder;
 
@@ -764,7 +764,6 @@
 
       if (tableElement && spTablePlugin) {
         $tableElement = $(tableElement);
-        $cells = $tableElement.find('td');
 
         json['borders'] = {};
         json['cellMargins'] = {};
@@ -778,9 +777,9 @@
         }
         json['cellSpacing'] = cellSpacing;
 
-        alignment = tableElement.align || 'left';
+        alignment = spTablePlugin.getTableAlignment($tableElement) || 'left';
         json['alignment'] = alignment;
-        backgroundColor = ($cells.attr('bgColor') || '#ffffff').toUpperCase(); // TODO: RGBtoHex?
+        backgroundColor = (spTablePlugin.getTableBackgroundColor($tableElement) || '#ffffff').toUpperCase();
         json['bgColor'] = backgroundColor;
 
         json['rows'] = spTablePlugin.countTableRows($tableElement);
@@ -849,9 +848,9 @@
         json['cellMargins'] = {};
         jsonBorders = json['borders'];
 
-        json['alignment'] = $cells.attr('align') || 'left';
-        json['alignmentV'] = $cells.attr('vAlign') || 'middle';
-        json['bgColor'] = ($cells.attr('bgColor') || '#ffffff').toUpperCase(); // TODO: RGBtoHex?
+        json['alignment'] = spTablePlugin.getTableCellsTextAlignment($cells) || 'left';
+        json['alignmentV'] = spTablePlugin.getTableCellsTextAlignmentVertical($cells) || 'middle';
+        json['bgColor'] = (spTablePlugin.getTableCellsBackgroundColor($cells) || '#ffffff').toUpperCase();
 
         topBorder = spTablePlugin.getBorderForRow(ed, $rowElement, 'top');
         jsonBorders['top'] = topBorder;
@@ -910,9 +909,9 @@
         json['cellMargins'] = {};
         jsonBorders = json['borders'];
 
-        json['alignment'] = cellElement.align || 'left';
-        json['alignmentV'] = cellElement.vAlign || 'middle';
-        json['bgColor'] = (cellElement.bgColor || '#ffffff').toUpperCase(); // TODO: RGBtoHex?;
+        json['alignment'] = spTablePlugin.getTableCellsTextAlignment($cellElement) || 'left';
+        json['alignmentV'] = spTablePlugin.getTableCellsTextAlignmentVertical($cellElement) || 'middle';
+        json['bgColor'] = (spTablePlugin.getTableCellsBackgroundColor($cellElement) || '#ffffff').toUpperCase();
 
         topBorder = spTablePlugin.getBorderForCell(ed, $cellElement, 'top');
         jsonBorders['top'] = topBorder;
