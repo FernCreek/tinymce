@@ -520,14 +520,14 @@
      * @returns {String} The string representing the alignment
      */
     getTableAlignment: function ($table) {
-      var float, align = '';
+      var floatValue, align = '';
       if ($table && $table.length === 1) {
-        float = $table.css('float');
-        if (float === 'left') {
+        floatValue = $table.css('float');
+        if (floatValue === 'left') {
           align = 'left';
-        } else if (float === 'right') {
+        } else if (floatValue === 'right') {
           align = 'right';
-        } else if (float === 'none' && $table[0].style['margin-left'] === 'auto' && $table[0].style['margin-right'] === 'auto') {
+        } else if (floatValue === 'none' && $table[0].style['margin-left'] === 'auto' && $table[0].style['margin-right'] === 'auto') {
           align = 'center';
         } else {
           align = $table.attr('align');

@@ -46,7 +46,7 @@
             {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div', styles: {'text-align' : 'center'}, attributes: {'align' : ''}},
             {selector : 'li', styles : {'list-style-position' : 'inside', 'text-align' : 'center'}},
             {selector : 'img', collapsed : false, styles : {display : 'block', marginLeft : 'auto', marginRight : 'auto'}},
-            {selector : 'table', collapsed : false, styles : { float : 'none', marginLeft : 'auto', marginRight : 'auto'}, attributes : {'align' : ''}}
+            {selector : 'table', collapsed : false, styles : { 'float' : 'none', marginLeft : 'auto', marginRight : 'auto'}, attributes : {'align' : ''}}
           ],
 
           alignright : [
