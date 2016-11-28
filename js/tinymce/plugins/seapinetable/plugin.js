@@ -1329,9 +1329,6 @@
           $table.prop('width', width);
         }
 
-        // Set the border-layout to be fixed, so it doesn't auto-resize columns as you type in them.
-        $table.css('table-layout', 'fixed');
-
         // Set the border styling and cell spacing on the table
         if (!isNaN(cellSpacing)) {
           if (cellSpacing === 0) {
@@ -1433,9 +1430,6 @@
       var borderWidth = $table.attr('border'), cellSpacing = $table.attr('cellSpacing'),
           cellPadding = $table.attr('cellPadding'),
           newBorder, newMargins, $cells;
-
-      // Set the border-layout to be fixed, so it doesn't auto-resize columns as you type in them.
-      $table.css('table-layout', 'fixed');
 
       // Apply the old attributes in the new styling
       // Note: Only make apply the changes if the old attribute is actually present
