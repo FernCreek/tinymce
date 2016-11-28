@@ -154,14 +154,18 @@ define("tinymce/tableplugin/TableGrid", [
 		function getSelectedRows() {
 			var rows = [];
 
-			each(table.rows, function(row) {
-				each(row.cells, function(cell) {
-					if (dom.getAttrib(cell, 'data-mce-selected') || (selectedCell && cell == selectedCell.elm)) {
-						rows.push(row);
-						return false;
+			if (table) {
+				each(table.rows, function (row) {
+					if (row) {
+						each(row.cells, function (cell) {
+							if (dom.getAttrib(cell, 'data-mce-selected') || (selectedCell && cell == selectedCell.elm)) {
+								rows.push(row);
+								return false;
+							}
+						});
 					}
 				});
-			});
+			}
 
 			return rows;
 		}
@@ -766,7 +770,7 @@ define("tinymce/tableplugin/TableGrid", [
 			// Get selected rows and move selection out of scope
 			rows = getSelectedRows();
 
-			if (isEditorBody(table) && rows.length == table.rows.length) {
+			if (!table || (isEditorBody(table) && rows.length == table.rows.length)) {
 				return;
 			}
 
@@ -781,7 +785,7 @@ define("tinymce/tableplugin/TableGrid", [
 		function cutRows() {
 			var rows = getSelectedRows();
 
-			if (isEditorBody(table) && rows.length == table.rows.length) {
+			if (!table || (isEditorBody(table) && rows.length == table.rows.length)) {
 				return;
 			}
 

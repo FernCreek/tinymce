@@ -584,7 +584,7 @@
           hex = $table.attr('bgColor');
           if (!hex) {
             $cells = $table.find('td');
-            hex = getTableCellsBackgroundColor($cells);
+            hex = this.getTableCellsBackgroundColor($cells);
           }
         }
       }

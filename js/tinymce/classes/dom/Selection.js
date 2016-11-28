@@ -831,7 +831,8 @@ define("tinymce/dom/Selection", [
 			var children, foundOwner = false, style = '', i;
 			if (block) {
 				// Add this block's styling if any is present
-				if (block.style && block.style.cssText)
+				// Do not add the styling from table items
+				if (block.nodeName !== 'TABLE' && block.nodeName !== 'TD' && block.nodeName !== 'TR' && block.style && block.style.cssText)
 					style += block.style.cssText;
 
 				// Recursively add the styling of the child nodes that contain the selected node
