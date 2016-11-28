@@ -497,6 +497,10 @@ define("tinymce/dom/Selection", [
 
 			doc = self.win.document;
 
+			if (typeof doc === 'undefined' || doc === null) {
+				return null;
+			}
+
 			// Use last rng passed from FocusManager if it's available this enables
 			// calls to editor.selection.getStart() to work when caret focus is lost on IE
 			if (!w3c && self.lastFocusBookmark) {
@@ -799,7 +803,7 @@ define("tinymce/dom/Selection", [
 			if (block) {
 				// Add this block's styling if any is present
 				// Do not add the styling from table items
-				if (block.nodeName !== 'TABLE' && block.nodeName !== 'TD' && block.nodeName !== 'TR' && block.style && block.style.cssText)
+				if (!this.isTableNode(block) && block.style && block.style.cssText)
 					style += block.style.cssText;
 
 				// Recursively add the styling of the child nodes that contain the selected node
@@ -868,12 +872,23 @@ define("tinymce/dom/Selection", [
 			return adjustedStyle;
 		},
 
+		isTableNode: function (node) {
+			var isTableNode = false, nodeName;
+			if (node && node.nodeName) {
+				nodeName = node.nodeName;
+				if (nodeName === 'TABLE' || nodeName === 'TD' || nodeName === 'TR' || nodeName === 'TH') {
+					isTableNode = true;
+				}
+			}
+			return isTableNode;
+		},
+
 		getSelectionWithFormatting: function () {
 			var content = this.getContent(), node = this.getNode(), blocks = this.getSelectedBlocks(),
 					selection, style = '', span = this.dom.create('span'), strong;
 			if (blocks && blocks.length === 1) {
 				style = this.getStylesFromBlockForNode(node, blocks[0]);
-				if (node.style && node.style.cssText)
+				if (!this.isTableNode(node) && node.style && node.style.cssText)
 					style += node.style.cssText;
 				span.style.cssText = this.combineTextDecorations(style);
 				span.innerHTML =  content;
