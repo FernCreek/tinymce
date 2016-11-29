@@ -1326,7 +1326,7 @@
         // Don't set width 0 on the table or it will not be visible. Instead, follow the behavior of the native client and
         // do not set a width at all, which will let the browser draw the table at its min width
         if (!isNaN(width) && width !== 0) {
-          $table.prop('width', width);
+          this.adjustTableWidth($table, width);
         }
 
         // Set the border styling and cell spacing on the table
@@ -1464,6 +1464,42 @@
 
       $table.removeAttr('data-mce-style');
       $table.addClass('mce-item-table');
+    },
+
+    /**
+     * Adjusts the width of the table and all of its cells to apply the new width
+     * @param {jQuery} $table jQuery selector for the table
+     * @param {Number} tableWidth The new overall width of the table
+     */
+    adjustTableWidth: function ($table, tableWidth) {
+      var cssWidth, oldWidth, ratio, that = this;
+      if ($table && $table.length === 1) {
+        cssWidth = $table[0].style['width'] || $table.css('width');
+        if (cssWidth) {
+          oldWidth = this.getWidthFromPxString(cssWidth);
+          if (oldWidth != tableWidth) {
+            // The overall table width has changed. We need to make the appropriate adjustments. There are set steps for
+            // doing this that will ensure that we set the proper table cell widths with the least amount of effort:
+            //  1. Set the table width. If the table cells don't already have widths set in CSS, then the cells will
+            //     update to the correct width so we can set it manually in CSS later.
+            //  2. Determine the ratio that the table either grew or shrunk by.
+            //  3. Loop through the table cells. If the width for cells is not already set in CSS, set it to whatever
+            //     the current actual width is. If the width is already set in CSS, then multiply it by the ratio we
+            //     determined above and re-set it to the new width.
+            $table.css('width', tableWidth);
+            $table.removeAttr('width');
+            ratio = tableWidth / oldWidth;
+            $table.find('td').each(function () {
+              var $cell = $(this);
+              if ($cell[0].style['width']) {
+                $cell.css('width', Math.round(that.getWidthFromPxString($cell[0].style['width']) * ratio) + 'px');
+              } else {// The width is not explicitly set on this cell, so we need to set it now.
+                $cell.css('width', $cell.css('width'));
+              }
+            });
+          }
+        }
+      }
     },
 
     /**
