@@ -395,7 +395,7 @@
       ed.undoManager.transact(function () {
         // Clear out any alignments that have been set with justify none command
         ed.execCommand('justifynone');
-        ed.execCommand('justify' + alignment);
+        ed.formatter.apply('align'+alignment);
       });
     },
 
