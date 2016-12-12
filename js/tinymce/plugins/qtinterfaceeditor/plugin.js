@@ -1108,7 +1108,7 @@
           title: 'Open ' + url,
           target: '_blank',
           id: 'tinysc-link'
-        }, displayText);
+        }, ed.dom.encode(displayText));
 
         // ed.restoreSelection();
         ed.execCommand('mceInsertContent', false, linkHTML, {skip_focus: true});
