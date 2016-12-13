@@ -1082,66 +1082,70 @@
     saveCellProperties: function (node, cellBorders, cellMargins, alignment, bgColor) {
 
       var ed = tinymce.activeEditor,
-          $cell, $cellTmp, separatedBorders = false;
+          $cell, $cellTmp, separatedBorders = false, self = this;
 
       if (node) {
-        $cell = $(node);
-        this.translateOldTableProperties($cell.closest('table'));
 
-        if ($cell.css('border-collapse') === 'separate') {
-          separatedBorders = true;
-        }
+        // Put this in as one large transaction for the undomanager
+        ed.undoManager.transact(function () {
 
-        // Set the cell margins if override is checked
-        if (cellMargins) {
-          this.applyCellMargins(cellMargins, $cell);
-        }
+          $cell = $(node);
+          self.translateOldTableProperties($cell.closest('table'));
 
-        // Set the top left right and bottom borders on the cell
-        if (cellBorders) {
-          $cell.css('border-left', this.getCSSStringForBorder(cellBorders.left));
-          $cell.css('border-top', this.getCSSStringForBorder(cellBorders.top));
-          $cell.css('border-right', this.getCSSStringForBorder(cellBorders.right));
-          $cell.css('border-bottom', this.getCSSStringForBorder(cellBorders.bottom));
-
-          if (!separatedBorders) {
-            $cellTmp = $cell.prev();
-            // Set the right border on the cell to the left to match this cells left border
-            $cellTmp.css('border-right', this.getCSSStringForBorder(cellBorders.left));
-            $cellTmp.removeAttr('data-mce-style');
-
-            // Set the left border on the cell to the right to match this cells right border
-            $cellTmp = $cell.next();
-            $cell.next().css('border-left', this.getCSSStringForBorder(cellBorders.right));
-            $cellTmp.removeAttr('data-mce-style');
-
-            // Set the bottom border on the cell above to match this cells top border
-            $cellTmp = $($cell.parent().prev().children()[$cell.index()]);
-            $cellTmp.css('border-bottom', this.getCSSStringForBorder(cellBorders.top));
-            $cellTmp.removeAttr('data-mce-style');
-
-            // Set the top border on the cell below to match this cells bottom border
-            $cellTmp = $($cell.parent().next().children()[$cell.index()]);
-            $cellTmp.css('border-top', this.getCSSStringForBorder(cellBorders.bottom));
-            $cellTmp.removeAttr('data-mce-style');
+          if ($cell.css('border-collapse') === 'separate') {
+            separatedBorders = true;
           }
-        }
 
-        if (alignment) {
-          $cell.css('text-align', alignment.horizontal);
-          $cell.css('vertical-align', alignment.vertical);
-          $cell.removeAttr('align');
-          $cell.removeAttr('vAlign');
-        }
+          // Set the cell margins if override is checked
+          if (cellMargins) {
+            this.applyCellMargins(cellMargins, $cell);
+          }
 
-        if (bgColor) {
-          $cell.css('background-color', bgColor);
-          $cell.removeAttr('bgColor');
-        }
+          // Set the top left right and bottom borders on the cell
+          if (cellBorders) {
+            $cell.css('border-left', self.getCSSStringForBorder(cellBorders.left));
+            $cell.css('border-top', self.getCSSStringForBorder(cellBorders.top));
+            $cell.css('border-right', self.getCSSStringForBorder(cellBorders.right));
+            $cell.css('border-bottom', self.getCSSStringForBorder(cellBorders.bottom));
 
-        $cell.removeAttr('data-mce-style');
+            if (!separatedBorders) {
+              $cellTmp = $cell.prev();
+              // Set the right border on the cell to the left to match this cells left border
+              $cellTmp.css('border-right', self.getCSSStringForBorder(cellBorders.left));
+              $cellTmp.removeAttr('data-mce-style');
 
-        ed.execCommand('mceAddUndoLevel');
+              // Set the left border on the cell to the right to match this cells right border
+              $cellTmp = $cell.next();
+              $cell.next().css('border-left', self.getCSSStringForBorder(cellBorders.right));
+              $cellTmp.removeAttr('data-mce-style');
+
+              // Set the bottom border on the cell above to match this cells top border
+              $cellTmp = $($cell.parent().prev().children()[$cell.index()]);
+              $cellTmp.css('border-bottom', self.getCSSStringForBorder(cellBorders.top));
+              $cellTmp.removeAttr('data-mce-style');
+
+              // Set the top border on the cell below to match this cells bottom border
+              $cellTmp = $($cell.parent().next().children()[$cell.index()]);
+              $cellTmp.css('border-top', self.getCSSStringForBorder(cellBorders.bottom));
+              $cellTmp.removeAttr('data-mce-style');
+            }
+          }
+
+          if (alignment) {
+            $cell.css('text-align', alignment.horizontal);
+            $cell.css('vertical-align', alignment.vertical);
+            $cell.removeAttr('align');
+            $cell.removeAttr('vAlign');
+          }
+
+          if (bgColor) {
+            $cell.css('background-color', bgColor);
+            $cell.removeAttr('bgColor');
+          }
+
+          $cell.removeAttr('data-mce-style');
+
+        }); // End the undo manager transaction
       }
     },
 
@@ -1156,86 +1160,90 @@
     saveRowProperties: function (node, rowBorders, cellMargins, alignment, bgColor) {
       var ed = tinymce.activeEditor,
           $rowAndCells, $row, $cells, $edgeCell, $tmpCells,
-          separatedBorders = false;
+          separatedBorders = false, self = this;
 
       if (node) {
-        $rowAndCells = $(node).children('td').andSelf();
-        // Clear out any previous TinyMCE data it needs to be recomputed after these changes
-        $rowAndCells.removeAttr('data-mce-style');
-        $row = $(node);
-        this.translateOldTableProperties($row.closest('table'));
 
-        if ($row.css('border-collapse') === 'separate') {
-          separatedBorders = true;
-        }
+        // Put this in as one large transaction for the undomanager
+        ed.undoManager.transact(function () {
 
-        // Set the cell margins if override is checked
-        if (cellMargins) {
-          this.applyRowMargins(cellMargins, $row);
-        }
+          $rowAndCells = $(node).children('td').andSelf();
+          // Clear out any previous TinyMCE data it needs to be recomputed after these changes
+          $rowAndCells.removeAttr('data-mce-style');
+          $row = $(node);
+          self.translateOldTableProperties($row.closest('table'));
 
-        // Set the inner border on the cells
-        $cells = $row.find('td');
-
-        if (rowBorders) {
-          $cells.css('border-left', this.getCSSStringForBorder(rowBorders.vertical));
-          $cells.css('border-right', this.getCSSStringForBorder(rowBorders.vertical));
-
-          // Set the top border on the cells in the row
-          $cells.css('border-top', this.getCSSStringForBorder(rowBorders.top));
-          if (!separatedBorders) {
-            // Set the bottom border on the row above, if was bigger it needs to match this
-            $tmpCells = $row.prev().find('td');
-            // Clear out any previous TinyMCE data it needs to be recomputed after these changes
-            $tmpCells.removeAttr('data-mce-style');
-            $tmpCells.css('border-bottom', this.getCSSStringForBorder(rowBorders.top));
+          if ($row.css('border-collapse') === 'separate') {
+            separatedBorders = true;
           }
 
-          // Set the bottom border on the cells in the row
-          $cells.css('border-bottom', this.getCSSStringForBorder(rowBorders.bottom));
-          if (!separatedBorders) {
-            // Set the top border on the row below, if it was bigger it needs to match this
-            $tmpCells = $row.next().find('td');
-            // Clear out any previous TinyMCE data it needs to be recomputed after these changes
-            $tmpCells.removeAttr('data-mce-style');
-            $tmpCells.css('border-top', this.getCSSStringForBorder(rowBorders.bottom));
+          // Set the cell margins if override is checked
+          if (cellMargins) {
+            self.applyRowMargins(cellMargins, $row);
+          }
+
+          // Set the inner border on the cells
+          $cells = $row.find('td');
+
+          if (rowBorders) {
+            $cells.css('border-left', self.getCSSStringForBorder(rowBorders.vertical));
+            $cells.css('border-right', self.getCSSStringForBorder(rowBorders.vertical));
+
+            // Set the top border on the cells in the row
+            $cells.css('border-top', self.getCSSStringForBorder(rowBorders.top));
+            if (!separatedBorders) {
+              // Set the bottom border on the row above, if was bigger it needs to match this
+              $tmpCells = $row.prev().find('td');
+              // Clear out any previous TinyMCE data it needs to be recomputed after these changes
+              $tmpCells.removeAttr('data-mce-style');
+              $tmpCells.css('border-bottom', self.getCSSStringForBorder(rowBorders.top));
+            }
+
+            // Set the bottom border on the cells in the row
+            $cells.css('border-bottom', self.getCSSStringForBorder(rowBorders.bottom));
+            if (!separatedBorders) {
+              // Set the top border on the row below, if it was bigger it needs to match this
+              $tmpCells = $row.next().find('td');
+              // Clear out any previous TinyMCE data it needs to be recomputed after these changes
+              $tmpCells.removeAttr('data-mce-style');
+              $tmpCells.css('border-top', self.getCSSStringForBorder(rowBorders.bottom));
+            }
+
+            if (alignment) {
+              $cells.css('text-align', alignment.horizontal);
+              $cells.css('vertical-align', alignment.vertical);
+              $cells.removeAttr('align');
+              $cells.removeAttr('vAlign');
+            }
+
+            if (bgColor) {
+              $cells.css('background-color', bgColor);
+              $cells.removeAttr('bgColor');
+            }
+
+
+            // Set the left border on the left cell
+            $edgeCell = $row.find('td:first-child');
+            $edgeCell.css('border-left', self.getCSSStringForBorder(rowBorders.left));
+
+            // Set the right border on the right cell
+            $edgeCell = $row.find('td:last-child');
+            $edgeCell.css('border-right', self.getCSSStringForBorder(rowBorders.right));
           }
 
           if (alignment) {
-            $cells.css('text-align', alignment.horizontal);
-            $cells.css('vertical-align', alignment.vertical);
-            $cells.removeAttr('align');
-            $cells.removeAttr('vAlign');
+            $row.css('text-align', alignment.horizontal);
+            $row.css('vertical-align', alignment.vertical);
+            $row.removeAttr('align');
+            $row.removeAttr('vAlign');
           }
 
           if (bgColor) {
-            $cells.css('background-color', bgColor);
-            $cells.removeAttr('bgColor');
+            $row.css('background-color', bgColor);
+            $row.removeAttr('bgColor');
           }
 
-
-          // Set the left border on the left cell
-          $edgeCell = $row.find('td:first-child');
-          $edgeCell.css('border-left', this.getCSSStringForBorder(rowBorders.left));
-
-          // Set the right border on the right cell
-          $edgeCell = $row.find('td:last-child');
-          $edgeCell.css('border-right', this.getCSSStringForBorder(rowBorders.right));
-        }
-
-        if (alignment) {
-          $row.css('text-align', alignment.horizontal);
-          $row.css('vertical-align', alignment.vertical);
-          $row.removeAttr('align');
-          $row.removeAttr('vAlign');
-        }
-
-        if (bgColor) {
-          $row.css('background-color', bgColor);
-          $row.removeAttr('bgColor');
-        }
-
-        ed.execCommand('mceAddUndoLevel');
+        }); // End the undo manager transaction
       }
     },
 
@@ -1262,163 +1270,167 @@
           focusFirstCell = true,
           firstCell, insertMode, self = this;
 
-      if (node) {
-        $table = $(node);
-        insertMode = false;
-        this.translateOldTableProperties($table);
-      } else if (rows && columns) {
-        // Copied from the TinyMCE table plugin.
-        html = '<table id="tinysc-table"><tbody>';
+      // Put this in as one large transaction for the undomanager
+      ed.undoManager.transact(function () {
 
-        for (y = 0; y < rows; y++) {
-          html += '<tr>';
+        if (node) {
+          $table = $(node);
+          insertMode = false;
+          self.translateOldTableProperties($table);
+        } else if (rows && columns) {
+          // Copied from the TinyMCE table plugin.
+          html = '<table id="tinysc-table"><tbody>';
 
-          for (x = 0; x < columns; x++) {
-            html += '<td>' + (tinymce.Env.ie ? ' ' : '<br>') + '</td>';
+          for (y = 0; y < rows; y++) {
+            html += '<tr>';
+
+            for (x = 0; x < columns; x++) {
+              html += '<td>' + (tinymce.Env.ie ? ' ' : '<br>') + '</td>';
+            }
+
+            html += '</tr>';
           }
 
-          html += '</tr>';
+          html += '</tbody></table>';
+
+          ed.insertContent(html);
+          // END copy from TinyMCE
+
+          $table = $(ed.dom.select('#tinysc-table'));
+          insertMode = true;
         }
 
-        html += '</tbody></table>';
+        if ($table && $table.length) {
+          currentRows = self.countTableRows($table);
 
-        ed.insertContent(html);
-        // END copy from TinyMCE
-
-        $table = $(ed.dom.select('#tinysc-table'));
-        insertMode = true;
-      }
-
-      if ($table && $table.length) {
-        currentRows = self.countTableRows($table);
-
-        // add/remove rows
-        if (currentRows > rows) {
-          // need to remove rows
-          $table.find('tr').slice(rows).remove();
-        } else if (currentRows < rows) {
-          // need to add rows
-          for (i = 0; i < rows - currentRows; ++i) {
-            $table.find('tr').filter(':last').after(emptyRow);
+          // add/remove rows
+          if (currentRows > rows) {
+            // need to remove rows
+            $table.find('tr').slice(rows).remove();
+          } else if (currentRows < rows) {
+            // need to add rows
+            for (i = 0; i < rows - currentRows; ++i) {
+              $table.find('tr').filter(':last').after(emptyRow);
+            }
           }
-        }
 
-        // add/remove columns
-        $table.find('tr').each(function () {
-          var $this = $(this),
-              numColumns = self.countRowColumns($this);
+          // add/remove columns
+          $table.find('tr').each(function () {
+            var $this = $(this),
+                numColumns = self.countRowColumns($this);
 
-          if (numColumns > columns) {
-            // need to remove columns
-            $this.find('td').slice(columns).remove();
-          } else if (numColumns < columns) {
-            // need to add columns
-            for (i = 0; i < columns - numColumns; ++i) {
-              if (!tinymce.isIE || tinymce.isIE11) {
-                $this.find('td').filter(':last').after('<td><br data-mce-bogus="1"/></td>');
-              } else {
-                $this.find('td').filter(':last').after('<td></td>');
+            if (numColumns > columns) {
+              // need to remove columns
+              $this.find('td').slice(columns).remove();
+            } else if (numColumns < columns) {
+              // need to add columns
+              for (i = 0; i < columns - numColumns; ++i) {
+                if (!tinymce.isIE || tinymce.isIE11) {
+                  $this.find('td').filter(':last').after('<td><br data-mce-bogus="1"/></td>');
+                } else {
+                  $this.find('td').filter(':last').after('<td></td>');
+                }
+              }
+            }
+          });
+
+          // Don't set width 0 on the table or it will not be visible. Instead, follow the behavior of the native client and
+          // do not set a width at all, which will let the browser draw the table at its min width
+          if (!isNaN(width) && width !== 0) {
+            self.adjustTableWidth($table, width);
+          }
+
+          // Set the border styling and cell spacing on the table
+          if (!isNaN(cellSpacing)) {
+            if (cellSpacing === 0) {
+              $table.css('border-collapse', 'collapse');
+              $table.css('border-spacing', '');
+            } else {
+              $table.css('border-spacing', cellSpacing + 'px');
+              $table.css('border-collapse', 'separate');
+            }
+          }
+
+          $cells = $table.find('td');
+          // Clear out any previous TinyMCE data it needs to be recomputed after these changes
+          $table.removeAttr('data-mce-style');
+          $cells.removeAttr('data-mce-style');
+
+          if (cellMargins) {
+            self.applyTableMargins(cellMargins, $table);
+          }
+
+          if (tableBorders) {
+            // Set the cells to have the internal vertical and horizontal borders
+
+            $cells.css('border-left', self.getCSSStringForBorder(tableBorders.vertical));
+            $cells.css('border-right', self.getCSSStringForBorder(tableBorders.vertical));
+            $cells.css('border-top', self.getCSSStringForBorder(tableBorders.horizontal));
+            $cells.css('border-bottom', self.getCSSStringForBorder(tableBorders.horizontal));
+
+            // Cells need to have their bgColor so when the tables is set it overrides the cells
+            if (bgColor) {
+              $cells.prop('bgColor', bgColor);
+            }
+
+            // Set the left border on the left cells
+            $cells = $table.find('tr td:first-child');
+            $cells.css('border-left', self.getCSSStringForBorder(tableBorders.left));
+
+            // Set the right border on the right cells
+            $cells = $table.find('tr td:last-child');
+            $cells.css('border-right', self.getCSSStringForBorder(tableBorders.right));
+
+            // Set the top border on the cells in the first row
+            $cells = $table.find('tr:first-child td');
+            $cells.css('border-top', self.getCSSStringForBorder(tableBorders.top));
+
+            // Set the bottom border on the bottom cells
+            $cells = $table.find('tr:last-child td');
+            $cells.css('border-bottom', self.getCSSStringForBorder(tableBorders.bottom));
+          }
+
+          if (alignment) {
+            if (alignment === 'left' || alignment === 'right') {
+              $table.css('float', alignment);
+            } else if (alignment === 'center') {
+              $table.css('float', 'none');
+              $table.css('margin-left', 'auto');
+              $table.css('margin-right', 'auto');
+            }
+            $table.removeAttr('align');
+          }
+
+          if (bgColor) {
+            $table.css('background-color', bgColor);
+            $table.removeAttr('bgColor');
+          }
+          $table.removeAttr('id');
+
+          if (!insertMode) {
+            // Check if selection is in a cell still. If not, it means the cell was removed
+            // by this table edit, and we need to put the cursor in the first cell.
+            node = ed.selection.getNode();
+            if (node) {
+              node = $(node);
+              if (node.closest('td').length) {
+                focusFirstCell = false;
               }
             }
           }
-        });
 
-        // Don't set width 0 on the table or it will not be visible. Instead, follow the behavior of the native client and
-        // do not set a width at all, which will let the browser draw the table at its min width
-        if (!isNaN(width) && width !== 0) {
-          this.adjustTableWidth($table, width);
-        }
-
-        // Set the border styling and cell spacing on the table
-        if (!isNaN(cellSpacing)) {
-          if (cellSpacing === 0) {
-            $table.css('border-collapse', 'collapse');
-            $table.css('border-spacing', '');
-          } else {
-            $table.css('border-spacing', cellSpacing + 'px');
-            $table.css('border-collapse', 'separate');
-          }
-        }
-
-        $cells = $table.find('td');
-        // Clear out any previous TinyMCE data it needs to be recomputed after these changes
-        $table.removeAttr('data-mce-style');
-        $cells.removeAttr('data-mce-style');
-
-        if (cellMargins) {
-          this.applyTableMargins(cellMargins, $table);
-        }
-
-        if (tableBorders) {
-          // Set the cells to have the internal vertical and horizontal borders
-
-          $cells.css('border-left', this.getCSSStringForBorder(tableBorders.vertical));
-          $cells.css('border-right', this.getCSSStringForBorder(tableBorders.vertical));
-          $cells.css('border-top', this.getCSSStringForBorder(tableBorders.horizontal));
-          $cells.css('border-bottom', this.getCSSStringForBorder(tableBorders.horizontal));
-
-          // Cells need to have their bgColor so when the tables is set it overrides the cells
-          if (bgColor) {
-            $cells.prop('bgColor', bgColor);
-          }
-
-          // Set the left border on the left cells
-          $cells = $table.find('tr td:first-child');
-          $cells.css('border-left', this.getCSSStringForBorder(tableBorders.left));
-
-          // Set the right border on the right cells
-          $cells = $table.find('tr td:last-child');
-          $cells.css('border-right', this.getCSSStringForBorder(tableBorders.right));
-
-          // Set the top border on the cells in the first row
-          $cells = $table.find('tr:first-child td');
-          $cells.css('border-top', this.getCSSStringForBorder(tableBorders.top));
-
-          // Set the bottom border on the bottom cells
-          $cells = $table.find('tr:last-child td');
-          $cells.css('border-bottom', this.getCSSStringForBorder(tableBorders.bottom));
-        }
-
-        if (alignment) {
-          if (alignment === 'left' || alignment === 'right') {
-            $table.css('float', alignment);
-          } else if (alignment === 'center') {
-            $table.css('float', 'none');
-            $table.css('margin-left', 'auto');
-            $table.css('margin-right', 'auto');
-          }
-          $table.removeAttr('align');
-        }
-
-        if (bgColor) {
-          $table.css('background-color', bgColor);
-          $table.removeAttr('bgColor');
-        }
-        $table.removeAttr('id');
-
-        if (!insertMode) {
-          // Check if selection is in a cell still. If not, it means the cell was removed
-          // by this table edit, and we need to put the cursor in the first cell.
-          node = ed.selection.getNode();
-          if (node) {
-            node = $(node);
-            if (node.closest('td').length) {
-              focusFirstCell = false;
+          // Should put the cursor in the first cell when inserting a table, or when a table edit removes
+          // the cell that had the cursor.
+          if (focusFirstCell) {
+            firstCell = $table.find('td').first();
+            if (firstCell.length) {
+              ed.selection.setCursorLocation(firstCell[0], 0);
             }
           }
-        }
 
-        // Should put the cursor in the first cell when inserting a table, or when a table edit removes
-        // the cell that had the cursor.
-        if (focusFirstCell) {
-          firstCell = $table.find('td').first();
-          if (firstCell.length) {
-            ed.selection.setCursorLocation(firstCell[0], 0);
-          }
-        }
 
-        ed.execCommand('mceAddUndoLevel', undefined, undefined, {skip_focus: true});
-      }
+        }
+      }); // End the undo manager transaction
     },
 
     /**
