@@ -54,7 +54,12 @@
      * @param {tinymce.Editor} ed Editor instance that the plugin is initialized in.
      */
     init: function (ed) {
-      // Currently this is unused.
+      tinymce.extend(ed, {
+        // Helper function to get the JQuery body of the iFrame document.
+        getJQueryBody: function () {
+          return $('#content_ifr').contents().find('.tinymce-native');
+        }
+      });
     },
 
     //////////////////////////////////////////////////////////////////////////
@@ -66,11 +71,10 @@
      * @param {JSON} fontJSON JSON object containing the default font family and size information to set
      */
     loadDefaultFont: function (fontJSON) {
-      var family = fontJSON['family'], ptSize = fontJSON['ptSize'],
-          bodyClass = '.tinymce-native', $editorBody;
+      var family = fontJSON['family'], ptSize = fontJSON['ptSize'], $editorBody;
 
       // console.log('family: ' + family + ' ptSize: ' + ptSize);
-      $editorBody = $('#content_ifr').contents().find(bodyClass);
+      $editorBody = this._editor.getJQueryBody();
       if ($editorBody && $editorBody.length) {
         $editorBody.css('font-family', family);
         $editorBody.css('font-size', ptSize + 'pt');
@@ -109,12 +113,12 @@
      * @param {String} textReadOnly The text color for readonly mode
      */
     loadPalette: function (windowEdit, windowReadOnly, textEdit, textReadOnly) {
-      var bodyClass = '.tinymce-native', $editorBody;
+      var $editorBody;
       this._windowEditColor = windowEdit;
       this._windowReadOnlyColor = windowReadOnly;
       this._textEditColor = textEdit;
       this._textReadOnlyColor = textReadOnly;
-      $editorBody = $('#content_ifr').contents().find(bodyClass);
+      $editorBody = this._editor.getJQueryBody();
       if (this._cachedReadOnly) {
         // Go ahead and apply the readonly styles to the body
         $editorBody.css('color', textReadOnly);
@@ -130,8 +134,8 @@
      * Modifies the TinyMCE editor's body tag to prevent drag events from being handled natively
      */
     disableOnDragStart: function () {
-      var bodyClass = '.tinymce-native', $editorBody;
-      $editorBody = $('#content_ifr').contents().find(bodyClass);
+      var $editorBody;
+      $editorBody = this._editor.getJQueryBody();
       $editorBody.attr('ondragstart', 'return false;');
     },
 
@@ -188,9 +192,8 @@
      * @param {String} imgSrc The image source that needs to be reloaded
      */
     reloadImage: function (imgSrc) {
-      var bodyClass = '.tinymce-native', $images;
-
-      $images = $('#content_ifr').contents().find(bodyClass).find('img');
+      var $images;
+      $images = this._editor.getJQueryBody().find('img');
       $images.each(function () {
         var src = $(this).attr('src'), idx;
         idx = src.indexOf(imgSrc);
@@ -214,10 +217,9 @@
      * Function that sets up callbacks so a signal is emitted to the interface when an image is successfully loaded
      */
     detectImagesLoaded: function () {
-      var editor = this._editor,
-        bodyClass = '.tinymce-native', $images, waitImgDone;
+      var editor = this._editor, $images, waitImgDone;
 
-      $images = $('#content_ifr').contents().find(bodyClass).find('img');
+      $images = editor.getJQueryBody().find('img');
 
       /**
        * Function called when an image has been loaded by the browser
@@ -259,10 +261,10 @@
      * @param {Number} width The fixed width to set
      */
     setFixedWidthEditor: function (width) {
-      var bodyClass = '.tinymce-native', $editorBody;
+      var $editorBody;
       // Only set a fixed width if we are not already set to that fixed width
       if (this._cachedWidthSetting !== width) {
-        $editorBody = $('#content_ifr').contents().find(bodyClass);
+        $editorBody = this._editor.getJQueryBody();
         $editorBody.css('width', width + 'px');
         $editorBody.css('overflow', 'hidden');
         this._cachedWidthSetting = width;
@@ -273,10 +275,10 @@
      * Sets the editor to be a varaible width again by clearing the fixed width
      */
     clearFixedWidthEditor: function () {
-      var bodyClass = '.tinymce-native', $editorBody;
+      var $editorBody;
       // Only clear the fixed with if we currently have a fixed width
       if (this._cachedWidthSetting !== -1) {
-        $editorBody = $('#content_ifr').contents().find(bodyClass);
+        $editorBody = this._editor.getJQueryBody();
         // Remove the width and overflow settings
         $editorBody.css('width', '');
         $editorBody.css('overflow', '');
@@ -295,10 +297,10 @@
      * @param {Boolean} bReadOnly Whether to set the editor to readonly or edit mode
      */
     setReadOnly: function (bReadOnly) {
-      var bodyClass = '.tinymce-native', $editorBody;
+      var $editorBody;
       // Only apply the new value if it isn't our cached value
       if (bReadOnly !== this._cachedReadOnly) {
-        $editorBody = $('#content_ifr').contents().find(bodyClass);
+        $editorBody = this._editor.getJQueryBody();
         if (bReadOnly) {
           this._editor.setMode('readonly');
           this._editor.settings.object_resizing = false;
