@@ -1190,8 +1190,8 @@
      * Modifies the TinyMCE editor's body tag to prevent drag events from being handled natively
      */
     bypassDragEvents: function () {
-      var bodyClass = '.tinymce-native', $editorBody, self = this;
-      $editorBody = $('#content_ifr').contents().find(bodyClass);
+      var $editorBody, self = this;
+      $editorBody = this._editor.getJQueryBody();
       $editorBody.on('dragstart', function (event) {
         event.preventDefault();
         event.stopPropagation();
@@ -1246,8 +1246,8 @@
      * Modifies the TinyMCE editor's body tag to prevent cut/copy events from being handled natively
      */
     bypassCutCopyEvents: function () {
-      var bodyClass = '.tinymce-native', $editorBody, self = this;
-      $editorBody = $('#content_ifr').contents().find(bodyClass);
+      var $editorBody, self = this;
+      $editorBody = this._editor.getJQueryBody();
       $editorBody.on('cut', function (event) {
         event.preventDefault();
         event.stopPropagation();
@@ -1311,6 +1311,7 @@
         ed.execCommand('mceInsertClipboardContent', false, { content: strHTML });
         self.removeCommentsFromContent();
         self.removeAppleSpace();
+        self.removeImageMargins();
       });
     },
 
@@ -1337,6 +1338,7 @@
         ed.execCommand('mceInsertClipboardContent', false, { content: strHTML });
         self.removeCommentsFromContent();
         self.removeAppleSpace();
+        self.removeImageMargins();
       });
     },
 
@@ -1360,8 +1362,8 @@
      * Removes comment nodes from the editors content.
      */
     removeCommentsFromContent: function () {
-      var bodyClass = '.tinymce-native', contents, i;
-      contents = $('#content_ifr').contents().find(bodyClass).contents();
+      var contents, i;
+      contents = this._editor.getJQueryBody().contents();
       for (i = 0; i < contents.length; ++i) {
         this.removeCommentNodes(contents[i]);
       }
@@ -1371,10 +1373,9 @@
      * Removes 'Apple-converted-space' class that Qt clipboard inserts
      */
     removeAppleSpace: function () {
-      var bodyClass = '.tinymce-native', appleSpaceClass = 'Apple-converted-space',
-          ed = this._editor, $apples, i,
+      var appleSpaceClass = 'Apple-converted-space', ed = this._editor, $apples, i,
           emptyspan = {selector: 'span', attributes: ['style', 'class'], remove: 'empty', split: true, expand: false, deep: true};
-      $apples = $('#content_ifr').contents().find(bodyClass).contents().find('.' + appleSpaceClass);
+      $apples = this._editor.getJQueryBody().contents().find('.' + appleSpaceClass);
       if ($apples.length && ed) {
         ed.undoManager.transact(function () {
           // Remove the Apple-converted-space class
@@ -1387,6 +1388,16 @@
           }
         });
       }
+    },
+
+    /**
+     * Removes any margins that are on images. This needs to be done because pasting images from I.E. sometimes
+     * applies margins (potentially negative ones) to images as part of their style. We do not support margins on images.
+     */
+    removeImageMargins: function () {
+      var $images;
+      $images = this._editor.getJQueryBody().find('img');
+      $images.css('margin', '');
     },
 
     /**
