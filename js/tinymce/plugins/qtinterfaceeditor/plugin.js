@@ -1138,11 +1138,11 @@
      * @param {Boolean} bForResize Whether to emit the signal for an image edit or image resize
      */
     requestEditImage: function (bForResize) {
-      var json = {};
-      if (this._cachedSelectedImage) {
-        json['src'] = this._cachedSelectedImage.src;
-        json['width'] = this._cachedSelectedImage.width;
-        json['height'] = this._cachedSelectedImage.height;
+      var json = {}, img = this._cachedSelectedImage;
+      if (img) {
+        json['src'] = img.getAttribute('src');
+        json['width'] = img.width;
+        json['height'] = img.height;
         if (bForResize) {
           SPTinyMCEInterface.signalResponseEditImageSize(json);
         } else {
