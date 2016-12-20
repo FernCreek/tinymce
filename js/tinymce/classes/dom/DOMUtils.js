@@ -860,14 +860,7 @@ define("tinymce/dom/DOMUtils", [
 				// Fallback to offsetParent calculations if the body isn't static better since it stops at the body root
 				if (rootElm === body && elm.getBoundingClientRect && $(body).css('position') === 'static') {
 					pos = elm.getBoundingClientRect();
-					rootElm = self.boxModel ? doc.documentElement : body;
-
-					// Add scroll offsets from documentElement or body since IE with the wrong box model will use d.body and so do WebKit
-					// Also remove the body/documentelement clientTop/clientLeft on IE 6, 7 since they offset the position
-					x = pos.left + (doc.documentElement.scrollLeft || body.scrollLeft) - rootElm.clientLeft;
-					y = pos.top + (doc.documentElement.scrollTop || body.scrollTop) - rootElm.clientTop;
-
-					return {x: x, y: y};
+					return {x: pos.left, y: pos.top};
 				}
 
 				offsetParent = elm;
