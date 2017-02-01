@@ -1103,6 +1103,11 @@
       if (url.length === 0) { // Remove the link
         ed.execCommand('mceInsertContent', false, displayText, {skip_focus: true});
       } else {
+        if (ed.plugins.autolink && ed.plugins.autolink.addProtocolIfNeeded) {
+          // Add the http protocol if no supported protocol is present
+          url = ed.plugins.autolink.addProtocolIfNeeded(url);
+        }
+
         linkHTML = ed.dom.createHTML('a', {
           href: url.replace(' ', '%20'),
           title: 'Open ' + url,
