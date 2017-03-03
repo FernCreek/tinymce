@@ -928,10 +928,12 @@ define("tinymce/dom/Selection", [
 					selection = strong;
 				} else {
 					// Not within a strong, the selection is the span
-					selection = span;
+					// Do not wrap content in a span if there is no styling that needs to be added
+					style.length === 0 ? selection = content : selection = span;
 				}
 				// Grab the actual HTML from the created HTMLElement
-				selection = selection.outerHTML;
+				if (selection.outerHTML)
+					selection = selection.outerHTML;
 			} else {
 				selection = content;
 			}
