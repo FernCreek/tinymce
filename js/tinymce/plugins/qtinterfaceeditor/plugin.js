@@ -163,7 +163,8 @@
           i, tableCell, ed = this._editor,
           singleCell = false, singleRow = false,
           mergedCell = false, matchingParent,
-          alignments = 0, lastAlignment = '', familyAndSize;
+          alignments = 0, lastAlignment = '', familyAndSize,
+          $element, floatValue;
 
       if (SPTinyMCEInterface && ed) {
         state = ed.queryCommandState('bold');
@@ -174,46 +175,6 @@
         SPTinyMCEInterface.signalCursorIsUnderline(state);
         state = ed.queryCommandState('strikethrough');
         SPTinyMCEInterface.signalCursorIsStrikethrough(state);
-
-        if (ed.queryCommandState('justifyleft')) {
-          lastAlignment = 'left';
-          ++alignments;
-        }
-        if (ed.queryCommandState('justifycenter')) {
-          lastAlignment = 'center';
-          ++alignments;
-        }
-        if (ed.queryCommandState('justifyright')) {
-          lastAlignment = 'right';
-          ++alignments;
-        }
-        if (ed.queryCommandState('justifyfull')) {
-          lastAlignment = 'justify';
-          ++alignments;
-        }
-
-        if (alignments === 0) {
-          SPTinyMCEInterface.signalCursorAlignNone();
-        } else if (alignments > 1) {
-          SPTinyMCEInterface.signalCursorAlignMultiple();
-        } else {
-          switch (lastAlignment) {
-            case 'left':
-              SPTinyMCEInterface.signalCursorAlignLeft();
-              break;
-            case 'center':
-              SPTinyMCEInterface.signalCursorAlignCenter();
-              break;
-            case 'right':
-              SPTinyMCEInterface.signalCursorAlignRight();
-              break;
-            case 'justify':
-              SPTinyMCEInterface.signalCursorAlignJustify();
-              break;
-            default:
-              break;
-          }
-        }
 
         // Font family and size, see the Seapine plugin for how this is determined.
 
@@ -253,6 +214,64 @@
         state = element.tagName === 'IMG';
         SPTinyMCEInterface.signalCursorOnImage(state);
         this._cachedSelectedImage = state ? element : null;
+
+        // Alignment - We have to do this after we determine if an image is selected, since images need a different query
+        if (state) {
+          $element = $(element);
+          floatValue = $element.css('float');
+          if (floatValue === 'left') {
+            lastAlignment = 'left';
+            ++alignments;
+          }
+          if (floatValue === 'right') {
+            lastAlignment = 'right';
+            ++alignments;
+          }
+          if (floatValue === 'none' && $element[0].style['margin-left'] === 'auto' && $element[0].style['margin-right'] === 'auto') {
+            lastAlignment = 'center';
+            ++alignments;
+          }
+        } else {
+          if (ed.queryCommandState('justifyleft')) {
+            lastAlignment = 'left';
+            ++alignments;
+          }
+          if (ed.queryCommandState('justifycenter')) {
+            lastAlignment = 'center';
+            ++alignments;
+          }
+          if (ed.queryCommandState('justifyright')) {
+            lastAlignment = 'right';
+            ++alignments;
+          }
+          if (ed.queryCommandState('justifyfull')) {
+            lastAlignment = 'justify';
+            ++alignments;
+          }
+        }
+
+        if (alignments === 0) {
+          SPTinyMCEInterface.signalCursorAlignNone();
+        } else if (alignments > 1) {
+          SPTinyMCEInterface.signalCursorAlignMultiple();
+        } else {
+          switch (lastAlignment) {
+            case 'left':
+              SPTinyMCEInterface.signalCursorAlignLeft();
+              break;
+            case 'center':
+              SPTinyMCEInterface.signalCursorAlignCenter();
+              break;
+            case 'right':
+              SPTinyMCEInterface.signalCursorAlignRight();
+              break;
+            case 'justify':
+              SPTinyMCEInterface.signalCursorAlignJustify();
+              break;
+            default:
+              break;
+          }
+        }
 
         // Insert/Edit Table
         parent = ed.dom.getParent(element, 'td,th,caption');
