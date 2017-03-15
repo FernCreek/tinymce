@@ -199,6 +199,7 @@
         idx = src.indexOf(imgSrc);
         if (idx !== -1 && src.substr(idx) === imgSrc) {
           $(this).attr('src', src + '?1');
+          $(this).attr('data-mce-src', src + '?1');
         }
       });
       this._editor.execCommand('mceRepaint');
