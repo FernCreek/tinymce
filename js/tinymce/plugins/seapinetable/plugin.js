@@ -1090,6 +1090,7 @@
         ed.undoManager.transact(function () {
 
           $cell = $(node);
+          $cell.removeAttr('data-mce-style');
           self.translateOldTableProperties($cell.closest('table'));
 
           if ($cell.css('border-collapse') === 'separate') {
@@ -1098,7 +1099,7 @@
 
           // Set the cell margins if override is checked
           if (cellMargins) {
-            this.applyCellMargins(cellMargins, $cell);
+            self.applyCellMargins(cellMargins, $cell);
           }
 
           // Set the top left right and bottom borders on the cell
@@ -1111,23 +1112,23 @@
             if (!separatedBorders) {
               $cellTmp = $cell.prev();
               // Set the right border on the cell to the left to match this cells left border
-              $cellTmp.css('border-right', self.getCSSStringForBorder(cellBorders.left));
               $cellTmp.removeAttr('data-mce-style');
+              $cellTmp.css('border-right', self.getCSSStringForBorder(cellBorders.left));
 
               // Set the left border on the cell to the right to match this cells right border
               $cellTmp = $cell.next();
-              $cell.next().css('border-left', self.getCSSStringForBorder(cellBorders.right));
               $cellTmp.removeAttr('data-mce-style');
+              $cell.next().css('border-left', self.getCSSStringForBorder(cellBorders.right));
 
               // Set the bottom border on the cell above to match this cells top border
               $cellTmp = $($cell.parent().prev().children()[$cell.index()]);
-              $cellTmp.css('border-bottom', self.getCSSStringForBorder(cellBorders.top));
               $cellTmp.removeAttr('data-mce-style');
+              $cellTmp.css('border-bottom', self.getCSSStringForBorder(cellBorders.top));
 
               // Set the top border on the cell below to match this cells bottom border
               $cellTmp = $($cell.parent().next().children()[$cell.index()]);
-              $cellTmp.css('border-top', self.getCSSStringForBorder(cellBorders.bottom));
               $cellTmp.removeAttr('data-mce-style');
+              $cellTmp.css('border-top', self.getCSSStringForBorder(cellBorders.bottom));
             }
           }
 
@@ -1142,9 +1143,6 @@
             $cell.css('background-color', bgColor);
             $cell.removeAttr('bgColor');
           }
-
-          $cell.removeAttr('data-mce-style');
-
         }); // End the undo manager transaction
       }
     },
