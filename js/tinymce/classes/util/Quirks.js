@@ -512,7 +512,7 @@ define("tinymce/util/Quirks", [
 			}
 
 			function customDelete(isForward) {
-				var mutationObserver, rng, caretElement;
+				var mutationObserver;
 
 				if (handleTextBlockMergeDelete(isForward)) {
 					return;
@@ -541,41 +541,16 @@ define("tinymce/util/Quirks", [
 
 				editor.getDoc().execCommand(isForward ? 'ForwardDelete' : 'Delete', false, null);
 
-				rng = editor.selection.getRng();
-				caretElement = rng.startContainer.parentNode;
-
 				Tools.each(mutationObserver.takeRecords(), function(record) {
 					if (!dom.isChildOf(record.target, editor.getBody())) {
 						return;
 					}
 
-					// Restore style attribute to previous value
-					if (record.attributeName == "style") {
-						var oldValue = record.target.getAttribute('data-mce-style');
-
-						if (oldValue) {
-							record.target.setAttribute("style", oldValue);
-						} else {
-							record.target.removeAttribute("style");
-						}
-					}
-
 					// Remove all spans that aren't marked and retain selection
 					Tools.each(record.addedNodes, function(node) {
 						if (node.nodeName == "SPAN" && !node.getAttribute('mce-data-marked')) {
-							var offset, container;
-
-							if (node == caretElement) {
-								offset = rng.startOffset;
-								container = node.firstChild;
-							}
-
-							dom.remove(node, true);
-
-							if (container) {
-								rng.setStart(container, offset);
-								rng.setEnd(container, offset);
-								editor.selection.setRng(rng);
+							if (node.innerText.charCodeAt(0) === 65279) {
+								node.innerText = node.innerText.substr(1);
 							}
 						}
 					});
@@ -729,6 +704,7 @@ define("tinymce/util/Quirks", [
 				if (!isDefaultPrevented(e) && e.clipboardData && !editor.selection.isCollapsed()) {
 					e.preventDefault();
 					e.clipboardData.clearData();
+
 					e.clipboardData.setData('text/html', editor.selection.getSelectionWithFormatting());
 					e.clipboardData.setData('text/plain', editor.selection.getContent({format: 'text'}));
 

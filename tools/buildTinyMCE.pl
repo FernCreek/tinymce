@@ -262,6 +262,9 @@ sub copyBuiltFilesNative {
    $qtFile = path($qtPath);
    $qtData = $qtFile->slurp_utf8;
    $cssData =~ s/body\{/body\{margin:3px;/g;
+   #Strip out web specific font-family/font-size, the native client sets its own
+   $cssData =~ s/font-family:[^;]*;//g;
+   $cssData =~ s/font-size:[^;]*;//g;
    $qtData =~ s/content_style:\s*'[^']*'/content_style: '$cssData'/g;
    $qtFile->spew_utf8($qtData);
    print "***If you changed the skin,please be sure to rebuild the native configuration $baseDir/common/Qt/TinyMCE\n\n";
