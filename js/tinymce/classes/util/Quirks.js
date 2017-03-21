@@ -723,12 +723,17 @@ define("tinymce/util/Quirks", [
 				}
 			});
 
+			// If this code is ever not needed then the logic to cache the styles on the selected blocks should be moved to the
+			// copycut plugin
 			editor.on('cut', function(e) {
 				if (!isDefaultPrevented(e) && e.clipboardData && !editor.selection.isCollapsed()) {
 					e.preventDefault();
-					e.clipboardData.clearData();
 
-					e.clipboardData.setData('text/html', editor.selection.getSelectionWithFormatting());
+					// update cached styles on the selection, this way if the user then pastes into an editor all styles will be pasted
+					editor.dom.updateCachedStylesOnElements(editor.selection.getSelectedBlocks());
+
+					e.clipboardData.clearData();
+					e.clipboardData.setData('text/html', editor.selection.getSelectionWithFormatting({keepCachedStyles: true}));
 					e.clipboardData.setData('text/plain', editor.selection.getContent({format: 'text'}));
 
 					// Needed delay for https://code.google.com/p/chromium/issues/detail?id=363288#c3

@@ -1292,7 +1292,9 @@
     onCut: function () {
       var html = '', text = '', ed = this._editor;
       if (ed) {
-        html = ed.selection.getSelectionWithFormatting();
+        // update cached styles on the selection, this way if the user then pastes into an editor all styles will be pasted
+        ed.dom.updateCachedStylesOnElements(this._editor.selection.getSelectedBlocks());
+        html = ed.selection.getSelectionWithFormatting({ keepCachedStyles: true });
         text = ed.selection.getContent({ format: 'text' });
         SPTinyMCEInterface.signalCopyToClipboard(html, text);
         ed.execCommand('delete');
@@ -1307,7 +1309,9 @@
     onCopy: function () {
       var html = '', text = '', ed = this._editor;
       if (ed) {
-        html = ed.selection.getSelectionWithFormatting();
+        // update cached styles on the selection, this way if the user then pastes into an editor all styles will be pasted
+        ed.dom.updateCachedStylesOnElements(this._editor.selection.getSelectedBlocks());
+        html = ed.selection.getSelectionWithFormatting({ keepCachedStyles: true });
         text = ed.selection.getContent({ format: 'text' });
         SPTinyMCEInterface.signalCopyToClipboard(html, text);
       }

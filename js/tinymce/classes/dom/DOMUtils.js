@@ -728,6 +728,29 @@ define("tinymce/dom/DOMUtils", [
 		},
 
 		/**
+		 * Forces an updated of the cached styles on the passed elements.
+		 * @param {HTMLElement[]} elements - The elements to update cached styles on.
+		 */
+		updateCachedStylesOnElements: function (elements) {
+			var self = this;
+
+			if (elements && elements.length > 0) {
+				elements.forEach(function (elem, index, array) {
+					var walker, $element;
+					if (elem) {
+						walker = new TreeWalker(elem, elem);
+
+						while (walker.current()) {
+							$element = $(walker.current());
+							updateInternalStyleAttr(self, $element);
+							walker.next();
+						}
+					}
+				});
+			}
+		},
+
+		/**
 		 * Removes all attributes from an element or elements.
 		 *
 		 * @method removeAllAttribs
