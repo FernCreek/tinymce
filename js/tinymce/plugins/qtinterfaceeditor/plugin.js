@@ -283,8 +283,8 @@
         }
         SPTinyMCEInterface.signalCursorInTable(state);
 
-				this._cachedCellElement = null;
-				state = ed.dom.select('td[data-mce-selected],th[data-mce-selected]');
+        this._cachedCellElement = null;
+        state = ed.dom.select('td[data-mce-selected],th[data-mce-selected]');
         SPTinyMCEInterface.signalCursorInMultipleCells(state.length > 1);
         if (state.length === 1) {
           tableCell = state[0];
@@ -317,7 +317,7 @@
             mergedCell = tableCell.rowSpan > 1 || tableCell.colSpan > 1;
             // Because we cannot trust the selection.getNode() in requestCellProperties, cache the selection now.
             this._cachedCellElement = tableCell;
-					}
+          }
         }
 
         SPTinyMCEInterface.signalCursorInMergedCell(mergedCell);
