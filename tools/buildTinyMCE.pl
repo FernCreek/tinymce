@@ -68,7 +68,7 @@ if ( $opt_h ) {
 
 # If we're not just copying files, start the build process
 if( !$opt_c ) {
-   # Clean up the old builds
+   # Clean up any old builds
    print "Cleaning up old builds...\n";
    $buildCommand = 'grunt clean:core clean:plugins clean:skins clean:themes';
    system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
@@ -80,19 +80,26 @@ if( !$opt_c ) {
    system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
    if ( $buildWeb ) {
       print "Building TinyMCE for web...\n";
-      $buildCommand = 'grunt bundle --themes modern --plugins advlist,autolink,autoresize,hr,lists,link,image,imagetools,charmap,print,preview,anchor,searchreplace,visualblocks,code,fullpage,fullscreen,colorpicker,textcolor,insertdatetime,media,table,contextmenu,paste,seapine,seapinetable,sproutcore';
+      $buildCommand = 'grunt bundle --themes modern --plugins advlist,autolink,autoresize,hr,lists,link,image,imagetools,charmap,print,preview,anchor,searchreplace,visualblocks,code,fullpage,fullscreen,colorpicker,textcolor,insertdatetime,media,table,contextmenu,paste,seapine,seapinetable,sproutcore,copycut';
       system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
       copyBuiltFilesWeb();
       print "done\n";
    }
    if ( $buildNative ) {
       print "Building TinyMCE for native...\n";
-      $buildCommand = 'grunt bundle --themes nativemodern --plugins advlist,autolink,autoresize,hr,lists,link,image,imagetools,charmap,print,preview,anchor,searchreplace,visualblocks,code,fullpage,fullscreen,colorpicker,textcolor,insertdatetime,media,table,contextmenu,paste,seapine,seapinetable,qtinterface,qtinterfaceeditor';
+      $buildCommand = 'grunt bundle --themes nativemodern --plugins advlist,autolink,autoresize,hr,lists,link,image,imagetools,charmap,print,preview,anchor,searchreplace,visualblocks,code,fullpage,fullscreen,colorpicker,textcolor,insertdatetime,media,table,contextmenu,paste,seapine,seapinetable,qtinterface,qtinterfaceeditor,copycut';
       system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
       copyBuiltFilesNative();
       print "done\n";
    }
    #$buildCommand = 'grunt bundle --themes modern --plugins autoresize,autolink,fullpage,lists,paste,seapine,sproutcore,table';
+
+   #clean up the current build
+   print "Cleaning up current builds...\n";
+   $buildCommand = 'grunt clean:core clean:plugins clean:skins clean:themes';
+   system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
+   print "done\n";
+
 
    print "Operation successful. Happy WYSIWYGing!\n\n";
 } else {
@@ -213,7 +220,7 @@ sub copyBuiltFilesNative {
    print "Copy $tinymceMinPath to $bfPath\n";
    copy($tinymceMinPath, $bfPath) or die "\n***Copy failed: $!\n";
    #Uncomment the line below to copy over the non-minified version of TinyMCE
-   #copy($tinymcePath, $bfPath) or die "\n***Copy failed: $!\n"; 
+   #copy($tinymcePath, $bfPath) or die "\n***Copy failed: $!\n";
 
    print "done\n";
 

@@ -883,15 +883,15 @@ define("tinymce/dom/Selection", [
 			return isTableNode;
 		},
 
-		getSelectionWithFormatting: function () {
-			var content = this.getContent(), node = this.getNode(), blocks = this.getSelectedBlocks(),
+		getSelectionWithFormatting: function (getContentArgs) {
+			var content = this.getContent(getContentArgs), node = this.getNode(), blocks = this.getSelectedBlocks(),
 					selection, style = '', span = this.dom.create('span'), strong;
 			if (blocks && blocks.length === 1) {
 				style = this.getStylesFromBlockForNode(node, blocks[0]);
 				if (!this.isTableNode(node) && node.style && node.style.cssText)
 					style += node.style.cssText;
 				span.style.cssText = this.combineTextDecorations(style);
-				span.innerHTML =  content;
+				span.innerHTML = content;
 				// If the node is within a strong, go ahead and wrap the span within a new strong tag
 				if (this.isNodeWithinStrong(node, blocks[0])) {
 					strong = this.dom.create('strong');
@@ -903,8 +903,12 @@ define("tinymce/dom/Selection", [
 					style.length === 0 ? selection = content : selection = span;
 				}
 				// Grab the actual HTML from the created HTMLElement
-				if (selection.outerHTML)
+				if (selection.outerHTML) {
+					// first generate the cached style attribute for copy/cut & paste
+					this.editor.dom.updateCachedStylesOnElements([selection]);
+
 					selection = selection.outerHTML;
+				}
 			} else {
 				selection = content;
 			}

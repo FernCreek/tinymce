@@ -153,7 +153,7 @@ define("tinymce/dom/Serializer", [
 		});
 
 		// Convert move data-mce-src, data-mce-href and data-mce-style into nodes or process them if needed
-		htmlParser.addAttributeFilter('src,href,style', function(nodes, name) {
+		htmlParser.addAttributeFilter('src,href,style', function(nodes, name, args) {
 			var i = nodes.length, node, value, internalName = 'data-mce-' + name;
 			var urlConverter = settings.url_converter, urlConverterScope = settings.url_converter_scope, undef;
 
@@ -164,7 +164,10 @@ define("tinymce/dom/Serializer", [
 				if (value !== undef) {
 					// Set external name to internal value and remove internal
 					node.attr(name, value.length > 0 ? value : null);
-					node.attr(internalName, null);
+
+					if (internalName !== 'data-mce-style' || !args.keepCachedStyles) {
+						node.attr(internalName, null);
+					}
 				} else {
 					// No internal attribute found then convert the value we have in the DOM
 					value = node.attributes.map[name];
@@ -311,15 +314,17 @@ define("tinymce/dom/Serializer", [
 
 		// Remove internal data attributes
 		htmlParser.addAttributeFilter(
-			'data-mce-src,data-mce-href,data-mce-style,' +
+			'data-mce-src,data-mce-href,data-mce-style' +
 			'data-mce-selected,data-mce-expando,' +
 			'data-mce-type,data-mce-resize',
 
-			function(nodes, name) {
+			function(nodes, name, args) {
 				var i = nodes.length;
 
 				while (i--) {
-					nodes[i].attr(name, null);
+					if (name !== 'data-mce-style' || !args.keepCachedStyles) {
+						nodes[i].attr(name, null);
+					}
 				}
 			}
 		);
