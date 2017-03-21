@@ -283,6 +283,7 @@
         }
         SPTinyMCEInterface.signalCursorInTable(state);
 
+        this._cachedCellElement = null;
         state = ed.dom.select('td[data-mce-selected],th[data-mce-selected]');
         SPTinyMCEInterface.signalCursorInMultipleCells(state.length > 1);
         if (state.length === 1) {
@@ -290,6 +291,7 @@
           singleCell = true;
           singleRow = true;
           mergedCell = tableCell.rowSpan > 1 || tableCell.colSpan > 1;
+          this._cachedCellElement = tableCell;
         } else if (state.length > 1) {
           // In multiple cells
           SPTinyMCEInterface.signalCursorInMergedCell(false);
@@ -306,7 +308,6 @@
         }
 
         // If a single cell isn't selected see if the cursor is within a cell
-        this._cachedCellElement = null;
         if (!singleCell && state.length === 0) {
           tableCell = element.nodeName === 'TD' ? element : ed.dom.getParent(element, 'td');
           if (tableCell) {
