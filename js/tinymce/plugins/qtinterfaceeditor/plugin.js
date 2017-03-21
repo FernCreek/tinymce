@@ -291,7 +291,7 @@
           singleCell = true;
           singleRow = true;
           mergedCell = tableCell.rowSpan > 1 || tableCell.colSpan > 1;
-					this._cachedCellElement = tableCell;
+          this._cachedCellElement = tableCell;
         } else if (state.length > 1) {
           // In multiple cells
           SPTinyMCEInterface.signalCursorInMergedCell(false);
