@@ -290,6 +290,11 @@ define("tinymce/html/Styles", [], function() {
 					if (styles['border-image'] === 'none') {
 						delete styles['border-image'];
 					}
+
+					// If borders are turned off then they'll be combined incorrectly, correct to the standard border: none;
+					if (styles.border === 'initial none initial') {
+						styles.border = 'none';
+					}
 				}
 
 				return styles;
