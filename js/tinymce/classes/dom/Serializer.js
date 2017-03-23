@@ -314,7 +314,7 @@ define("tinymce/dom/Serializer", [
 
 		// Remove internal data attributes
 		htmlParser.addAttributeFilter(
-			'data-mce-src,data-mce-href,data-mce-style' +
+			'data-mce-src,data-mce-href,data-mce-style,' +
 			'data-mce-selected,data-mce-expando,' +
 			'data-mce-type,data-mce-resize',
 

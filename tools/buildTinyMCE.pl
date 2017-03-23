@@ -22,7 +22,7 @@ STDOUT->autoflush(1);
 $curdir = cwd;
 
 # Get command line options.
-getopts('chwnd:');
+getopts('chrwnd:');
 
 # Change to the tinymce directory
 chdir('../');
@@ -35,16 +35,7 @@ if (!$opt_w && !$opt_n) {
    $buildNative = 1;
 }
 
-$baseDir = $opt_d;
-# Since the TinyMCE source is on Git it could be located anywhere, a base directory is needed.
-unless ( -e $baseDir ) {
-   die "No base directory specified. Exiting.\n"
-}
-
-$baseDir =~ s/\\/\//g;
-$baseDir =~ s/(\/)*$//;
-print "Base Dir: $baseDir\n";
-
+# First handle help if -h passed
 if ( $opt_h ) {
    print "\n****************************************************************************************************\n";
    print "* buildTinyMCE.pl build file\n";
@@ -57,6 +48,7 @@ if ( $opt_h ) {
    print "*    -n Build TinyMCE and copy it into the native client directory\n";
    print "*    -w Build TinyMCE and copy it into the web client directory\n";
    print "*    -c Only copy output files (does not build TinyMCE)\n";
+   print "*    -r Removes builds after they have been copied does nothing when -c is passed\n";
    print "*    -h Displays help\n";
    print "* \n";
    print "* Copyright 1996-2016 Seapine Software, Inc.\n";
@@ -65,6 +57,16 @@ if ( $opt_h ) {
 
    exit;
 }
+
+$baseDir = $opt_d;
+# Since the TinyMCE source is on Git it could be located anywhere, a base directory is needed.
+unless ( -e $baseDir) {
+   die "No base directory specified. Exiting.\n"
+}
+
+$baseDir =~ s/\\/\//g;
+$baseDir =~ s/(\/)*$//;
+print "Base Dir: $baseDir\n";
 
 # If we're not just copying files, start the build process
 if( !$opt_c ) {
@@ -94,12 +96,13 @@ if( !$opt_c ) {
    }
    #$buildCommand = 'grunt bundle --themes modern --plugins autoresize,autolink,fullpage,lists,paste,seapine,sproutcore,table';
 
-   #clean up the current build
-   print "Cleaning up current builds...\n";
-   $buildCommand = 'grunt clean:core clean:plugins clean:skins clean:themes';
-   system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
-   print "done\n";
-
+   if ( $opt_r ) {
+      #clean up the current build
+      print "Cleaning up current builds...\n";
+      $buildCommand = 'grunt clean:core clean:plugins clean:skins clean:themes';
+      system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
+      print "done\n";
+   }
 
    print "Operation successful. Happy WYSIWYGing!\n\n";
 } else {
