@@ -530,10 +530,6 @@ define("tinymce/util/Quirks", [
 			function customDelete(isForward) {
 				var mutationObserver;
 
-				if (handleTextBlockMergeDelete(isForward)) {
-					return;
-				}
-
 				Tools.each(editor.getBody().getElementsByTagName('*'), function(elm) {
 					// Mark existing spans
 					if (elm.tagName == 'SPAN') {
