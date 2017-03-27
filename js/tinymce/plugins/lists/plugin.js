@@ -166,8 +166,77 @@ tinymce.PluginManager.add('lists', function(editor) {
 			selection.setRng(rng);
 		}
 
-		function createNewTextBlock(contentNode, blockName) {
-			var node, textBlock, fragment = dom.createFragment(), hasContentNode;
+		/**
+		 * Returns true if the given node has children
+		 */
+		function hasChildren(node) {
+			return node && node.children && node.children.length > 0;
+		}
+
+		/**
+		 * Corrects the style of the given list and its children. Only used if a li has style applied directly to it
+		 */
+		function correctLiStyle(liStyle, node) {
+			if (liStyle && node) {
+				if (node.nodeName === 'LI') {
+					node.setAttribute('style', liStyle);
+				}
+				if (hasChildren(node)) {
+					tinymce.each(node.children, correctLiStyle.bind(null, liStyle));
+				}
+			}
+		}
+
+
+		/**
+		 * Gets styles off of the closest li ancestor with styles, or the current node, if it has styles and is a li.
+		 */
+		function getLiStyle(node) {
+			var currentNode = node;
+			var liStyle = null;
+			while (!liStyle && currentNode) {
+				if (currentNode.nodeName === 'LI') {
+					liStyle = currentNode.getAttribute('data-mce-style') || currentNode.getAttribute('style');
+				}
+				currentNode = currentNode.parentNode;
+			}
+
+			return liStyle;
+		}
+
+		/**
+		 * Returns true if the given node has the same styles as the style parameter.
+		 */
+		function nodeHasSameStyle(node, style) {
+			var nodeStyle, hasSameStyle = false;
+			if (node && node.nodeName === 'SPAN' && style) {
+				nodeStyle = node.getAttribute('data-mce-style') || node.getAttribute('style');
+				hasSameStyle = nodeStyle === style;
+			}
+			return hasSameStyle;
+		}
+
+		/**
+		 * Adds a child to a parent, taking into account any styles that may be on the child's old parent li.
+		 * This should only happen if the HTML got into an odd state and styling ended up on a li.
+		 */
+		function addChildWithStyle(newParent, child, liStyle) {
+			var liStyles = getLiStyle(child) || liStyle;
+			var styleSpan;
+			if (newParent && child) {
+				if (liStyles && !nodeHasSameStyle(child, liStyles)) {
+					styleSpan = dom.create('span');
+					styleSpan.setAttribute('style', liStyles);
+					styleSpan.appendChild(child);
+					newParent.appendChild(styleSpan);
+				} else {
+					newParent.appendChild(child);
+				}
+			}
+		}
+
+		function createNewTextBlock(contentNode, blockName, liStyle) {
+			var node, textBlock, fragment = dom.createFragment(), hasContentNode, tagName, forcedRootBlock;
 			var blockElements = editor.schema.getBlockElements();
 
 			if (editor.settings.forced_root_block) {
@@ -177,8 +246,20 @@ tinymce.PluginManager.add('lists', function(editor) {
 			if (blockName) {
 				textBlock = dom.create(blockName);
 
-				if (textBlock.tagName === editor.settings.forced_root_block) {
+				tagName = textBlock.tagName ?
+					textBlock.tagName.toLowerCase() :
+					textBlock.tagName;
+				forcedRootBlock = editor.settings.forced_root_block ?
+					editor.settings.forced_root_block.toLowerCase() :
+					editor.settings.forced_root_block;
+
+				if (tagName === forcedRootBlock) {
 					dom.setAttribs(textBlock, editor.settings.forced_root_block_attrs);
+				}
+
+				// If the text block to generate is a li, and styles were passed in, add the styles to the text block
+				if (textBlock.nodeName === 'LI' && liStyle) {
+					textBlock.setAttribute('style', liStyle);
 				}
 
 				fragment.appendChild(textBlock);
@@ -202,9 +283,9 @@ tinymce.PluginManager.add('lists', function(editor) {
 								fragment.appendChild(textBlock);
 							}
 
-							textBlock.appendChild(node);
+							addChildWithStyle(textBlock, node, liStyle);
 						} else {
-							fragment.appendChild(node);
+							addChildWithStyle(fragment, node, liStyle);
 						}
 					}
 				}
@@ -228,7 +309,7 @@ tinymce.PluginManager.add('lists', function(editor) {
 			});
 		}
 
-		function splitList(ul, li, newBlock) {
+		function splitList(ul, li, newBlock, liStyle) {
 			var tmpRng, fragment, bookmarks, node;
 
 			function removeAndKeepBookmarks(targetNode) {
@@ -240,7 +321,7 @@ tinymce.PluginManager.add('lists', function(editor) {
 			}
 
 			bookmarks = dom.select('span[data-mce-type="bookmark"]', ul);
-			newBlock = newBlock || createNewTextBlock(li);
+			newBlock = newBlock || createNewTextBlock(li, null, liStyle);
 			tmpRng = dom.createRng();
 			tmpRng.setStartAfter(li);
 			tmpRng.setEndAfter(ul);
@@ -271,14 +352,23 @@ tinymce.PluginManager.add('lists', function(editor) {
 		}
 
 		function mergeWithAdjacentLists(listBlock) {
-			var sibling, node;
+			var sibling, node, liStyle;
 
 			sibling = listBlock.nextSibling;
 			if (sibling && isListNode(sibling) && sibling.nodeName == listBlock.nodeName) {
 				while ((node = sibling.firstChild)) {
 					listBlock.appendChild(node);
+
+					// Attempt to get styles off of any li nodes.
+					if (!liStyle && node && node.nodeName === 'LI') {
+						liStyle = node.getAttribute('data-mce-style') || node.getAttribute('style');
+					}
 				}
 
+				// If styles were retrieved set them on all of the li's.
+				if (liStyle) {
+					correctLiStyle(liStyle, listBlock);
+				}
 				dom.remove(sibling);
 			}
 
@@ -324,6 +414,40 @@ tinymce.PluginManager.add('lists', function(editor) {
 		function outdent(li) {
 			var ul = li.parentNode, ulParent, newBlock;
 
+			// Inserts a node after a parent node, setting styles on the child node if any were on an ancestor li.
+			function insertAfterWithLiStyle(node, parentNode) {
+				var liStyle;
+				if (parentNode && node) {
+					liStyle = getLiStyle(parentNode);
+					if (liStyle) {
+						node.setAttribute('style', liStyle);
+					}
+					dom.insertAfter(node, parentNode);
+				}
+			}
+
+			// Cleans up the child nodes of a li. Adds styles if needed.
+			function cleanUpChildNodes(node) {
+				var child, grandchild, i, j;
+				if (node && isListNode(node.parentNode) && hasChildren(node)) {
+					for (i = node.children.length - 1; i >= 0; i--) {
+						child = node.children[i];
+						if (isListNode(child) && hasChildren(child)) {
+							for(j = child.children.length - 1; j >= 0; j--) {
+								grandchild = child.children[j];
+								if (grandchild && grandchild.nodeName === 'LI') {
+									insertAfterWithLiStyle(grandchild, node);
+								}
+							}
+
+							if (isEmpty(child)) {
+								dom.remove(child);
+							}
+						}
+					}
+				}
+			}
+
 			function removeEmptyLi(li) {
 				if (isEmpty(li)) {
 					dom.remove(li);
@@ -348,12 +472,13 @@ tinymce.PluginManager.add('lists', function(editor) {
 
 			if (isFirstChild(li) && isLastChild(li)) {
 				if (ulParent.nodeName == "LI") {
-					dom.insertAfter(li, ulParent);
+					insertAfterWithLiStyle(li, ulParent);
 					removeEmptyLi(ulParent);
 					dom.remove(ul);
 				} else if (isListNode(ulParent)) {
 					dom.remove(ul, true);
 				} else {
+					correctLiStyle(getLiStyle(li), li);
 					ulParent.insertBefore(createNewTextBlock(li), ul);
 					dom.remove(ul);
 				}
@@ -361,12 +486,13 @@ tinymce.PluginManager.add('lists', function(editor) {
 				return true;
 			} else if (isFirstChild(li)) {
 				if (ulParent.nodeName == "LI") {
-					dom.insertAfter(li, ulParent);
+					insertAfterWithLiStyle(li, ulParent);
 					li.appendChild(ul);
 					removeEmptyLi(ulParent);
 				} else if (isListNode(ulParent)) {
 					ulParent.insertBefore(li, ul);
 				} else {
+					cleanUpChildNodes(li);
 					ulParent.insertBefore(createNewTextBlock(li), ul);
 					dom.remove(li);
 				}
@@ -374,9 +500,15 @@ tinymce.PluginManager.add('lists', function(editor) {
 				return true;
 			} else if (isLastChild(li)) {
 				if (ulParent.nodeName == "LI") {
-					dom.insertAfter(li, ulParent);
+					insertAfterWithLiStyle(li, ulParent);
 				} else if (isListNode(ulParent)) {
 					dom.insertAfter(li, ul);
+				} else if (hasChildren(li)) {
+					// if the li has children, then those children should start their own list.
+					cleanUpChildNodes(li);
+					newBlock = createNewTextBlock(li);
+					splitList(ul, li, newBlock);
+					normalizeList(ul.parentNode);
 				} else {
 					dom.insertAfter(createNewTextBlock(li), ul);
 					dom.remove(li);
@@ -387,10 +519,13 @@ tinymce.PluginManager.add('lists', function(editor) {
 
 			if (ulParent.nodeName == 'LI') {
 				ul = ulParent;
-				newBlock = createNewTextBlock(li, 'LI');
+				cleanUpChildNodes(li);
+				newBlock = createNewTextBlock(li, 'LI', getLiStyle(li));
 			} else if (isListNode(ulParent)) {
-				newBlock = createNewTextBlock(li, 'LI');
+				cleanUpChildNodes(li);
+				newBlock = createNewTextBlock(li, 'LI', getLiStyle(li));
 			} else {
+				cleanUpChildNodes(li);
 				newBlock = createNewTextBlock(li);
 			}
 
@@ -605,12 +740,22 @@ tinymce.PluginManager.add('lists', function(editor) {
 			bookmark = createBookmark(rng);
 
 			tinymce.each(getSelectedTextBlocks(), function(block) {
-				var listBlock, sibling;
+				var listBlock, sibling, liStyle;
 
 				sibling = block.previousSibling;
 				if (sibling && isListNode(sibling) && sibling.nodeName == listName) {
 					listBlock = sibling;
 					block = dom.rename(block, listItemName);
+
+					// If the target li that the current block will be appended to has styles, they need to be captured.
+					if (sibling.lastChild && sibling.lastChild.nodeName === 'LI') {
+						liStyle = sibling.lastChild.getAttribute('data-mce-style') || sibling.lastChild.getAttribute('style');
+					}
+
+					// Now apply any captured styles to the current block to match any li styling on siblings.
+					if (liStyle) {
+						block.setAttribute('style', liStyle);
+					}
 					sibling.appendChild(block);
 				} else {
 					listBlock = dom.create(listName);
@@ -627,6 +772,7 @@ tinymce.PluginManager.add('lists', function(editor) {
 
 		function removeList() {
 			var bookmark = createBookmark(selection.getRng(true)), root = editor.getBody();
+			var lastFoundLiStyle = null;
 
 			tinymce.each(getSelectedListItems(), function(li) {
 				var node, rootList;
@@ -646,7 +792,14 @@ tinymce.PluginManager.add('lists', function(editor) {
 					}
 				}
 
-				splitList(rootList, li);
+				// If the selected li is the first child, then make sure any styles on it are applied to its children.
+				lastFoundLiStyle = getLiStyle(li) || lastFoundLiStyle;
+				if (isFirstChild(li)) {
+					correctLiStyle(lastFoundLiStyle, li);
+				}
+
+				// Split the list making sure that both lists have the appropriate styles applied.
+				splitList(rootList, li, null, lastFoundLiStyle);
 			});
 
 			moveToBookmark(bookmark);
