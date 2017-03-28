@@ -207,7 +207,7 @@ tinymce.PluginManager.add('lists', function(editor) {
 		/**
 		 * Returns true if the given node has the same styles as the style parameter.
 		 */
-		function nodeHasSameStyle(node, style) {
+		function spanHasSameStyle(node, style) {
 			var nodeStyle, hasSameStyle = false;
 			if (node && node.nodeName === 'SPAN' && style) {
 				nodeStyle = node.getAttribute('data-mce-style') || node.getAttribute('style');
@@ -224,7 +224,7 @@ tinymce.PluginManager.add('lists', function(editor) {
 			var liStyles = getLiStyle(child) || liStyle;
 			var styleSpan;
 			if (newParent && child) {
-				if (liStyles && !nodeHasSameStyle(child, liStyles)) {
+				if (liStyles && !spanHasSameStyle(child, liStyles)) {
 					styleSpan = dom.create('span');
 					styleSpan.setAttribute('style', liStyles);
 					styleSpan.appendChild(child);
