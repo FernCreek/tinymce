@@ -205,7 +205,7 @@ tinymce.PluginManager.add('lists', function(editor) {
 		}
 
 		/**
-		 * Returns true if the given node has the same styles as the style parameter.
+		 * Returns true if the given span has the same styles as the style parameter.
 		 */
 		function spanHasSameStyle(node, style) {
 			var nodeStyle, hasSameStyle = false;
