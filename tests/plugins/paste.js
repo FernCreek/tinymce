@@ -476,6 +476,12 @@ test('paste invalid content with spans on page', function() {
 	equal(editor.getContent(), insertedContent + startingContent);
 });
 
+/**
+ * In our TinyMCE usage paste as text was changed to preserve whitespace. This means several spaces
+ * are replaced with non-breaking spaces so they are not condensed, newlines are also preserved.
+ * The expected results of the tests have been updated to reflect this behavior.
+ */
+
 test('paste plain text with space', function() {
 	editor.setContent('<p>text</p>');
 	var rng = editor.dom.createRng();
@@ -484,7 +490,7 @@ test('paste plain text with space', function() {
 	editor.selection.setRng(rng);
 	editor.execCommand('mceInsertClipboardContent', false, {text: ' a '});
 
-	equal(editor.getContent(), '<p>t a xt</p>');
+	equal(editor.getContent(), '<p>t&nbsp;a&nbsp;xt</p>');
 });
 
 test('paste plain text with linefeeds', function() {
@@ -506,7 +512,7 @@ test('paste plain text with double linefeeds', function() {
 	editor.selection.setRng(rng);
 	editor.execCommand('mceInsertClipboardContent', false, {text: 'a\n\nb\n\nc'});
 
-	equal(editor.getContent(), '<p>t</p><p>a</p><p>b</p><p>c</p><p>xt</p>');
+	equal(editor.getContent(), '<p>t</p><p>a</p><p><br />b</p><p><br />c</p><p>xt</p>');
 });
 
 test('paste plain text with entities', function() {
@@ -517,7 +523,7 @@ test('paste plain text with entities', function() {
 	editor.selection.setRng(rng);
 	editor.execCommand('mceInsertClipboardContent', false, {text: '< & >'});
 
-	equal(editor.getContent(), '<p>t&lt; &amp; &gt;xt</p>');
+	equal(editor.getContent(), '<p>t&lt;&nbsp;&amp;&nbsp;&gt;xt</p>');
 });
 
 test('paste plain text with paragraphs', function() {
@@ -528,7 +534,7 @@ test('paste plain text with paragraphs', function() {
 	editor.selection.setRng(rng);
 	editor.execCommand('mceInsertClipboardContent', false, {text: 'a\n<b>b</b>\n\nc'});
 
-	equal(editor.getContent(), '<p>t</p><p>a<br />&lt;b&gt;b&lt;/b&gt;</p><p>c</p><p>xt</p>');
+	equal(editor.getContent(), '<p>t</p><p>a<br />&lt;b&gt;b&lt;/b&gt;</p><p><br />c</p><p>xt</p>');
 });
 
 test('paste data image with paste_data_images: false', function() {

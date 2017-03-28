@@ -61,14 +61,6 @@ if (tinymce.isWebKit) {
 		equal(editor.selection.getStart().nodeName, 'P');
 	});
 
-	test('Delete range from middle of H1 to middle of span in P', function() {
-		editor.getBody().innerHTML = '<h1>ab</h1><p>b<span style="color:red">cd</span></p>';
-		Utils.setSelection('h1', 1, 'span', 1);
-		editor.execCommand('Delete');
-		equal(Utils.normalizeHtml(Utils.cleanHtml(editor.getBody().innerHTML)), '<h1>a<span style="color: red;">d</span></h1>');
-		equal(editor.selection.getStart().nodeName, 'H1');
-	});
-
 	test('Delete from beginning of P with style span inside into H1 with inline block', function() {
 		editor.getBody().innerHTML = '<h1>a<input type="text"></h1><p>b<span style="color:red">c</span></p>';
 		Utils.setSelection('p', 0);
@@ -85,14 +77,6 @@ if (tinymce.isWebKit) {
 		equal(editor.selection.getStart().nodeName, 'H1');
 	});
 
-	test('Delete from beginning of P into H1 with contentEditable:false', function() {
-		editor.getBody().innerHTML = '<h1 contentEditable="false">a</h1><p>b<span style="color:red">c</span></p>';
-		Utils.setSelection('p', 0);
-		editor.execCommand('Delete');
-		equal(editor.getContent(), '<h1 contenteditable="false">a</h1><p>b<span style="color: red;">c</span></p>');
-		equal(editor.selection.getStart().nodeName, 'H1');
-	});
-
 	test('Delete from beginning of P with style span inside into H1 with trailing BR', function() {
 		editor.getBody().innerHTML = '<h1>a<br></h1><p>b<span style="color:red">c</span></p>';
 		Utils.setSelection('p', 0);
@@ -106,6 +90,26 @@ if (tinymce.isWebKit) {
 		Utils.setSelection('span', 0);
 		editor.execCommand('Delete');
 		equal(editor.getContent(), '<h1>a</h1>');
+		equal(editor.selection.getStart().nodeName, 'H1');
+	});
+
+	/* These tests are not run anymore since we do no use the TinyMCE quirks delete handling.
+	 * We now allow for default browser behavior in webkit which does not handle merging styles across headers
+	 * well but in general handles formatting with deletes better and will require less maintenance moving forward.
+
+	test('Delete range from middle of H1 to middle of span in P', function() {
+		editor.getBody().innerHTML = '<h1>ab</h1><p>b<span style="color:red">cd</span></p>';
+		Utils.setSelection('h1', 1, 'span', 1);
+		editor.execCommand('Delete');
+		equal(Utils.normalizeHtml(Utils.cleanHtml(editor.getBody().innerHTML)), '<h1>a<span style="color: red;">d</span></h1>');
+		equal(editor.selection.getStart().nodeName, 'H1');
+	});
+
+	test('Delete from beginning of P into H1 with contentEditable:false', function() {
+		editor.getBody().innerHTML = '<h1 contentEditable="false">a</h1><p>b<span style="color:red">c</span></p>';
+		Utils.setSelection('p', 0);
+		editor.execCommand('Delete');
+		equal(editor.getContent(), '<h1 contenteditable="false">a</h1><p>b<span style="color: red;">c</span></p>');
 		equal(editor.selection.getStart().nodeName, 'H1');
 	});
 
@@ -140,6 +144,7 @@ if (tinymce.isWebKit) {
 		equal(editor.getContent(), '<h1>a<span style="color: red;">b</span></h1>');
 		equal(editor.selection.getStart().nodeName, 'H1');
 	});
+	*/
 
 	test('ForwardDelete from end of H1 with two trailing BR:s to P with style span', function() {
 		editor.getBody().innerHTML = '<h1>a<br><br></h1><p><span style="color:red">b</span></p>';
