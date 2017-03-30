@@ -1289,7 +1289,7 @@
             html += '</tr>';
           }
 
-          html += '</tbody></table>';
+          html += '</tbody></table><p>&nbsp;</p>';
 
           ed.insertContent(html);
           // END copy from TinyMCE
