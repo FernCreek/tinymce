@@ -161,6 +161,27 @@ module.exports = function(grunt) {
 				}
 			},
 
+			nativemodern: {
+				options: {
+					prepend: [
+						"Variables.less",
+						"Reset.less",
+						"Mixins.less",
+						"Animations.less",
+						"TinyMCE.less",
+						"CropRect.less",
+						"ImagePanel.less",
+						"Arrows.less",
+						"Sidebar.less"
+					],
+					append: ["Icons.less"],
+					importFrom: "js/tinymce/tinymce.js",
+					path: "js/tinymce/skins",
+					devLess: "skin.dev.less",
+					srcLess: "skin.less"
+				}
+			},
+
 			ie7: {
 				options: {
 					prepend: [
@@ -184,6 +205,18 @@ module.exports = function(grunt) {
 
 		less: {
 			modern: {
+				options: {
+					cleancss: true,
+					strictImports: true,
+					compress: true
+				},
+
+				expand: true,
+				src: ["js/tinymce/skins/**/skin.dev.less"],
+				ext: ".min.css"
+			},
+
+			nativemodern: {
 				options: {
 					cleancss: true,
 					strictImports: true,
@@ -786,7 +819,8 @@ module.exports = function(grunt) {
 						'js/tinymce/plugins/lists/src/test',
 						'js/tinymce/plugins/wordcount/src/test',
 						'js/tinymce/themes/inlite/src/test',
-						'js/tinymce/themes/modern/src/test'
+						'js/tinymce/themes/modern/src/test',
+						'js/tinymce/themes/nativemodern/src/test'
 					]
 				}
 			}
@@ -798,7 +832,8 @@ module.exports = function(grunt) {
 			'media-plugin': {path: 'js/tinymce/plugins/media'},
 			'lists-plugin': {path: 'js/tinymce/plugins/lists'},
 			'inlite-theme': {path: 'js/tinymce/themes/inlite'},
-			'modern-theme': {path: 'js/tinymce/themes/modern'}
+			'modern-theme': {path: 'js/tinymce/themes/modern'},
+			'nativemodern-theme': {path: 'js/tinymce/themes/nativemodern'}
 		}
 	});
 
