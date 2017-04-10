@@ -29,7 +29,7 @@ define("tinymce.lists.actions.Outdent", [
 		if (ul) {
 			ulParent = ul.parentNode;
 		} else {
-			removeEmptyLi(DOM, li);
+			removeEmptyLi(editor.dom, li);
 			return true;
 		}
 
