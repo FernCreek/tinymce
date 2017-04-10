@@ -16,8 +16,9 @@ define("tinymce.lists.actions.ToggleList", [
 	"tinymce.lists.core.Bookmark",
 	"tinymce.lists.core.SplitList",
 	"tinymce.lists.core.NormalizeLists",
-	"tinymce.lists.actions.Outdent"
-], function (Tools, BookmarkManager, Selection, NodeType, Bookmark, SplitList, NormalizeLists, Outdent) {
+	"tinymce.lists.actions.Outdent",
+	"tinymce.lists.core.Utils"
+], function (Tools, BookmarkManager, Selection, NodeType, Bookmark, SplitList, NormalizeLists, Outdent, Utils) {
 	var updateListStyle = function (dom, el, detail) {
 		var type = detail['list-style-type'] ? detail['list-style-type'] : null;
 		dom.setStyle(el, 'list-style-type', type);
@@ -137,7 +138,7 @@ define("tinymce.lists.actions.ToggleList", [
 		bookmark = Bookmark.createBookmark(rng);
 
 		Tools.each(getSelectedTextBlocks(editor, rng), function (block) {
-			var listBlock, sibling;
+			var listBlock, sibling, liStyle;
 
 			var hasCompatibleStyle = function (sib) {
 				var sibStyle = dom.getStyle(sib, 'list-style-type');
@@ -152,6 +153,15 @@ define("tinymce.lists.actions.ToggleList", [
 			if (sibling && NodeType.isListNode(sibling) && sibling.nodeName === listName && hasCompatibleStyle(sibling)) {
 				listBlock = sibling;
 				block = dom.rename(block, listItemName);
+
+				// If the target li that the current block will be appended to has styles, they need to be captured.
+				if (sibling.lastChild && sibling.lastChild.nodeName === 'LI') {
+					liStyle = sibling.lastChild.getAttribute('data-mce-style') || sibling.lastChild.getAttribute('style');
+				}
+				// Now apply any captured styles to the current block to match any li styling on siblings.
+				if (liStyle) {
+					block.setAttribute('style', liStyle);
+				}
 				sibling.appendChild(block);
 			} else {
 				listBlock = dom.create(listName);
@@ -168,6 +178,7 @@ define("tinymce.lists.actions.ToggleList", [
 	};
 
 	var removeList = function (editor) {
+		var lastFoundLiStyle = null;
 		var bookmark = Bookmark.createBookmark(editor.selection.getRng(true)), root = editor.getBody();
 		var listItems = Selection.getSelectedListItems(editor);
 		var emptyListItems = Tools.grep(listItems, function (li) {
@@ -198,7 +209,11 @@ define("tinymce.lists.actions.ToggleList", [
 				}
 			}
 
-			SplitList.splitList(editor, rootList, li);
+			lastFoundLiStyle = Utils.getLiStyle(li) || lastFoundLiStyle;
+			if (NodeType.isFirstChild(li)) {
+				Utils.correctLiStyle(lastFoundLiStyle, li);
+			}
+			SplitList.splitList(editor, rootList, li, null, lastFoundLiStyle);
 			NormalizeLists.normalizeLists(editor.dom, rootList.parentNode);
 		});
 
@@ -224,14 +239,21 @@ define("tinymce.lists.actions.ToggleList", [
 	};
 
 	var mergeWithAdjacentLists = function (dom, listBlock) {
-		var sibling, node;
+		var sibling, node, liStyle;
 
 		sibling = listBlock.nextSibling;
 		if (shouldMerge(dom, listBlock, sibling)) {
 			while ((node = sibling.firstChild)) {
 				listBlock.appendChild(node);
+				// Attempt to get styles off of any li nodes.
+				if (!liStyle && node && node.nodeName === 'LI') {
+					liStyle = node.getAttribute('data-mce-style') || node.getAttribute('style');
+				}
 			}
-
+			// If styles were retrieved set them on all of the li's.
+			if (liStyle) {
+				Utils.correctLiStyle(liStyle, listBlock);
+			}
 			dom.remove(sibling);
 		}
 

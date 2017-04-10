@@ -14,7 +14,7 @@ define("tinymce.lists.core.SplitList", [
 	"tinymce.lists.core.TextBlock",
 	"tinymce.lists.core.NodeType"
 ], function (DOM, Tools, TextBlock, NodeType) {
-	var splitList = function (editor, ul, li, newBlock) {
+	var splitList = function (editor, ul, li, newBlock, liStyle) {
 		var tmpRng, fragment, bookmarks, node;
 
 		var removeAndKeepBookmarks = function (targetNode) {
@@ -26,7 +26,7 @@ define("tinymce.lists.core.SplitList", [
 		};
 
 		bookmarks = DOM.select('span[data-mce-type="bookmark"]', ul);
-		newBlock = newBlock || TextBlock.createNewTextBlock(editor, li);
+		newBlock = newBlock || TextBlock.createNewTextBlock(editor, li, null, liStyle);
 		tmpRng = DOM.createRng();
 		tmpRng.setStartAfter(li);
 		tmpRng.setEndAfter(ul);

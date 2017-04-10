@@ -10,10 +10,11 @@
 
 define("tinymce.lists.core.TextBlock", [
 	"global!tinymce.dom.DOMUtils.DOM",
-	"global!tinymce.Env"
-], function (DOM, Env) {
-	var createNewTextBlock = function (editor, contentNode, blockName) {
-		var node, textBlock, fragment = DOM.createFragment(), hasContentNode;
+	"global!tinymce.Env",
+	"tinymce.lists.core.Utils"
+], function (DOM, Env, Utils) {
+	var createNewTextBlock = function (editor, contentNode, blockName, liStyle) {
+		var node, textBlock, fragment = DOM.createFragment(), hasContentNode, tagName, forcedRootBlock;
 		var blockElements = editor.schema.getBlockElements();
 
 		if (editor.settings.forced_root_block) {
@@ -23,8 +24,16 @@ define("tinymce.lists.core.TextBlock", [
 		if (blockName) {
 			textBlock = DOM.create(blockName);
 
-			if (textBlock.tagName === editor.settings.forced_root_block) {
+			tagName = textBlock.tagName ? textBlock.tagName.toLowerCase() : textBlock.tagName;
+			forcedRootBlock = editor.settings.forced_root_block ?
+				editor.settings.forced_root_block.toLowerCase() : editor.settings.forced_root_block;
+			if (tagName === forcedRootBlock) {
 				DOM.setAttribs(textBlock, editor.settings.forced_root_block_attrs);
+			}
+
+			// If the text block to generate is a li, and styles were passed in, add the styles to the text block
+			if (textBlock.nodeName === 'LI' && liStyle) {
+				textBlock.setAttribute('style', liStyle);
 			}
 
 			fragment.appendChild(textBlock);
@@ -48,9 +57,9 @@ define("tinymce.lists.core.TextBlock", [
 							fragment.appendChild(textBlock);
 						}
 
-						textBlock.appendChild(node);
+						Utils.addChildWithStyle(textBlock, node, liStyle);
 					} else {
-						fragment.appendChild(node);
+						Utils.addChildWithStyle(textBlock, node, liStyle);
 					}
 				}
 			}
