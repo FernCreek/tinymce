@@ -846,7 +846,7 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('@ephox/bolt');
 
 	grunt.registerTask("lint", ["eslint"]);
-	grunt.registerTask("minify", ["amdlc", "uglify", "skin", "less"]);
+	grunt.registerTask("minify", ["amdlc", "uglify", "skin", "less", "subgrunt"]);
 	grunt.registerTask("test", ["qunit"]);
-	grunt.registerTask("default", ["lint", "minify", "subgrunt", "test", "validateVersion", "clean:release", "moxiezip", "nugetpack", "version"]);
+	grunt.registerTask("default", ["lint", "minify", "test", "validateVersion", "clean:release", "moxiezip", "nugetpack", "version"]);
 };
