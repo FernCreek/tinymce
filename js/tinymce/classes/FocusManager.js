@@ -192,7 +192,6 @@ define("tinymce/FocusManager", [
 						if (editor.selection) {
 							editor.selection.lastFocusBookmark = null;
 						}
-						}
 					}
 				});
 			});
