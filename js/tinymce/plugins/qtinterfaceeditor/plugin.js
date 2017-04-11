@@ -572,7 +572,7 @@
       if (family) {
         ed.undoManager.transact(function () {
           ed.formatter.remove('removefontname', {value: null}, null, true);
-          ed.execCommand('FontName', false, font);
+          ed.execCommand('FontName', false, family);
         });
       } else {
         ed.undoManager.transact(function () {
