@@ -43,6 +43,13 @@ define("tinymce.lists.core.SplitList", [
 			DOM.insertAfter(fragment, ul);
 		}
 
+		if (newBlock.childNodes) {
+			Tools.each(newBlock.childNodes, function (node) {
+				if (NodeType.isListNode(node)) {
+					node.setAttribute('data-mce-new-list', '');
+				}
+			});
+		}
 		DOM.insertAfter(newBlock, ul);
 
 		if (NodeType.isEmpty(editor.dom, li.parentNode)) {
