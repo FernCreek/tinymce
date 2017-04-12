@@ -42,7 +42,7 @@ define('tinymce.nativemodern.modes.Iframe', [
 			type: 'panel',
 			layout: 'stack',
 			classes: 'edit-aria-container',
-			border: '1 0 0 0',
+			border: '0 0 0 0',
 			items: [
 				editArea('0'),
 				Sidebar.createSidebar(editor)
@@ -63,11 +63,11 @@ define('tinymce.nativemodern.modes.Iframe', [
 			classes: 'tinymce',
 			style: 'visibility: hidden',
 			layout: 'stack',
-			border: 1,
+			border: 0,
 			items: [
 				settings.menubar === false ? null : {type: 'menubar', border: '0 0 0 0', items: Menubar.createMenuButtons(editor)},
 				Toolbar.createToolbars(editor, settings.toolbar_items_size),
-				Sidebar.hasSidebar(editor) ? editAreaContainer(editor) : editArea('1 0 0 0')
+				Sidebar.hasSidebar(editor) ? editAreaContainer(editor) : editArea('0 0 0 0')
 			]
 		});
 
@@ -97,7 +97,7 @@ define('tinymce.nativemodern.modes.Iframe', [
 
 		// Add statusbar if needed
 		if (settings.statusbar !== false) {
-			panel.add({type: 'panel', name: 'statusbar', classes: 'statusbar', layout: 'flow', border: '1 0 0 0', ariaRoot: true, items: [
+			panel.add({type: 'panel', name: 'statusbar', classes: 'statusbar', layout: 'flow', border: '0 0 0 0', ariaRoot: true, items: [
 				{type: 'elementpath', editor: editor},
 				resizeHandleCtrl
 			]});

@@ -83,7 +83,7 @@ define('tinymce.nativemodern.modes.Inline', [
 				autohide: false,
 				autofix: true,
 				fixed: !!inlineToolbarContainer,
-				border: 1,
+				border: 0,
 				items: [
 					settings.menubar === false ? null : {type: 'menubar', border: '0 0 0 0', items: Menubar.createMenuButtons(editor)},
 					Toolbar.createToolbars(editor, settings.toolbar_items_size)
