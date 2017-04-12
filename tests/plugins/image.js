@@ -34,7 +34,7 @@
 	});
 
 	function cleanHtml(html) {
-		return Utils.cleanHtml(html).replace(/<p>(&nbsp;|<br[^>]+>)<\/p>$/, '');
+		return Utils.cleanHtml(html).replace(/<p>(&nbsp;|<br[^>]+>)<\/p>$/m, '');
 	}
 
 	function fillAndSubmitWindowForm(data) {

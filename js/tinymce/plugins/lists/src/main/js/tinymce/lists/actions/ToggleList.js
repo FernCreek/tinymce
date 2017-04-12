@@ -216,10 +216,10 @@ define("tinymce.lists.actions.ToggleList", [
 			SplitList.splitList(editor, rootList, li, null, lastFoundLiStyle);
 			if (editor.getBody()) {
 				newLists = editor.dom.select('ol[data-mce-new-list]', editor.getBody());
-				newLists.concat(editor.dom.select('ul[data-mce-new-list]', editor.getBody()));
+				newLists = newLists.concat(editor.dom.select('ul[data-mce-new-list]', editor.getBody()));
 				Tools.each(newLists, function (list) {
-					mergeWithAdjacentLists(editor.dom, list);
 					list.removeAttribute('data-mce-new-list');
+					mergeWithAdjacentLists(editor.dom, list);
 				});
 			}
 			NormalizeLists.normalizeLists(editor.dom, rootList.parentNode);
