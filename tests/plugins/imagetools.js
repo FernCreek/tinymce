@@ -40,11 +40,12 @@
                 var img;
                 img = new Image();
                 img.onload = function() {
-                    ed.setContent('<p><img src="manual/img/dogleft.jpg" /></p>');
+                    ed.setContent('<p><img crossOrigin="anonymous" src="manual/img/dogleft.jpg"/></p>');
                     if (typeof cb == 'function') {
                         cb();
                     }
                 };
+                img.setAttribute('crossOrigin', 'anonymous');
                 img.src = "manual/img/dogleft.jpg";
 
                 window.editor = ed;
