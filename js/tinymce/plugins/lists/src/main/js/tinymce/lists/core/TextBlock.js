@@ -59,7 +59,7 @@ define("tinymce.lists.core.TextBlock", [
 
 						Utils.addChildWithStyle(textBlock, node, liStyle);
 					} else {
-						Utils.addChildWithStyle(textBlock, node, liStyle);
+						Utils.addChildWithStyle(fragment, node, liStyle);
 					}
 				}
 			}
