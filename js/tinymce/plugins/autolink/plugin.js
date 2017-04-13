@@ -26,7 +26,7 @@ tinymce.PluginManager.add('autolink', function(editor) {
 			link = 'http://' + link;
 		}
 		return link;
-	}
+	};
 
 	editor.on("keydown", function(e) {
 		if (e.keyCode == 13) {

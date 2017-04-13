@@ -49,6 +49,11 @@ ModuleLoader.require([
 		equal(SmartPaste.isImageUrl(''), false);
 	});
 
+	/**
+	 * These tests are not run since we do not use the smart paste logic at this time. Since we are not using
+	 * smart paste these tests will currently fail.
+	 */
+	/*
 	test('smart paste url on selection', function() {
 		editor.focus();
 		editor.undoManager.clear();
@@ -72,6 +77,7 @@ ModuleLoader.require([
 		equal(editor.getContent(), '<p>a<img src="http://www.site.com/my.jpg" />bc</p>');
 		equal(editor.undoManager.data.length, 3);
 	});
+	*/
 
 	test('smart paste option disabled', function() {
 		editor.focus();

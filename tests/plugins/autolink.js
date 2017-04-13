@@ -81,7 +81,11 @@
 		equal(typeUrl('http://www.example.com'), '<p><a href="http://www.example.com">http://www.example.com</a></p>');
 		equal(typeUrl('http://example.com/subdir'), '<p><a href="http://example.com/subdir">http://example.com/subdir</a></p>');
 		equal(typeUrl('http://sub-domain.example.com/subdir1/subdir2'), '<p><a href="http://sub-domain.example.com/subdir1/subdir2">http://sub-domain.example.com/subdir1/subdir2</a></p>');
-		equal(typeUrl('http://localhost'), '<p><a href="http://localhost">http://localhost</a></p>');
+		/**
+		 * Depending on the web server used for unit testing this may turn into a local URL.
+		 */
+		// equal(typeUrl('http://localhost'), '<p><a href="http://localhost">http://localhost</a></p>');
+		equal(typeUrl('http://someotherhost'), '<p><a href="http://someotherhost">http://someotherhost</a></p>');
 		equal(typeUrl('http://127.0.0.1:99'), '<p><a href="http://127.0.0.1:99">http://127.0.0.1:99</a></p>');
 		equal(typeUrl('http://example.com/subdir/index.php'), '<p><a href="http://example.com/subdir/index.php">http://example.com/subdir/index.php</a></p>');
 		equal(typeUrl('http://example.gov/URI/archive/uri-archive.index.html'), '<p><a href="http://example.gov/URI/archive/uri-archive.index.html">http://example.gov/URI/archive/uri-archive.index.html</a></p>');
