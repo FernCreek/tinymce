@@ -394,15 +394,6 @@ define("tinymce/pasteplugin/Clipboard", [
 			function processItems(items) {
 				var i, item, reader, hadImage = false;
 
-				function pasteImage(reader) {
-					if (rng) {
-						editor.selection.setRng(rng);
-						rng = null;
-					}
-
-					pasteHtml('<img src="' + reader.result + '">');
-				}
-
 				if (items) {
 					for (i = 0; i < items.length; i++) {
 						item = items[i];
@@ -411,7 +402,7 @@ define("tinymce/pasteplugin/Clipboard", [
 							var blob = item.getAsFile ? item.getAsFile() : item;
 
 							reader = new FileReader();
-							reader.onload = pasteImage.bind(null, reader);
+							reader.onload = pasteImage.bind(null, rng, reader, blob);
 							reader.readAsDataURL(blob);
 
 							e.preventDefault();
