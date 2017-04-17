@@ -60,13 +60,21 @@ define("tinymce.lists.core.Utils", [
 	};
 
 	/**
+	 * Returns true if the only style specified is the list-style-type.
+	 */
+	var onlyListStyleType = function (liStyle) {
+		var itemTypeStyleRegex = new RegExp(/list-style-type:[^;]+;/gi);
+		return liStyle.replace(itemTypeStyleRegex, '') === '';
+	};
+
+	/**
 	 * Adds a child to a parent, taking into account any styles that may be on the child's old parent li.
 	 * This should only happen if the HTML got into an odd state and styling ended up on a li.
 	 */
 	var addChildWithStyle = function (newParent, child, liStyle) {
 		var liStyles = getLiStyle(child) || liStyle, styleSpan;
 		if (newParent && child) {
-			if (liStyles && !nodeHasSameStyle(child, liStyles)) {
+			if (liStyles && !nodeHasSameStyle(child, liStyles) && !onlyListStyleType(liStyles)) {
 				styleSpan = DOM.create('span');
 				styleSpan.setAttribute('style', liStyles);
 				styleSpan.appendChild(child);
