@@ -410,6 +410,10 @@ define("tinymce/dom/ControlSelection", [
 			controlElm = dom.$(controlElm).closest(isIE ? 'table' : 'table,img,hr')[0];
 
 			if (isChildOrEqual(controlElm, rootElement)) {
+				if (controlElm && controlElm.hasAttribute('_moz_resizing')) {
+					controlElm.removeAttribute('_moz_resizing');
+					editor.execCommand('mceRepaint');
+				}
 				disableGeckoResize();
 				startElm = selection.getStart(true);
 
