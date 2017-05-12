@@ -660,19 +660,22 @@ define("tinymce/dom/Selection", [
 						if (rng.startContainer.hasChildNodes()) {
 							node = rng.startContainer.childNodes[rng.startOffset];
 							if (node && node.tagName == 'IMG') {
-								sel.setBaseAndExtent(
-									rng.startContainer,
-									rng.startOffset,
-									rng.endContainer,
-									rng.endOffset
-								);
+								try {
+									sel.setBaseAndExtent( rng.startContainer, rng.startOffset, rng.endContainer, rng.endOffset);
+								} catch (ex) {
+									sel.setBaseAndExtent(rng.startContainer, rng.startOffset, rng.endContainer, 0 );
+								}
 
 								// Since the setBaseAndExtent is fixed in more recent Blink versions we
 								// need to detect if it's doing the wrong thing and falling back to the
 								// crazy incorrect behavior api call since that seems to be the only way
 								// to get it to work on Safari WebKit as of 2017-02-23
-								if (sel.anchorNode !== rng.startContainer || sel.focusNode !== rng.endContainer) {
-									sel.setBaseAndExtent(node, 0, node, 1);
+								if (sel.anchorNode !== rng.startContainer) {
+									try {
+										sel.setBaseAndExtent(node, 0, node, 1);
+									} catch (ex) {
+										sel.setBaseAndExtent(node, 0, node, 0);
+									}
 								}
 							}
 						}

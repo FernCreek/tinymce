@@ -118,7 +118,7 @@ sub copyBuiltFilesWeb {
    ############################
    print "Copying tinymce.full.js...\n";
    my $tinymcePath = 'js/tinymce/tinymce.full.js';
-   my $scPath = "$baseDir/cgi/TTWeb/TTWeb/frameworks/tinymce-sproutcore/lib/tiny_mce_combined.js";
+   my $scPath = "$baseDir/webClient/sproutcore/frameworks/tinymce-sproutcore/lib/tiny_mce_combined.js";
 
    unless (-e $tinymcePath) {
       print "\n***Build failed: Cannot find file $tinymcePath\n";
@@ -140,7 +140,7 @@ sub copyBuiltFilesWeb {
    ####################
    print "Copying skin.min.css...\n";
    my $skinPath = 'js/tinymce/skins/lightgray/skin.min.css';
-   my $scPath = "$baseDir/cgi/TTWeb/TTWeb/frameworks/tinymce-sproutcore/resources/stylesheet/skin.min.css";
+   my $scPath = "$baseDir/webClient/sproutcore/frameworks/tinymce-sproutcore/resources/stylesheet/skin.min.css";
    unless (-e $skinPath) {
       print "\n***Build failed: Cannot find file $skinPath\n";
       exit 1;
@@ -159,7 +159,7 @@ sub copyBuiltFilesWeb {
    ### content.min.css ###
    #######################
    my $cssPath = 'js/tinymce/skins/lightgray/content.min.css';
-   my $scPath = "$baseDir/cgi/TTWeb/TTWeb/frameworks/tinymce-sproutcore/core.js";
+   my $scPath = "$baseDir/webClient/sproutcore/frameworks/tinymce-sproutcore/core.js";
    my $ngPath = "$baseDir/angular/common/tt/WYSIWYGCSS.cnst.js";
    print "Copying content.min.css...\n";
 
