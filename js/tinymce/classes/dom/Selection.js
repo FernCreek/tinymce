@@ -640,17 +640,35 @@ define("tinymce/dom/Selection", [
 					self.selectedRange = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
 				}
 
-				// WebKit egde case selecting images works better using setBaseAndExtent
+				// WebKit egde case selecting images works better using setBaseAndExtent when the image is floated
 				if (!rng.collapsed && rng.startContainer == rng.endContainer && sel.setBaseAndExtent && !Env.ie) {
 					if (rng.endOffset - rng.startOffset < 2) {
 						if (rng.startContainer.hasChildNodes()) {
 							node = rng.startContainer.childNodes[rng.startOffset];
 							if (node && node.tagName == 'IMG') {
-								self.getSel().setBaseAndExtent(node, 0, node, 1);
+								try {
+									sel.setBaseAndExtent( rng.startContainer, rng.startOffset, rng.endContainer, rng.endOffset);
+								} catch (ex) {
+									sel.setBaseAndExtent(rng.startContainer, rng.startOffset, rng.endContainer, 0 );
+								}
+
+								// Since the setBaseAndExtent is fixed in more recent Blink versions we
+								// need to detect if it's doing the wrong thing and falling back to the
+								// crazy incorrect behavior api call since that seems to be the only way
+								// to get it to work on Safari WebKit as of 2017-02-23
+								if (sel.anchorNode !== rng.startContainer) {
+									try {
+										sel.setBaseAndExtent(node, 0, node, 1);
+									} catch (ex) {
+										sel.setBaseAndExtent(node, 0, node, 0);
+									}
+								}
 							}
 						}
 					}
 				}
+
+				self.editor.fire('AfterSetSelectionRange', { range: rng });
 			} else {
 				// Is W3C Range fake range on IE
 				if (rng.cloneRange) {
