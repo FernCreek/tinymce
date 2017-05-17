@@ -82,14 +82,14 @@ if( !$opt_c ) {
    system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
    if ( $buildWeb ) {
       print "Building TinyMCE for web...\n";
-      $buildCommand = 'grunt bundle --themes=modern --plugins=advlist,autolink,autoresize,hr,lists,link,image,imagetools,charmap,print,preview,anchor,searchreplace,visualblocks,code,fullpage,fullscreen,colorpicker,textcolor,insertdatetime,media,table,contextmenu,paste,seapine,seapinetable,sproutcore,copycut';
+      $buildCommand = 'grunt bundle --themes=modern --plugins=advlist,autolink,autoresize,hr,lists,link,image,charmap,print,preview,anchor,searchreplace,visualblocks,code,fullpage,fullscreen,colorpicker,textcolor,insertdatetime,media,table,contextmenu,paste,seapine,seapinetable,sproutcore,copycut';
       system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
       copyBuiltFilesWeb();
       print "done\n";
    }
    if ( $buildNative ) {
       print "Building TinyMCE for native...\n";
-      $buildCommand = 'grunt bundle --themes=nativemodern --plugins=advlist,autolink,autoresize,hr,lists,link,image,imagetools,charmap,print,preview,anchor,searchreplace,visualblocks,code,fullpage,fullscreen,colorpicker,textcolor,insertdatetime,media,table,contextmenu,paste,seapine,seapinetable,qtinterface,qtinterfaceeditor,copycut';
+      $buildCommand = 'grunt bundle --themes=nativemodern --plugins=advlist,autolink,autoresize,hr,lists,link,image,charmap,print,preview,anchor,searchreplace,visualblocks,code,fullpage,fullscreen,colorpicker,textcolor,insertdatetime,media,table,contextmenu,paste,seapine,seapinetable,qtinterface,qtinterfaceeditor,copycut';
       system("$buildCommand") and die "\n***Build Failed with command: $buildCommand. Exiting.\n$!\n";
       copyBuiltFilesNative();
       print "done\n";
@@ -104,7 +104,7 @@ if( !$opt_c ) {
       print "done\n";
    }
 
-   print "Operation successful. Happy WYSIWYGing!\n\n";
+   print "Operation successful. May the force be with you!\n\n";
 } else {
    copyBuiltFilesWeb();
    copyBuiltFilesNative();
