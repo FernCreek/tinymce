@@ -1091,7 +1091,7 @@
       }
 
       if (anchorNode) {
-        url = anchorNode.href;
+        url = anchorNode.getAttribute('href');
       }
 
       displayText = ed.selection.getContent({ format: 'text' });
@@ -1123,8 +1123,9 @@
       if (url.length === 0) { // Remove the link
         ed.execCommand('mceInsertContent', false, displayText, {skip_focus: true});
       } else {
-        if (ed.plugins.autolink && ed.plugins.autolink.addProtocolIfNeeded) {
+        if (ed.plugins.autolink && ed.plugins.autolink.addProtocolIfNeeded && url.indexOf('%') !== 0) {
           // Add the http protocol if no supported protocol is present
+          // If the URL starts with %, it is for a field code do not add the http protocol
           url = ed.plugins.autolink.addProtocolIfNeeded(url);
         }
 
