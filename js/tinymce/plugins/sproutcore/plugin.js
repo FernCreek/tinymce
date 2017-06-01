@@ -608,7 +608,7 @@
 			if (anchorNode) {
 				// Populate based on the anchor node we found.
 				controller.set('selectedUrlType', controller.getUrlType(anchorNode.href));
-				controller.set('url', anchorNode.href);
+				controller.set('url', anchorNode.getAttribute('href'));
 			}
 
 			// Set the display text based on the selection.

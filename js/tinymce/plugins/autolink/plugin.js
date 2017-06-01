@@ -22,7 +22,7 @@ tinymce.PluginManager.add('autolink', function(editor) {
 
 	self.addProtocolIfNeeded = function(link) {
 		// if there isn't a protocol then assume http
-		if (!hasProtocol.test(link)) {
+		if (!hasProtocol.test(link) && (link.indexOf('%') !== 0)) {
 			link = 'http://' + link;
 		}
 		return link;

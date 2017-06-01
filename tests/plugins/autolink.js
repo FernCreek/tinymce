@@ -35,6 +35,10 @@
 		Utils.type('\n');
 		return editor.getContent();
 	}
+   
+   function addProtocolIfNeeded(url) {
+      return editor.plugins.autolink.addProtocolIfNeeded(url);
+   }
 
 	if (tinymce.Env.ie) {
 		test("Skipped on IE since it has built in logic for autolink", function() {
@@ -124,4 +128,8 @@
 		equal(typeUrl('ttstudio://server:4999/Test%20Project/Defects'), '<p><a href="ttstudio://server:4999/Test%20Project/Defects">ttstudio://server:4999/Test%20Project/Defects</a></p>');
 		equal(typeUrl('ttstudio://server:4999/Test%20Project/Defects?RID=6521&DefectNum=4776'), '<p><a href="ttstudio://server:4999/Test%20Project/Defects?RID=6521&amp;DefectNum=4776">ttstudio://server:4999/Test%20Project/Defects?RID=6521&amp;DefectNum=4776</a></p>');
 	});
+   test("Don't add protocol to field code href", function () {
+      equal(addProtocolIfNeeded('test.com'), 'http://test.com');
+      equal(addProtocolIfNeeded('%TTSTUDIOURL%'), '%TTSTUDIOURL%');
+   });
 })();
