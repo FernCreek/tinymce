@@ -104,7 +104,12 @@ if( !$opt_c ) {
       print "done\n";
    }
 
-   print "Operation successful. May the force be with you!\n\n";
+   print "Operation successful. May the force be with you!\n";
+   print "__.-._\n";
+   print "'-._\"7'\n";
+   print " /'.-c\n";
+   print " |  /T\n";
+   print "_)_/LI\n";
 } else {
    copyBuiltFilesWeb();
    copyBuiltFilesNative();
@@ -277,7 +282,7 @@ sub copyBuiltFilesNative {
    $cssData =~ s/font-size:[^;]*;//g;
    $qtData =~ s/content_style:\s*'[^']*'/content_style: '$cssData'/g;
    $qtFile->spew_utf8($qtData);
-   print "***If you changed the skin,please be sure to rebuild the native configuration $baseDir/common/Qt/TinyMCE\n\n";
+   print "***If you changed the skin, please be sure to rebuild the native configuration at $baseDir/common/Qt/TinyMCE\n\n";
    return;
 }
 
