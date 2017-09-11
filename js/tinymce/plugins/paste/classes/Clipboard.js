@@ -352,32 +352,7 @@ define("tinymce/pasteplugin/Clipboard", [
 				rng = null;
 			}
 
-			var dataUri = reader.result;
-			var base64 = getBase64FromUri(dataUri);
-
-			var img = new Image();
-			img.src = dataUri;
-
-			// TODO: Move the bulk of the cache logic to EditorUpload
-			if (isValidDataUriImage(editor.settings, img)) {
-				var blobCache = editor.editorUpload.blobCache;
-				var blobInfo, existingBlobInfo;
-
-				existingBlobInfo = blobCache.findFirst(function(cachedBlobInfo) {
-					return cachedBlobInfo.base64() === base64;
-				});
-
-				if (!existingBlobInfo) {
-					blobInfo = blobCache.create(uniqueId(), blob, base64);
-					blobCache.add(blobInfo);
-				} else {
-					blobInfo = existingBlobInfo;
-				}
-
-				pasteHtml('<img src="' + blobInfo.blobUri() + '">');
-			} else {
-				pasteHtml('<img src="' + dataUri + '">');
-			}
+			pasteHtml('<img src="' + reader.result + '">');
 		}
 
 		/**
