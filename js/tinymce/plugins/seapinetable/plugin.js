@@ -1280,39 +1280,6 @@
 				}
 
 				if ($table && $table.length) {
-					currentRows = self.countTableRows($table);
-
-					// add/remove rows
-					if (currentRows > rows) {
-						// need to remove rows
-						$table.find('tr').slice(rows).remove();
-					} else if (currentRows < rows) {
-						// need to add rows
-						for (i = 0; i < rows - currentRows; ++i) {
-							$table.find('tr').filter(':last').after(emptyRow);
-						}
-					}
-
-					// add/remove columns
-					$table.find('tr').each(function () {
-						var $this = $(this),
-							numColumns = self.countRowColumns($this);
-
-						if (numColumns > columns) {
-							// need to remove columns
-							$this.find('td').slice(columns).remove();
-						} else if (numColumns < columns) {
-							// need to add columns
-							for (i = 0; i < columns - numColumns; ++i) {
-								if (!tinymce.isIE || tinymce.isIE11) {
-									$this.find('td').filter(':last').after('<td><br data-mce-bogus="1"/></td>');
-								} else {
-									$this.find('td').filter(':last').after('<td></td>');
-								}
-							}
-						}
-					});
-
 					// Don't set width 0 on the table or it will not be visible. Instead, follow the behavior of the native client and
 					// do not set a width at all, which will let the browser draw the table at its min width
 					if (!isNaN(width) && width !== 0) {
