@@ -1326,7 +1326,7 @@
 		pasteHTML: function (strHTML) {
 			var ed = this._editor, self = this;
 			ed.undoManager.transact(function () {
-				ed.execCommand('mceInsertClipboardContent', false, {content: strHTML});
+				ed.execCommand('mceInsertClipboardContent', false, {content: self.trimHTML(strHTML)});
 				self.removeCommentsFromContent();
 				self.removeAppleSpace();
 				self.removeImageMargins();
@@ -1353,11 +1353,24 @@
 			var ed = this._editor, self = this;
 			ed.undoManager.transact(function () {
 				ed.selection.collapse();
-				ed.execCommand('mceInsertClipboardContent', false, {content: strHTML});
+				ed.execCommand('mceInsertClipboardContent', false, {content: self.trimHTML(strHTML)});
 				self.removeCommentsFromContent();
 				self.removeAppleSpace();
 				self.removeImageMargins();
 			});
+		},
+
+		/**
+		 * Uses the paste plugin util trimHTML function to trim the given HTML if possible
+		 * @param {String} strHTML - the html string to trim
+		 * @returns {string} the trimmed html
+		 */
+		trimHTML: function (strHTML) {
+			var retHTML = strHTML;
+			if (tinymce.pasteplugin && tinymce.pasteplugin.Utils && tinymce.pasteplugin.Utils.trimHtml) {
+				retHTML = tinymce.pasteplugin.Utils.trimHtml(strHTML);
+			}
+			return retHTML;
 		},
 
 		/**
