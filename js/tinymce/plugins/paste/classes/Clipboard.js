@@ -84,7 +84,7 @@ define("tinymce/pasteplugin/Clipboard", [
 				.replace(/\r\n/g, '\n') // Replace carriage return newline with newline
 				.replace(/[^\S\n]/g, '&nbsp;') // Replace space character with non-breaking
 				.replace(/&nbsp;&nbsp;/g, '&nbsp; ') // Replace double non-breaking with non-breaking, regular alternating
-				.replace(/(\S)&nbsp;(\S)/g, '$1 $2'); // Replace non-breaking surrounded with non-spaces with regular space
+				.replace(/(\S)&nbsp;(?=\S)/g, '$1 '); // Replace non-breaking surrounded with non-spaces with regular space
 
 			var startBlock = editor.dom.getParent(editor.selection.getStart(), editor.dom.isBlock);
 
