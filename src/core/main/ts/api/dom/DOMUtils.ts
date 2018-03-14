@@ -727,6 +727,24 @@ DOMUtils.prototype = {
   },
 
   /**
+   * Forces an update of the cached styles on the passed elements.
+   * @param {HTMLElement[]} elements - The elements to update cached styles on.
+   */
+  updateCachedStylesOnElements (elements) {
+    if (elements && elements.length) {
+      elements.forEach((element) => {
+        if (element) {
+          const walker = new TreeWalker(element, element);
+          while (walker.current()) {
+            updateInternalStyleAttr(this, this.$$(walker.current()));
+            walker.next();
+          }
+        }
+      });
+    }
+  },
+
+  /**
    * Removes all attributes from an element or elements.
    *
    * @method removeAllAttribs
