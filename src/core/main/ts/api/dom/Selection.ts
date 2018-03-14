@@ -482,18 +482,18 @@ export const Selection = function (dom, win: Window, serializer, editor: Editor)
     if (block) {
       // Add this block's styling if any is present
       // Do not add the styling from table items
-      if (!isTableNode(block) && block.style && block.stylye.cssText) {
+      if (!isTableNode(block) && block.style && block.style.cssText) {
         style += block.style.cssText;
       }
       const children = block.childNodes;
       if (children && children.length) {
-        children.find((child) => { // Recursively add the styling of the child nodes that contain the selected node
+        Array.prototype.find((child) => { // Recursively add the styling of the child nodes that contain the selected node
           const isSelectedNode = child.isSameNode(node);
           if (!isSelectedNode) {
             style += getStylesFromBlockForNode(node, child);
           }
           return isSelectedNode;
-        });
+        }, children);
       }
 
     }
@@ -506,7 +506,7 @@ export const Selection = function (dom, win: Window, serializer, editor: Editor)
     if (!inStrong && block) {
       const children = block.childNodes;
       if (children && children.length) {
-        children.find((child) => {
+        Array.prototype.find((child) => {
           let foundOwner = false;
           if (child.isSameNode(node)) {
             foundOwner = true;
@@ -516,7 +516,7 @@ export const Selection = function (dom, win: Window, serializer, editor: Editor)
             inStrong = isStrongNode(child) ? true : isNodeWithinStrong(node, child);
           }
           return inStrong || foundOwner;
-        });
+        }, children);
       }
     }
     return inStrong;
@@ -547,7 +547,7 @@ export const Selection = function (dom, win: Window, serializer, editor: Editor)
 
   const getSelectionWithFormatting = (getContentArgs): any => {
     let selection;
-    const content = getContent(getContentArgs), blocks = getSelectedBlocks();
+    const content = getContent({...getContentArgs, contextual: true}), blocks = getSelectedBlocks();
     if (blocks && blocks.length === 1) {
       const span = dom.create('span'), node: any = getNode();
       let style = getStylesFromBlockForNode(node, blocks[0]);
@@ -572,7 +572,6 @@ export const Selection = function (dom, win: Window, serializer, editor: Editor)
         dom.updateCachedStylesOnElements([selection]);
         selection = selection.outerHTML;
       }
-      selection = selection.outerHTML;
     } else {
       selection = content;
     }
