@@ -50,6 +50,12 @@ const walk = function (dom, rng, callback) {
     return;
   }
 
+  // If the range is at the beginning or the end of our content and there is no selection then one of these
+  // containers will be null. Doesn't happen in the TinyMCE demo but I don't know why.
+  if (!startContainer || !endContainer) {
+    return;
+  }
+
   /**
    * Excludes start/end text node if they are out side the range
    *
