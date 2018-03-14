@@ -77,6 +77,7 @@ export interface Selection {
   setNode: (elm: Element) => Element;
   getNode: () => Element;
   getSel: () => NativeSelection;
+  getSelectionWithFormatting: (getContentArgs: any) => any;
   setRng: (rng: Range, forward?: boolean) => void;
   getRng: () => Range;
   getStart: (real?: boolean) => Element;
@@ -722,6 +723,7 @@ export const Selection = function (dom, win: Window, serializer, editor: Editor)
     setNode,
     getNode,
     getSel,
+    getSelectionWithFormatting,
     setRng,
     getRng,
     getStart,
