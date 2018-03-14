@@ -165,8 +165,10 @@ export default function (editor) {
       });
 
       Arr.each(result, function (resultItem) {
-        replaceUrlInUndoStack(resultItem.image.src, resultItem.blobInfo.blobUri());
-        resultItem.image.src = resultItem.blobInfo.blobUri();
+        if (editor.settings.images_replace_blob_urls !== false) {
+          replaceUrlInUndoStack(resultItem.image.src, resultItem.blobInfo.blobUri());
+          resultItem.image.src = resultItem.blobInfo.blobUri();
+        }
         resultItem.image.removeAttribute('data-mce-src');
       });
 
