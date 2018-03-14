@@ -37,7 +37,11 @@ export default function (editor) {
 
   const addNonTypingUndoLevel = function (e?) {
     setTyping(false);
-    self.add({}, e);
+    // A crash can happen when getting the range during the removal of the editor.
+    // Prevent the addition of an undo level if we are currently removing the editor.
+    if (!(e && e.removingEditor)) {
+      self.add({}, e);
+    }
   };
 
   const endTyping = function () {
@@ -177,6 +181,30 @@ export default function (editor) {
      * @field {Boolean} typing
      */
     typing: false,
+
+    /**
+     * Populates an object representing the internal state of the undo manager.
+     * @return {Object} Contains the current undo manager state.
+     */
+    getUndoManagerState () {
+      return {
+        index,
+        data,
+        typing: self.typing,
+        beforeBookmark,
+        isFirstTypedCharacter,
+        locks
+      };
+    },
+
+    /**
+     * Sets internal state of the undo manager to a provided state
+     * @param {Object} stateJSON - The state to set as the internal state.
+     */
+    setUndoManagerState (stateJSON) {
+      ({index, data, beforeBookmark, isFirstTypedCharacter, locks} = stateJSON);
+      self.typing = stateJSON.typing;
+    },
 
     /**
      * Stores away a bookmark to be used when performing an undo action so that the selection is before
