@@ -437,6 +437,10 @@ const ControlSelection = (selection: Selection, editor): ControlSelection => {
     controlElm = dom.$(controlElm).closest('table,img,figure.image,hr')[0];
 
     if (isChildOrEqual(controlElm, rootElement)) {
+      if (controlElm && controlElm.hasAttribute('_moz_resizing')) {
+        controlElm.removeAttribute('_moz_resizing');
+        editor.execCommand('mceRepaint');
+      }
       disableGeckoResize();
       startElm = selection.getStart(true);
 
