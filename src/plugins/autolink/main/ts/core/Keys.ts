@@ -16,10 +16,6 @@ const rangeEqualsDelimiterOrSpace = function (rangeString, delimiter) {
   return rangeString === delimiter || rangeString === ' ' || rangeString.charCodeAt(0) === 160;
 };
 
-const handleEclipse = function (editor) {
-  parseCurrentLine(editor, -1, '(');
-};
-
 const handleSpacebar = function (editor) {
   parseCurrentLine(editor, 0, '');
 };
@@ -58,6 +54,11 @@ const setEnd = function (rng, container, offset) {
   } else {
     rng.setEndAfter(container);
   }
+};
+
+const addProtocolIfNeeded = function (link) {
+  // If there isn't a protocol and the url isn't a field code, assume http
+  return !Settings.hasProtocolPattern().test(link) && (link.indexOf('%') !== 0) ? 'http://' + link : link;
 };
 
 const parseCurrentLine = function (editor, endOffset, delimiter) {
@@ -152,16 +153,47 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
   matches = text.match(autoLinkPattern);
 
   if (matches) {
-    if (matches[1] === 'www.') {
-      matches[1] = 'http://www.';
-    } else if (/@$/.test(matches[1]) && !/^mailto:/.test(matches[1])) {
-      matches[1] = 'mailto:' + matches[1];
+    // There is a url in the text
+    const endsWithParen = /\b.*\)[,.!?'":;]?$/;
+    let linkText = matches[0];
+    // Check if our link ends with a closing parenthesis
+    // Remove unless there is an opening one in the link, this makes for a nicer user experience
+    if (endsWithParen.test(linkText)) {
+      // Handle paren being both the last & second last character to match native implementation
+      if (linkText.charAt(linkText.length - 2) === ')') {
+        if (linkText.indexOf('(') !== -1) {
+          linkText = linkText.substr(0, linkText.length - 1);
+        } else {
+          linkText = linkText.substr(0, linkText.length - 2);
+        }
+      } else if (text.charAt(text.length - 1) === ')') {
+        if (linkText.indexOf('(') === -1) {
+          linkText = linkText.substr(0, linkText.length - 1);
+        }
+      }
+    }
+
+    if (linkText.length !== text.length) {
+      // Not all of our text is a valid link, modify the range to only include the link text
+      const idx = text.indexOf(linkText);
+      if (idx > 0) {
+        setStart(rng, endContainer, idx);
+        text = rng.toString();
+      }
+      if (linkText.length !== text.length) {
+        setEnd(rng, endContainer, linkText.length + rng.startOffset);
+      }
+    }
+
+    // If there isn't a protocol then assume http
+    if (!Settings.hasProtocolPattern().test(linkText)) {
+      linkText =  'http://' + linkText;
     }
 
     bookmark = editor.selection.getBookmark();
 
     editor.selection.setRng(rng);
-    editor.execCommand('createlink', false, matches[1] + matches[2]);
+    editor.execCommand('createlink', false, linkText);
 
     if (defaultLinkTarget) {
       editor.dom.setAttrib(editor.selection.getNode(), 'target', defaultLinkTarget);
@@ -198,12 +230,6 @@ const setup = function (editor: Editor) {
     return;
   }
 
-  editor.on('keypress', function (e) {
-    if (e.keyCode === 41) {
-      return handleEclipse(editor);
-    }
-  });
-
   editor.on('keyup', function (e) {
     if (e.keyCode === 32) {
       return handleSpacebar(editor);
@@ -212,5 +238,6 @@ const setup = function (editor: Editor) {
 };
 
 export default {
-  setup
+  setup,
+  addProtocolIfNeeded
 };
