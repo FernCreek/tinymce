@@ -266,10 +266,17 @@ const mergeWithAdjacentLists = function (dom, listBlock) {
 
   sibling = listBlock.nextSibling;
   if (shouldMerge(dom, listBlock, sibling)) {
+    let liStyle;
     while ((node = sibling.firstChild)) {
       listBlock.appendChild(node);
+      if (!liStyle && node && node.nodeName === 'LI') {
+        liStyle = node.getAttribute('data-mce-style') || node.getAttribute('style');
+      }
     }
-
+    // If styles were retrieved set them on all of the li's.
+    if (liStyle) {
+      Utils.correctLiStyle(liStyle, listBlock);
+    }
     dom.remove(sibling);
   }
 
@@ -282,10 +289,10 @@ const mergeWithAdjacentLists = function (dom, listBlock) {
       if (!liStyle && node && node.nodeName === 'LI') {
         liStyle = node.getAttribute('data-mce-style') || node.getAttribute('style');
       }
-      // If styles were retrieved set them on all of the li's.
-      if (liStyle) {
-        Utils.correctLiStyle(liStyle, listBlock);
-      }
+    }
+    // If styles were retrieved set them on all of the li's.
+    if (liStyle) {
+      Utils.correctLiStyle(liStyle, listBlock);
     }
 
     dom.remove(sibling);
