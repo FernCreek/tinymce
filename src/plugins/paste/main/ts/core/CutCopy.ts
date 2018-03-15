@@ -95,6 +95,7 @@ const getData = (editor: Editor): SelectionContentData => (
 
 const cut = (editor: Editor) => (evt: ClipboardEvent) => {
   if (editor.selection.isCollapsed() === false) {
+    editor.dom.updateCachedStylesOnElements(editor.selection.getSelectedBlocks());
     setClipboardData(evt, getData(editor), fallback(editor), () => {
       // Chrome fails to execCommand from another execCommand with this message:
       // "We don't execute document.execCommand() this time, because it is called recursively.""
