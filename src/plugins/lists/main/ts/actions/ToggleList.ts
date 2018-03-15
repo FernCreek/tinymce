@@ -264,37 +264,38 @@ const shouldMerge = function (dom, list1, list2) {
 const mergeWithAdjacentLists = function (dom, listBlock) {
   let sibling, node;
 
+  const determineLiStyle = (liStyle, node) => {
+    // Attempt to get styles off of any li nodes.
+    return !liStyle && node && node.nodeName === 'LI' ?
+      node.getAttribute('data-mce-style') || node.getAttribute('style') : liStyle;
+  };
+  const correctLiStyle = (liStyle) => {
+    // If styles were retrieved set them on all of the li's.
+    if (liStyle) {
+      Utils.correctLiStyle(liStyle, listBlock);
+    }
+  };
+
+  // Merge forward
   sibling = listBlock.nextSibling;
   if (shouldMerge(dom, listBlock, sibling)) {
-    let liStyle;
+    let liStyle = null;
     while ((node = sibling.firstChild)) {
       listBlock.appendChild(node);
-      if (!liStyle && node && node.nodeName === 'LI') {
-        liStyle = node.getAttribute('data-mce-style') || node.getAttribute('style');
-      }
+      liStyle = determineLiStyle(liStyle, node);
     }
-    // If styles were retrieved set them on all of the li's.
-    if (liStyle) {
-      Utils.correctLiStyle(liStyle, listBlock);
-    }
+    correctLiStyle(liStyle);
     dom.remove(sibling);
   }
-
+  // Merge backwards
   sibling = listBlock.previousSibling;
   if (shouldMerge(dom, listBlock, sibling)) {
-    let liStyle;
+    let liStyle = null;
     while ((node = sibling.lastChild)) {
       listBlock.insertBefore(node, listBlock.firstChild);
-      // Attempt to get styles off of any li nodes.
-      if (!liStyle && node && node.nodeName === 'LI') {
-        liStyle = node.getAttribute('data-mce-style') || node.getAttribute('style');
-      }
+      liStyle = determineLiStyle(liStyle, node);
     }
-    // If styles were retrieved set them on all of the li's.
-    if (liStyle) {
-      Utils.correctLiStyle(liStyle, listBlock);
-    }
-
+    correctLiStyle(liStyle);
     dom.remove(sibling);
   }
 };
