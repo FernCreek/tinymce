@@ -15,6 +15,7 @@ import NormalizeLists from '../core/NormalizeLists';
 import Selection from '../core/Selection';
 import SplitList from '../core/SplitList';
 import TextBlock from '../core/TextBlock';
+import Utils from '../api/Utils';
 
 const DOM = DOMUtils.DOM;
 
@@ -24,10 +25,44 @@ const removeEmptyLi = function (dom, li) {
   }
 };
 
+// Inserts a node after a parent node, setting styles on the child node if any were on an ancestor li.
+const insertAfterWithLiStyle = function (node, parentNode) {
+  if (parentNode && node) {
+    const liStyle = Utils.getLiStyle(parentNode);
+    if (liStyle) {
+      node.setAttribute('style', liStyle);
+    }
+    DOM.insertAfter(node, parentNode);
+  }
+};
+
+// Cleans up the child nodes of a li. Adds styles if needed.
+const cleanupChildNodes = function (editor, node) {
+  if (node && NodeType.isListNode(node.parentNode) && Utils.hasChildren(node)) {
+    const mkArrayRevFromNode: (node: Element) => Element[] = (node) => Array.from(node.children).reverse();
+    mkArrayRevFromNode(node).forEach((child) => {
+      if (NodeType.isListNode(child) && Utils.hasChildren(child)) {
+        mkArrayRevFromNode(child).forEach((grandChild) => {
+          if (grandChild && grandChild.nodeName === 'LI') {
+            insertAfterWithLiStyle(grandChild, node);
+          }
+        });
+        removeEmptyLi(editor.DOM, child);
+      }
+    });
+  }
+};
+
 const outdent = function (editor, li) {
   let ul = li.parentNode;
-  const ulParent = ul.parentNode;
-  let newBlock;
+  let ulParent, newBlock;
+
+  if (ul) {
+    ulParent = ul.parentNode;
+  } else {
+    removeEmptyLi(editor.dom, li);
+    return true;
+  }
 
   if (ul === editor.getBody()) {
     return true;
@@ -40,12 +75,13 @@ const outdent = function (editor, li) {
 
   if (NodeType.isFirstChild(li) && NodeType.isLastChild(li)) {
     if (ulParent.nodeName === 'LI') {
-      DOM.insertAfter(li, ulParent);
+      insertAfterWithLiStyle(li, ulParent);
       removeEmptyLi(editor.dom, ulParent);
       DOM.remove(ul);
     } else if (NodeType.isListNode(ulParent)) {
       DOM.remove(ul, true);
     } else {
+      Utils.correctLiStyle(Utils.getLiStyle(li), li);
       ulParent.insertBefore(TextBlock.createNewTextBlock(editor, li), ul);
       DOM.remove(ul);
     }
@@ -53,12 +89,13 @@ const outdent = function (editor, li) {
     return true;
   } else if (NodeType.isFirstChild(li)) {
     if (ulParent.nodeName === 'LI') {
-      DOM.insertAfter(li, ulParent);
+      insertAfterWithLiStyle(li, ulParent);
       li.appendChild(ul);
       removeEmptyLi(editor.dom, ulParent);
     } else if (NodeType.isListNode(ulParent)) {
       ulParent.insertBefore(li, ul);
     } else {
+      cleanupChildNodes(editor, li);
       ulParent.insertBefore(TextBlock.createNewTextBlock(editor, li), ul);
       DOM.remove(li);
     }
@@ -66,9 +103,15 @@ const outdent = function (editor, li) {
     return true;
   } else if (NodeType.isLastChild(li)) {
     if (ulParent.nodeName === 'LI') {
-      DOM.insertAfter(li, ulParent);
+      insertAfterWithLiStyle(li, ulParent);
     } else if (NodeType.isListNode(ulParent)) {
       DOM.insertAfter(li, ul);
+    } else if (Utils.hasChildren(li)) {
+      // If the li has children, then those children should start their own list.
+      cleanupChildNodes(editor, li);
+      newBlock = TextBlock.createNewTextBlock(editor, li);
+      SplitList.splitList(editor, ul, li, newBlock);
+      NormalizeLists.normalizeLists(editor.dom, ul.parentNode);
     } else {
       DOM.insertAfter(TextBlock.createNewTextBlock(editor, li), ul);
       DOM.remove(li);
@@ -79,10 +122,13 @@ const outdent = function (editor, li) {
 
   if (ulParent.nodeName === 'LI') {
     ul = ulParent;
-    newBlock = TextBlock.createNewTextBlock(editor, li, 'LI');
+    cleanupChildNodes(editor, li);
+    newBlock = TextBlock.createNewTextBlock(editor, li, 'LI', Utils.getLiStyle(li));
   } else if (NodeType.isListNode(ulParent)) {
-    newBlock = TextBlock.createNewTextBlock(editor, li, 'LI');
+    cleanupChildNodes(editor, li);
+    newBlock = TextBlock.createNewTextBlock(editor, li, 'LI', Utils.getLiStyle(li));
   } else {
+    cleanupChildNodes(editor, li);
     newBlock = TextBlock.createNewTextBlock(editor, li);
   }
 

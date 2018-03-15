@@ -11,10 +11,11 @@
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import Env from 'tinymce/core/api/Env';
 import NodeType from './NodeType';
+import Utils from '../api/Utils';
 
 const DOM = DOMUtils.DOM;
 
-const createNewTextBlock = function (editor, contentNode, blockName?) {
+const createNewTextBlock = function (editor, contentNode, blockName?, liStyle?) {
   let node, textBlock;
   const fragment = DOM.createFragment();
   let hasContentNode;
@@ -27,8 +28,15 @@ const createNewTextBlock = function (editor, contentNode, blockName?) {
   if (blockName) {
     textBlock = DOM.create(blockName);
 
-    if (textBlock.tagName === editor.settings.forced_root_block) {
+    const tagName = textBlock.tagName ? textBlock.tagName.toLowerCase() : textBlock.tagName;
+    const forcedRootBlock = editor.settings.forced_root_block ?
+      editor.settings.forced_root_block.toLowerCase() : editor.settings.forced_root_block;
+    if (tagName === forcedRootBlock) {
       DOM.setAttribs(textBlock, editor.settings.forced_root_block_attrs);
+    }
+
+    if (textBlock.nodeName === 'LI' && liStyle) {
+      textBlock.setAttribute('stylye', liStyle);
     }
 
     if (!NodeType.isBlock(contentNode.firstChild, blockElements)) {
@@ -53,10 +61,9 @@ const createNewTextBlock = function (editor, contentNode, blockName?) {
             textBlock = DOM.create(blockName);
             fragment.appendChild(textBlock);
           }
-
-          textBlock.appendChild(node);
+          Utils.addChildWithStyle(textBlock, node, liStyle);
         } else {
-          fragment.appendChild(node);
+          Utils.addChildWithStyle(fragment, node, liStyle);
         }
       }
     }

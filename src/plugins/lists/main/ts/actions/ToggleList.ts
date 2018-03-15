@@ -16,6 +16,7 @@ import NodeType from '../core/NodeType';
 import NormalizeLists from '../core/NormalizeLists';
 import Selection from '../core/Selection';
 import SplitList from '../core/SplitList';
+import Utils from '../api/Utils';
 
 const updateListStyle = function (dom, el, detail) {
   const type = detail['list-style-type'] ? detail['list-style-type'] : null;
@@ -161,6 +162,15 @@ const applyList = function (editor, listName: string, detail = {}) {
     if (sibling && NodeType.isListNode(sibling) && sibling.nodeName === listName && hasCompatibleStyle(dom, sibling, detail)) {
       listBlock = sibling;
       block = dom.rename(block, listItemName);
+
+      // If the target li that the current block will be appended to has styles, they need to be captured.
+      if (sibling.lastChild && sibling.lastChild.nodeName === 'LI') {
+        const liStyle = sibling.lastChild.getAttribute('data-mce-style') || sibling.lastChild.getAttribute('style');
+        // Now apply any captured styles to the current block to match any li styling on siblings.
+        if (liStyle) {
+          block.setAttribute('style', liStyle);
+        }
+      }
       sibling.appendChild(block);
     } else {
       listBlock = dom.create(listName);
@@ -200,6 +210,7 @@ const removeList = function (editor) {
     }
   });
 
+  let lastFoundLiStyle;
   Tools.each(listItems, function (li) {
     let node, rootList;
 
@@ -213,7 +224,19 @@ const removeList = function (editor) {
       }
     }
 
-    SplitList.splitList(editor, rootList, li);
+    lastFoundLiStyle = Utils.getLiStyle(li) || lastFoundLiStyle;
+    if (NodeType.isFirstChild(li)) {
+      Utils.correctLiStyle(lastFoundLiStyle, li);
+    }
+    SplitList.splitList(editor, rootList, li, null, lastFoundLiStyle);
+    if (editor.getBody()) {
+      let newLists = editor.dom.select('ol[data-mce-new-list]', editor.getBody());
+      newLists = newLists.concat(editor.dom.select('ul[data-mce-new-list]', editor.getBody()));
+      Tools.each(newLists, function (list) {
+        list.removeAttribute('data-mce-new-list');
+        mergeWithAdjacentLists(editor.dom, list);
+      });
+    }
     NormalizeLists.normalizeLists(editor.dom, rootList.parentNode);
   });
 
@@ -252,8 +275,17 @@ const mergeWithAdjacentLists = function (dom, listBlock) {
 
   sibling = listBlock.previousSibling;
   if (shouldMerge(dom, listBlock, sibling)) {
+    let liStyle;
     while ((node = sibling.lastChild)) {
       listBlock.insertBefore(node, listBlock.firstChild);
+      // Attempt to get styles off of any li nodes.
+      if (!liStyle && node && node.nodeName === 'LI') {
+        liStyle = node.getAttribute('data-mce-style') || node.getAttribute('style');
+      }
+      // If styles were retrieved set them on all of the li's.
+      if (liStyle) {
+        Utils.correctLiStyle(liStyle, listBlock);
+      }
     }
 
     dom.remove(sibling);
