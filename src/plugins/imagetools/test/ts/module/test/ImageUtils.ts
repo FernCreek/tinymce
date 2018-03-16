@@ -12,11 +12,11 @@ const sLoadImage = function (editor, url, size?) {
     const img = new Image();
 
     img.onload = function () {
-      editor.setContent(`<p><img src="${url}" ${size ? `width="${size.width}" height="${size.height}"` : ''} /></p>`);
+      editor.setContent(`<p><img crossOrigin="anonymous" src="${url}" ${size ? `width="${size.width}" height="${size.height}"` : ''} /></p>`);
       editor.focus();
       done();
     };
-
+    img.setAttribute('crossOrigin', 'anonymous');
     img.src = url;
   });
 };
