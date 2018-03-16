@@ -14,6 +14,7 @@ import { Editor } from 'tinymce/core/api/Editor';
 
 PluginManager.add('autolink', function (editor: Editor) {
   Keys.setup(editor);
+  return {addProtocolIfNeeded: Keys.addProtocolIfNeeded};
 });
 
 export default function () { }

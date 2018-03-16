@@ -166,7 +166,7 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
         } else {
           linkText = linkText.substr(0, linkText.length - 2);
         }
-      } else if (text.charAt(text.length - 1) === ')') {
+      } else if (linkText.charAt(linkText.length - 1) === ')') {
         if (linkText.indexOf('(') === -1) {
           linkText = linkText.substr(0, linkText.length - 1);
         }

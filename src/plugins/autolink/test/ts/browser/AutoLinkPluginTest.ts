@@ -30,6 +30,7 @@ UnitTest.asynctest('browser.tinymce.plugins.autolink.AutoLinkPluginTest', functi
 
   suite.test('Urls ended with space', function (editor) {
     editor.focus();
+    LegacyUnit.equal(typeUrl(editor, '(http://www.domain.com)'), '<p>(<a href="http://www.domain.com">http://www.domain.com</a>)</p>');
     LegacyUnit.equal(typeUrl(editor, 'http://www.domain.com'), '<p><a href="http://www.domain.com">http://www.domain.com</a></p>');
     LegacyUnit.equal(typeUrl(editor, 'https://www.domain.com'), '<p><a href="https://www.domain.com">https://www.domain.com</a></p>');
     LegacyUnit.equal(typeUrl(editor, 'ftp://www.domain.com'), '<p><a href="ftp://www.domain.com">ftp://www.domain.com</a></p>');
