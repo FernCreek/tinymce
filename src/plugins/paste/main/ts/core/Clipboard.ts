@@ -17,7 +17,6 @@ import InternalHtml from './InternalHtml';
 import Newlines from './Newlines';
 import { PasteBin } from './PasteBin';
 import ProcessFilters from './ProcessFilters';
-import SmartPaste from './SmartPaste';
 import Utils from './Utils';
 import { Editor } from 'tinymce/core/api/Editor';
 import { Cell } from '@ephox/katamari';
@@ -37,7 +36,8 @@ const pasteHtml = (editor: Editor, html: string, internalFlag: boolean) => {
   const args = ProcessFilters.process(editor, InternalHtml.unmark(html), internal);
 
   if (args.cancelled === false) {
-    SmartPaste.insertContent(editor, args.content);
+    // SmartPaste.insertContent(editor, args.content);
+    editor.insertContent(html, {merge: editor.settings.paste_merge_formats !== false, data: {paste: true}});
   }
 };
 
@@ -48,7 +48,11 @@ const pasteHtml = (editor: Editor, html: string, internalFlag: boolean) => {
  * @param {String} text Text to paste as the current selection location.
  */
 const pasteText = (editor, text: string) => {
-  text = editor.dom.encode(text).replace(/\r\n/g, '\n');
+  text = editor.dom.encode(text)
+    .replace(/\r\n/g, '\n') // Replace carriage return newline with newline
+    .replace(/[^\S\n]/g, '&nbsp;') // Replace space character with non-breaking
+    .replace(/&nbsp;&nbsp;/g, '&nbsp; ') // Replace double non-breaking with non-breaking, regular alternating
+    .replace(/(\S)&nbsp;(?=\S)/g, '$1 '); // Replace non-breaking surrounded with non-spaces with regular space
   text = Newlines.convert(text, editor.settings.forced_root_block, editor.settings.forced_root_block_attrs);
 
   pasteHtml(editor, text, false);
@@ -116,61 +120,13 @@ const hasHtmlOrText = (content: ClipboardContents) => {
   return hasContentType(content, 'text/html') || hasContentType(content, 'text/plain');
 };
 
-const getBase64FromUri = (uri: string) => {
-  let idx;
-
-  idx = uri.indexOf(',');
-  if (idx !== -1) {
-    return uri.substr(idx + 1);
-  }
-
-  return null;
-};
-
-const isValidDataUriImage = (settings, imgElm: HTMLImageElement) => {
-  return settings.images_dataimg_filter ? settings.images_dataimg_filter(imgElm) : true;
-};
-
-const extractFilename = (editor: Editor, str: string) => {
-  const m = str.match(/([\s\S]+?)\.(?:jpeg|jpg|png|gif)$/i);
-  return m ? editor.dom.encode(m[1]) : null;
-};
-
 const pasteImage = (editor: Editor, rng: Range, reader, blob) => {
-  const uniqueId = Utils.createIdGenerator('mceclip');
   if (rng) {
     editor.selection.setRng(rng);
     rng = null;
   }
 
-  const dataUri = reader.result;
-  const base64 = getBase64FromUri(dataUri);
-  const id = uniqueId();
-  const name = editor.settings.images_reuse_filename && blob.name ? extractFilename(editor, blob.name) : id;
-  const img = new Image();
-
-  img.src = dataUri;
-
-  // TODO: Move the bulk of the cache logic to EditorUpload
-  if (isValidDataUriImage(editor.settings, img)) {
-    const blobCache = editor.editorUpload.blobCache;
-    let blobInfo, existingBlobInfo;
-
-    existingBlobInfo = blobCache.findFirst(function (cachedBlobInfo) {
-      return cachedBlobInfo.base64() === base64;
-    });
-
-    if (!existingBlobInfo) {
-      blobInfo = blobCache.create(id, blob, base64, name);
-      blobCache.add(blobInfo);
-    } else {
-      blobInfo = existingBlobInfo;
-    }
-
-    pasteHtml(editor, '<img src="' + blobInfo.blobUri() + '">', false);
-  } else {
-    pasteHtml(editor, '<img src="' + dataUri + '">', false);
-  }
+  pasteHtml(editor, '<img src="' + reader.result + '">', false);
 };
 
 const isClipboardEvent = (event: Event): event is ClipboardEvent => event.type === 'paste';
@@ -355,7 +311,7 @@ const registerEventHandlers = (editor: Editor, pasteBin: PasteBin, pasteFormat: 
       return;
     }
 
-    if (!hasHtmlOrText(clipboardContent) && pasteImageData(editor, e, getLastRng())) {
+    if ((editor.settings.paste_prefer_images || !hasHtmlOrText(clipboardContent)) && pasteImageData(editor, e, getLastRng())) {
       pasteBin.remove();
       return;
     }

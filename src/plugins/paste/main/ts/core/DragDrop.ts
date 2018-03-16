@@ -62,7 +62,7 @@ const setup = function (editor: Editor, clipboard: Clipboard, draggingInternally
     dropContent = clipboard.getDataTransferItems(e.dataTransfer);
     const internal = clipboard.hasContentType(dropContent, InternalHtml.internalHtmlMime());
 
-    if ((!clipboard.hasHtmlOrText(dropContent) || isPlainTextFileUrl(dropContent)) && clipboard.pasteImageData(e, rng)) {
+    if ((editor.settings.paste_prefer_images || !clipboard.hasHtmlOrText(dropContent) || isPlainTextFileUrl(dropContent)) && clipboard.pasteImageData(e, rng)) {
       return;
     }
 
@@ -95,7 +95,11 @@ const setup = function (editor: Editor, clipboard: Clipboard, draggingInternally
   });
 
   editor.on('dragstart', function (e) {
-    draggingInternallyState.set(true);
+    // There is no need to set the draggingInternally flag to true if we are not editable. This is fired on mousedown
+    // when content is not editable, which can leave us in a state were drops always fail because dragend is never fired.
+    if (!e.target || e.target.contentEditable === 'true') {
+      draggingInternallyState.set(true);
+    }
   });
 
   editor.on('dragover dragend', function (e) {
