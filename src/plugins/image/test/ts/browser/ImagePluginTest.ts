@@ -25,7 +25,7 @@ UnitTest.asynctest('browser.tinymce.plugins.image.ImagePluginTest', function () 
   };
 
   const cleanHtml = function (html) {
-    return html.replace(/<p>(&nbsp;|<br[^>]+>)<\/p>$/, '');
+    return html.replace(/<p>(&nbsp;|<br[^>]+>)<\/p>$/m, '');
   };
 
   const getFrontmostWindow = function (editor) {
