@@ -523,7 +523,7 @@ UnitTest.asynctest('tinymce.plugins.paste.browser.ImagePasteTest', function () {
     editor.selection.setRng(rng);
     editor.execCommand('mceInsertClipboardContent', false, { text: ' a ' });
 
-    LegacyUnit.equal(editor.getContent(), '<p>t a xt</p>');
+    LegacyUnit.equal(editor.getContent(), '<p>t&nbsp;a&nbsp;xt</p>');
   });
 
   suite.test('paste plain text with linefeeds', function (editor) {
@@ -534,7 +534,7 @@ UnitTest.asynctest('tinymce.plugins.paste.browser.ImagePasteTest', function () {
     editor.selection.setRng(rng);
     editor.execCommand('mceInsertClipboardContent', false, { text: 'a\nb\nc ' });
 
-    LegacyUnit.equal(editor.getContent(), '<p>ta<br />b<br />c xt</p>');
+    LegacyUnit.equal(editor.getContent(), '<p>ta<br />b<br />c&nbsp;xt</p>');
   });
 
   suite.test('paste plain text with double linefeeds', function (editor) {
@@ -545,7 +545,7 @@ UnitTest.asynctest('tinymce.plugins.paste.browser.ImagePasteTest', function () {
     editor.selection.setRng(rng);
     editor.execCommand('mceInsertClipboardContent', false, { text: 'a\n\nb\n\nc' });
 
-    LegacyUnit.equal(editor.getContent(), '<p>t</p><p>a</p><p>b</p><p>c</p><p>xt</p>');
+    LegacyUnit.equal(editor.getContent(), '<p>t</p><p>a</p><p>&nbsp;</p><p>b</p><p>&nbsp;</p><p>c</p><p>xt</p>');
   });
 
   suite.test('paste plain text with entities', function (editor) {
@@ -567,7 +567,7 @@ UnitTest.asynctest('tinymce.plugins.paste.browser.ImagePasteTest', function () {
     editor.selection.setRng(rng);
     editor.execCommand('mceInsertClipboardContent', false, { text: 'a\n<b>b</b>\n\nc' });
 
-    LegacyUnit.equal(editor.getContent(), '<p>t</p><p>a<br />&lt;b&gt;b&lt;/b&gt;</p><p>c</p><p>xt</p>');
+    LegacyUnit.equal(editor.getContent(), '<p>t</p><p>a<br />&lt;b&gt;b&lt;/b&gt;</p><p>&nbsp;</p><p>c</p><p>xt</p>');
   });
 
   suite.test('paste data image with paste_data_images: false', function (editor) {
