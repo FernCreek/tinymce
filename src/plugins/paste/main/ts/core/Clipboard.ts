@@ -37,7 +37,7 @@ const pasteHtml = (editor: Editor, html: string, internalFlag: boolean) => {
 
   if (args.cancelled === false) {
     // SmartPaste.insertContent(editor, args.content);
-    editor.insertContent(html, {merge: editor.settings.paste_merge_formats !== false, data: {paste: true}});
+    editor.insertContent(args.content, {merge: editor.settings.paste_merge_formats !== false, data: {paste: true}});
   }
 };
 
