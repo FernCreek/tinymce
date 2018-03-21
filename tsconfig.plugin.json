@@ -12,6 +12,7 @@
       "tinymce": ["src/core/dist/tinymce"],
       "tinymce/core/*": ["lib/globals/tinymce/core/*"],
       "jquery": [ "src/shims/jquery" ],
+      "tinysc": [ "src/shims/tinysc" ],
       "tinymce/ui/*": ["src/ui/main/ts/*"],
       "tinymce/themes/mobile/*": ["src/themes/mobile/main/ts/*"],
       "tinymce/themes/modern/*": ["src/themes/modern/main/ts/*"],

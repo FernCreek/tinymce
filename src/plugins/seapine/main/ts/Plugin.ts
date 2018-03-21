@@ -1,7 +1,7 @@
 import PluginManager from 'tinymce/core/api/PluginManager';
-import Formats from '../api/Formats';
-import Commands from '../api/Commands';
-import FontUtils from '../api/FontUtils';
+import Formats from './api/Formats';
+import Commands from './api/Commands';
+import FontUtils from './core/FontUtils';
 
 /**
  * @file Plugin.ts

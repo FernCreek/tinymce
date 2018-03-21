@@ -5,7 +5,7 @@
  * License: http://www.tinymce.com/license
  */
 
-import FontUtils from './FontUtils';
+import FontUtils from '../core/FontUtils';
 
 /**
  * Whether the TinyMCE instance is set to read only.
