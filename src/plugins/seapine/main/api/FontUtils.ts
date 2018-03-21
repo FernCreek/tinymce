@@ -30,7 +30,7 @@ export interface IFontFamilyAndSize {
  * Interface used to describe the font of children nodes
  */
 interface IChildrenFont {
-  fontState: string | number;
+  fontState: FontInfo;
   bDidInherit: boolean;
 }
 
@@ -142,7 +142,7 @@ const getTextChildSizeInfo: GetTextChildInfoFn =
  * @returns {IChildrenFont} The font used by the fragment
  */
 const getChildrenFont = (fragment, bCanInherit, getChildInfoFn: GetTextChildInfoFn): IChildrenFont => {
-  let fontState: number | string = FontValues.DefaultFont;
+  let fontState: FontInfo = FontValues.DefaultFont;
   let font: FontInfo = '', bDidInherit = false;
   const textChildren = getChildTextNodesFromParent(fragment);
   if (textChildren.length) {
@@ -215,7 +215,7 @@ const initialFontSize = (editor, fragment, element): IInitialFontInfo => {
  * Determines the font info for the element from its parents
  * @param {HTMLElement} element - the element to get the font info from
  * @param {GetInfoIfPresentFn} getInfoIfPresentFn - function to get the info from the element if present
- * @returns {number | string} the font info
+ * @returns {FontInfo} the font info
  */
 const getInfoFromParent = (element, getInfoIfPresentFn: GetInfoIfPresentFn) => {
   let fontInfo: FontInfo = FontValues.DefaultFont;
@@ -232,7 +232,7 @@ const getInfoFromParent = (element, getInfoIfPresentFn: GetInfoIfPresentFn) => {
 /**
  * Verifies the font info is consistent with the children, returns FontValues.Multiple fonts if this isn't the case
  * @param {DocumentFragment} fragment - The selection fragment
- * @param {string | number} infoToVerify - The info given to verify
+ * @param {FontInfo} infoToVerify - The info given to verify
  * @param {boolean} bCameFromElement - Whether the info came from the element
  * @param {GetTextChildInfoFn} getChildInfoFn - The function to use to get the childrens font
  * @returns {FontInfo} - The verified font info
