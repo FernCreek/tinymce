@@ -13,8 +13,8 @@ let plugins = [
   'lists', 'media', 'nonbreaking', 'noneditable', 'pagebreak', 'paste', 'preview', 'print', 'save',
   'searchreplace', 'spellchecker', 'tabfocus', 'table', 'template', 'textcolor', 'textpattern', 'toc',
   'visualblocks', 'visualchars', 'wordcount',
-  'seapine'
-  // 'seapine', 'seapinetable', 'sproutcore', 'copycut', 'qtinterface', 'qtinterfaceeditor',
+  'seapine', 'sproutcore',
+  // 'seapinetable', 'copycut', 'qtinterface', 'qtinterfaceeditor',
 ];
 
 let themes = [
@@ -88,7 +88,8 @@ module.exports = function (grunt) {
               swag.nodeResolve({
                 basedir: __dirname,
                 prefixes: gruntUtils.prefixes({
-                  'tinymce/core': 'lib/globals/tinymce/core'
+                  'tinymce/core': 'lib/globals/tinymce/core',
+                  'shims': 'lib/shims'
                 }, [
                   [`tinymce/plugins/${name}`, `lib/plugins/${name}/main/ts`]
                 ])

@@ -50,7 +50,7 @@ const applyBlockingDiv = (editor, applyDiv) => {
         });
       }
     } else if (hasBlockingDivApplied) { // Only remove it if the div is there.
-      this.dom.remove(blockingDivElements);
+      editor.dom.remove(blockingDivElements);
     }
   }
 };

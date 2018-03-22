@@ -4,4 +4,7 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-export default (window as any).TinySC as any; // tslint:disable-line:no-default-export no-any
+
+export default {
+  get: () => (window as any).TinySC
+};
