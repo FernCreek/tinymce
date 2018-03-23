@@ -4,7 +4,7 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-import TinySC from 'shims/tinysc';
+import {TinySC} from 'shims/tinysc';
 
 const cellBorders: string[] = ['top', 'left', 'bottom', 'right'];
 const rowBorders = cellBorders.concat(['vertical']);
@@ -21,19 +21,19 @@ const getEnumForBorderStyleString = (styleString) => {
   let styleEnum;
   switch (styleString) {
     case 'full':
-      styleEnum = TinySC.get().BorderStyles.full;
+      styleEnum = TinySC.BorderStyles.full;
       break;
     case 'box':
-      styleEnum = TinySC.get().BorderStyles.box;
+      styleEnum = TinySC.BorderStyles.box;
       break;
     case 'grid':
-      styleEnum = TinySC.get().BorderStyles.grid;
+      styleEnum = TinySC.BorderStyles.grid;
       break;
     case 'custom':
-      styleEnum = TinySC.get().BorderStyles.custom;
+      styleEnum = TinySC.BorderStyles.custom;
       break;
     default:
-      styleEnum = TinySC.get().BorderStyles.none;
+      styleEnum = TinySC.BorderStyles.none;
       break;
   }
   return styleEnum;
@@ -62,7 +62,7 @@ const getRowCellAlignments = (plugin, $cells) => {
 const setBordersOnController = (editor, $jElement, borderNames, getBorderFn, controller) => {
   return borderNames.map((borderName) => {
     const border = getBorderFn(editor, $jElement, borderName);
-    controller.set(borderName + 'Border', TinySC.get().Border.create(border));
+    controller.set(borderName + 'Border', TinySC.Border.create(border));
     return border;
   });
 };
@@ -88,7 +88,7 @@ const setPropertiesOnController = (controller, properties, plugin, margins) => {
 
 const setupTableProperties = (editor, onSubmit) => {
   const {tablePlugin, element, $jElement} = getInitialVars(editor, 'table');
-  const controller = TinySC.get().tablePropertiesController;
+  const controller = TinySC.tablePropertiesController;
 
   if (element && tablePlugin) {
     const cellSpacing = $jElement.css('border-collapse') === 'separate' ?
@@ -121,7 +121,7 @@ const setupTableProperties = (editor, onSubmit) => {
 
 const setupRowCellProperties = (editor, forCell) => {
   const {tablePlugin, element, $jElement} = getInitialVars(editor, forCell ? 'td' : 'tr');
-  const controller = forCell ? TinySC.get().cellPropertiesController : TinySC.get().rowPropertiesController;
+  const controller = forCell ? TinySC.cellPropertiesController : TinySC.rowPropertiesController;
 
   if (element && tablePlugin) {
     // These are specific to whether this is for a row or a cell

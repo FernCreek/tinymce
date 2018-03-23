@@ -4,18 +4,18 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-import TinySC from 'shims/tinysc';
+import {TinySC} from 'shims/tinysc';
 import TableRowCell from './TableRowCell';
 /**
  * Sets up the color picker
  * @returns {any}
  */
-const setupColorPicker = () => TinySC.get().PopupColorPicker;
+const setupColorPicker = () => TinySC.PopupColorPicker;
 /**
  * Sets up the source editor dialog
  * @returns {any}
  */
-const setupSourceEditorDialog = () => TinySC.get().SourceEditorPane;
+const setupSourceEditorDialog = () => TinySC.SourceEditorPane;
 
 /**
  * Sets up the link properties dialog
@@ -25,12 +25,12 @@ const setupSourceEditorDialog = () => TinySC.get().SourceEditorPane;
 const setupLinkPropertiesDialog = (editor) => {
   // Finds the anchor node based on the selected node
   const findAnchorNode = (selectedNode) => {
-    let anchorNode = TinySC.get().Utils.findClosestAnchorNode($(selectedNode));
+    let anchorNode = TinySC.Utils.findClosestAnchorNode($(selectedNode));
     if (!anchorNode) {
       // There is an edge case on IE and Edge (pun intended) where the selection node is the entire editor body.
       // If there is a link at the start of the editor, check the start of the selection as well.
       selectedNode = editor.selection.getStart();
-      anchorNode = TinySC.get().Utils.findClosestAnchorNode($(selectedNode));
+      anchorNode = TinySC.Utils.findClosestAnchorNode($(selectedNode));
     }
     return [anchorNode, selectedNode];
   };
@@ -42,7 +42,7 @@ const setupLinkPropertiesDialog = (editor) => {
     return $q.length === 0;
   };
 
-  const controller = TinySC.get().insertLinkController;
+  const controller = TinySC.insertLinkController;
   let selectedNode, anchorNode;
   selectedNode = editor.selection.getNode();
   [anchorNode, selectedNode] = findAnchorNode(selectedNode);
@@ -53,7 +53,7 @@ const setupLinkPropertiesDialog = (editor) => {
   controller.set('insertMode', !!anchorNode);
   anchorNode ?
     editor.selection.select(anchorNode) : // Select the anchor node, in case it was a parent of the actual selection.
-    anchorNode = TinySC.get().Utils.findChildAnchorNode($(tmpDiv)); // Find a child anchor node, so we can populate the dialog with its href.
+    anchorNode = TinySC.Utils.findChildAnchorNode($(tmpDiv)); // Find a child anchor node, so we can populate the dialog with its href.
 
   if (anchorNode) { // Populate based on our found anchor node
     controller.set('selectedUrlType', controller.getUrlType(anchorNode.href));
@@ -62,7 +62,7 @@ const setupLinkPropertiesDialog = (editor) => {
   controller.set('displayText', editor.selection.getContent({format: 'text'}));
   controller.set('displayTextEditable', editableText(tmpDiv));
 
-  return TinySC.get().InsertLinkPane;
+  return TinySC.InsertLinkPane;
 };
 
 /**
@@ -72,7 +72,7 @@ const setupLinkPropertiesDialog = (editor) => {
  * @returns the view class for the dialog
  */
 const setupImagePropertiesDialog = (editor, owner) => {
-  const selectedNode = editor.selection.getNode(), controller = TinySC.get().insertImageController;
+  const selectedNode = editor.selection.getNode(), controller = TinySC.insertImageController;
   // Sets edit specific information on the controller
   const setupImageControllerForEdit = (imageNode, controller) => {
     // Set this false to so the controller does not update width/height properties while we are setting them.
@@ -104,7 +104,7 @@ const setupImagePropertiesDialog = (editor, owner) => {
     delSettings.forEach((setting) => delegate.set(setting, owner.get(setting)));
   }
 
-  return TinySC.get().InsertImagePane;
+  return TinySC.InsertImagePane;
 };
 
 /**
@@ -115,7 +115,7 @@ const setupImagePropertiesDialog = (editor, owner) => {
  */
 const setupTablePropertiesDialog = (editor, onSubmit) => {
   TableRowCell.setupTableProperties(editor, onSubmit);
-  return TinySC.get().TablePropertiesPane;
+  return TinySC.TablePropertiesPane;
 };
 /**
  * Sets up the row properties dialog
@@ -124,7 +124,7 @@ const setupTablePropertiesDialog = (editor, onSubmit) => {
  */
 const setupRowPropertiesDialog = (editor) => {
   TableRowCell.setupRowCellProperties(editor, false);
-  return TinySC.get().TableRowPropertiesPane;
+  return TinySC.TableRowPropertiesPane;
 };
 /**
  * Sets up the cell properties dialog
@@ -133,7 +133,7 @@ const setupRowPropertiesDialog = (editor) => {
  */
 const setupCellPropertiesDialog = (editor) => {
   TableRowCell.setupRowCellProperties(editor, true);
-  return TinySC.get().TableCellPropertiesPane;
+  return TinySC.TableCellPropertiesPane;
 };
 
 export default {

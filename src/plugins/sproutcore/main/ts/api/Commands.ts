@@ -5,7 +5,7 @@
  * License: http://www.tinymce.com/license
  */
 
-import TinySC from 'shims/tinysc';
+import {TinySC} from 'shims/tinysc';
 import Settings from './Settings';
 import Tools from 'tinymce/core/api/util/Tools';
 
@@ -51,9 +51,9 @@ const openCloseDialog = (editor, view, openCloseSetting, fallbackFn) => {
  * @param {tinymce.Editor} editor - the editor
  */
 const openExpandedEditor = (editor) => {
-  const owner = TinySC.get().Utils.getOwnerView(editor);
+  const owner = TinySC.Utils.getOwnerView(editor);
   if (owner && !owner.get('isExpanded')) {
-    const expandedView = TinySC.get().ExpandedEditorPane.create({owner});
+    const expandedView = TinySC.ExpandedEditorPane.create({owner});
     if (expandedView) {
       openDialog(editor, expandedView);
       expandedView.load();
@@ -67,7 +67,7 @@ const openExpandedEditor = (editor) => {
  * @param viewClass - the view class of the dialog to create and open
  */
 const createAndOpenDialog = (editor, viewClass) => {
-  const owner = TinySC.get().Utils.getOwnerView(editor);
+  const owner = TinySC.Utils.getOwnerView(editor);
   if (owner && !!viewClass.create) {
     const view = viewClass.create({owner});
     if (view) {
@@ -98,7 +98,7 @@ const openImageDialog = (editor) => {
  * @param evt - the paste event
  */
 const pastePostProcess = (editor, evt) => {
-  const view = TinySC.get().Utils.getOwnerView(editor);
+  const view = TinySC.Utils.getOwnerView(editor);
   if (view && !!view.onPaste) {
     view.onPaste(editor, evt.node);
   }

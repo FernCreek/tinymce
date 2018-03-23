@@ -5,7 +5,7 @@
  * License: http://www.tinymce.com/license
  */
 
-import TinySC from 'shims/tinysc';
+import {TinySC} from 'shims/tinysc';
 import DialogSetup from './DialogSetup';
 import Tools from 'tinymce/core/api/util/Tools';
 import WindowManager from 'tinymce/core/api/WindowManager';
@@ -54,7 +54,7 @@ const createWindowManager = () => {
         }
         if (viewClass) {
           // We implemented this window, its been setup, now open it.
-          this.openDialog(viewClass, TinySC.get().Utils.getOwnerView(this.editor), openArgs);
+          this.openDialog(viewClass, TinySC.Utils.getOwnerView(this.editor), openArgs);
         }
       }
     },
@@ -63,7 +63,7 @@ const createWindowManager = () => {
     setupTablePropertiesDialog(submit) { return DialogSetup.setupTablePropertiesDialog(this.editor, submit); },
     setupCellPropertiesDialog() { return DialogSetup.setupCellPropertiesDialog(this.editor); },
     setupRowPropertiesDialog() { return DialogSetup.setupRowPropertiesDialog(this.editor); },
-    setupImagePropertiesDialog() { return DialogSetup.setupImagePropertiesDialog(this.editor, TinySC.get().Utils.getOwnerView(this.editor)); },
+    setupImagePropertiesDialog() { return DialogSetup.setupImagePropertiesDialog(this.editor, TinySC.Utils.getOwnerView(this.editor)); },
     setupLinkPropertiesDialog() { return DialogSetup.setupLinkPropertiesDialog(this.editor); },
     setupColorPicker() { return DialogSetup.setupColorPicker(); },
     setupSourceEditorDialog() { return DialogSetup.setupSourceEditorDialog(); },

@@ -4,7 +4,8 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-
-export default {
-  get: () => (window as any).TinySC
-};
+let TinySC;
+function get() {
+  TinySC = (window as any).TinySC;
+}
+export { TinySC, get };
