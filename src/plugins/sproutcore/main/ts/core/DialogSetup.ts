@@ -5,7 +5,7 @@
  * License: http://www.tinymce.com/license
  */
 import TinySC from 'shims/tinysc';
-
+import TableRowCell from './TableRowCell';
 /**
  * Sets up the color picker
  * @returns {any}
@@ -16,10 +16,11 @@ const setupColorPicker = () => TinySC.get().PopupColorPicker;
  * @returns {any}
  */
 const setupSourceEditorDialog = () => TinySC.get().SourceEditorPane;
+
 /**
  * Sets up the link properties dialog
  * @param {tinymce.Editor} editor - the editor
- * @returns {any}
+ * @returns the view class for the dialog
  */
 const setupLinkPropertiesDialog = (editor) => {
   // Finds the anchor node based on the selected node
@@ -63,23 +64,77 @@ const setupLinkPropertiesDialog = (editor) => {
 
   return TinySC.get().InsertLinkPane;
 };
+
 /**
  * Sets up the image properties dialog
+ * @param {tinymce.Editor} editor - the editor
+ * @param owner - the sc view that owns the editor
+ * @returns the view class for the dialog
  */
-const setupImagePropertiesDialog = (e, o) => {};
+const setupImagePropertiesDialog = (editor, owner) => {
+  const selectedNode = editor.selection.getNode(), controller = TinySC.get().insertImageController;
+  // Sets edit specific information on the controller
+  const setupImageControllerForEdit = (imageNode, controller) => {
+    // Set this false to so the controller does not update width/height properties while we are setting them.
+    controller.set('maintainAspectRatio', false);
+    controller.beginPropertyChanges().set('fileSelected', true).set('node', selectedNode);
+    const propertyAttributes = [
+      {prop: 'originalWidth', attr: 'data-mce-tinysc-original-width'},
+      {prop: 'originalHeight', attr: 'data-mce-tinysc-original-height'},
+      {prop: 'scaledPixelWidth', attr: 'width'},
+      {prop: 'scaledPixelHeight', attr: 'height'},
+      {prop: 'fileName', attr: 'data-mce-tinysc-file-name'},
+      {prop: 'serverFileID', attr: 'data-mce-tinysc-server-file-id'},
+      {prop: 'fileSize', attr: 'data-mce-tinysc-file-size'},
+      {prop: 'imageType', attr: 'data-mce-tinysc-image-type'},
+    ];
+    propertyAttributes.forEach(({prop, attr}) => {
+      controller.set(prop, selectedNode.getAttribute(attr));
+    });
+    controller.endPropertyChanges();
+    // Controller has calculated the %width/%height, check if we should maintain ratio
+    controller.set('maintainAspectRatio', controller.get('scaledPercentWidth') === controller.get('scaledPercentHeight'));
+  };
+
+  selectedNode.tagName === 'IMG' ? setupImageControllerForEdit(selectedNode, controller) : controller.set('insertMode', true);
+
+  const delegate = controller.get('delegate');
+  if (delegate) {
+    const delSettings = ['entityType', 'entityID', 'subtypeID', 'reportedBy', 'fieldID'];
+    delSettings.forEach((setting) => delegate.set(setting, owner.get(setting)));
+  }
+
+  return TinySC.get().InsertImagePane;
+};
 
 /**
  * Sets up the table properties dialog
+ * @param {tinymce.Editor} editor - the editor
+ * @param onSubmit - the on submit property to set
+ * @returns the view class for the dialog
  */
-const setupTablePropertiesDialog = (e, s) => {};
+const setupTablePropertiesDialog = (editor, onSubmit) => {
+  TableRowCell.setupTableProperties(editor, onSubmit);
+  return TinySC.get().TablePropertiesPane;
+};
 /**
  * Sets up the row properties dialog
+ * @param {tinymce.Editor} editor - the editor
+ * @returns the view class for the dialog
  */
-const setupRowPropertiesDialog = (e) => {};
+const setupRowPropertiesDialog = (editor) => {
+  TableRowCell.setupRowCellProperties(editor, false);
+  return TinySC.get().TableRowPropertiesPane;
+};
 /**
  * Sets up the cell properties dialog
+ * @param {tinymce.Editor} editor - the editor
+ * @returns the view class for the dialog
  */
-const setupCellPropertiesDialog = (e) => {};
+const setupCellPropertiesDialog = (editor) => {
+  TableRowCell.setupRowCellProperties(editor, true);
+  return TinySC.get().TableCellPropertiesPane;
+};
 
 export default {
   setupTablePropertiesDialog,
