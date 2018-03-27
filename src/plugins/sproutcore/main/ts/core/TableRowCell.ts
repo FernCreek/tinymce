@@ -101,7 +101,7 @@ const setupTableProperties = (editor, onSubmit) => {
 
   if (element && tablePlugin) {
     const cellSpacing = $jElement.css('border-collapse') === 'separate' ?
-      tablePlugin.getWidthFromPxString($jElement.css('border-spacing')) : 0;
+      tablePlugin.getNumFromPxString($jElement.css('border-spacing')) : 0;
     const alignment = tablePlugin.getTableAlignment($jElement) || 'left';
     const borders = setBordersOnController($jElement, tableBorders, tablePlugin.getBorderForTable, controller);
     const borderStyle = tablePlugin.getBorderStyleForTable(borders);

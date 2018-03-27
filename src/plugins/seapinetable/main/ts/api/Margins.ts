@@ -26,9 +26,7 @@ const isInvalidMargin = (margin: string | number): boolean => {
   return invalid;
 };
 // Determines if the margins are all valid
-const areMarginsValid = (margins: ICellMargins): boolean => {
-  return !!marginsToArray(margins).find(isInvalidMargin);
-};
+const areMarginsValid = (margins: ICellMargins): boolean =>  marginsToArray(margins).every((margin) => !isInvalidMargin(margin));
 // Converts the margins to a CSS string
 const marginsToCSS = (margins: ICellMargins, defaultMargin): string => {
   return marginsToArray(margins).reduce((css, margin) => {
