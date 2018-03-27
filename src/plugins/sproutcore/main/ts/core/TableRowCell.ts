@@ -71,7 +71,7 @@ const setBordersOnController = ($jElement, borderNames, borderCmd, controller) =
   borderNames.forEach((borderName) => {
     const border = borderCmd($jElement, borderName);
     controller.set(borderName + 'Border', TinySC.Border.create(border));
-    borderInterface[borderName] = {...border};
+    borderInterface[borderName] = Object.assign({}, border);
   });
   return borderInterface;
 };
