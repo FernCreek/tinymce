@@ -100,7 +100,7 @@ const getFirstBorderAndRowsFromTable = ($table, borderStr) => {
 const doCellBordersMatch = ($cells: any[], width, color, widthCSSStr, colorCSSStr): boolean => {
   return $cells.every((cell) => { // See if a non-matching border is found
     const $cell = $(cell);
-    return $cell.css(colorCSSStr) !== color || getBorderWidthForCell($cell, widthCSSStr) !== width;
+    return $cell.css(colorCSSStr) === color && getBorderWidthForCell($cell, widthCSSStr) === width;
   });
 };
 
@@ -130,7 +130,7 @@ const getRowVerticalBorderForRow = ($row) => {
   const {width, color, $cells} = getFirstBorderAndCellsFromRow($row, rightCSS + 'width', rightCSS + 'color');
   // Partially applied border matcher for vertical borders
   const doVerticalBordersMatch = (widthStr, colorStr) => doCellBordersMatch($cells, width, color, widthStr, colorStr);
-    // Check the left border of all the inner cells except the left most
+  // Check the left border of all the inner cells except the left most
   const leftMatching = doVerticalBordersMatch(leftCSS + 'width', leftCSS + 'color');
   // Check the right border of all the inner cells except the most right
   $cells.pop(); // Remove the right most so it is not checked
@@ -179,7 +179,7 @@ const getBorderForRow = ($row, borderStr): IBorder => {
 const doRowBordersMatch = ($rows: any[], border, borderStr): boolean => {
   return $rows.every((row) => { // See if a non-matching border is found
     const testBorder = getBorderForRow($(row), borderStr);
-    return border.color !== testBorder.color || border.width !== testBorder.width;
+    return border.color === testBorder.color && border.width === testBorder.width;
   });
 };
 

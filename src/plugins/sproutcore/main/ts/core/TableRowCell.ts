@@ -62,7 +62,7 @@ const setBorderColorWidthOnController = (controller, borderStyle) => {
 
 const getRowCellAlignments = (plugin, $cells) => {
   const hAlign = plugin.getTableCellsTextAlignment($cells) || 'left';
-  const vAlign = plugin.getTableCellsTextAlignmentVertical($cells) || 'middle';
+  const vAlign = plugin.getTableCellsVerticalTextAlignment($cells) || 'middle';
   return {hAlign, vAlign};
 };
 
