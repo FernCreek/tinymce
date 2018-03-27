@@ -30,7 +30,7 @@ const areMarginsValid = (margins: ICellMargins): boolean =>  marginsToArray(marg
 // Converts the margins to a CSS string
 const marginsToCSS = (margins: ICellMargins, defaultMargin): string => {
   return marginsToArray(margins).reduce((css, margin) => {
-    return css += `${isInvalidMargin(margin) ? defaultMargin : margin} px `;
+    return css += `${isInvalidMargin(margin) ? defaultMargin : margin}px `;
   }, '');
 };
 // Converts a margins array into a CSS string
