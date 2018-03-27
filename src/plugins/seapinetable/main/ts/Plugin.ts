@@ -10,21 +10,21 @@ import {get} from 'shims/tinysc';
 import {
   countTableColumns, countTableRows, getNumFromPxString, getTableAlignment,
   getTableBackgroundColor, getTableCellsBackgroundColor, getTableCellsTextAlignment, getTableCellsVerticalTextAlignment
-} from './api/Utils';
+} from './core/Utils';
 import {
   getBorderForCell, getBorderForRow, getBorderForTable, getBorderStyleForCell, getBorderStyleForRow,
   getBorderStyleForTable
-} from './api/Borders';
+} from './core/Borders';
 import {
   doesCellOverrideMargins, getElementMarginsArray, getRowMarginsArray, getTableMarginsArray,
   isPaddingExplicitlySet
-} from './api/Margins';
-import {insertOrSaveTable, saveCellProperties, saveRowProperties} from './api/SaveProperties';
-import {IAlignment, ICellBorders, ICellMargins, IRowBorders, ITableBorders} from './api/Interfaces';
+} from './core/Margins';
+import {insertOrSaveTable, saveCellProperties, saveRowProperties} from './core/SaveProperties';
+import {IAlignment, ICellBorders, ICellMargins, IRowBorders, ITableBorders} from './core/Interfaces';
 
 PluginManager.add('seapinetable', function (editor) {
 
-  // Apply the editor as an argumentto the save commands
+  // Apply the editor as an argument to the save commands
   const saveCell =
     (node, cellBorders: ICellBorders, cellMargins: ICellMargins, alignment: IAlignment, bgColor) =>
       saveCellProperties(editor, node, cellBorders, cellMargins, alignment, bgColor);
