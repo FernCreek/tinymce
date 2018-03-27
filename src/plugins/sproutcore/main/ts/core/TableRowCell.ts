@@ -118,7 +118,7 @@ const setupTableProperties = (editor, onSubmit) => {
       {name: 'width', value: element.offsetWidth},
       {name: 'cellSpacing', value: cellSpacing},
       {name: 'alignment', value: alignment},
-      {name: 'bgColor', value: bgColor},
+      {name: 'backgroundColor', value: bgColor},
       {name: 'borderStyle', value: getEnumForBorderStyleString(borderStyle.style)},
       {name: 'onsubmit', value: onSubmit}
     ];
