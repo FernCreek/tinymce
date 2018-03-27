@@ -9,6 +9,13 @@ import {TinySC} from 'shims/tinysc';
 const cellBorders: string[] = ['top', 'left', 'bottom', 'right'];
 const rowBorders = cellBorders.concat(['vertical']);
 const tableBorders = rowBorders.concat(['horizontal']);
+// See seapinetable plugin constants
+const TableMargins = {
+  kTop: 0,
+  kBottom: 1,
+  kLeft: 2,
+  kRight: 3
+};
 
 const getInitialVars = (editor, selector) => {
   const tablePlugin = editor.plugins.seapinetable;
@@ -59,23 +66,25 @@ const getRowCellAlignments = (plugin, $cells) => {
   return {hAlign, vAlign};
 };
 
-const setBordersOnController = (editor, $jElement, borderNames, getBorderFn, controller) => {
-  return borderNames.map((borderName) => {
-    const border = getBorderFn(editor, $jElement, borderName);
+const setBordersOnController = ($jElement, borderNames, borderCmd, controller) => {
+  const borderInterface = {};
+  borderNames.forEach((borderName) => {
+    const border = borderCmd($jElement, borderName);
     controller.set(borderName + 'Border', TinySC.Border.create(border));
-    return border;
+    borderInterface[borderName] = {...border};
   });
+  return borderInterface;
 };
 
-const setPropertiesOnController = (controller, properties, plugin, margins) => {
+const setPropertiesOnController = (controller, properties, margins) => {
   const applyToController = (props) => props.forEach(({name, value}) => controller.set(name, value));
 
   const setMarginsOnController = () => {
     const marginProperties = [
-      {name: 'top', value: margins[plugin.tableMargins.kTop]},
-      {name: 'bottom', value: margins[plugin.tableMargins.kBottom]},
-      {name: 'left', value: margins[plugin.tableMargins.kLeft]},
-      {name: 'right', value: margins[plugin.tableMargins.kRight]}
+      {name: 'top', value: margins[TableMargins.kTop]},
+      {name: 'bottom', value: margins[TableMargins.kBottom]},
+      {name: 'left', value: margins[TableMargins.kLeft]},
+      {name: 'right', value: margins[TableMargins.kRight]}
     ].map((property) => ({name: property.name + 'CellMargin', value: property.value}));
     applyToController(marginProperties);
   };
@@ -94,8 +103,8 @@ const setupTableProperties = (editor, onSubmit) => {
     const cellSpacing = $jElement.css('border-collapse') === 'separate' ?
       tablePlugin.getWidthFromPxString($jElement.css('border-spacing')) : 0;
     const alignment = tablePlugin.getTableAlignment($jElement) || 'left';
-    const borders = setBordersOnController(editor, $jElement, tableBorders, tablePlugin.getBorderForTable, controller);
-    const borderStyle = tablePlugin.getBorderStyleForTable(new tablePlugin.TableBorders(...borders));
+    const borders = setBordersOnController($jElement, tableBorders, tablePlugin.getBorderForTable, controller);
+    const borderStyle = tablePlugin.getBorderStyleForTable(borders);
 
     const {margins, bgColor} = getMarginsBgColor(
       $jElement, tablePlugin.getTableMarginsArray, tablePlugin.getTableBackgroundColor($jElement)
@@ -113,7 +122,7 @@ const setupTableProperties = (editor, onSubmit) => {
       {name: 'borderStyle', value: getEnumForBorderStyleString(borderStyle.style)},
       {name: 'onsubmit', value: onSubmit}
     ];
-    setPropertiesOnController(controller, properties, tablePlugin, margins);
+    setPropertiesOnController(controller, properties, margins);
   } else {
     controller.set('insertMode', true);
   }
@@ -128,14 +137,14 @@ const setupRowCellProperties = (editor, forCell) => {
     let borders, borderStyle, bOverrideMargins, $cells, getMarginsFn;
 
     if (forCell) { // Get cell specific properties
-      borders = setBordersOnController(editor, $jElement, cellBorders, tablePlugin.getBorderForCell, controller);
-      borderStyle = tablePlugin.getBorderStyleForCell(new tablePlugin.CellBorders(...borders));
+      borders = setBordersOnController($jElement, cellBorders, tablePlugin.getBorderForCell, controller);
+      borderStyle = tablePlugin.getBorderStyleForCell(borders);
       bOverrideMargins = tablePlugin.doesCellOverrideMargins($jElement);
       $cells = $jElement;
       getMarginsFn = tablePlugin.getElementMarginsArray;
     } else { // Get row specific properties
-      borders = setBordersOnController(editor, $jElement, rowBorders, tablePlugin.getBorderForRow, controller);
-      borderStyle = tablePlugin.getBorderStyleForRow(new tablePlugin.RowBorders(...borders));
+      borders = setBordersOnController($jElement, rowBorders, tablePlugin.getBorderForRow, controller);
+      borderStyle = tablePlugin.getBorderStyleForRow(borders);
       bOverrideMargins = tablePlugin.isPaddingExplicitlySet($jElement);
       $cells = $jElement.find('td');
       getMarginsFn = tablePlugin.getRowMarginsArray;
@@ -154,7 +163,7 @@ const setupRowCellProperties = (editor, forCell) => {
       {name: 'overrideMargins', value: bOverrideMargins},
       {name: 'borderStyle', value: getEnumForBorderStyleString(borderStyle.style)},
     ];
-    setPropertiesOnController(controller, properties, tablePlugin, margins);
+    setPropertiesOnController(controller, properties, margins);
   }
 };
 
