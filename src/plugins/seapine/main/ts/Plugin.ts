@@ -10,11 +10,13 @@
 import PluginManager from 'tinymce/core/api/PluginManager';
 import Formats from './api/Formats';
 import Commands from './api/Commands';
+import CopyCut from './core/CopyCut';
 import FontUtils from './core/FontUtils';
 
 PluginManager.add('seapine', function (editor) {
   Formats.register(editor);
   Commands.register(editor);
+  CopyCut.register(editor);
   // Make font values constants available
   return {FontValues: FontUtils.FontValues};
 });
