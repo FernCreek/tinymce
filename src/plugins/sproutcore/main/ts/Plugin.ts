@@ -1,10 +1,11 @@
 /**
  * @file Plugin.ts
+ * The Sproutcore plugin which creates our custom window manager and handles opening dialogs.
+ *
  * @copyright 2016-2018 Perforce Software, Inc. and its subsidiaries.
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-
 import PluginManager from 'tinymce/core/api/PluginManager';
 import WindowManager from './core/WindowManager';
 import Commands from './api/Commands';

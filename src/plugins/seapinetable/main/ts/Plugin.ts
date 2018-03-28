@@ -1,12 +1,13 @@
 /**
  * @file Plugin.ts
+ * Plugin for handing extended custom table logic.
+ *
  * @copyright 2016-2018 Perforce Software, Inc. and its subsidiaries.
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
 
 import PluginManager from 'tinymce/core/api/PluginManager';
-import {get} from 'shims/tinysc';
 import {
   countTableColumns, countTableRows, getNumFromPxString, getTableAlignment,
   getTableBackgroundColor, getTableCellsBackgroundColor, getTableCellsTextAlignment, getTableCellsVerticalTextAlignment
@@ -34,9 +35,6 @@ PluginManager.add('seapinetable', function (editor) {
   const saveTable =
     (node, rows, columns, width, tableBorders: ITableBorders, alignment, cellSpacing, cellMargins: ICellMargins, bgColor) =>
       insertOrSaveTable(editor, node, rows, columns, width, tableBorders, alignment, cellSpacing, cellMargins, bgColor);
-
-  // Expose the global TinySC object after the editor has been initialized
-  editor.on('init', () => get());
   // Expose the available methods for outside usage
   return {
     // Util functions

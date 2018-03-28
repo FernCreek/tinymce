@@ -1,7 +1,10 @@
 /**
  * @file SaveProperties.ts
+ * Handles saving the various properties of tables.
+ *
  * @copyright 2016-2018 Perforce Software, Inc. and its subsidiaries.
- * All contents of this file are considered Perforce Software proprietary.
+ * Released under LGPL License.
+ * License: http://www.tinymce.com/license
  */
 import {applyCellMargins, applyRowMargins, applyTableMargins} from './Margins';
 import {getCSSForBorder} from './Borders';

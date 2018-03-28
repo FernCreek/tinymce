@@ -4,7 +4,6 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-
 import {TinySC} from 'shims/tinysc';
 import DialogSetup from './DialogSetup';
 import Tools from 'tinymce/core/api/util/Tools';
