@@ -13,8 +13,7 @@ let plugins = [
   'lists', 'media', 'nonbreaking', 'noneditable', 'pagebreak', 'paste', 'preview', 'print', 'save',
   'searchreplace', 'spellchecker', 'tabfocus', 'table', 'template', 'textcolor', 'textpattern', 'toc',
   'visualblocks', 'visualchars', 'wordcount',
-  'seapine', 'sproutcore',
-  // 'seapinetable', 'copycut', 'qtinterface', 'qtinterfaceeditor',
+  'seapine', 'sproutcore', 'seapinetable', 'qtinterface', 'qtinterfaceeditor',
 ];
 
 let themes = [

@@ -21,50 +21,48 @@ import {
   isPaddingExplicitlySet
 } from './core/Margins';
 import {insertOrSaveTable, saveCellProperties, saveRowProperties} from './core/SaveProperties';
-import {IAlignment, ICellBorders, ICellMargins, IRowBorders, ITableBorders} from './core/Interfaces';
 
 PluginManager.add('seapinetable', function (editor) {
-
-  // Apply the editor as an argument to the save commands
-  const saveCell =
-    (node, cellBorders: ICellBorders, cellMargins: ICellMargins, alignment: IAlignment, bgColor) =>
-      saveCellProperties(editor, node, cellBorders, cellMargins, alignment, bgColor);
-  const saveRow =
-    (node, rowBorders: IRowBorders, cellMargins: ICellMargins, alignment: IAlignment, bgColor) =>
-      saveRowProperties(editor, node, rowBorders, cellMargins, alignment, bgColor);
-  const saveTable =
-    (node, rows, columns, width, tableBorders: ITableBorders, alignment, cellSpacing, cellMargins: ICellMargins, bgColor) =>
-      insertOrSaveTable(editor, node, rows, columns, width, tableBorders, alignment, cellSpacing, cellMargins, bgColor);
-  // Expose the available methods for outside usage
-  return {
-    // Util functions
+  const applyEditorArg = (fn) => (...args) => fn(editor, ...args); // Apply the editor as an argument
+  const applyEditorArgToObj = (obj) => Object.keys(obj).reduce((objApp, key) => Object.assign(objApp, ({[key]: applyEditorArg(obj[key])})), {});
+  // Util functions
+  const util = {
     getNumFromPxString,
-    isPaddingExplicitlySet,
-    // Table information getters
+    isPaddingExplicitlySet
+  };
+  // Table information getters
+  const tableInfo = {
     countTableRows,
     countTableColumns,
     getTableAlignment,
     getBorderForTable,
     getBorderStyleForTable,
     getTableMarginsArray,
-    getTableBackgroundColor,
-    // Row information getters
+    getTableBackgroundColor
+  };
+  // Row information getters
+  const rowInfo = {
     getBorderForRow,
     getBorderStyleForRow,
-    getRowMarginsArray,
-    // Cell information getters
+    getRowMarginsArray
+  };
+  // Cell information getters
+  const cellInfo = {
     getBorderForCell,
     getBorderStyleForCell,
     getElementMarginsArray,
     doesCellOverrideMargins,
     getTableCellsBackgroundColor,
     getTableCellsTextAlignment,
-    getTableCellsVerticalTextAlignment,
-    // Add commands for application
-    saveCellProperties: saveCell,
-    saveRowProperties: saveRow,
-    insertOrSaveTable: saveTable
+    getTableCellsVerticalTextAlignment
   };
+  // Add commands for saving/applying properties
+  const savers = applyEditorArgToObj({
+    saveCellProperties,
+    saveRowProperties,
+    insertOrSaveTable
+  });
+  return Object.assign({}, util, tableInfo, rowInfo, cellInfo, savers);
 });
 
 export default function () { }

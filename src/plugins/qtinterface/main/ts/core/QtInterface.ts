@@ -4,7 +4,7 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-import {getJQueryBody, SPTinyMCEInterface} from 'shims/sptinymceinterface';
+import {getJQueryBody, SPTinyMCEInterface, findClosestAnchorNode, findChildAnchorNode} from 'shims/sptinymceinterface';
 
 //////////////////////////////////////////////////////////////////////////
 // Editor configuration settings
@@ -104,16 +104,6 @@ const clearFixedWidthEditor = () => {
 // Hyperlink interaction handlers
 //////////////////////////////////////////////////////////////////////////
 
-// Finds the closest parent anchor node of the element, which could be the element itself.
-const findClosestAnchorNode = ($el) => {
-  const q = $el.closest('a');
-  return q && q.length ? q[0] : null;
-};
-// Finds an anchor node that is a child of the element.
-const findChildAnchorNode = ($el) => {
-  const childAnchors = $el.find('a');
-  return childAnchors && childAnchors.length ? childAnchors[0] : null;
-};
 // Callback for when the editor is clicked or double clicked
 const activateLink = (target) => {
   const $el = findClosestAnchorNode($(target));

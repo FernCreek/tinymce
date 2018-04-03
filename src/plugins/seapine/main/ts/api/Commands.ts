@@ -5,8 +5,6 @@
  * License: http://www.tinymce.com/license
  */
 
-import FontUtils from '../core/FontUtils';
-
 /**
  * Whether the TinyMCE instance is set to read only.
  * @type {boolean}
@@ -62,8 +60,7 @@ const applyBlockingDiv = (editor, applyDiv) => {
 const register = function (editor) {
   editor.addCommand('MakeReadOnly', (readonly) => makeReadOnly(editor, readonly));
   editor.addCommand('ApplyBlockingDiv', (applyDiv) => applyBlockingDiv(editor, applyDiv));
-  editor.addQueryValueHandler('GetReadOnly', () => readOnlyState );
-  editor.addQueryValueHandler('GetFontFamilyAndSize', (element) => FontUtils.getFontFamilyAndSize(editor, element));
+  editor.addQueryValueHandler('GetReadOnly', () => readOnlyState);
 };
 
 export default {

@@ -17,9 +17,7 @@ import {
 PluginManager.add('qtinterface', function (editor) {
   // Expose the global SPTinyMCEInterface object after the editor has been initialized
   editor.on('init', () => get());
-  // Apply the editor as an argument to the functions that need it
-  const applyReadOnly = (readOnly) => setReadOnly(editor, readOnly);
-  const detectImages = () => detectImagesLoaded(editor);
+  const applyEditorArg = (fn) => (...args) => fn(editor, ...args); // Apply the editor as an argument
   return {
     loadDefaultFont,
     loadPalette,
@@ -29,10 +27,10 @@ PluginManager.add('qtinterface', function (editor) {
     activateLink,
     escapeRegEg,
     reloadImage,
-    detectImagesLoaded: detectImages,
+    detectImagesLoaded: applyEditorArg(detectImagesLoaded),
     setFixedWidthEditor,
     clearFixedWidthEditor,
-    setReadOnly: applyReadOnly
+    setReadOnly: applyEditorArg(setReadOnly)
   };
 });
 

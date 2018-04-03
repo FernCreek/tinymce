@@ -36,6 +36,7 @@
     "@ephox/swag": "latest",
     "@types/jquery": "^1.10.33",
     "awesome-typescript-loader": "^3.4.1",
+    "core-js": "^2.5.4",
     "grunt": "~1.0.1",
     "grunt-contrib-clean": "~1.1.0",
     "grunt-contrib-copy": "~1.0.0",

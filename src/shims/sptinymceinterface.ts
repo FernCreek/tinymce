@@ -10,5 +10,24 @@ let SPTinyMCEInterface; // This is used by our our native qt interfaces
 function get() {
   SPTinyMCEInterface = (window as any).SPTinyMCEInterface;
 }
+// Common function used by the qtinterface and qtinterface editor
 const getJQueryBody = () => $('#content_ifr').contents().find('.tinymce-native');
-export { SPTinyMCEInterface, get, getJQueryBody };
+
+//////////////////////////////////////////////////////////////////////////
+// Common link handlers used by qtinterface and qtinterface editor
+//////////////////////////////////////////////////////////////////////////
+
+// Finds the closest parent anchor node of the element, which could be the element itself.
+const findClosestAnchorNode = ($el) => {
+  const q = $el.closest('a');
+  return q && q.length ? q[0] : null;
+};
+// Finds an anchor node that is a child of the element.
+const findChildAnchorNode = ($el) => {
+  const childAnchors = $el.find('a');
+  return childAnchors && childAnchors.length ? childAnchors[0] : null;
+};
+// Equivalent to Object.assign which doesn't get polyfilled, however spread gets transpiled
+const ObjAssign = (...args) => args.reduce((obj, arg) => ({...obj, ...arg}), {});
+
+export { SPTinyMCEInterface, get, getJQueryBody, findClosestAnchorNode, findChildAnchorNode, ObjAssign };

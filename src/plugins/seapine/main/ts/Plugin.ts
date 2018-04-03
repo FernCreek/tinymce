@@ -18,7 +18,10 @@ PluginManager.add('seapine', function (editor) {
   Commands.register(editor);
   CopyCut.register(editor);
   // Make font values constants available
-  return {FontValues: FontUtils.FontValues};
+  return {
+    FontValues: FontUtils.FontValues,
+    getFontFamilyAndSize: (element) => FontUtils.getFontFamilyAndSize(editor, element)
+  };
 });
 
 export default function () { }
