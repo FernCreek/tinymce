@@ -48,9 +48,9 @@ const loadDefaultFont = (fontJSON) => {
 };
 // Loads the palette settings
 const loadPalette = (windowEdit, windowReadOnly, textEdit, textReadOnly) => {
-  windowEditColor = textEdit;
+  windowEditColor = windowEdit;
   textReadOnlyColor = textReadOnly;
-  textEditColor = windowEdit;
+  textEditColor = textEdit;
   windowReadOnlyColor = windowReadOnly;
   applyPalette();
 };
