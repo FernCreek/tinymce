@@ -82,7 +82,7 @@ const adjustTableWidth = ($table, newWidth) => {
         $table.css('width', newWidth);
         $table.removeAttr('width');
         const ratio = newWidth / oldWidth;
-        $table.find('td').forEach((cell) => {
+        Array.from($table.find('td')).forEach((cell) => {
           const $cell = $(cell), cellStyleWidth = $cell[0].style.width;
           const widthToSet = cellStyleWidth ?
             `${Math.round(getNumFromPxString(cellStyleWidth) * ratio)}px` :

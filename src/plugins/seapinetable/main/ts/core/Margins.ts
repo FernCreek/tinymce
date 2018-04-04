@@ -198,7 +198,7 @@ const applyTableMargins = (margins: ICellMargins, $table) => {
     }
     const newCSS = marginsToCSS(margins, TableConstants.kDefaultCellMargin);
     $table.css('padding', newCSS);
-    $table.find('tr').forEach((row) => {
+    Array.from($table.find('tr')).forEach((row) => {
       const $row = $(row);
       if (!isPaddingExplicitlySet($row)) { // If a row is overriding our margins, don't mess with it.
         // Check to see if the cell matches our old margins, if they do, then our margins weren't actually overridden.
@@ -218,7 +218,7 @@ const applyRowMargins = (margins: ICellMargins, $row) => {
     const oldCSS = marginsArrayToCSS(getRowMarginsArray($row));
     const newCSS = marginsToCSS(margins, TableConstants.kDefaultCellMargin);
     $row.css('padding', newCSS);
-    $row.find('td').forEach((cell) => { // Reset the padding on any cell that doesn't match the old CSS
+    Array.from($row.find('td')).forEach((cell) => { // Reset the padding on any cell that doesn't match the old CSS
       const $cell = $(cell);
       if (!oldCSS || doesCellMatchMargins($cell, oldCSS)) {
         $cell.css('padding', newCSS);
