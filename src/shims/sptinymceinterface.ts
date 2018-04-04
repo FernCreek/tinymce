@@ -27,7 +27,5 @@ const findChildAnchorNode = ($el) => {
   const childAnchors = $el.find('a');
   return childAnchors && childAnchors.length ? childAnchors[0] : null;
 };
-// Equivalent to Object.assign which doesn't get polyfilled, however spread gets transpiled
-const ObjAssign = (...args) => args.reduce((obj, arg) => ({...obj, ...arg}), {});
 
-export { SPTinyMCEInterface, get, getJQueryBody, findClosestAnchorNode, findChildAnchorNode, ObjAssign };
+export { SPTinyMCEInterface, get, getJQueryBody, findClosestAnchorNode, findChildAnchorNode };

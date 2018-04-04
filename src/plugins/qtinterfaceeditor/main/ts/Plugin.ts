@@ -64,8 +64,8 @@ PluginManager.add('qtinterfaceeditor', function (editor) {
   });
   // Image handlers
   const image = Object.assign(applyEditorArgToObj({
-    insertImage, requestEditImage, setEditImage
-  }), {setEditImageSize});
+    insertImage, setEditImageSize, setEditImage
+  }), {requestEditImage});
   // Content manipulation handlers
   const content =  applyEditorArgToObj({
     bypassDragEvents,

@@ -23,12 +23,12 @@ const tableBorderNames = rowBorderNames.concat('horizontal');
 //////////////////////////////////////////////////////////////////////////
 
 // Gets a border from the provided JSON border information
-const getBorderFromJSON = (jsonBorder) => jsonBorder ? {width: 0, color: ''} : {width: jsonBorder.width, color: jsonBorder.color};
+const getBorderFromJSON = (jsonBorder) => !!jsonBorder ? {width: jsonBorder.width, color: jsonBorder.color} : {width: 0, color: ''};
 // Makes a key value pair object from the given key and value
 const makeKVP = (str, border) => ({[str]: border});
 // Makes a border interface from the JSON border information
 const makeBorderInterfaceFromJSON = (borderNames, jsonBorders) => {
-  const safeBorderObj = !!jsonBorders ? {} : jsonBorders;
+  const safeBorderObj = !!jsonBorders ? jsonBorders : {};
   return borderNames.reduce((borders, str) => Object.assign(borders, makeKVP(str, getBorderFromJSON(safeBorderObj[str]))), {});
 };
 // Makes an alignment interface from JSON
