@@ -181,6 +181,7 @@ export interface DOMUtils {
   setStyle: (elm: string | Node, name: string | StyleMap, value: string | number | StyleMap) => void;
   getStyle: (elm: string | Node, name: string, computed?: boolean) => string;
   setStyles: (elm: string | Node, stylesArg: StyleMap) => void;
+  updateCachedStylesOnElements: (elements: Element[]) => void;
   removeAllAttribs: (e: RunArguments) => any;
   setAttrib: (elm: string | Node, name: string, value: string) => void;
   setAttribs: (elm: string | Node, attrs: Record<string, string>) => void;
