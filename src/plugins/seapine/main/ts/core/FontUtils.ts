@@ -55,14 +55,14 @@ const isTextNodeWS = (node) => !(/[^\t\n\r ]/.test(node.textContent));
  * @returns {Array.<HTMLElement>} Array containing the child text nodes of the parent
  */
 const getChildTextNodesFromParent = (parent: HTMLElement): HTMLElement[] => {
-  const childNodes: HTMLElement[] = [];
+  let childNodes: HTMLElement[] = [];
   if (parent.childNodes) {
     const reducer = (textNodes: HTMLElement[], child: HTMLElement) => {
       child.nodeType === Node.TEXT_NODE && !isTextNodeWS(child) ?
         textNodes.push(child) : textNodes = textNodes.concat(getChildTextNodesFromParent(child));
       return textNodes;
     };
-    Array.from(parent.childNodes).reduce(reducer, childNodes);
+    childNodes = Array.from(parent.childNodes).reduce(reducer, childNodes);
   }
   return childNodes;
 };
