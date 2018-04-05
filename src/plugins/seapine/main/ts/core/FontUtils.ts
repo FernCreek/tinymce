@@ -171,18 +171,39 @@ const getChildrenFont = (fragment, bCanInherit, getChildInfoFn: GetTextChildInfo
 };
 
 /**
+ * When doing a queryCommandValue on font size or name TinyMCE will return the default's actual font's name or size
+ * even when it is not actually set. We need to distinguish if TinyMCE actually found the information or ended up
+ * reporting the default.
+ * @param {HTMLElement} element - The element to verify the font from
+ * @param {GetInfoIfPresentFn} getInfoIfPresentFn - function to get the info from the element if present
+ * @param {FontInfo} tinymceGuess - the initial tinymce guess at the font info
+ * @returns {FontInfo} the font info that has been adjusted to default if TinyMCE pulled the default
+ */
+const verifyNotPullingDefault = (element, getInfoIfPresentFn: GetInfoIfPresentFn, tinymceGuess) => {
+  let fontInfo = tinymceGuess;
+  if (tinymceGuess !== undefined && tinymceGuess !== '' && tinymceGuess !== FontValues.DefaultFont) {
+    // TinyMCE reported an actual value make sure it didn't pull the default
+    fontInfo = getInfoFromParent(element, getInfoIfPresentFn)  === FontValues.DefaultFont ?
+      FontValues.DefaultFont : fontInfo;
+  }
+  return fontInfo;
+};
+
+/**
  * Initial determination of the font family
  * @param {tinymce.Editor} editor - the editor
  * @param {DocumentFragment} fragment - The selection fragment
  * @returns {IInitialFontInfo} the initial font family info
  */
-const initialFontFamily = (editor, fragment): IInitialFontInfo => {
+const initialFontFamily = (editor, fragment, element): IInitialFontInfo => {
   // Start with what TinyMCE thinks to be the current font family
   let fontInfo = editor.queryCommandValue('fontname');
   // If the selection only has one node make sure we are not using the common ancestor
   if (fragment && fragment.childNodes.length === 1) {
     // If there is only one child node in the fragments use the font off of that instead of the current node.
     fontInfo = getFamilyInfoIfPresent(fragment.childNodes[0], fontInfo);
+  } else {
+    fontInfo = verifyNotPullingDefault(element, getFamilyInfoIfPresent, fontInfo);
   }
   return {fontInfo, bCameFromElement: false};
 };
@@ -207,6 +228,8 @@ const initialFontSize = (editor, fragment, element): IInitialFontInfo => {
     bCameFromElement = true;
   } else if (fragment && fragment.childNodes.length === 1) {
     fontInfo = getSizeInfoIfPresent(fragment.childNodes[0], fontInfo);
+  } else {
+    fontInfo = verifyNotPullingDefault(element, getSizeInfoIfPresent, fontInfo);
   }
   return {fontInfo, bCameFromElement};
 };
@@ -291,7 +314,7 @@ const getFontFamilyAndSize = (editor, element): IFontFamilyAndSize => {
   const fragment = editor.selection.getRng().cloneContents();
   const getInfo = (guess: IInitialFontInfo, getInfoIfPresentFn: GetInfoIfPresentFn, getTextChildInfoFn: GetTextChildInfoFn) =>
     getFontInfo(guess, fragment, element, getInfoIfPresentFn, getTextChildInfoFn);
-  const fontFamily = getInfo(initialFontFamily(editor, fragment), getFamilyInfoIfPresent, getTextChildFamilyInfo);
+  const fontFamily = getInfo(initialFontFamily(editor, fragment, element), getFamilyInfoIfPresent, getTextChildFamilyInfo);
   const fontSize = getInfo(initialFontSize(editor, fragment, element), getSizeInfoIfPresent, getTextChildSizeInfo);
   return {fontFamily, fontSize};
 };
