@@ -8,7 +8,7 @@
  * Contributing: http://www.tinymce.com/contributing
  */
 
-import AddOnManager from './AddOnManager';
+import { AddOnManager } from './AddOnManager';
 import EditorCommands from './EditorCommands';
 import EditorObservable from './EditorObservable';
 import * as EditorSettings from '../EditorSettings';
@@ -27,8 +27,7 @@ import { Selection } from 'tinymce/core/api/dom/Selection';
 import * as EditorContent from 'tinymce/core/EditorContent';
 import * as EditorRemove from '../EditorRemove';
 import SelectionOverrides from 'tinymce/core/SelectionOverrides';
-
-/*jshint scripturl:true */
+import Schema from 'tinymce/core/api/html/Schema';
 
 /**
  * Include the base event class documentation.
@@ -56,10 +55,125 @@ import SelectionOverrides from 'tinymce/core/SelectionOverrides';
  * ed.render();
  */
 
+export type AnyFunction = (...x: any[]) => any;
+
 export interface Editor {
+  $: any;
+  baseURI: any;
+  bodyElement: HTMLElement;
+  bookmark: any;
+  buttons: any;
+  composing: boolean;
+  container: HTMLElement;
+  contentAreaContainer: any;
+  contentCSS: any;
+  contentDocument: Document;
+  contentStyles: any;
+  contentWindow: Window;
+  contextToolbars: any;
+  delegates: any;
+  destroyed: boolean;
+  documentBaseURI: any;
+  documentBaseUrl: string;
+  dom: DOMUtils;
+  editorCommands: any;
+  editorContainer: any;
+  editorManager: any;
+  editorUpload: any;
+  formatter: any;
+  formElement: HTMLElement;
+  formEventDelegate: any;
+  hasHiddenInput: boolean;
+  hasVisual: boolean;
+  hidden: boolean;
+  id: string;
+  iframeElement: any;
+  iframeHTML: string;
+  initialized: boolean;
+  inline: boolean;
+  isNotDirty: boolean;
+  loadedCSS: any;
+  menuItems: any;
+  notificationManager: any;
+  orgDisplay: string;
+  orgVisibility: string;
+  parser: any;
+  plugins: any;
+  quirks: any;
+  readonly: boolean;
+  removed: boolean;
+  rtl: boolean;
+  schema: Schema;
   selection: Selection;
+  serializer: any;
+  settings: Record<string, any>;
+  shortcuts: any;
+  startContent: string;
+  suffix: string;
+  targetElm: HTMLElement;
+  theme: any;
+  undoManager: any;
+  validate: boolean;
+  windowManager: any;
+  _beforeUnload: AnyFunction;
+  _eventDispatcher: any;
+  _mceOldSubmit: any;
+  _nodeChangeDispatcher: any;
+  _pendingNativeEvents: any;
   _selectionOverrides: SelectionOverrides;
-  [key: string]: any;
+  _skinLoaded: boolean;
+
+  addButton(name: string, settings): void;
+  addCommand(name: string, callback, scope?: object): void;
+  addContextToolbar(predicate, items): void;
+  addMenuItem(name: string, settings): void;
+  addQueryStateHandler(name: string, callback, scope?: object): void;
+  addQueryValueHandler(name: string, callback, scope?: object): void;
+  addShortcut(pattern: string, desc: string, cmdFunc, scope?: object): void;
+  addSidebar(name: string, settings): void;
+  addVisual(elm?): void;
+  bindPendingEventDelegates(): void;
+  convertURL(url: string, name: string, elm?): string;
+  destroy(automatic?: boolean): void;
+  execCallback(name: string, ...x: any[]): any;
+  execCommand(cmd: string, ui?: boolean, value?: any, args?): any;
+  fire(name: string, args?, bubble?: boolean): any;
+  focus(skipFocus?: boolean): any;
+  getBody(): HTMLElement;
+  getContainer(): HTMLElement;
+  getContent(args?: EditorContent.GetContentArgs): EditorContent.Content;
+  getContentAreaContainer(): HTMLElement;
+  getDoc(): Document;
+  getElement(): HTMLElement;
+  getLang(name: string, defaultVal): any;
+  getParam(name: string, defaultVal?: any, type?: string): any;
+  getWin(): Window;
+  hasEventListeners(name: string): boolean;
+  hide(): void;
+  insertContent(content, args?): void;
+  isDirty(): boolean;
+  isHidden(): boolean;
+  load(args?): string;
+  nodeChanged(args?): void;
+  off(name: string, callback?): any;
+  on(name: string, callback, prepend?): any;
+  once(name: string, callback): any;
+  queryCommandState(cmd: string): boolean;
+  queryCommandSupported(cmd: string): boolean;
+  queryCommandValue(cmd: string): any;
+  remove(): void;
+  render(): void;
+  save(args?): void;
+  setContent(content: EditorContent.Content, args?: EditorContent.SetContentArgs): void;
+  setDirty(state: boolean): void;
+  setMode(mode: string): void;
+  setProgressState(state: boolean, time?: number): void;
+  show(): void;
+  toggleNativeEvent(name: string, state): void;
+  translate(text: string): string;
+  unbindAllNativeEvents(): void;
+  uploadImages(callback): void;
+  _scanForImages(): void;
 }
 
 // Shorten these names
@@ -85,10 +199,8 @@ const ie = Env.ie;
  */
 export const Editor = function (id, settings, editorManager) {
   const self = this;
-  let documentBaseUrl, baseUri;
-
-  documentBaseUrl = self.documentBaseUrl = editorManager.documentBaseURL;
-  baseUri = editorManager.baseURI;
+  const documentBaseUrl = self.documentBaseUrl = editorManager.documentBaseURL;
+  const baseUri = editorManager.baseURI;
 
   /**
    * Name/value collection with editor settings.
@@ -240,6 +352,16 @@ Editor.prototype = {
   },
 
   /**
+   * Returns true/false if the editor has real keyboard focus.
+   *
+   * @method hasFocus
+   * @return {Boolean} Current focus state of the editor.
+   */
+  hasFocus () {
+    return EditorFocus.hasFocus(this);
+  },
+
+  /**
    * Executes a legacy callback. This method is useful to call old 2.x option callbacks.
    * There new event model is a better way to add callback so this method might be removed in the future.
    *
@@ -247,7 +369,7 @@ Editor.prototype = {
    * @param {String} name Name of the callback to execute.
    * @return {Object} Return value passed from callback function.
    */
-  execCallback (name) {
+  execCallback (name, ...x: any[]) {
     const self = this;
     let callback = self.settings[name], scope;
 
@@ -1046,7 +1168,7 @@ Editor.prototype = {
   addVisual (elm) {
     const self = this;
     const settings = self.settings;
-    const dom = self.dom;
+    const dom: DOMUtils = self.dom;
     let cls;
 
     elm = elm || self.getBody();
@@ -1072,7 +1194,7 @@ Editor.prototype = {
           return;
 
         case 'A':
-          if (!dom.getAttrib(elm, 'href', false)) {
+          if (!dom.getAttrib(elm, 'href')) {
             value = dom.getAttrib(elm, 'name') || elm.id;
             cls = settings.visual_anchor_class || 'mce-item-anchor';
 
