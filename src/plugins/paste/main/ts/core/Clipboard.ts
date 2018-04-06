@@ -36,7 +36,6 @@ const pasteHtml = (editor: Editor, html: string, internalFlag: boolean) => {
   const args = ProcessFilters.process(editor, InternalHtml.unmark(html), internal);
 
   if (args.cancelled === false) {
-    // SmartPaste.insertContent(editor, args.content);
     editor.insertContent(args.content, {merge: editor.settings.paste_merge_formats !== false, data: {paste: true}});
   }
 };

@@ -190,6 +190,30 @@ const verifyNotPullingDefault = (element, getInfoIfPresentFn: GetInfoIfPresentFn
 };
 
 /**
+ * Adjusts the TinyMCE guess if it is needed, there are two times when we need to do this.
+ * 1 - There is exactly one child and it has the font specified, we need to respect that
+ * 2 - TinyMCE finds no font but then reports the default font for the editor see: verifyNotPullingDefault
+ * @param {DocumentFragment} fragment - The selection fragment
+ * @param {HTMLElement} element - The element to verify the font from
+ * @param {FontInfo} tinymceGuess - the original TinyMCE guess
+ * @param bForFamily - whether we're adjusting for a font family or font size
+ * @returns {FontInfo} the adjusted font info
+ */
+const adjustTinyMCEGuessIfNeeded = (fragment, element, tinymceGuess, bForFamily) => {
+  let fontInfo: FontInfo = tinymceGuess;
+  const hasInfoFn = bForFamily ? hasFamilyInfo : hasSizeInfo;
+  // If the selection only has one node make sure we are not using the common ancestor
+  if (fragment && fragment.childNodes.length === 1 && hasInfoFn(fragment.childNodes[0])) {
+    // If there is only one child node in the fragments use the font off of that instead of the current node.
+    fontInfo = bForFamily ? getFamilyInfo(fragment.childNodes[0]) : getSizeInfo(fragment.childNodes[0]);
+  } else {
+    const getIfPresentFn = bForFamily ? getFamilyInfoIfPresent : getSizeInfoIfPresent;
+    fontInfo = verifyNotPullingDefault(element, getIfPresentFn, fontInfo);
+  }
+  return fontInfo;
+};
+
+/**
  * Initial determination of the font family
  * @param {tinymce.Editor} editor - the editor
  * @param {DocumentFragment} fragment - The selection fragment
@@ -197,14 +221,7 @@ const verifyNotPullingDefault = (element, getInfoIfPresentFn: GetInfoIfPresentFn
  */
 const initialFontFamily = (editor, fragment, element): IInitialFontInfo => {
   // Start with what TinyMCE thinks to be the current font family
-  let fontInfo = editor.queryCommandValue('fontname');
-  // If the selection only has one node make sure we are not using the common ancestor
-  if (fragment && fragment.childNodes.length === 1) {
-    // If there is only one child node in the fragments use the font off of that instead of the current node.
-    fontInfo = getFamilyInfoIfPresent(fragment.childNodes[0], fontInfo);
-  } else {
-    fontInfo = verifyNotPullingDefault(element, getFamilyInfoIfPresent, fontInfo);
-  }
+  const fontInfo: FontInfo = adjustTinyMCEGuessIfNeeded(fragment, element, editor.queryCommandValue('fontname'), true);
   return {fontInfo, bCameFromElement: false};
 };
 
@@ -217,7 +234,7 @@ const initialFontFamily = (editor, fragment, element): IInitialFontInfo => {
  */
 const initialFontSize = (editor, fragment, element): IInitialFontInfo => {
   // Start with what TinyMCE thinks to be the current font size
-  let fontInfo = editor.queryCommandValue('fontsize');
+  let fontInfo: FontInfo = editor.queryCommandValue('fontsize');
   let bCameFromElement = false;
   // Sometimes after applying styles our selection isn't perfect so queryCommandValue doesn't
   // work as expected. Check to see if this is a <span> and try to get the font size there.
@@ -226,10 +243,8 @@ const initialFontSize = (editor, fragment, element): IInitialFontInfo => {
   if (element && $(element).is('span') && hasSizeInfo(element)) {
     fontInfo = getSizeInfo(element);
     bCameFromElement = true;
-  } else if (fragment && fragment.childNodes.length === 1) {
-    fontInfo = getSizeInfoIfPresent(fragment.childNodes[0], fontInfo);
   } else {
-    fontInfo = verifyNotPullingDefault(element, getSizeInfoIfPresent, fontInfo);
+    fontInfo = adjustTinyMCEGuessIfNeeded(fragment, element, fontInfo, false);
   }
   return {fontInfo, bCameFromElement};
 };
