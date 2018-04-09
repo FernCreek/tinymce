@@ -58,7 +58,6 @@ const getTableAlignment = ($table) => {
   }
   return align;
 };
-
 // Gets the table cells text alignment, uses the fallback attribute if not present
 const getCellTextAlignmentStyle = ($cells, style, fallbackAttr): string => {
   let alignment = '';
@@ -76,6 +75,7 @@ const getTableCellsVerticalTextAlignment = ($cells) => getCellTextAlignmentStyle
 // Background color util functions
 //////////////////////////////////////////////////////////////////////////
 
+// Gets the background color off the given selector if present
 const getBackgroundColorIfPresent = ($element) => {
   let color = '';
   if ($element && $element.length) {
@@ -84,7 +84,6 @@ const getBackgroundColorIfPresent = ($element) => {
   }
   return color;
 };
-
 // Gets the table background color
 const getTableBackgroundColor = ($table) => {
   let color;
@@ -96,11 +95,11 @@ const getTableBackgroundColor = ($table) => {
   }
   return color;
 };
-
 // Gets the table cells background color
 const getTableCellsBackgroundColor = ($cells) => getBackgroundColorIfPresent($cells);
 
 export {
   getNumFromPxString, countTableRows, countTableColumns,
   getTableAlignment, getTableBackgroundColor,
-  getTableCellsBackgroundColor, getTableCellsTextAlignment, getTableCellsVerticalTextAlignment};
+  getTableCellsBackgroundColor, getTableCellsTextAlignment, getTableCellsVerticalTextAlignment
+};
