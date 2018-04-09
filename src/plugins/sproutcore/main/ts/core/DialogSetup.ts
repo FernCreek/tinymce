@@ -74,7 +74,7 @@ const setupLinkPropertiesDialog = (editor) => {
 const setupImagePropertiesDialog = (editor, owner) => {
   const selectedNode = editor.selection.getNode(), controller = TinySC.insertImageController;
   // Sets edit specific information on the controller
-  const setupImageControllerForEdit = (imageNode, controller) => {
+  const setupImageControllerForEdit = () => {
     // Set this false to so the controller does not update width/height properties while we are setting them.
     controller.set('maintainAspectRatio', false);
     controller.beginPropertyChanges().set('fileSelected', true).set('node', selectedNode);
@@ -96,7 +96,7 @@ const setupImagePropertiesDialog = (editor, owner) => {
     controller.set('maintainAspectRatio', controller.get('scaledPercentWidth') === controller.get('scaledPercentHeight'));
   };
 
-  selectedNode.tagName === 'IMG' ? setupImageControllerForEdit(selectedNode, controller) : controller.set('insertMode', true);
+  selectedNode.tagName === 'IMG' ? setupImageControllerForEdit() : controller.set('insertMode', true);
 
   const delegate = controller.get('delegate');
   if (delegate) {

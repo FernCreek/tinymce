@@ -44,7 +44,7 @@ const setJSONAlignmentBgColor = (plugin, $cells, json) => {
 // Sets the JSON margins
 const setJSONMargins = (marginsArray, json) =>
   json.cellMargins = orderedMarginNames.reduce((margins, str, idx) => Object.assign(margins, makeKVP(str, marginsArray[idx])), {});
-// Sets the JSON border stylye
+// Sets the JSON border style
 const setJSONBorderStyle = (borderStyle, json) => {
   json.borderStyle = borderStyle.style;
   if (borderStyle.commonColor) {
