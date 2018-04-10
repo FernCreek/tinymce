@@ -64,47 +64,45 @@ const handleImage = (element) => {
   return onImage;
 };
 
+// Interface used to describe an alignment queryy
+interface IAlignmentQuery  {
+  isAligned: () => boolean; // The check for the alignment
+  alignment: string; // The alignment value if the query result is true
+}
+
+// Performs the given queries to determine the alignment information (the last alignment string and the number matched)
+const getAlignments = (queries: IAlignmentQuery[]) => {
+  const reducer = ([lastAlignment, count], query: IAlignmentQuery) => {
+    if (query.isAligned()) {
+      lastAlignment = query.alignment;
+      ++count;
+    }
+    return [lastAlignment, count];
+  };
+  return queries.reduce(reducer, ['', 0]);
+};
+
 // Gets the alignment information for an image
 const getImageAlignments = (element) => {
-  let lastAlignment = '', alignmentCount = 0;
   const $element = $(element);
   const floatValue = $element.css('float');
-  if (floatValue === 'left') {
-    lastAlignment = 'left';
-    ++alignmentCount;
-  }
-  if (floatValue === 'right') {
-    lastAlignment = 'right';
-    ++alignmentCount;
-  }
-  if (floatValue === 'none' && $element[0].style['margin-left'] === 'auto' &&
-    $element[0].style['margin-right'] === 'auto') {
-    lastAlignment = 'center';
-    ++alignmentCount;
-  }
-  return [lastAlignment, alignmentCount];
+  return getAlignments([
+    { isAligned: () => floatValue === 'left', alignment: 'left'},
+    { isAligned: () => floatValue === 'right', alignment: 'right'},
+    { isAligned: () =>
+        floatValue === 'none' && $element[0].style['margin-left'] === 'auto' && $element[0].style['margin-right'] === 'auto',
+      alignment: 'center'},
+  ]);
 };
 
 // Get text alignments
 const getTextAlignments = (editor) => {
-  let lastAlignment = '', alignmentCount = 0;
-  if (editor.queryCommandState('justifyleft')) {
-    lastAlignment = 'left';
-    ++alignmentCount;
-  }
-  if (editor.queryCommandState('justifycenter')) {
-    lastAlignment = 'center';
-    ++alignmentCount;
-  }
-  if (editor.queryCommandState('justifyright')) {
-    lastAlignment = 'right';
-    ++alignmentCount;
-  }
-  if (editor.queryCommandState('justifyfull')) {
-    lastAlignment = 'justify';
-    ++alignmentCount;
-  }
-  return [lastAlignment, alignmentCount];
+  return getAlignments([
+    { isAligned: () => editor.queryCommandState('justifyleft'), alignment: 'left'},
+    { isAligned: () => editor.queryCommandState('justifycenter'), alignment: 'center'},
+    { isAligned: () => editor.queryCommandState('justifyright'), alignment: 'right'},
+    { isAligned: () => editor.queryCommandState('justifyfull'), alignment: 'justify'},
+  ]);
 };
 
 // Handles determining and signaling the alignment information
