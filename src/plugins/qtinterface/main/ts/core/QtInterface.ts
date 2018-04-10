@@ -7,6 +7,14 @@
 import {getJQueryBody, SPTinyMCEInterface, findClosestAnchorNode, findChildAnchorNode} from 'shims/sptinymceinterface';
 
 //////////////////////////////////////////////////////////////////////////
+// Utility function to apply css to the editor body
+//////////////////////////////////////////////////////////////////////////
+const applyCSS = (cssPairs) => {
+  const $editorBody = getJQueryBody();
+  cssPairs.forEach(([key, value]) => $editorBody.css(key, value));
+};
+
+//////////////////////////////////////////////////////////////////////////
 // Editor configuration settings
 //////////////////////////////////////////////////////////////////////////
 
@@ -22,17 +30,18 @@ let widthSetting = -1;
 const applyPalette = () => {
   const [textColor, windowColor] = bReadOnly ? [textReadOnlyColor, windowReadOnlyColor] : [textEditColor, windowEditColor];
   if (textColor && windowColor) {
-    const $editorBody = getJQueryBody();
-    $editorBody.css('color', textColor);
-    $editorBody.css('background-color', windowColor);
+    applyCSS([
+      ['color', textColor],
+      ['background-color', windowColor]
+    ]);
   }
 };
-
 // Applies the width and overflow to the editor
 const applyWidth = (widthStr, overflowStr) => {
-  const $editorBody = getJQueryBody();
-  $editorBody.css('width', widthStr);
-  $editorBody.css('overflow', overflowStr);
+  applyCSS([
+    ['width', widthStr],
+    ['overflow', overflowStr]
+  ]);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -42,9 +51,10 @@ const applyWidth = (widthStr, overflowStr) => {
 // Loads the default font settings
 const loadDefaultFont = (fontJSON) => {
   const {family, ptSize} = fontJSON;
-  const $editorBody = getJQueryBody();
-  $editorBody.css('font-family', family);
-  $editorBody.css('font-size', `${ptSize}pt`);
+  applyCSS([
+    ['font-family', family],
+    ['font-size', `${ptSize}pt`]
+  ]);
 };
 // Loads the palette settings
 const loadPalette = (windowEdit, windowReadOnly, textEdit, textReadOnly) => {
@@ -118,9 +128,11 @@ const activateLink = (target) => {
 
 // Helper function to escape a regular expression
 const escapeRegEg = (str) => str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, '\\$1');
+// Applies the given fn to each image found in the editor
+const forEachImage = (fn) => getJQueryBody().find('img').each(fn);
 // Reloads a provided image in the editor by cachebustering the image
 const reloadImage = (editor, imgSrc) => {
-  getJQueryBody().find('img').each((i, img) => {
+  forEachImage((i, img) => {
     const $img = $(img), src = $img.attr('src');
     const idx = src.indexOf(imgSrc);
     if (idx !== -1 && src.substr(idx) === imgSrc) {
@@ -139,7 +151,7 @@ const detectImagesLoaded = (editor) => {
     }
   };
 
-  getJQueryBody().find('img').each((i, img) => {
+  forEachImage((i, img) => {
     const tmpImg = new Image();
     tmpImg.onload = () => waitImgDone(tmpImg, false);
     tmpImg.onerror = () => waitImgDone(tmpImg, true);

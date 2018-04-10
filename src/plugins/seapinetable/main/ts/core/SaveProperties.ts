@@ -17,10 +17,10 @@ import Env from 'tinymce/core/api/Env';
 //////////////////////////////////////////////////////////////////////////
 
 // Applies the old table attributes previously used as new styles
+// Note: This only applies the changes if the old attribute is actually present
 const translateOldTableProperties = ($table) => {
-  // Apply the old attributes in the new styling
-  // Note: Only make apply the changes if the old attribute is actually present
   if ($table) {
+    // Parses a numerical attribute value if the attribute is present
     const parseAttrIfPresent = (attrName) => {
       let attrValue = $table.attr(attrName);
       if (attrValue) {
@@ -29,9 +29,15 @@ const translateOldTableProperties = ($table) => {
       return attrValue;
     };
 
-    // Handle cell spacing
-    const cellSpacing = parseAttrIfPresent('cellSpacing');
-    if (cellSpacing !== undefined) {
+    // Attempts to parse an old attribute, if it is present applies the translation  function
+    const translateAttr = (attrName, translateFn) => {
+      const attrValue = parseAttrIfPresent(attrName);
+      if (attrValue !== undefined) { translateFn(attrValue); }
+      $table.removeAttr(attrName);
+    };
+
+    // Translates cell spacing
+    const translateCellSpacing = (cellSpacing) => {
       if (cellSpacing === 0) {
         $table.css('border-collapse', 'collapse');
         $table.css('border-spacing', '');
@@ -39,26 +45,28 @@ const translateOldTableProperties = ($table) => {
         $table.css('border-collapse', 'separate');
         $table.css('border-spacing', `${cellSpacing}px`);
       }
-      $table.removeAttr('cellSpacing');
-    }
+    };
 
-    // Handle cell padding
-    const cellPadding = parseAttrIfPresent('cellPadding');
-    if (cellPadding !== undefined) {
+    // Translates cell padding
+    const translateCellPadding = (cellPadding) => {
       const margins: ICellMargins = {left: cellPadding, top: cellPadding, bottom: cellPadding, right: cellPadding};
       applyTableMargins(margins, $table);
-      $table.removeAttr('cellPadding');
-    }
+    };
 
-    // Handle border width
-    const borderWidth = parseAttrIfPresent('border');
-    if (borderWidth !== undefined) {
+    // Translates border width
+    const translateBorderWidth = (borderWidth) => {
       const border: IBorder = {width: borderWidth, color: '#000000'};
       $table.find('td').css('border', getCSSForBorder(border));
-      $table.removeAttr('border');
       $table.css('border-style', '');
-    }
+    };
 
+    const translations = {
+      cellSpacing: translateCellSpacing,
+      cellPadding: translateCellPadding,
+      border: translateBorderWidth
+    };
+
+    Object.keys(translations).forEach((key) => translateAttr(key, translations[key]));
     $table.removeAttr('data-mce-style');
     $table.addClass('mce-item-table');
   }

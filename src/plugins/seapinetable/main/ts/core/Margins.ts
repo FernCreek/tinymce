@@ -239,4 +239,5 @@ const applyCellMargins = (margins: ICellMargins, $cell) => {
 export {
   applyTableMargins, applyRowMargins, applyCellMargins,
   getTableMarginsArray, getRowMarginsArray, getElementMarginsArray,
-  doesCellOverrideMargins, isPaddingExplicitlySet};
+  doesCellOverrideMargins, isPaddingExplicitlySet
+};

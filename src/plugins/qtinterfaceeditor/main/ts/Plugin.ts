@@ -8,23 +8,12 @@
  */
 import PluginManager from 'tinymce/core/api/PluginManager';
 import {get} from 'shims/sptinymceinterface';
-import {unlink, selectLink, requestOpenLink, requestInsertEditLink, insertLink} from './core/Link';
-import {
-  insertHorizontalRule, bulletList, numberList, undo, redo, selectAll, deleteSelection,
-  editorResized
-} from './core/Misc';
-import {fireTableCommand, insertOrSaveTable, requestTableProperties, requestRowProperties, setRowProperties, requestCellProperties, setCellProperties} from './core/Table';
-import {insertImage, requestEditImage, setEditImage, setEditImageSize} from './core/Image';
-import {bypassCutCopyEvents, bypassDragEvents, handleInternalDrop, insertHTML, insertText, pasteHTML, pasteText} from './core/Content';
-import {
-  clearFormatting,
-  decreaseIndent, increaseIndent, loadDefaultFont, setAlign, setFont, setFontColor, setFontFamily, setFontSize,
-  setHilightColor,
-  toggleBold,
-  toggleItalic,
-  toggleStrikethrough,
-  toggleUnderline
-} from './core/Format';
+import * as Links from './core/Link';
+import * as Misc from './core/Misc';
+import * as Table from './core/Table';
+import * as Image from './core/Image';
+import * as Content from './core/Content';
+import * as Formatting from './core/Format';
 import {nodeChanged} from './core/NodeChanged';
 
 PluginManager.add('qtinterfaceeditor', function (editor) {
@@ -33,55 +22,17 @@ PluginManager.add('qtinterfaceeditor', function (editor) {
   const applyEditorArg = (fn) => (...args) => fn(editor, ...args);
   const applyEditorArgToObj = (obj) => Object.keys(obj).reduce((objApp, key) => Object.assign(objApp, ({[key]: applyEditorArg(obj[key])})), {});
   // Link handlers
-  const links = applyEditorArgToObj({
-    unlink,
-    selectLink,
-    requestOpenLink,
-    requestInsertEditLink,
-    insertLink
-  });
+  const links = applyEditorArgToObj(Links);
   // Small misc handlers, not really specific
-  const misc = applyEditorArgToObj({
-    insertHorizontalRule,
-    bulletList,
-    numberList,
-    undo,
-    redo,
-    selectAll,
-    deleteSelection,
-    editorResized,
-    nodeChanged
-  });
+  const misc = applyEditorArgToObj(Object.assign({}, Misc, {nodeChanged}));
   // Table handlers
-  const table = applyEditorArgToObj({
-    fireTableCommand,
-    insertOrSaveTable,
-    requestTableProperties,
-    requestRowProperties,
-    setRowProperties,
-    requestCellProperties,
-    setCellProperties
-  });
+  const table = applyEditorArgToObj(Table);
   // Image handlers
-  const image = Object.assign(applyEditorArgToObj({
-    insertImage, setEditImageSize, setEditImage
-  }), {requestEditImage});
+  const image = Object.assign({}, applyEditorArgToObj(Image), {requestEditImage: Image.requestEditImage});
   // Content manipulation handlers
-  const content =  applyEditorArgToObj({
-    bypassDragEvents,
-    handleInternalDrop,
-    bypassCutCopyEvents,
-    pasteText,
-    pasteHTML,
-    insertText,
-    insertHTML
-  });
+  const content =  applyEditorArgToObj(Content);
   // Formatting handlers
-  const formatting = Object.assign(applyEditorArgToObj({
-    toggleBold, toggleItalic, toggleUnderline, toggleStrikethrough,
-    decreaseIndent, increaseIndent, clearFormatting,
-    setFontColor, setHilightColor , setFont, setFontFamily, setFontSize, setAlign
-  }), {loadDefaultFont});
+  const formatting = Object.assign({}, applyEditorArgToObj(Formatting), {loadDefaultFont: Formatting.loadDefaultFont});
   return Object.assign({}, links, misc, table, image, content, formatting);
 });
 

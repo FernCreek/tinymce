@@ -8,30 +8,18 @@
  */
 import PluginManager from 'tinymce/core/api/PluginManager';
 import {get} from 'shims/sptinymceinterface';
-import {
-  activateLink, clearFixedWidthEditor, detectImagesLoaded,
-  disableOnDragStart, escapeRegEg, findChildAnchorNode, findClosestAnchorNode, loadDefaultFont,
-  loadPalette, reloadImage, setFixedWidthEditor, setReadOnly
-} from './core/QtInterface';
+import * as QtInterface from './core/QtInterface';
 
 PluginManager.add('qtinterface', function (editor) {
   // Expose the global SPTinyMCEInterface object after the editor has been initialized
   editor.on('init', () => get());
   const applyEditorArg = (fn) => (...args) => fn(editor, ...args); // Apply the editor as an argument
-  return {
-    loadDefaultFont,
-    loadPalette,
-    disableOnDragStart,
-    findClosestAnchorNode,
-    findChildAnchorNode,
-    activateLink,
-    escapeRegEg,
-    reloadImage,
-    detectImagesLoaded: applyEditorArg(detectImagesLoaded),
-    setFixedWidthEditor,
-    clearFixedWidthEditor,
-    setReadOnly: applyEditorArg(setReadOnly)
+  // These methods need to have the editor object applied
+  const editorFns = {
+    detectImagesLoaded: applyEditorArg(QtInterface.detectImagesLoaded),
+    setReadOnly: applyEditorArg(QtInterface.setReadOnly)
   };
+  return Object.assign({}, QtInterface, editorFns);
 });
 
 export default function () { }
