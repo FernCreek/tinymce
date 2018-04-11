@@ -25,7 +25,7 @@ const tableBorderNames = rowBorderNames.concat('horizontal');
 // Gets a border from the provided JSON border information
 const getBorderFromJSON = (jsonBorder) => !!jsonBorder ? {width: jsonBorder.width, color: jsonBorder.color} : {width: 0, color: ''};
 // Makes a key value pair object from the given key and value
-const makeKVP = (str, border) => ({[str]: border});
+const makeKVP = (str, value) => ({[str]: value});
 // Makes a border interface from the JSON border information
 const makeBorderInterfaceFromJSON = (borderNames, jsonBorders) => {
   const safeBorderObj = !!jsonBorders ? jsonBorders : {};
