@@ -11,6 +11,16 @@
 import { Arr, Fun, Obj, Option, Strings, Struct, Type } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
 import Tools from './api/util/Tools';
+import { Editor } from 'tinymce/core/api/Editor';
+
+export interface ParamTypeMap {
+  'hash': Record<string, string>;
+  'string': string;
+  'number': number;
+  'boolean': boolean;
+  'string[]': string[];
+  'array': any[];
+}
 
 const sectionResult = Struct.immutable('sections', 'settings');
 const detection = PlatformDetection.detect();
@@ -72,7 +82,6 @@ const getDefaultSettings = function (id, documentBaseUrl, editor) {
     font_size_legacy_values: 'xx-small,small,medium,large,x-large,xx-large,300%',
     forced_root_block: 'p',
     hidden_input: true,
-    padd_empty_editor: true,
     render_ui: true,
     indentation: '30px',
     inline_styles: true,
@@ -178,7 +187,9 @@ const getParamObject = (value: string) => {
   return output;
 };
 
-const getParam = (editor, name: string, defaultVal?: any, type?: string) => {
+const isArrayOf = (p: (a: any) => boolean) => (a: any) => Type.isArray(a) && Arr.forall(a, p);
+
+const getParam = (editor: Editor, name: string, defaultVal?: any, type?: string) => {
   const value = name in editor.settings ? editor.settings[name] : defaultVal;
 
   if (type === 'hash') {
@@ -193,6 +204,8 @@ const getParam = (editor, name: string, defaultVal?: any, type?: string) => {
     return getFiltered(Type.isObject, editor, name).getOr(defaultVal);
   } else if (type === 'array') {
     return getFiltered(Type.isArray, editor, name).getOr(defaultVal);
+  } else if (type === 'string[]') {
+    return getFiltered(isArrayOf(Type.isString), editor, name).getOr(defaultVal);
   } else if (type === 'function') {
     return getFiltered(Type.isFunction, editor, name).getOr(defaultVal);
   } else {

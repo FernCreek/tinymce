@@ -1477,7 +1477,7 @@ export function DOMUtils(doc: Document, settings: Partial<DOMUtilsSettings> = {}
           if (element) {
             const walker = new TreeWalker(element, element);
             while (walker.current()) {
-              updateInternalStyleAttr(this, this.$$(walker.current()));
+              updateInternalStyleAttr(styles, this.$$(walker.current()));
               walker.next();
             }
           }

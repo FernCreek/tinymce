@@ -12,12 +12,12 @@ import Commands from './api/Commands';
 import {get} from 'shims/tinysc';
 
 PluginManager.add('sproutcore', function (editor) {
+  // Expose the global TinySC object after the editor has been initialized
+  editor.on('init', () => get());
   // Create the Sproutcore window manager
   WindowManager.createWindowManager();
   // Register the Sproutcore plugin commands
   Commands.register(editor);
-  // Expose the global TinySC object after the editor has been initialized
-  editor.on('init', () => get());
   // Expose open and close dialog methods
   return { openDialog: Commands.openDialog, closeDialog: Commands.closeDialog };
 });
