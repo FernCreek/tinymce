@@ -100,7 +100,7 @@ const trimHTML = (editor, strHTML) =>
   editor.plugins.pasteplugin.Utils.trimHtml(strHTML) : strHTML;
 // Recursively removes comment nodes from the given node and its children
 const removeCommentNodes = (node) => {
-  const childNodes = node.childNodes;
+  const childNodes = Array.from(node.childNodes);
   if (node.nodeType === Node.COMMENT_NODE) {
     $(node).remove();
   }
@@ -134,12 +134,12 @@ const putContentInEditor = (editor, str, asHTML, bShouldCollapse) => {
       editor.selection.collapse();
     }
     if (asHTML) {
-      editor.execCommand('mceInsertClipboardContent', false, {text: str});
-    } else {
       editor.execCommand('mceInsertClipboardContent', false, {content: trimHTML(editor, str)});
       removeCommentsFromContent();
       removeAppleSpace(editor);
       removeImageMargins();
+    } else {
+      editor.execCommand('mceInsertClipboardContent', false, {text: str});
     }
   });
 };
