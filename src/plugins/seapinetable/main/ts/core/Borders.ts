@@ -193,7 +193,7 @@ const getTableLeftRightVerticalBorder = ($table, borderStr) => {
   return border;
 };
 
-// Get vertical border for the table
+// Get horizontal border for the table
 const getTableHorizontalBorder = ($table) => {
   let border: IBorder = DefaultBorder;
   const {rowBorder, $rows} = getFirstBorderAndRowsFromTable($table, 'bottom');
