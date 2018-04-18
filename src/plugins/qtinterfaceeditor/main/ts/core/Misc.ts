@@ -4,8 +4,8 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-import {EditorCache} from "./Cache";
-import {SPTinyMCEInterface} from "shims/sptinymceinterface";
+import {EditorCache} from './Cache';
+import {SPTinyMCEInterface} from 'shims/sptinymceinterface';
 
 // Inserts a horizontal rule
 const insertHorizontalRule = (editor) => editor.execCommand('InsertHorizontalRule', false, true);
