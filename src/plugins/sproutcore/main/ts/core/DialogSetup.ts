@@ -50,7 +50,7 @@ const setupLinkPropertiesDialog = (editor) => {
   const tmpDiv = document.createElement('div');
   tmpDiv.innerHTML = editor.selection.getContent({format: 'html'});
 
-  controller.set('insertMode', !!anchorNode);
+  controller.set('insertMode', !anchorNode);
   anchorNode ?
     editor.selection.select(anchorNode) : // Select the anchor node, in case it was a parent of the actual selection.
     anchorNode = TinySC.Utils.findChildAnchorNode($(tmpDiv)); // Find a child anchor node, so we can populate the dialog with its href.

@@ -33,10 +33,10 @@ const requestInsertEditLink = (editor) => {
   let anchorNode = findClosestLinkFromSelection(editor);
   const tmpDiv = document.createElement('div');
   tmpDiv.innerHTML = editor.selection.getContent({format: 'html'});
-  const insertMode = !!anchorNode;
-  if (insertMode) {
-    anchorNode = findChildAnchorNode($(tmpDiv));
-  }
+  const insertMode = !anchorNode;
+  anchorNode ?
+    editor.selection.select(anchorNode) : // Select the anchor node, in case it was a parent of the actual selection.
+    anchorNode = findChildAnchorNode($(tmpDiv)); // Find a child anchor node, so we can populate the dialog with its href.
 
   const displayText = editor.selection.getContent({format: 'text'});
   const displayTextEditable = $(tmpDiv).find('*').addBack().contents().filter(function () {
