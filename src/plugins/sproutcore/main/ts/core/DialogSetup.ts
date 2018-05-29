@@ -77,7 +77,7 @@ const setupImagePropertiesDialog = (editor, owner) => {
   const setupImageControllerForEdit = () => {
     // Set this false to so the controller does not update width/height properties while we are setting them.
     controller.set('maintainAspectRatio', false);
-    controller.beginPropertyChanges().set('fileSelected', true).set('node', selectedNode);
+    controller.beginPropertyChanges().set('fileSelected', true).set('node', selectedNode).set('insertMode', false);
     const propertyAttributes = [
       {prop: 'originalWidth', attr: 'data-mce-tinysc-original-width'},
       {prop: 'originalHeight', attr: 'data-mce-tinysc-original-height'},
