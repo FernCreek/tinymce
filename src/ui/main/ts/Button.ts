@@ -138,6 +138,12 @@ export default Widget.extend({
       textHtml = '<span class="' + prefix + 'txt">' + self.encode(text) + '</span>';
     }
 
+    const spIcon = settings.spIcon;
+    if (spIcon) {
+      textHtml = '<div class="' + spIcon + '"></div>';
+      icon = false;
+    }
+
     icon = icon ? prefix + 'ico ' + prefix + 'i-' + icon : '';
     ariaPressed = typeof settings.active === 'boolean' ? ' aria-pressed="' + settings.active + '"' : '';
 

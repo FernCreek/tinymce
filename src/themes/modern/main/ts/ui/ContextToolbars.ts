@@ -75,7 +75,7 @@ const userConstrain = function (handler, x, y, elementRect, contentAreaRect, pan
 };
 
 const addContextualToolbars = function (editor) {
-  let scrollContainer;
+  let scrollContainer, outerScrollContainers;
 
   const getContextToolbars = function () {
     return editor.contextToolbars || [];
@@ -205,27 +205,43 @@ const addContextualToolbars = function (editor) {
     };
   };
 
-  const bindScrollEvent = function (panel) {
-    if (!scrollContainer) {
+  const bindScrollEvent = function (panel, bForce = false) {
+    if (!scrollContainer || bForce) {
       const reposition = repositionHandler(true);
       const uiContainer = UiContainer.getUiContainer(panel);
 
-      scrollContainer = editor.selection.getScrollContainer() || editor.getWin();
+      scrollContainer =  editor.selection.getScrollContainer() || editor.getWin();
       DOM.bind(scrollContainer, 'scroll', reposition);
+      outerScrollContainers = editor.selection.getScrollContainers();
+      outerScrollContainers.forEach((outerContainer) => DOM.bind(outerContainer, 'scroll', reposition));
       DOM.bind(uiContainer, 'scroll', reposition);
 
       editor.on('remove', function () {
         DOM.unbind(scrollContainer, 'scroll', reposition);
+        outerScrollContainers.forEach((outerContainer) => DOM.unbind(outerContainer, 'scroll', reposition));
         DOM.unbind(uiContainer, 'scroll', reposition);
       });
     }
+  };
+
+  const unbindScrollEvent = function (panel) {
+    const reposition = repositionHandler(true);
+    const uiContainer = UiContainer.getUiContainer(panel);
+    DOM.unbind(scrollContainer, 'scroll', reposition);
+    outerScrollContainers.forEach((outerContainer) => DOM.unbind(outerContainer, 'scroll', reposition));
+    DOM.unbind(uiContainer, 'scroll', reposition);
   };
 
   const showContextToolbar = function (match) {
     let panel;
 
     if (match.toolbar.panel) {
-      match.toolbar.panel.show();
+      const panel = match.toolbar.panel;
+      panel.show();
+      if (panel.rebindNextShow) {
+        bindScrollEvent(panel, true);
+        panel.rebindNextShow = false;
+      }
       reposition(match);
       return;
     }
@@ -285,7 +301,7 @@ const addContextualToolbars = function (editor) {
 
   editor.on('click keyup setContent ObjectResized', function (e) {
     // Only act on partial inserts
-    if (e.type === 'setcontent' && !e.selection) {
+    if ((e.type === 'setcontent' && !e.selection) || !!editor.settings.scDialogActive) {
       return;
     }
 
@@ -313,7 +329,15 @@ const addContextualToolbars = function (editor) {
     }
   });
 
-  editor.on('ResizeEditor ResizeWindow', repositionHandler(true));
+  editor.on('ResizeEditor ResizeWindow', () => {
+    Tools.each(getContextToolbars(), function (toolbar) {
+      if (toolbar.panel) {
+        unbindScrollEvent(toolbar.panel);
+        toolbar.panel.rebindNextShow = true;
+      }
+    });
+    hideAllContextToolbars();
+  });
   editor.on('nodeChange', repositionHandler(false));
 
   editor.on('remove', function () {
@@ -332,6 +356,8 @@ const addContextualToolbars = function (editor) {
       match.toolbar.panel.items()[0].focus();
     }
   });
+
+  editor.addCommand('scHideContextToolbars', hideAllContextToolbars);
 };
 
 export default {

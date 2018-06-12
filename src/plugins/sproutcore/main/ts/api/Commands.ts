@@ -20,29 +20,33 @@ const isString = (val) => Tools.is(val, 'string');
  * @param {tinymce.Editor} editor - the editor
  * @param view - the dialog instance
  */
-const openDialog = (editor, view) => openCloseDialog(editor, view, Settings.getSCDialogOpen(editor), view.append);
+const openDialog = (editor, view) => openCloseDialog(editor, view, Settings.getSCDialogOpen(editor), true);
 /**
  * Closes a dialog according to the app specified method. Falls back to doing view.remove.
  * @param {tinymce.Editor} editor - the editor
  * @param view - the dialog instance
  */
-const closeDialog = (editor, view) => openCloseDialog(editor, view, Settings.getSCDialogClose(editor), view.remove);
+const closeDialog = (editor, view) => openCloseDialog(editor, view, Settings.getSCDialogClose(editor), false);
 /**
  * Opens or closes the given dialog view
  * @param {tinymce.Editor} editor - the editor
  * @param view - the dialog view
  * @param openCloseSetting - the open or close setting
- * @param fallbackFn - the fallback method to invoke use
+ * @param bOpen - whether we're opening or closing a dialog
  */
-const openCloseDialog = (editor, view, openCloseSetting, fallbackFn) => {
+const openCloseDialog = (editor, view, openCloseSetting, bOpen) => {
   let app, dialogFn;
   const appNameSpace = Settings.getSCAppNamespace(editor);
+  const fallbackFn = bOpen ? view.append : view.remove;
   if (isString(appNameSpace)) {
     app = window[appNameSpace];
   }
   if (app && isString(openCloseSetting)) {
     dialogFn = app[openCloseSetting];
   }
+  TinySC.ngFocusChange(editor, bOpen);
+  editor.settings.scDialogActive = bOpen;
+  editor.execCommand('scHideContextToolbars');
   app && dialogFn ? dialogFn.call(app, view) : fallbackFn();
 };
 

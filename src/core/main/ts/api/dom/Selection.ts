@@ -692,6 +692,18 @@ export const Selection = function (dom: DOMUtils, win: Window, serializer, edito
     return scrollContainer;
   };
 
+  const getScrollContainers = (): HTMLElement[] => {
+    const containers: HTMLElement[] = [];
+    let node = editor.getContainer();
+    while (node && node.nodeName !== 'BODY') {
+      if (node.scrollHeight > node.clientHeight) {
+        containers.push(node);
+      }
+      node = node.parentNode as HTMLElement;
+    }
+    return containers;
+  };
+
   const scrollIntoView = (elm: HTMLElement, alignToTop?: boolean) => ScrollIntoView.scrollElementIntoView(editor, elm, alignToTop);
   const placeCaretAt = (clientX: number, clientY: number) => setRng(CaretRangeFromPoint.fromPoint(clientX, clientY, editor.getDoc()));
 
@@ -733,6 +745,7 @@ export const Selection = function (dom: DOMUtils, win: Window, serializer, edito
     normalize,
     selectorChanged,
     getScrollContainer,
+    getScrollContainers,
     scrollIntoView,
     placeCaretAt,
     getBoundingClientRect,
