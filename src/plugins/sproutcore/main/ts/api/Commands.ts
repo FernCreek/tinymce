@@ -37,7 +37,7 @@ const closeDialog = (editor, view) => openCloseDialog(editor, view, Settings.get
 const openCloseDialog = (editor, view, openCloseSetting, bOpen) => {
   let app, dialogFn;
   const appNameSpace = Settings.getSCAppNamespace(editor);
-  const fallbackFn = bOpen ? view.append : view.remove;
+  const fallbackFn = bOpen ? view.append.bind(view) : view.remove.bind(view);
   if (isString(appNameSpace)) {
     app = window[appNameSpace];
   }
