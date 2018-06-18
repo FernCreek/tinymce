@@ -210,7 +210,7 @@ const addContextualToolbars = function (editor) {
       const reposition = repositionHandler(true);
       const uiContainer = UiContainer.getUiContainer(panel);
 
-      scrollContainer =  editor.selection.getScrollContainer() || editor.getWin();
+      scrollContainer = editor.selection.getScrollContainer() || editor.getWin();
       DOM.bind(scrollContainer, 'scroll', reposition);
       outerScrollContainers = editor.selection.getScrollContainers();
       outerScrollContainers.forEach((outerContainer) => DOM.bind(outerContainer, 'scroll', reposition));
