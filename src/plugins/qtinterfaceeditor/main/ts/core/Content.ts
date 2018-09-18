@@ -68,7 +68,9 @@ const getContent = (editor) => {
 const onCut = (editor) => {
   const {html, text} = getContent(editor);
   SPTinyMCEInterface.signalCopyToClipboard(html, text);
-  editor.execCommand('delete');
+  if (!editor.readonly) {
+    editor.execCommand('delete');
+  }
   return false; // Always returns false, so the cut event is killed
 };
 // Initiates a bypassed copy operation, allowing the host application to handle it instead of the browser
@@ -96,8 +98,8 @@ const bypassCutCopyEvents = (editor) => {
 
 // Uses the paste plugin util trimHTML function to trim the given HTML if possible
 const trimHTML = (editor, strHTML) =>
-  editor.plugins.pasteplugin && editor.plugins.pasteplugin.Utils && editor.plugins.pasteplugin.Utils.trimHtml ?
-  editor.plugins.pasteplugin.Utils.trimHtml(strHTML) : strHTML;
+  editor.plugins.paste && editor.plugins.paste.trimHtml ?
+    editor.plugins.paste.trimHtml(strHTML) : strHTML;
 // Recursively removes comment nodes from the given node and its children
 const removeCommentNodes = (node) => {
   const childNodes = Array.from(node.childNodes);

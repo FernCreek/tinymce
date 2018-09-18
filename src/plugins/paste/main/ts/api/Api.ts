@@ -9,11 +9,13 @@
  */
 
 import { Clipboard } from '../api/Clipboard';
+import Utils from '../core/Utils';
 
 const get = function (clipboard: Clipboard, quirks) {
   return {
     clipboard,
-    quirks
+    quirks,
+    trimHtml: Utils.trimHtml
   };
 };
 
