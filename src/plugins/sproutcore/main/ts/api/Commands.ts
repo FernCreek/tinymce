@@ -109,16 +109,12 @@ const pastePostProcess = (editor, evt) => {
 };
 
 /**
- * The currently stored bookmark
- */
-let bookmark;
-/**
  * Stores the current selection
  * @param {tinymce.Editor} editor - the editor
  */
 const storeSelection = (editor) => {
-  if (editor.selection && !bookmark) { // Only store the selection if we don't already have one
-    bookmark = editor.selection.getBookmark(2);
+  if (editor.selection && !editor.settings.bookmark) { // Only store the selection if we don't already have one
+    editor.settings.bookmark = editor.selection.getBookmark(2);
   }
 };
 /**
@@ -126,10 +122,10 @@ const storeSelection = (editor) => {
  * @param {tinymce.Editor} editor - the editor
  */
 const restoreSelection = (editor) => {
-  if (bookmark) {
-    editor.selection.moveToBookmark(bookmark);
+  if (editor.settings.bookmark) {
+    editor.selection.moveToBookmark(editor.settings.bookmark);
   }
-  bookmark = null; // After we restore the selection, remove the bookmark
+  editor.settings.bookmark = null; // After we restore the selection, remove the bookmark
 };
 
 /**
