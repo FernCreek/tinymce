@@ -8,6 +8,7 @@
  */
 let TinySC;
 function get() {
+  // @ts-ignore
   TinySC = (window as any).TinySC;
 }
 export { TinySC, get };

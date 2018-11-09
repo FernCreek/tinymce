@@ -30,7 +30,8 @@
     "@ephox/robin": "latest",
     "@ephox/sand": "latest",
     "@ephox/snooker": "latest",
-    "@ephox/sugar": "latest"
+    "@ephox/sugar": "latest",
+    "@types/jquery": "^3.3.22"
   },
   "devDependencies": {
     "@ephox/agar": "latest",

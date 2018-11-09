@@ -1,5 +1,5 @@
 /**
- * @file tinysc.ts
+ * @file jquery.ts
  * The shim for jquery, so that our code knows to use the version already loaded
  *
  * @copyright 2016-2018 Perforce Software, Inc. and its subsidiaries.

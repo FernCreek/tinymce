@@ -85,7 +85,8 @@ const getFirstBorderAndCellsFromRow = ($row, widthCSSStr, colorCSSStr) => {
   const $cells: any[] = Array.from($row.find('td'));
   const $firstCell = $($cells.shift());
   const width: string = getBorderWidthForCell($firstCell, widthCSSStr);
-  const color: string = $firstCell.css(colorCSSStr);
+  // @ts-ignore
+  const color: string = $firstCell.css(colorCSSStr) as string;
   return {width, color, $cells};
 };
 

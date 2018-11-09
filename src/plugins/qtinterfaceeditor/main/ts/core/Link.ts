@@ -40,7 +40,7 @@ const requestInsertEditLink = (editor) => {
 
   const displayText = editor.selection.getContent({format: 'text'});
   const displayTextEditable = $(tmpDiv).find('*').addBack().contents().filter(function () {
-    return this.nodeType !== Node.TEXT_NODE && this.tagName !== 'A';
+    return this.nodeType !== Node.TEXT_NODE && (this as any).tagName !== 'A';
   }).length === 0;
 
   insertMode ?

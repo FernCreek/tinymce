@@ -20,7 +20,7 @@ import ProcessFilters from './ProcessFilters';
 import Utils from './Utils';
 import { Editor } from 'tinymce/core/api/Editor';
 import { Cell } from '@ephox/katamari';
-import { DataTransfer, ClipboardEvent, HTMLImageElement, Range, Image, Event, DragEvent, navigator, KeyboardEvent } from '@ephox/dom-globals';
+import { DataTransfer, ClipboardEvent, Range, Event, DragEvent, navigator, KeyboardEvent } from '@ephox/dom-globals';
 
 declare let window: any;
 

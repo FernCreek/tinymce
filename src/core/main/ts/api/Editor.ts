@@ -191,6 +191,7 @@ export interface SaveArgs {
   no_events?: boolean;
   format?: 'raw';
   set_dirty?: boolean;
+  removingEditor?: boolean;
 }
 
 // Shorten these names
