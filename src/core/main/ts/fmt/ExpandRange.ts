@@ -88,7 +88,9 @@ const findSpace = function (start, remove, node, offset?) {
     pos = pos > pos2 ? pos : pos2;
 
     // Include the space on remove to avoid tag soup
-    if (pos !== -1 && !remove) {
+    // As long as we are either going to the right,
+    // - OR - going to the left and pos isn't already at the end of the string
+    if (pos !== -1 && !remove && (pos < offset || !start) && pos <= str.length) {
       pos++;
     }
   } else {
@@ -116,14 +118,14 @@ const findWordEndPoint = function (dom, body, container, offset, start, remove) 
   // Walk the nodes inside the block
   walker = new TreeWalker(container, dom.getParent(container, dom.isBlock) || body);
   while ((node = walker[start ? 'prev' : 'next']())) {
-    if (node.nodeType === 3) {
+    if (node.nodeType === 3 && !isBookmarkNode(node.parentNode)) {
       lastTextNode = node;
       pos = findSpace(start, remove, node);
 
       if (pos !== -1) {
         return { container: node, offset: pos };
       }
-    } else if (dom.isBlock(node)) {
+    } else if (dom.isBlock(node) || FormatUtils.isEq(node, 'BR')) {
       break;
     }
   }
@@ -279,39 +281,48 @@ const expandRng = function (editor, rng, format, remove?) {
   // Exclude bookmark nodes if possible
   if (isBookmarkNode(startContainer.parentNode) || isBookmarkNode(startContainer)) {
     startContainer = isBookmarkNode(startContainer) ? startContainer : startContainer.parentNode;
-    startContainer = startContainer.nextSibling || startContainer;
+    if (rng.collapsed) {
+      startContainer = startContainer.previousSibling || startContainer;
+    } else {
+      startContainer = startContainer.nextSibling || startContainer;
+    }
 
     if (startContainer.nodeType === 3) {
-      startOffset = 0;
+      startOffset = rng.collapsed ? startContainer.length : 0;
     }
   }
 
   if (isBookmarkNode(endContainer.parentNode) || isBookmarkNode(endContainer)) {
     endContainer = isBookmarkNode(endContainer) ? endContainer : endContainer.parentNode;
-    endContainer = endContainer.previousSibling || endContainer;
+    if (rng.collapsed) {
+      endContainer = endContainer.nextSibling || endContainer;
+    } else {
+      endContainer = endContainer.previousSibling || endContainer;
+    }
 
     if (endContainer.nodeType === 3) {
-      endOffset = endContainer.length;
+      endOffset = rng.collapsed ? 0 : endContainer.length;
+    }
+  }
+
+  if (rng.collapsed) {
+    // Expand left to closest word boundary
+    endPoint = findWordEndPoint(dom, editor.getBody(), startContainer, startOffset, true, remove);
+    if (endPoint) {
+      startContainer = endPoint.container;
+      startOffset = endPoint.offset;
+    }
+
+    // Expand right to closest word boundary
+    endPoint = findWordEndPoint(dom, editor.getBody(), endContainer, endOffset, false, remove);
+    if (endPoint) {
+      endContainer = endPoint.container;
+      endOffset = endPoint.offset;
     }
   }
 
   if (format[0].inline) {
-    if (rng.collapsed) {
-      // Expand left to closest word boundary
-      endPoint = findWordEndPoint(dom, editor.getBody(), startContainer, startOffset, true, remove);
-      if (endPoint) {
-        startContainer = endPoint.container;
-        startOffset = endPoint.offset;
-      }
-
-      // Expand right to closest word boundary
-      endPoint = findWordEndPoint(dom, editor.getBody(), endContainer, endOffset, false, remove);
-      if (endPoint) {
-        endContainer = endPoint.container;
-        endOffset = endPoint.offset;
-      }
-    }
-
+    // For "removeformat", we include trailing whitespace. For other formatting, we don't
     endContainer = remove ? endContainer : excludeTrailingWhitespace(endContainer, endOffset);
   }
 

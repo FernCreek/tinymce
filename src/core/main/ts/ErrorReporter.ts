@@ -9,6 +9,7 @@
  */
 
 import { AddOnManager } from './api/AddOnManager';
+import { window } from '@ephox/dom-globals';
 
 /**
  * Various error reporting helper functions.
@@ -65,10 +66,10 @@ const pluginLoadError = function (editor, url) {
 const initError = function (message, ...x: any[]) {
   const console = window.console;
   if (console) { // Skip test env
-    if (console.error) {
-      console.error.apply(console, arguments);
+    if (console.error) { // tslint:disable-line:no-console
+      console.error.apply(console, arguments); // tslint:disable-line:no-console
     } else {
-      console.log.apply(console, arguments);
+      console.log.apply(console, arguments); // tslint:disable-line:no-console
     }
   }
 };

@@ -20,6 +20,7 @@ import ProcessFilters from './ProcessFilters';
 import Utils from './Utils';
 import { Editor } from 'tinymce/core/api/Editor';
 import { Cell } from '@ephox/katamari';
+import { DataTransfer, ClipboardEvent, HTMLImageElement, Range, Image, Event, DragEvent, navigator, KeyboardEvent } from '@ephox/dom-globals';
 
 declare let window: any;
 
@@ -118,6 +119,7 @@ const hasContentType = (clipboardContent: ClipboardContents, mimeType: string) =
 const hasHtmlOrText = (content: ClipboardContents) => {
   return hasContentType(content, 'text/html') || hasContentType(content, 'text/plain');
 };
+
 
 const pasteImage = (editor: Editor, rng: Range, reader, blob) => {
   if (rng) {

@@ -20,6 +20,9 @@ import Tools from '../api/util/Tools';
 import { Selection } from '../api/dom/Selection';
 import GetBookmark from 'tinymce/core/bookmark/GetBookmark';
 import { Editor } from 'tinymce/core/api/Editor';
+import SplitRange from 'tinymce/core/selection/SplitRange';
+import { Node } from '@ephox/dom-globals';
+import { DOMUtils } from 'tinymce/core/api/dom/DOMUtils';
 
 const MCE_ATTR_RE = /^(src|href|style)$/;
 const each = Tools.each;
@@ -63,6 +66,22 @@ const wrap = function (dom, node, name, attrs?) {
 
   node.parentNode.insertBefore(wrapper, node);
   wrapper.appendChild(node);
+
+  return wrapper;
+};
+
+const wrapWithSiblings = (dom: DOMUtils, startNode: Node, name: string, next: boolean, attrs?) => {
+  const direction = (next ? 'next' : 'previous') + 'Sibling';
+  const wrapper = dom.create(name, attrs);
+  startNode.parentNode.insertBefore(wrapper, startNode);
+
+  const nodesToWrap = [startNode];
+  let currNode = startNode;
+  while ((currNode) = currNode[direction]) {
+    nodesToWrap.push(currNode);
+  }
+
+  nodesToWrap.forEach((node) => wrapper.appendChild(node));
 
   return wrapper;
 };
@@ -361,6 +380,12 @@ const remove = function (ed: Editor, name: string, vars?, node?, similar?) {
     return wrapAndSplit(ed, formatList, formatRoot, container, container, true, format, vars);
   };
 
+  const isRemoveBookmarkNode = function (node: Node) {
+    // Make sure to only check for bookmarks created here (eg _start or _end)
+    // as there maybe nested bookmarks
+    return Bookmarks.isBookmarkNode(node) && NodeType.isElement(node) && (node.id === '_start' || node.id === '_end');
+  };
+
   // Merges the styles for each node
   const process = function (node) {
     let children, i, l, lastContentEditable, hasContentEditableState;
@@ -405,7 +430,7 @@ const remove = function (ed: Editor, name: string, vars?, node?, similar?) {
     // If the end is placed within the start the result will be removed
     // So this checks if the out node is a bookmark node if it is it
     // checks for another more suitable node
-    if (Bookmarks.isBookmarkNode(out)) {
+    if (isRemoveBookmarkNode(out)) {
       out = out[start ? 'firstChild' : 'lastChild'];
     }
 
@@ -426,6 +451,9 @@ const remove = function (ed: Editor, name: string, vars?, node?, similar?) {
     rng = ExpandRange.expandRng(ed, rng, formatList, true);
 
     if (format.split) {
+      // Split text nodes
+      rng = SplitRange.split(rng);
+
       startContainer = getContainer(ed, rng, true);
       endContainer = getContainer(ed, rng);
 
@@ -449,8 +477,8 @@ const remove = function (ed: Editor, name: string, vars?, node?, similar?) {
         }
 
         if (dom.isChildOf(startContainer, endContainer) && startContainer !== endContainer && !dom.isBlock(endContainer) && !isTableCell(startContainer) && !isTableCell(endContainer)) {
-          startContainer = wrap(dom, startContainer, 'span', { 'id': '_start', 'data-mce-type': 'bookmark' });
-          splitToFormatRoot(startContainer);
+          const wrappedContent = wrapWithSiblings(dom, startContainer, 'span', true, { 'id': '_start', 'data-mce-type': 'bookmark' });
+          splitToFormatRoot(wrappedContent);
           startContainer = unwrap(true);
           return;
         }

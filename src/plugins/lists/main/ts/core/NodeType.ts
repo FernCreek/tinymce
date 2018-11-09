@@ -8,6 +8,8 @@
  * Contributing: http://www.tinymce.com/contributing
  */
 
+import { Node, Text } from '@ephox/dom-globals';
+
 const isTextNode = function (node: Node): node is Text {
   return node && node.nodeType === 3;
 };
@@ -16,8 +18,16 @@ const isListNode = function (node) {
   return node && (/^(OL|UL|DL)$/).test(node.nodeName);
 };
 
+const isOlUlNode = function (node) {
+  return node && (/^(OL|UL)$/).test(node.nodeName);
+};
+
 const isListItemNode = function (node) {
   return node && /^(LI|DT|DD)$/.test(node.nodeName);
+};
+
+const isDlItemNode = function (node) {
+  return node && /^(DT|DD)$/.test(node.nodeName);
 };
 
 const isTableCellNode = function (node) {
@@ -73,6 +83,8 @@ const isChildOfBody = function (dom, elm) {
 export default {
   isTextNode,
   isListNode,
+  isOlUlNode,
+  isDlItemNode,
   isListItemNode,
   isTableCellNode,
   isBr,

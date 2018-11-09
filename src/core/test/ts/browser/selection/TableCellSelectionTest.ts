@@ -4,6 +4,7 @@ import { Hierarchy, Element, Html } from '@ephox/sugar';
 import TableCellSelection from 'tinymce/core/selection/TableCellSelection';
 import ViewBlock from '../../module/test/ViewBlock';
 import { UnitTest } from '@ephox/bedrock';
+import { document } from '@ephox/dom-globals';
 
 UnitTest.asynctest('browser.tinymce.core.selection.TableCellSelectionTest', function () {
   const success = arguments[arguments.length - 2];
@@ -16,12 +17,12 @@ UnitTest.asynctest('browser.tinymce.core.selection.TableCellSelectionTest', func
     });
   };
 
-  const cGetCellsFromElement = Chain.mapper(function (viewBlock) {
+  const cGetCellsFromElement = Chain.mapper(function (viewBlock: any) {
     return TableCellSelection.getCellsFromElement(Element.fromDom(viewBlock.get()));
   });
 
   const cGetCellsFromRanges = function (paths) {
-    return Chain.mapper(function (viewBlock) {
+    return Chain.mapper(function (viewBlock: any) {
       const ranges = Arr.map(paths, function (path) {
         const container = Hierarchy.follow(Element.fromDom(viewBlock.get()), path).getOrDie();
         const rng = document.createRange();
@@ -34,7 +35,7 @@ UnitTest.asynctest('browser.tinymce.core.selection.TableCellSelectionTest', func
   };
 
   const cAssertCellContents = function (expectedContents) {
-    return Chain.op(function (cells) {
+    return Chain.op(function (cells: Element[]) {
       const actualContents = Arr.map(cells, Html.get);
       Assertions.assertEq('Should be expected cell contents', expectedContents, actualContents);
     });

@@ -1,5 +1,5 @@
 import {
-    Assertions, Chain, FocusTools, GeneralSteps, Keys, Mouse, Step, Pipeline, UiControls, UiFinder, Waiter, ApproxStructure
+    Assertions, Chain, FocusTools, GeneralSteps, Keys, Mouse, Step, Pipeline, UiControls, UiFinder, Waiter, ApproxStructure, Logger
 } from '@ephox/agar';
 import { UnitTest } from '@ephox/bedrock';
 import { TinyActions, TinyApis, TinyDom, TinyLoader } from '@ephox/mcagar';
@@ -14,15 +14,14 @@ import InliteTheme from 'tinymce/themes/inlite/Theme';
 
 import Toolbar from '../module/test/Toolbar';
 import { SelectorFind, Element } from '@ephox/sugar';
+import { document } from '@ephox/dom-globals';
 
 const sAssertTableStructure = (editor, structure) => Step.sync(() => {
   const table = SelectorFind.descendant(Element.fromDom(editor.getBody()), 'table').getOrDie('Should exist a table');
   Assertions.assertStructure('Should be a table the expected structure', structure, table);
 });
 
-UnitTest.asynctest('browser.core.ThemeTest', function () {
-  const success = arguments[arguments.length - 2];
-  const failure = arguments[arguments.length - 1];
+UnitTest.asynctest('browser.themes.inlite.ThemeTest', (success, failure) => {
   const dialogRoot = TinyDom.fromDom(document.body);
 
   InliteTheme();
@@ -115,7 +114,7 @@ UnitTest.asynctest('browser.core.ThemeTest', function () {
   const sLinkTests = function (tinyApis, tinyActions) {
     const sContentActionTest = function (inputHtml, spath, soffset, fpath, foffset, expectedHtml, sAction) {
       return GeneralSteps.sequence([
-        tinyApis.sSetContent(inputHtml),
+        tinyApis.sSetRawContent(inputHtml),
         tinyApis.sSetSelection(spath, soffset, fpath, foffset),
         tinyActions.sContentKeystroke(Keys.space(), {}),
         sAction,
@@ -139,14 +138,14 @@ UnitTest.asynctest('browser.core.ThemeTest', function () {
       return sContentActionTest(inputHtml, spath, soffset, fpath, foffset, expectedHtml, sInsertLinkConfirmPrefix(url, 'Cancel'));
     };
 
-    return GeneralSteps.sequence([
+    return Logger.t('sLinkTests', GeneralSteps.sequence([
       sLinkWithConfirmOkTest('<p>a</p>', [0, 0], 0, [0, 0], 1, 'www.site.com', '<p><a href="http://www.site.com">a</a></p>'),
       sLinkWithConfirmCancelTest('<p>a</p>', [0, 0], 0, [0, 0], 1, 'www.site.com', '<p><a href="www.site.com">a</a></p>'),
       sLinkTest('<p>a</p>', [0, 0], 0, [0, 0], 1, '#1', '<p><a href="#1">a</a></p>'),
       sLinkTest('<p><a id="x" href="#1">a</a></p>', [0, 0, 0], 0, [0, 0, 0], 1, '#2', '<p><a id="x" href="#2">a</a></p>'),
       sLinkTest('<p><a href="#3">a</a></p>', [0, 0, 0], 0, [0, 0, 0], 1, '', '<p>a</p>'),
       sUnlinkTest('<p><a id="x" href="#1">a</a></p>', [0, 0, 0], 0, [0, 0, 0], 1, '<p>a</p>')
-    ]);
+    ]));
   };
 
   const sInsertTableTests = function (editor, tinyApis) {

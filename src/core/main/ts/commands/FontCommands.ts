@@ -14,6 +14,7 @@ import FontInfo from 'tinymce/core/fmt/FontInfo';
 import { Option } from '@ephox/katamari';
 import CaretFinder from 'tinymce/core/caret/CaretFinder';
 import NodeType from 'tinymce/core/dom/NodeType';
+import { Range, Node } from '@ephox/dom-globals';
 
 const findFirstCaretElement = (editor: Editor) => {
   return CaretFinder.firstPositionIn(editor.getBody()).map((caret) => {
@@ -34,17 +35,21 @@ const getCaretElement = (editor: Editor): Option<Node> => {
 };
 
 const fromFontSizeNumber = (editor: Editor, value: string): string => {
-  const fontSizeNumber = parseInt(value, 10);
+  if (/^[0-9\.]+$/.test(value)) {
+    const fontSizeNumber = parseInt(value, 10);
 
-  // Convert font size 1-7 to styles
-  if (fontSizeNumber >= 1 && fontSizeNumber <= 7) {
-    const fontSizes = Settings.getFontStyleValues(editor);
-    const fontClasses = Settings.getFontSizeClasses(editor);
+    // Convert font size 1-7 to styles
+    if (fontSizeNumber >= 1 && fontSizeNumber <= 7) {
+      const fontSizes = Settings.getFontStyleValues(editor);
+      const fontClasses = Settings.getFontSizeClasses(editor);
 
-    if (fontClasses) {
-      return fontClasses[fontSizeNumber - 1] || value;
+      if (fontClasses) {
+        return fontClasses[fontSizeNumber - 1] || value;
+      } else {
+        return fontSizes[fontSizeNumber - 1] || value;
+      }
     } else {
-      return fontSizes[fontSizeNumber - 1] || value;
+      return value;
     }
   } else {
     return value;

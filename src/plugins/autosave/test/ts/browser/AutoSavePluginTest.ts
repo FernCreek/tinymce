@@ -3,10 +3,9 @@ import { LegacyUnit, TinyLoader } from '@ephox/mcagar';
 import Plugin from 'tinymce/plugins/autosave/Plugin';
 import Theme from 'tinymce/themes/modern/Theme';
 import { UnitTest } from '@ephox/bedrock';
+import { document, window, history } from '@ephox/dom-globals';
 
-UnitTest.asynctest('browser.tinymce.plugins.autosave.AutoSavePluginTest', function () {
-  const success = arguments[arguments.length - 2];
-  const failure = arguments[arguments.length - 1];
+UnitTest.asynctest('browser.tinymce.plugins.autosave.AutoSavePluginTest', (success, failure) => {
   const suite = LegacyUnit.createSuite();
 
   Plugin();
@@ -76,7 +75,7 @@ UnitTest.asynctest('browser.tinymce.plugins.autosave.AutoSavePluginTest', functi
     editor.undoManager.add();
     editor.plugins.autosave.storeDraft();
 
-    window.location.hash = 'test';
+    window.location.hash = 'test' + Math.random().toString(36).substring(7);
 
     LegacyUnit.equal(editor.plugins.autosave.hasDraft(), false);
 

@@ -2,6 +2,8 @@ import { Assertions, Chain, GeneralSteps, Step, UiControls, UiFinder, Waiter } f
 import { TinyDom } from '@ephox/mcagar';
 
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
+import { document } from '@ephox/dom-globals';
+import { Element } from '@ephox/sugar';
 
 const sOpenDialog = function (ui) {
   return GeneralSteps.sequence([
@@ -167,7 +169,7 @@ const sCloseDialog = function (ui) {
 };
 
 const cFakeEvent = function (name) {
-  return Chain.op(function (elm) {
+  return Chain.op(function (elm: Element) {
     DOMUtils.DOM.fire(elm.dom(), name);
   });
 };

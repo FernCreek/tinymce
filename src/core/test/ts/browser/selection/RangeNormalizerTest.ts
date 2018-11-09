@@ -3,6 +3,7 @@ import { Hierarchy, Element } from '@ephox/sugar';
 import RangeNormalizer from 'tinymce/core/selection/RangeNormalizer';
 import ViewBlock from '../../module/test/ViewBlock';
 import { UnitTest } from '@ephox/bedrock';
+import { document } from '@ephox/dom-globals';
 
 UnitTest.asynctest('browser.tinymce.core.selection.RangeNormalizerTest', function () {
   const success = arguments[arguments.length - 2];
@@ -15,7 +16,7 @@ UnitTest.asynctest('browser.tinymce.core.selection.RangeNormalizerTest', functio
     });
   };
 
-  const mNormalizeRange = Step.stateful(function (value, next, die) {
+  const mNormalizeRange = Step.stateful(function (value: any, next, die) {
     next(RangeNormalizer.normalize(value));
   });
 
@@ -31,7 +32,7 @@ UnitTest.asynctest('browser.tinymce.core.selection.RangeNormalizerTest', functio
   };
 
   const mAssertRange = function (startPath, startOffset, endPath, endOffset) {
-    return Step.stateful(function (value, next, die) {
+    return Step.stateful(function (value: any, next, die) {
       const startContainer = Hierarchy.follow(Element.fromDom(viewBlock.get()), startPath).getOrDie();
       const endContainer = Hierarchy.follow(Element.fromDom(viewBlock.get()), endPath).getOrDie();
 

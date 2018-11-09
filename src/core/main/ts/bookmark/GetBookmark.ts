@@ -19,6 +19,7 @@ import Tools from '../api/util/Tools';
 import { Selection } from '../api/dom/Selection';
 import { DOMUtils } from 'tinymce/core/api/dom/DOMUtils';
 import { PathBookmark, IndexBookmark, StringPathBookmark, RangeBookmark, IdBookmark, Bookmark } from './BookmarkTypes';
+import { Text, Range, Node, Element } from '@ephox/dom-globals';
 
 type TrimFn = (s: string) => string;
 
@@ -217,6 +218,7 @@ const getPersistentBookmark = function (selection: Selection, filled: boolean): 
   const startBookmarkNode = createBookmarkSpan(dom, id + '_start', filled);
   rng.insertNode(startBookmarkNode);
   trimEmptyTextNode(startBookmarkNode.previousSibling);
+  trimEmptyTextNode(startBookmarkNode.nextSibling);
 
   selection.moveToBookmark({ id, keep: 1 });
 

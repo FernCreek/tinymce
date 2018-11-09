@@ -17,7 +17,7 @@ UnitTest.asynctest('tinymce.plugins.paste.browser.PasteSettingsTest', function (
   Plugin();
 
   const cCreateInlineEditor = function (settings) {
-    return Chain.on(function (viewBlock, next, die) {
+    return Chain.async(function (viewBlock: any, next, die) {
       viewBlock.update('<div id="inline-tiny"></div>');
 
       EditorManager.init(Merger.merge({
@@ -26,14 +26,14 @@ UnitTest.asynctest('tinymce.plugins.paste.browser.PasteSettingsTest', function (
         skin_url: '/project/js/tinymce/skins/lightgray',
         setup (editor) {
           editor.on('SkinLoaded', function () {
-            next(Chain.wrap(editor));
+            next(editor);
           });
         }
       }, settings));
     });
   };
 
-  const cRemoveEditor = Chain.op(function (editor) {
+  const cRemoveEditor = Chain.op(function (editor: any) {
     editor.remove();
   });
 

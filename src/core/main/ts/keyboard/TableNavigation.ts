@@ -11,24 +11,29 @@
 import CaretFinder from '../caret/CaretFinder';
 import CaretPosition from '../caret/CaretPosition';
 import * as CefUtils from '../keyboard/CefUtils';
-import { Arr, Option } from '@ephox/katamari';
-import { PlatformDetection } from '@ephox/sand';
-import { getPositionsAbove, findClosestHorizontalPositionFromPoint, getPositionsBelow, getPositionsUntilPreviousLine, getPositionsUntilNextLine, BreakType } from 'tinymce/core/caret/LineReader';
+import { Arr, Option, Fun } from '@ephox/katamari';
+import { getPositionsAbove, findClosestHorizontalPositionFromPoint, getPositionsBelow, getPositionsUntilPreviousLine, getPositionsUntilNextLine, BreakType, LineInfo } from 'tinymce/core/caret/LineReader';
 import { findClosestPositionInAboveCell, findClosestPositionInBelowCell } from 'tinymce/core/caret/TableCells';
-import Fun from 'tinymce/core/util/Fun';
 import ScrollIntoView from 'tinymce/core/dom/ScrollIntoView';
 import { Editor } from 'tinymce/core/api/Editor';
 import NodeType from 'tinymce/core/dom/NodeType';
 import Settings from 'tinymce/core/api/Settings';
-import { Element, Attr, Insert } from '@ephox/sugar';
-
-const browser = PlatformDetection.detect().browser;
-const isFakeCaretTableBrowser = (): boolean => browser.isIE() || browser.isEdge() || browser.isFirefox();
+import { Element as SugarElement, Attr, Insert } from '@ephox/sugar';
+import { HTMLElement, Range, Element } from '@ephox/dom-globals';
+import { isFakeCaretTableBrowser } from '../caret/FakeCaret';
 
 const moveToRange = (editor: Editor, rng: Range) => {
   editor.selection.setRng(rng);
   ScrollIntoView.scrollRangeIntoView(editor, rng);
 };
+
+const hasNextBreak = (getPositionsUntil, scope: HTMLElement, lineInfo: LineInfo): boolean => {
+  return lineInfo.breakAt.map((breakPos) => getPositionsUntil(scope, breakPos).breakAt.isSome()).getOr(false);
+};
+
+const startsWithWrapBreak = (lineInfo: LineInfo) => lineInfo.breakType === BreakType.Wrap && lineInfo.positions.length === 0;
+
+const startsWithBrBreak = (lineInfo: LineInfo) => lineInfo.breakType === BreakType.Br && lineInfo.positions.length === 1;
 
 const isAtTableCellLine = (getPositionsUntil, scope: HTMLElement, pos: CaretPosition) => {
   const lineInfo = getPositionsUntil(scope, pos);
@@ -36,8 +41,8 @@ const isAtTableCellLine = (getPositionsUntil, scope: HTMLElement, pos: CaretPosi
   // Since we can't determine if the caret is on the above or below line in a word wrap break we asume it's always
   // on the below/above line based on direction. This will make the caret jump one line if you are at the end of the last
   // line and moving down or at the beginning of the second line moving up.
-  if (lineInfo.breakType === BreakType.Wrap && lineInfo.positions.length === 0) {
-    return lineInfo.breakAt.map((breakPos) => getPositionsUntil(scope, breakPos).breakAt.isNone()).getOr(true);
+  if (startsWithWrapBreak(lineInfo) || (!NodeType.isBr(pos.getNode()) && startsWithBrBreak(lineInfo))) {
+    return !hasNextBreak(getPositionsUntil, scope, lineInfo);
   } else {
     return lineInfo.breakAt.isNone();
   }
@@ -94,14 +99,14 @@ const renderBlock = (down: boolean, editor: Editor, table: HTMLElement, pos: Car
 
   if (forcedRootBlock) {
     editor.undoManager.transact(() => {
-      const element = Element.fromTag(forcedRootBlock);
+      const element = SugarElement.fromTag(forcedRootBlock);
       Attr.setAll(element, Settings.getForcedRootBlockAttrs(editor));
-      Insert.append(element, Element.fromTag('br'));
+      Insert.append(element, SugarElement.fromTag('br'));
 
       if (down) {
-        Insert.after(Element.fromDom(table), element);
+        Insert.after(SugarElement.fromDom(table), element);
       } else {
-        Insert.before(Element.fromDom(table), element);
+        Insert.before(SugarElement.fromDom(table), element);
       }
 
       const rng = editor.dom.createRng();
@@ -147,24 +152,20 @@ const navigateVertically = (editor, down: boolean, table: HTMLElement, td: HTMLE
   }
 };
 
-const moveH = (editor, forward: boolean): () => boolean => {
-  return () => {
-    return Option.from(editor.dom.getParent(editor.selection.getNode(), 'td,th')).bind((td) => {
-      return Option.from(editor.dom.getParent(td, 'table')).map((table) => {
-        return navigateHorizontally(editor, forward, table, td);
-      });
-    }).getOr(false);
-  };
+const moveH = (editor, forward: boolean) => () => {
+  return Option.from(editor.dom.getParent(editor.selection.getNode(), 'td,th')).bind((td) => {
+    return Option.from(editor.dom.getParent(td, 'table')).map((table) => {
+      return navigateHorizontally(editor, forward, table, td);
+    });
+  }).getOr(false);
 };
 
-const moveV = (editor, forward: boolean): () => boolean => {
-  return () => {
-    return Option.from(editor.dom.getParent(editor.selection.getNode(), 'td,th')).bind((td) => {
-      return Option.from(editor.dom.getParent(td, 'table')).map((table) => {
-        return navigateVertically(editor, forward, table, td);
-      });
-    }).getOr(false);
-  };
+const moveV = (editor, forward: boolean) => () => {
+  return Option.from(editor.dom.getParent(editor.selection.getNode(), 'td,th')).bind((td) => {
+    return Option.from(editor.dom.getParent(td, 'table')).map((table) => {
+      return navigateVertically(editor, forward, table, td);
+    });
+  }).getOr(false);
 };
 
 export {

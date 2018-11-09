@@ -3,6 +3,7 @@ import { Hierarchy, Element } from '@ephox/sugar';
 import MergeBlocks from 'tinymce/core/delete/MergeBlocks';
 import ViewBlock from '../../module/test/ViewBlock';
 import { UnitTest } from '@ephox/bedrock';
+import { Option } from '@ephox/katamari';
 
 UnitTest.asynctest('browser.tinymce.core.delete.MergeBlocksTest', function () {
   const success = arguments[arguments.length - 2];
@@ -22,7 +23,7 @@ UnitTest.asynctest('browser.tinymce.core.delete.MergeBlocksTest', function () {
   };
 
   const cMergeBlocks = function (forward, block1Path, block2Path) {
-    return Chain.mapper(function (viewBlock) {
+    return Chain.mapper(function (viewBlock: any) {
       const block1 = Hierarchy.follow(Element.fromDom(viewBlock.get()), block1Path).getOrDie();
       const block2 = Hierarchy.follow(Element.fromDom(viewBlock.get()), block2Path).getOrDie();
       return MergeBlocks.mergeBlocks(Element.fromDom(viewBlock.get()), forward, block1, block2);
@@ -30,7 +31,7 @@ UnitTest.asynctest('browser.tinymce.core.delete.MergeBlocksTest', function () {
   };
 
   const cAssertPosition = function (expectedPath, expectedOffset) {
-    return Chain.op(function (position) {
+    return Chain.op(function (position: Option<any>) {
       const container = Hierarchy.follow(Element.fromDom(viewBlock.get()), expectedPath).getOrDie();
 
       Assertions.assertDomEq('Should be expected container', container, Element.fromDom(position.getOrDie().container()));
@@ -116,7 +117,28 @@ UnitTest.asynctest('browser.tinymce.core.delete.MergeBlocksTest', function () {
         cMergeBlocks(true, [0, 0], [1]),
         cAssertPosition([0, 0, 1, 0], 1),
         cAssertHtml('<ul><li>a<b>b</b>c<b>d</b></li></ul>')
-      ]))
+      ])),
+
+      Logger.t('Merge empty block into empty containing block', Chain.asStep(viewBlock, [
+        cSetHtml('<div><h1></h1></div>'),
+        cMergeBlocks(true, [0], [0, 0]),
+        cAssertPosition([0], 0),
+        cAssertHtml('<div><br data-mce-bogus="1"></div>')
+      ])),
+
+      Logger.t('Merge empty block into containing block', Chain.asStep(viewBlock, [
+        cSetHtml('<div><h1></h1>c</div>'),
+        cMergeBlocks(true, [0], [0, 0]),
+        cAssertPosition([0], 0),
+        cAssertHtml('<div><br>c</div>')
+      ])),
+
+      Logger.t('Merge first empty item of nested list into containing list item', Chain.asStep(viewBlock, [
+        cSetHtml('<ul><li><ul><li></li><li>a</li></ul></li></ul>'),
+        cMergeBlocks(true, [0, 0], [0, 0, 0, 0]),
+        cAssertPosition([0, 0], 0),
+        cAssertHtml('<ul><li><br><ul><li>a</li></ul></li></ul>')
+      ])),
     ])),
 
     Logger.t('Merge backwards', GeneralSteps.sequence([

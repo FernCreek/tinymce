@@ -4,6 +4,7 @@ import { Merger } from '@ephox/katamari';
 import { DomEvent, Element, Html, Insert, Remove } from '@ephox/sugar';
 
 import TestStore from './TestStore';
+import { document } from '@ephox/dom-globals';
 
 const setup = function (createComponent, f, success, failure) {
   const store = TestStore();
@@ -44,7 +45,7 @@ const mSetupKeyLogger = function (body) {
 };
 
 const mTeardownKeyLogger = function (body, expected) {
-  return Step.stateful(function (state, next, die) {
+  return Step.stateful(function (state: any, next, die) {
     Assertions.assertEq('Checking key log outside context (on teardown)', expected, state.log);
     state.onKeydown.unbind();
     next({});
@@ -64,7 +65,7 @@ const mAddStyles = function (doc, styles) {
   });
 };
 
-const mRemoveStyles = Step.stateful(function (value, next, die) {
+const mRemoveStyles = Step.stateful(function (value: any, next, die) {
   Remove.remove(value.style);
   next(value);
 });

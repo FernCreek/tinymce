@@ -21,6 +21,7 @@ import Observable from './util/Observable';
 import Promise from './util/Promise';
 import Tools from './util/Tools';
 import URI from './util/URI';
+import { document } from '@ephox/dom-globals';
 
 declare const window: any;
 
@@ -638,8 +639,6 @@ EditorManager = {
 
     // Remove editors by selector
     if (Type.isString(selector)) {
-      selector = selector.selector || selector;
-
       each(DOM.select(selector), function (elm) {
         editor = self.get(elm.id);
 

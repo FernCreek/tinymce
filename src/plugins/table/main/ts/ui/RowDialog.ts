@@ -11,11 +11,12 @@
 import { Fun } from '@ephox/katamari';
 import Tools from 'tinymce/core/api/util/Tools';
 import Styles from '../actions/Styles';
-import Util from '../alien/Util';
+import * as Util from '../alien/Util';
 import Helpers from './Helpers';
 import { hasAdvancedRowTab, getRowClassList } from '../api/Settings';
 import { Editor } from 'tinymce/core/api/Editor';
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
+import { Node, HTMLElement, Element } from '@ephox/dom-globals';
 
 interface FormData {
   height: string;
@@ -80,18 +81,21 @@ function onSubmitRowForm(editor: Editor, rows: HTMLElement[], oldData: FormData,
   const dom = editor.dom;
 
   function setAttrib(elm: Node, name: string, value: string) {
-    if (value) {
+    if (rows.length === 1 || value) {
       dom.setAttrib(elm, name, value);
     }
   }
 
   function setStyle(elm: Node, name: string, value: string) {
-    if (value) {
+    if (rows.length === 1 || value) {
       dom.setStyle(elm, name, value);
     }
   }
 
-  Helpers.updateStyleField(editor, evt);
+  if (hasAdvancedRowTab(editor)) {
+    Helpers.syncAdvancedStyleFields(editor, evt);
+  }
+
   const data: FormData = evt.control.rootControl.toJSON();
 
   editor.undoManager.transact(function () {

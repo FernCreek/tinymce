@@ -15,8 +15,10 @@ import Bookmark from '../core/Bookmark';
 import NodeType from '../core/NodeType';
 import NormalizeLists from '../core/NormalizeLists';
 import Selection from '../core/Selection';
-import SplitList from '../core/SplitList';
+import { HTMLElement } from '@ephox/dom-globals';
 import Utils from '../api/Utils';
+import { flattenListSelection } from './Indendation';
+import SplitList from '../core/SplitList';
 
 const updateListStyle = function (dom, el, detail) {
   const type = detail['list-style-type'] ? detail['list-style-type'] : null;
@@ -311,7 +313,7 @@ const updateList = function (dom, list, listName, detail) {
 
 const toggleMultipleLists = function (editor, parentList, lists, listName, detail) {
   if (parentList.nodeName === listName && !hasListStyleDetail(detail)) {
-    removeList(editor);
+    flattenListSelection(editor);
   } else {
     const bookmark = Bookmark.createBookmark(editor.selection.getRng(true));
 
@@ -334,7 +336,7 @@ const toggleSingleList = function (editor, parentList, listName, detail) {
 
   if (parentList) {
     if (parentList.nodeName === listName && !hasListStyleDetail(detail)) {
-      removeList(editor);
+      flattenListSelection(editor);
     } else {
       const bookmark = Bookmark.createBookmark(editor.selection.getRng(true));
       updateListWithDetails(editor.dom, parentList, detail);

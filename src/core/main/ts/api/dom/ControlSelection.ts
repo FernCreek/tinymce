@@ -8,7 +8,7 @@
  * Contributing: http://www.tinymce.com/contributing
  */
 
-import { Element, Selectors } from '@ephox/sugar';
+import { Element as SugarElement, Selectors } from '@ephox/sugar';
 import NodeType from '../../dom/NodeType';
 import RangePoint from '../../dom/RangePoint';
 import Env from '../Env';
@@ -17,6 +17,8 @@ import Tools from '../util/Tools';
 import VK from '../util/VK';
 import { Selection } from './Selection';
 import { Editor } from 'tinymce/core/api/Editor';
+import Events from 'tinymce/core/api/Events';
+import { Element, Event, Node, document } from '@ephox/dom-globals';
 
 interface ControlSelection {
   isResizable: (elm: Element) => boolean;
@@ -160,7 +162,7 @@ const ControlSelection = (selection: Selection, editor: Editor): ControlSelectio
       return false;
     }
 
-    return Selectors.is(Element.fromDom(elm), selector);
+    return Selectors.is(SugarElement.fromDom(elm), selector);
   };
 
   const resizeGhostElement = function (e) {
@@ -239,7 +241,7 @@ const ControlSelection = (selection: Selection, editor: Editor): ControlSelectio
     }
 
     if (!resizeStarted) {
-      editor.fire('ObjectResizeStart', { target: selectedElm, width: startW, height: startH });
+      Events.fireObjectResizeStart(editor, selectedElm, startW, startH);
       resizeStarted = true;
     }
   };
@@ -276,7 +278,7 @@ const ControlSelection = (selection: Selection, editor: Editor): ControlSelectio
 
     showResizeRect(selectedElm);
 
-    editor.fire('ObjectResized', { target: selectedElm, width, height });
+    Events.fireObjectResized(editor, selectedElm, width, height);
     dom.setAttrib(selectedElm, 'style', dom.getAttrib(selectedElm, 'style'));
     editor.nodeChanged();
   };

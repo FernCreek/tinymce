@@ -11,6 +11,7 @@
 import { XMLHttpRequest } from '@ephox/sand';
 import Promise from 'tinymce/core/api/util/Promise';
 import Tools from 'tinymce/core/api/util/Tools';
+import { FormData } from '@ephox/dom-globals';
 
 /**
  * This is basically cut down version of tinymce.core.file.Uploader, which we could use directly
@@ -31,7 +32,7 @@ export default function (settings) {
   const defaultHandler = function (blobInfo, success, failure, progress) {
     let xhr, formData;
 
-    xhr = new XMLHttpRequest();
+    xhr = XMLHttpRequest();
     xhr.open('POST', settings.url);
     xhr.withCredentials = settings.credentials;
 

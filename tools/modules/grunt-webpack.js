@@ -1,37 +1,24 @@
 // @ts-check
 
-let { CheckerPlugin, TsConfigPathsPlugin } = require('awesome-typescript-loader');
+let { TsConfigPathsPlugin } = require('awesome-typescript-loader');
 let LiveReloadPlugin = require('webpack-livereload-plugin');
-var HardSourceWebpackPlugin = require('hard-source-webpack-plugin');
 let path = require('path');
-let fs = require('fs');
-
-let getCurrentGitBranch = () => {
-  let filePath = path.resolve('.git/HEAD');
-  if (fs.existsSync(filePath)) {
-    let fqdn = fs.readFileSync(filePath).toString();
-    let m = fqdn.match(/\/([^\/]+)$/);
-    if (m) {
-      return m[1].trim();
-    }
-  }
-  return 'master';
-};
-
-const getLastMasterCommitSha = () => {
-  const currentBranch = getCurrentGitBranch();
-  const commitPath =  path.resolve('.git/refs/heads/master');
-
-  return fs.readFileSync(commitPath, 'utf-8');
-}
 
 let create = (entries, tsConfig, outDir, filename) => {
   return {
     entry: entries,
+    mode: 'development',
     devtool: 'source-map',
+    optimization: {
+      removeAvailableModules: false,
+      removeEmptyChunks: false,
+      splitChunks: false,
+    },
     resolve: {
+      symlinks: false,
       extensions: ['.ts', '.js'],
       plugins: [
+        // We need to use the awesome typescript loader config paths since the one for ts-loader doesn't resolve aliases correctly
         new TsConfigPathsPlugin({
           baseUrl: '.',
           compiler: 'typescript',
@@ -41,41 +28,42 @@ let create = (entries, tsConfig, outDir, filename) => {
     },
     module: {
       rules: [
-        {
-          test: /\.js$/,
-          use: [
-            'source-map-loader'
-          ],
-          enforce: 'pre'
-        },
+        // {
+        //   test: /\.js$/,
+        //   use: [
+        //     'source-map-loader'
+        //   ],
+        //   enforce: 'pre'
+        // },
         {
           test: /\.ts$/,
           use: [
             {
-              loader: 'awesome-typescript-loader',
+              loader: 'ts-loader',
               options: {
                 transpileOnly: true,
-                configFileName: tsConfig
+                configFile: tsConfig,
+                experimentalWatchApi: true
               }
             }
+            // {
+            //   loader: 'awesome-typescript-loader',
+            //   options: {
+            //     transpileOnly: true,
+            //     configFileName: tsConfig
+            //   }
+            // }
           ]
         }
       ]
     },
     plugins: [
-      new LiveReloadPlugin(),
-      new HardSourceWebpackPlugin({
-        cacheDirectory: path.resolve(`scratch/cache/hard-source/[confighash]`),
-        recordsPath: path.resolve(`scratch/cache/hard-source/[confighash]/records.json`),
-        configHash: function(webpackConfig) {
-          const branchName = getCurrentGitBranch();
-          return require('node-object-hash')({sort: false}).hash({ gitBranch: branchName === 'master' ? getLastMasterCommitSha() : branchName, webpackConfig });
-        }
-      })
+      new LiveReloadPlugin()
     ],
     output: {
       filename: typeof entries === 'string' ? filename : "[name]/" + filename,
-      path: path.resolve(outDir)
+      path: path.resolve(outDir),
+      pathinfo: false
     }
   };
 };

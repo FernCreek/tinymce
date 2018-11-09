@@ -1,11 +1,12 @@
 import { Pipeline, Step } from '@ephox/agar';
-import { Arr } from '@ephox/katamari';
+import { Arr, Fun } from '@ephox/katamari';
 import { LegacyUnit, TinyLoader } from '@ephox/mcagar';
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import Env from 'tinymce/core/api/Env';
 import Conversions from 'tinymce/core/file/Conversions';
 import Theme from 'tinymce/themes/modern/Theme';
 import { UnitTest } from '@ephox/bedrock';
+import { document } from '@ephox/dom-globals';
 
 UnitTest.asynctest('browser.tinymce.core.EditorUploadTest', function () {
   const success = arguments[arguments.length - 2];
@@ -293,6 +294,33 @@ UnitTest.asynctest('browser.tinymce.core.EditorUploadTest', function () {
     editor.settings.images_dataimg_filter = function (img) {
       return !img.hasAttribute('data-skip');
     };
+
+    editor.settings.images_upload_handler = function (data, success) {
+      uploadCount++;
+      success('url');
+    };
+
+    editor.uploadImages(uploadDone);
+  });
+
+  suite.asyncTest('Don\'t upload api filtered image', function (editor, done) {
+    let uploadCount = 0, filterCount = 0;
+
+    const uploadDone = function () {
+      LegacyUnit.equal(uploadCount, 0, 'Should not upload.');
+      LegacyUnit.equal(filterCount, 1, 'Should have filtered one item.');
+      done();
+    };
+
+    editor.getBody().innerHTML = (
+      '<img src="' + testBlobDataUri + '" data-skip="1">'
+    );
+
+    editor.settings.images_dataimg_filter = Fun.constant(true);
+    editor.editorUpload.addFilter((img) => {
+      filterCount++;
+      return !img.hasAttribute('data-skip');
+    });
 
     editor.settings.images_upload_handler = function (data, success) {
       uploadCount++;

@@ -14,6 +14,8 @@ import NodeType from '../dom/NodeType';
 import Env from '../api/Env';
 import TreeWalker from '../api/dom/TreeWalker';
 import Tools from '../api/util/Tools';
+import { Editor } from 'tinymce/core/api/Editor';
+import { Range } from '@ephox/dom-globals';
 
 const getStartNode = function (rng) {
   const sc = rng.startContainer, so = rng.startOffset;
@@ -118,7 +120,13 @@ const moveEndPoint = (dom, rng: Range, node, start: boolean): void => {
   }
 };
 
+const hasAnyRanges = (editor: Editor) => {
+  const sel = editor.selection.getSel();
+  return sel && sel.rangeCount > 0;
+};
+
 export {
   hasAllContentsSelected,
-  moveEndPoint
+  moveEndPoint,
+  hasAnyRanges
 };

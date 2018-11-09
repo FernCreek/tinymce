@@ -8,12 +8,13 @@
  * Contributing: http://www.tinymce.com/contributing
  */
 
-import { Arr } from '@ephox/katamari';
+import { Arr, Cell, Option } from '@ephox/katamari';
 import TrimHtml from '../dom/TrimHtml';
 import Fragments from './Fragments';
 import { Editor } from 'tinymce/core/api/Editor';
 import { Element, Html, Remove, SelectorFilter } from '@ephox/sugar';
 import { Bookmark } from 'tinymce/core/bookmark/BookmarkTypes';
+import { Document, document } from '@ephox/dom-globals';
 
 export const enum UndoLevelType {
   Fragmented = 'fragmented',
@@ -27,6 +28,18 @@ export interface UndoLevel {
   bookmark: Bookmark;
   beforeBookmark: Bookmark;
 }
+
+const undoLevelDocument = Cell<Option<Document>>(Option.none());
+
+// We need to create a temporary document instead of using the global document since
+// innerHTML on a detached element will still make http requests to the images
+const lazyTempDocument = () => {
+  return undoLevelDocument.get().getOrThunk(() => {
+    const doc = document.implementation.createHTMLDocument('undo');
+    undoLevelDocument.set(Option.some(doc));
+    return doc;
+  });
+};
 
 const hasIframes = function (html: string) {
   return html.indexOf('</iframe>') !== -1;
@@ -80,7 +93,7 @@ const getLevelContent = function (level: UndoLevel): string {
 };
 
 const getCleanLevelContent = (level: UndoLevel): string => {
-  const elm = Element.fromTag('body');
+  const elm = Element.fromTag('body', lazyTempDocument());
   Html.set(elm, getLevelContent(level));
   Arr.each(SelectorFilter.descendants(elm, '*[data-mce-bogus]'), Remove.unwrap);
   return Html.get(elm);

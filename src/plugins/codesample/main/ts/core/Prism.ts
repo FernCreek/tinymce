@@ -10,15 +10,18 @@
  * Import of prism. Disabled DOMContentLoaded event listener.
  */
 
+import { self, document, Worker } from '@ephox/dom-globals';
+
 /*eslint-disable*/
 
 /*eslint-enable */
 
 declare const WorkerGlobalScope: any;
-declare const module: any;
-declare const global: any;
 
-const window = {};
+const window: any = {};
+const global: any = window;
+const module: any = { exports: {} };
+
 // ------------------ Start wrap
 
 /* http://prismjs.com/download.html?themes=prism-dark&languages=markup+css+clike+javascript+c+csharp+cpp+java+php+python+ruby */

@@ -6,6 +6,7 @@ import { TinyApis, TinyLoader, TinyUi } from '@ephox/mcagar';
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import LinkPlugin from 'tinymce/plugins/link/Plugin';
 import ModernTheme from 'tinymce/themes/modern/Theme';
+import { document } from '@ephox/dom-globals';
 
 UnitTest.asynctest('browser.tinymce.plugins.link.AllowUnsafeLinkTargetTest', function () {
   const success = arguments[arguments.length - 2];
@@ -43,10 +44,10 @@ UnitTest.asynctest('browser.tinymce.plugins.link.AllowUnsafeLinkTargetTest', fun
     };
 
     const cAssertDialogContents = function (data) {
-      return Chain.on(function (element, next, die) {
-        getDialogByElement(element).fold(die, function (win) {
+      return Chain.async(function (element, next, die) {
+        getDialogByElement(element).fold(() => die('No dialog assocated with element'), function (win) {
           Assertions.assertEq('asserting dialog contents', data, win.toJSON());
-          next(Chain.wrap(element));
+          next(element);
         });
       });
     };

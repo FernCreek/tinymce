@@ -16,7 +16,7 @@ UnitTest.asynctest('tinymce.plugins.paste.browser.PlainTextPaste', function () {
   const viewBlock = ViewBlock();
 
   const cCreateEditorFromSettings = function (settings, html?) {
-    return Chain.on(function (viewBlock, next, die) {
+    return Chain.async(function (viewBlock: any, next, die) {
       const randomId = Id.generate('tiny-');
       html = html || '<textarea></textarea>';
 
@@ -30,7 +30,7 @@ UnitTest.asynctest('tinymce.plugins.paste.browser.PlainTextPaste', function () {
         setup (editor) {
           editor.on('SkinLoaded', function () {
             setTimeout(function () {
-              next(Chain.wrap(editor));
+              next(editor);
             }, 0);
           });
         }
@@ -39,29 +39,29 @@ UnitTest.asynctest('tinymce.plugins.paste.browser.PlainTextPaste', function () {
   };
 
   const cRemoveEditor = function () {
-    return Chain.op(function (editor) {
+    return Chain.op(function (editor: any) {
       editor.remove();
     });
   };
 
   const cClearEditor = function () {
-    return Chain.on(function (editor, next, die) {
+    return Chain.async(function (editor: any, next, die) {
       editor.setContent('');
-      next(Chain.wrap(editor));
+      next(editor);
     });
   };
 
   const cFireFakePasteEvent = function (data) {
-    return Chain.on(function (editor, next, die) {
+    return Chain.async(function (editor: any, next, die) {
       editor.fire('paste', { clipboardData: MockDataTransfer.create(data) });
-      next(Chain.wrap(editor));
+      next(editor);
     });
   };
 
   const cAssertEditorContent = function (label, expected) {
-    return Chain.on(function (editor, next, die) {
+    return Chain.async(function (editor: any, next, die) {
       Assertions.assertHtml(label || 'Asserting editors content', expected, editor.getContent());
-      next(Chain.wrap(editor));
+      next(editor);
     });
   };
 

@@ -4,6 +4,7 @@ import { TinyDom } from '@ephox/mcagar';
 
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import Bookmark from 'tinymce/themes/inlite/alien/Bookmark';
+import { document } from '@ephox/dom-globals';
 
 UnitTest.asynctest('browser.alien.BookmarkTest', function () {
   const success = arguments[arguments.length - 2];
@@ -29,7 +30,7 @@ UnitTest.asynctest('browser.alien.BookmarkTest', function () {
   };
 
   const cAssertRangeEq = function (expected) {
-    return Chain.op(function (actual) {
+    return Chain.op(function (actual: any) {
       Assertions.assertDomEq('Not equal startContainer', expected.start(), TinyDom.fromDom(actual.startContainer));
       Assertions.assertEq('Not equal startOffset', expected.soffset(), actual.startOffset);
       Assertions.assertDomEq('Not equal endContainer', expected.finish(), TinyDom.fromDom(actual.endContainer));

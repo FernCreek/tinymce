@@ -11,6 +11,7 @@
 import { Editor } from 'tinymce/core/api/Editor';
 import { defaultData, read, ImageData, create, isFigure, write } from 'tinymce/plugins/image/core/ImageData';
 import Utils from 'tinymce/plugins/image/core/Utils';
+import { HTMLElement } from '@ephox/dom-globals';
 
 const normalizeCss = (editor: Editor, cssText: string): string => {
   const css = editor.dom.styles.parse(cssText);
@@ -42,7 +43,7 @@ const splitTextBlock = (editor: Editor, figure: HTMLElement) => {
 
   const textBlock = dom.getParent(figure.parentNode, function (node) {
     return editor.schema.getTextBlockElements()[node.nodeName];
-  });
+  }, editor.getBody());
 
   if (textBlock) {
     return dom.split(textBlock, figure);

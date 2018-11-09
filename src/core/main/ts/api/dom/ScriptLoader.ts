@@ -10,6 +10,7 @@
 
 import DOMUtils from './DOMUtils';
 import Tools from '../util/Tools';
+import { document } from '@ephox/dom-globals';
 
 /*globals console*/
 
@@ -91,7 +92,7 @@ const ScriptLoader: any = function () {
         failure();
       } else {
         // Report the error so it's easier for people to spot loading errors
-        if (typeof console !== 'undefined' && console.log) {
+        if (typeof console !== 'undefined' && console.log) { // tslint:disable-line:no-console
           // tslint:disable-next-line:no-console
           console.log('Failed to load script: ' + url);
         }
@@ -106,16 +107,7 @@ const ScriptLoader: any = function () {
     elm.type = 'text/javascript';
     elm.src = Tools._addCacheSuffix(url);
 
-    // Seems that onreadystatechange works better on IE 10 onload seems to fire incorrectly
-    if ('onreadystatechange' in elm) {
-      elm.onreadystatechange = function () {
-        if (/loaded|complete/.test(elm.readyState)) {
-          done();
-        }
-      };
-    } else {
-      elm.onload = done;
-    }
+    elm.onload = done;
 
     // Add onerror event will get fired on some browsers but not all of them
     elm.onerror = error;

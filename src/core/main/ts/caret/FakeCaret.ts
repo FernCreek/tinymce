@@ -12,10 +12,11 @@ import * as CaretContainer from './CaretContainer';
 import CaretContainerRemove from './CaretContainerRemove';
 import DomQuery from '../api/dom/DomQuery';
 import NodeType from '../dom/NodeType';
-import * as ClientRect from '../geom/ClientRect';
+import * as GeomClientRect from '../geom/ClientRect';
 import Delay from '../api/util/Delay';
-import { isFakeCaretTableBrowser } from '../keyboard/TableNavigation';
 import { Cell, Option } from '@ephox/katamari';
+import { Element, Range, HTMLElement, ClientRect, Node } from '@ephox/dom-globals';
+import { PlatformDetection } from '@ephox/sand';
 
 export interface FakeCaret {
   show: (before: boolean, element: Element) => Range;
@@ -31,11 +32,13 @@ interface CaretState {
   before: boolean;
 }
 
+const browser = PlatformDetection.detect().browser;
+
 const isContentEditableFalse = NodeType.isContentEditableFalse;
 const isTableCell = (node: Node) => NodeType.isElement(node) && /^(TD|TH)$/i.test(node.tagName);
 
 const getAbsoluteClientRect = (root: HTMLElement, element: HTMLElement, before: boolean): ClientRect => {
-  const clientRect = ClientRect.collapse(element.getBoundingClientRect(), before);
+  const clientRect = GeomClientRect.collapse(element.getBoundingClientRect(), before);
   let docElm, scrollX, scrollY, margin, rootRect;
 
   if (root.tagName === 'BODY') {
@@ -214,5 +217,7 @@ export const FakeCaret = (root: HTMLElement, isBlock: (node: Node) => boolean, h
     destroy
   };
 };
+
+export const isFakeCaretTableBrowser = (): boolean => browser.isIE() || browser.isEdge() || browser.isFirefox();
 
 export const isFakeCaretTarget = (node: Node): boolean => isContentEditableFalse(node) || (NodeType.isTable(node) && isFakeCaretTableBrowser());

@@ -12,6 +12,8 @@ import { Element, SelectorFilter } from '@ephox/sugar';
 import { Arr, Fun, Option } from '@ephox/katamari';
 import { findClosestHorizontalPosition, getLastLinePositions, getFirstLinePositions } from 'tinymce/core/caret/LineReader';
 import { CaretPosition } from 'tinymce/core/caret/CaretPosition';
+import { ClientRect, HTMLElement } from '@ephox/dom-globals';
+import { clone as roundRect } from '../geom/ClientRect';
 
 type GetAxisValue = (rect: ClientRect) => number;
 type IsTargetCorner = (corner: Corner, y: number) => boolean;
@@ -35,7 +37,7 @@ const deflate = (rect: ClientRect, delta: number): ClientRect => {
 
 const getCorners = (getYAxisValue, tds: HTMLElement[]): Corner[] => {
   return Arr.bind(tds, (td) => {
-    const rect = deflate(td.getBoundingClientRect(), -1);
+    const rect = deflate(roundRect(td.getBoundingClientRect()), -1);
     return [
       { x: rect.left, y: getYAxisValue(rect), cell: td },
       { x: rect.right, y: getYAxisValue(rect), cell: td }
@@ -57,7 +59,7 @@ const findClosestCorner = (corners: Corner[], x: number, y: number): Option<Corn
 };
 
 const getClosestCell = (getYAxisValue: GetAxisValue, isTargetCorner: IsTargetCorner, table: HTMLElement, x: number, y: number): Option<HTMLElement> => {
-  const cells = SelectorFilter.descendants(Element.fromDom(table), 'td,th').map((e) => e.dom());
+  const cells = SelectorFilter.descendants(Element.fromDom(table), 'td,th,caption').map((e) => e.dom());
   const corners = Arr.filter(getCorners(getYAxisValue, cells), (corner) => isTargetCorner(corner, y));
 
   return findClosestCorner(corners, x, y).map((corner) => {

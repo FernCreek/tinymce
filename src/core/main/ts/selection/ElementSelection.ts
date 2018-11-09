@@ -9,18 +9,20 @@
  */
 
 import { Option } from '@ephox/katamari';
-import { Node, Traverse, Element } from '@ephox/sugar';
+import { Node as SugarNode, Traverse, Element as SugarElement } from '@ephox/sugar';
 import TreeWalker from '../api/dom/TreeWalker';
 import { moveEndPoint } from './SelectionUtils';
 import NodeType from '../dom/NodeType';
+import { Element, Range, Node } from '@ephox/dom-globals';
+import { DOMUtils } from 'tinymce/core/api/dom/DOMUtils';
 
 const getEndpointElement = (root: Element, rng: Range, start: boolean, real: boolean, resolve: (elm, offset: number) => number) => {
   const container = start ? rng.startContainer : rng.endContainer;
   const offset = start ? rng.startOffset : rng.endOffset;
 
-  return Option.from(container).map(Element.fromDom).map((elm) => {
+  return Option.from(container).map(SugarElement.fromDom).map((elm) => {
     return !real || !rng.collapsed ? Traverse.child(elm, resolve(elm, offset)).getOr(elm) : elm;
-  }).bind((elm) => Node.isElement(elm) ? Option.some(elm) : Traverse.parent(elm)).map((elm: any) => elm.dom()).getOr(root);
+  }).bind((elm) => SugarNode.isElement(elm) ? Option.some(elm) : Traverse.parent(elm)).map((elm: any) => elm.dom()).getOr(root);
 };
 
 const getStart = (root: Element, rng: Range, real?: boolean): Element => {
@@ -97,13 +99,13 @@ const getNode = (root: Element, rng: Range): Element => {
   return elm;
 };
 
-const getSelectedBlocks = (dom, rng: Range, startElm?: Element, endElm?: Element): Element[] => {
+const getSelectedBlocks = (dom: DOMUtils, rng: Range, startElm?: Element, endElm?: Element): Element[] => {
   let node, root;
   const selectedBlocks = [];
 
   root = dom.getRoot();
-  startElm = dom.getParent(startElm || getStart(root, rng, false), dom.isBlock);
-  endElm = dom.getParent(endElm || getEnd(root, rng, false), dom.isBlock);
+  startElm = dom.getParent(startElm || getStart(root, rng, rng.collapsed), dom.isBlock) as Element;
+  endElm = dom.getParent(endElm || getEnd(root, rng, rng.collapsed), dom.isBlock) as Element;
 
   if (startElm && startElm !== root) {
     selectedBlocks.push(startElm);

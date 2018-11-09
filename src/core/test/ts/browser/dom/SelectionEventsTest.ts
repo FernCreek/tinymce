@@ -4,6 +4,7 @@ import { TinyApis, TinyLoader } from '@ephox/mcagar';
 import { Element } from '@ephox/sugar';
 import Theme from 'tinymce/themes/modern/Theme';
 import { UnitTest } from '@ephox/bedrock';
+import { document } from '@ephox/dom-globals';
 
 UnitTest.asynctest('browser.tinymce.core.dom.SelectionEventsTest', function () {
   const success = arguments[arguments.length - 2];
@@ -30,14 +31,14 @@ UnitTest.asynctest('browser.tinymce.core.dom.SelectionEventsTest', function () {
   };
 
   const mUnbindEvent = function (editor, eventName) {
-    return Step.stateful(function (value, next, die) {
+    return Step.stateful(function (value: any, next, die) {
       editor.off(eventName, value.handler);
       next({});
     });
   };
 
   const mAssertSetSelectionEventArgs = function (editor, expectedForward) {
-    return Step.stateful(function (value, next, die) {
+    return Step.stateful(function (value: any, next, die) {
       Assertions.assertEq('Should be expected forward flag', expectedForward, value.eventArgs.get().forward);
       assertSelectAllRange(editor, value.eventArgs.get().range);
       next(value);

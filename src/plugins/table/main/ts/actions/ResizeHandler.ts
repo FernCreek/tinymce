@@ -7,14 +7,17 @@
  * License: http://www.tinymce.com/license
  * Contributing: http://www.tinymce.com/contributing
  */
-import { Arr, Option } from '@ephox/katamari';
+import { Option } from '@ephox/katamari';
 import { ResizeWire, TableDirection, TableResize } from '@ephox/snooker';
-import { Attr, Element, SelectorFilter } from '@ephox/sugar';
+import { Element } from '@ephox/sugar';
 import Tools from 'tinymce/core/api/util/Tools';
 import Direction from '../queries/Direction';
 import TableWire from './TableWire';
 import { hasTableResizeBars, hasObjectResizing } from '../api/Settings';
 import { Editor } from 'tinymce/core/api/Editor';
+import * as Events from '../api/Events';
+import * as Util from '../alien/Util';
+import { Node, HTMLTableElement, HTMLTableCellElement, HTMLTableRowElement } from '@ephox/dom-globals';
 
 export interface ResizeHandler {
   lazyResize: () => Option<any>;
@@ -65,18 +68,23 @@ export const ResizeHandler = function (editor: Editor): ResizeHandler {
       sz.events.startDrag.bind(function (event) {
         selectionRng = Option.some(editor.selection.getRng());
       });
+
+      sz.events.beforeResize.bind(function (event) {
+        const rawTable = event.table().dom();
+        Events.fireObjectResizeStart(editor, rawTable, Util.getPixelWidth(rawTable), Util.getPixelHeight(rawTable));
+      });
+
       sz.events.afterResize.bind(function (event) {
         const table = event.table();
-        const dataStyleCells = SelectorFilter.descendants(table, 'td[data-mce-style],th[data-mce-style]');
-        Arr.each(dataStyleCells, function (cell) {
-          Attr.remove(cell, 'data-mce-style');
-        });
+        const rawTable = table.dom();
+        Util.removeDataStyle(table);
 
         selectionRng.each(function (rng) {
           editor.selection.setRng(rng);
           editor.focus();
         });
 
+        Events.fireObjectResized(editor, rawTable, Util.getPixelWidth(rawTable), Util.getPixelHeight(rawTable));
         editor.undoManager.add();
       });
 

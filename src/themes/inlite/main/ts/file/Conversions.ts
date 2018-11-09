@@ -10,10 +10,11 @@
 
 import { FileReader } from '@ephox/sand';
 import Promise from 'tinymce/core/api/util/Promise';
+import { Blob } from '@ephox/dom-globals';
 
 const blobToBase64 = function (blob: Blob) {
   return new Promise<string>(function (resolve) {
-    const reader = new FileReader();
+    const reader = FileReader();
 
     reader.onloadend = function () {
       resolve(reader.result.split(',')[1]);

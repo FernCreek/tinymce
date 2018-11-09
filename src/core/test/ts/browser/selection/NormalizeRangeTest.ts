@@ -5,6 +5,8 @@ import NormalizeRange from 'tinymce/core/selection/NormalizeRange';
 import ViewBlock from '../../module/test/ViewBlock';
 import Zwsp from 'tinymce/core/text/Zwsp';
 import { UnitTest } from '@ephox/bedrock';
+import { document } from '@ephox/dom-globals';
+import { Option } from '@ephox/katamari';
 
 UnitTest.asynctest('browser.tinymce.core.selection.NormalizeRangeTest', function () {
   const success = arguments[arguments.length - 2];
@@ -29,7 +31,7 @@ UnitTest.asynctest('browser.tinymce.core.selection.NormalizeRangeTest', function
   };
 
   const cNormalizeRange = function (startPath, startOffset, endPath, endOffset) {
-    return Chain.mapper(function (viewBlock) {
+    return Chain.mapper(function (viewBlock: any) {
       const sc = Hierarchy.follow(Element.fromDom(viewBlock.get()), startPath).getOrDie();
       const ec = Hierarchy.follow(Element.fromDom(viewBlock.get()), endPath).getOrDie();
       const rng = document.createRange();
@@ -47,7 +49,7 @@ UnitTest.asynctest('browser.tinymce.core.selection.NormalizeRangeTest', function
     });
   };
 
-  const cAssertRangeNone = Chain.op(function (range) {
+  const cAssertRangeNone = Chain.op(function (range: Option<any>) {
     Assertions.assertEq('Should be none', true, range.isNone());
   });
 

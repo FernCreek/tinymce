@@ -4,6 +4,7 @@ import CaretFinder from 'tinymce/core/caret/CaretFinder';
 import CaretPosition from 'tinymce/core/caret/CaretPosition';
 import ViewBlock from '../../module/test/ViewBlock';
 import { UnitTest } from '@ephox/bedrock';
+import { Option } from '@ephox/katamari';
 
 UnitTest.asynctest('browser.tinymce.core.CaretFinderTest', function () {
   const success = arguments[arguments.length - 2];
@@ -17,14 +18,14 @@ UnitTest.asynctest('browser.tinymce.core.CaretFinderTest', function () {
   };
 
   const cCreateFromPosition = function (path, offset) {
-    return Chain.mapper(function (viewBlock) {
+    return Chain.mapper(function (viewBlock: any) {
       const container = Hierarchy.follow(Element.fromDom(viewBlock.get()), path).getOrDie();
       return CaretPosition(container.dom(), offset);
     });
   };
 
   const cAssertCaretPosition = function (path, expectedOffset) {
-    return Chain.op(function (posOption) {
+    return Chain.op(function (posOption: Option<any>) {
       const pos = posOption.getOrDie();
       const expectedContainer = Hierarchy.follow(Element.fromDom(viewBlock.get()), path).getOrDie();
       Assertions.assertDomEq('Should be the expected container', expectedContainer, Element.fromDom(pos.container()));
@@ -32,18 +33,18 @@ UnitTest.asynctest('browser.tinymce.core.CaretFinderTest', function () {
     });
   };
 
-  const cAssertNone = Chain.op(function (pos) {
+  const cAssertNone = Chain.op(function (pos: Option<any>) {
     Assertions.assertEq('Should be the none but got some', true, pos.isNone());
   });
 
   const cFromPosition = function (forward) {
-    return Chain.mapper(function (from) {
+    return Chain.mapper(function (from: CaretPosition) {
       return CaretFinder.fromPosition(forward, viewBlock.get(), from);
     });
   };
 
   const cNavigate = function (forward) {
-    return Chain.mapper(function (from) {
+    return Chain.mapper(function (from: CaretPosition) {
       return CaretFinder.navigate(forward, viewBlock.get(), from);
     });
   };
@@ -149,6 +150,12 @@ UnitTest.asynctest('browser.tinymce.core.CaretFinderTest', function () {
         Logger.t('Should walk from after first input to after second input', Chain.asStep(viewBlock, [
           cSetHtml('<p><input><input><input></p>'),
           cCreateFromPosition([0], 1),
+          cNavigate(true),
+          cAssertCaretPosition([0], 2)
+        ])),
+        Logger.t('should walk from after last text node offset to before CEF span', Chain.asStep(viewBlock, [
+          cSetHtml('<p>a<br><span contenteditable="false">b</span></p>'),
+          cCreateFromPosition([0, 0], 1),
           cNavigate(true),
           cAssertCaretPosition([0], 2)
         ])),

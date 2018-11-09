@@ -20,6 +20,7 @@ import * as CefUtils from './CefUtils';
 import * as RangeNodes from '../selection/RangeNodes';
 import Arr from '../util/Arr';
 import Fun from '../util/Fun';
+import { Range, Element } from '@ephox/dom-globals';
 
 const isContentEditableFalse = NodeType.isContentEditableFalse;
 const getSelectedNode = RangeNodes.getSelectedNode;
@@ -228,7 +229,7 @@ const getVerticalRange = (editor, down: boolean): Range => {
   return null;
 };
 
-const moveH = (editor, forward: boolean): () => boolean => {
+const moveH = (editor, forward: boolean) => {
   return () => {
     const newRng = getHorizontalRange(editor, forward);
 
@@ -241,7 +242,7 @@ const moveH = (editor, forward: boolean): () => boolean => {
   };
 };
 
-const moveV = (editor, down: boolean): () => boolean => {
+const moveV = (editor, down: boolean) => {
   return () => {
     const newRng = getVerticalRange(editor, down);
 

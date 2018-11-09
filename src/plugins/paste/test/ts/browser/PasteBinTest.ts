@@ -3,7 +3,7 @@ import { UnitTest } from '@ephox/bedrock';
 import { Id, Merger, Obj } from '@ephox/katamari';
 
 import EditorManager from 'tinymce/core/api/EditorManager';
-import { PasteBin } from 'tinymce/plugins/paste/core/PasteBin';
+import { PasteBin, getPasteBinParent } from 'tinymce/plugins/paste/core/PasteBin';
 import PastePlugin from 'tinymce/plugins/paste/Plugin';
 import Theme from 'tinymce/themes/modern/Theme';
 
@@ -32,7 +32,7 @@ UnitTest.asynctest('tinymce.plugins.paste.browser.PasteBin', function () {
   const viewBlock = ViewBlock();
 
   const cCreateEditorFromSettings = function (settings?, html?) {
-    return Chain.on(function (viewBlock, next, die) {
+    return Chain.async(function (viewBlock: any, next, die) {
       const randomId = Id.generate('tiny');
       html = html || '<textarea></textarea>';
 
@@ -48,7 +48,7 @@ UnitTest.asynctest('tinymce.plugins.paste.browser.PasteBin', function () {
         setup (editor) {
           editor.on('SkinLoaded', function () {
             setTimeout(function () {
-              next(Chain.wrap(editor));
+              next(editor);
             }, 0);
           });
         }
@@ -61,16 +61,16 @@ UnitTest.asynctest('tinymce.plugins.paste.browser.PasteBin', function () {
   };
 
   const cRemoveEditor = function () {
-    return Chain.op(function (editor) {
+    return Chain.op(function (editor: any) {
       editor.remove();
     });
   };
 
   const cAssertCases = function (cases) {
-    return Chain.op(function (editor) {
+    return Chain.op(function (editor: any) {
       const pasteBin = PasteBin(editor);
       Obj.each(cases, function (c, i) {
-        editor.getBody().innerHTML = c.content;
+        getPasteBinParent(editor).appendChild(editor.dom.createFragment(c.content));
         Assertions.assertEq(c.label || 'Asserting paste bin case ' + i, c.result, pasteBin.getHtml());
         pasteBin.remove();
       });

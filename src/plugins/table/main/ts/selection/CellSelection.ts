@@ -12,12 +12,18 @@ import { InputHandlers, SelectionAnnotation, SelectionKeys } from '@ephox/darwin
 import { Fun, Option, Struct } from '@ephox/katamari';
 import { TableLookup } from '@ephox/snooker';
 import {
-    Compare, Element, Selection, SelectionDirection
+    Element, Selection, SelectionDirection, Class
 } from '@ephox/sugar';
 
-import Util from '../alien/Util';
+import * as Util from '../alien/Util';
 import Direction from '../queries/Direction';
 import Ephemera from './Ephemera';
+import { DomParent } from '@ephox/robin';
+
+const hasInternalTarget = (e: Event) => {
+  return Class.has(Element.fromDom(e.target as HTMLElement), 'ephox-snooker-resizer-bar') === false;
+};
+import { KeyboardEvent, MouseEvent, Event, HTMLElement } from '@ephox/dom-globals';
 
 export default function (editor, lazyResize) {
   const handlerStruct = Struct.immutableBag(['mousedown', 'mouseover', 'mouseup', 'keyup', 'keydown'], []);
@@ -30,18 +36,14 @@ export default function (editor, lazyResize) {
     const body = Util.getBody(editor);
     const isRoot = Util.getIsRoot(editor);
 
+    // When the selection changes through either the mouse or keyboard, and the selection is no longer within the table.
+    // Remove the selection.
     const syncSelection = function () {
       const sel = editor.selection;
       const start = Element.fromDom(sel.getStart());
       const end = Element.fromDom(sel.getEnd());
-      const startTable = TableLookup.table(start);
-      const endTable = TableLookup.table(end);
-      const sameTable = startTable.bind(function (tableStart) {
-        return endTable.bind(function (tableEnd) {
-          return Compare.eq(tableStart, tableEnd) ? Option.some(true) : Option.none();
-        });
-      });
-      sameTable.fold(function () {
+      const shared = DomParent.sharedOne(TableLookup.table, [start, end]);
+      shared.fold(function () {
         annotations.clear(body);
       }, Fun.noop);
     };
@@ -102,7 +104,7 @@ export default function (editor, lazyResize) {
 
     const wrapEvent = function (event: MouseEvent | KeyboardEvent) {
       // IE9 minimum
-      const target = Element.fromDom(event.target);
+      const target = Element.fromDom(event.target as HTMLElement);
 
       const stop = function () {
         event.stopPropagation();
@@ -143,17 +145,17 @@ export default function (editor, lazyResize) {
     };
 
     const mouseDown = function (e: MouseEvent) {
-      if (isLeftMouse(e)) {
+      if (isLeftMouse(e) && hasInternalTarget(e)) {
         mouseHandlers.mousedown(wrapEvent(e));
       }
     };
     const mouseOver = function (e: MouseEvent) {
-      if (isLeftButtonPressed(e)) {
+      if (isLeftButtonPressed(e) && hasInternalTarget(e)) {
         mouseHandlers.mouseover(wrapEvent(e));
       }
     };
     const mouseUp = function (e: MouseEvent) {
-      if (isLeftMouse(e)) {
+      if (isLeftMouse(e) && hasInternalTarget(e)) {
         mouseHandlers.mouseup(wrapEvent(e));
       }
     };

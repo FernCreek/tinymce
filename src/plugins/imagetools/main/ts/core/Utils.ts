@@ -11,6 +11,7 @@ import { FileReader, XMLHttpRequest } from '@ephox/sand';
 
 import Promise from 'tinymce/core/api/util/Promise';
 import Tools from 'tinymce/core/api/util/Tools';
+import { Blob } from '@ephox/dom-globals';
 
 const isValue = function (obj) {
   return obj !== null && obj !== undefined;
@@ -30,7 +31,7 @@ const requestUrlAsBlob = function (url: string, headers: Record<string, string>,
   return new Promise<{status: number, blob: Blob}>(function (resolve) {
     let xhr;
 
-    xhr = new XMLHttpRequest();
+    xhr = XMLHttpRequest();
 
     xhr.onreadystatechange = function () {
       if (xhr.readyState === 4) {
@@ -56,7 +57,7 @@ const requestUrlAsBlob = function (url: string, headers: Record<string, string>,
 
 const readBlob = function (blob) {
   return new Promise(function (resolve) {
-    const fr = new FileReader();
+    const fr = FileReader();
 
     fr.onload = function (e) {
       const data = e.target;

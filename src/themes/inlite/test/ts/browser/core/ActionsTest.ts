@@ -5,6 +5,7 @@ import { Uint8Array, Window } from '@ephox/sand';
 
 import Actions from 'tinymce/themes/inlite/core/Actions';
 import Theme from 'tinymce/themes/inlite/Theme';
+import { Blob } from '@ephox/dom-globals';
 
 UnitTest.asynctest('browser/core/ActionsTest', function () {
   const success = arguments[arguments.length - 2];
@@ -135,7 +136,7 @@ UnitTest.asynctest('browser/core/ActionsTest', function () {
 
   const base64ToBlob = function (base64, type) {
     const buff = Window.atob(base64);
-    const bytes = new Uint8Array(buff.length);
+    const bytes = Uint8Array(buff.length);
 
     for (let i = 0; i < bytes.length; i++) {
       bytes[i] = buff.charCodeAt(i);

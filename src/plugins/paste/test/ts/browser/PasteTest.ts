@@ -79,6 +79,19 @@ UnitTest.asynctest('tinymce.plugins.paste.browser.ImagePasteTest', function () {
     LegacyUnit.equal(editor.getContent(), '<p>1TEST4</p>');
   });
 
+  suite.test('Paste text with meta and nbsp', function (editor) {
+    const rng = editor.dom.createRng();
+
+    editor.setContent('<p>1&nbsp;</p>');
+    editor.focus();
+    rng.setStart(editor.getBody().firstChild.firstChild, 2);
+    rng.setEnd(editor.getBody().firstChild.firstChild, 2);
+    editor.selection.setRng(rng);
+
+    editor.execCommand('mceInsertClipboardContent', false, { content: '<meta charset="utf-8">TEST' });
+    LegacyUnit.equal(editor.getContent(), '<p>1 TEST</p>');
+  });
+
   suite.test('Paste styled text content', function (editor) {
     const rng = editor.dom.createRng();
 
@@ -672,6 +685,11 @@ UnitTest.asynctest('tinymce.plugins.paste.browser.ImagePasteTest', function () {
   suite.test('paste innerText of P with BR', function (editor) {
     editor.setContent('<p>a<br>b</p>');
     LegacyUnit.equal(Utils.innerText(editor.getBody().innerHTML), 'a\nb');
+  });
+
+  suite.test('paste innerText of P with WBR', function (editor) {
+    editor.setContent('<p>a<wbr>b</p>');
+    LegacyUnit.equal(Utils.innerText(editor.getBody().innerHTML), 'ab');
   });
 
   suite.test('paste innerText of P with VIDEO', function (editor) {

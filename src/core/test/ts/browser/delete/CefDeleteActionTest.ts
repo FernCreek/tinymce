@@ -1,13 +1,12 @@
 import { Assertions, Chain, GeneralSteps, Logger, Pipeline } from '@ephox/agar';
-import { Fun } from '@ephox/katamari';
+import { Fun, Option } from '@ephox/katamari';
 import { Hierarchy, Element } from '@ephox/sugar';
 import * as CefDeleteAction from 'tinymce/core/delete/CefDeleteAction';
 import ViewBlock from '../../module/test/ViewBlock';
 import { UnitTest } from '@ephox/bedrock';
+import { document } from '@ephox/dom-globals';
 
-UnitTest.asynctest('browser.tinymce.core.delete.CefDeleteActionTest', function () {
-  const success = arguments[arguments.length - 2];
-  const failure = arguments[arguments.length - 1];
+UnitTest.asynctest('browser.tinymce.core.delete.CefDeleteActionTest', (success, failure) => {
   const viewBlock = ViewBlock();
 
   const cSetHtml = function (html) {
@@ -17,7 +16,7 @@ UnitTest.asynctest('browser.tinymce.core.delete.CefDeleteActionTest', function (
   };
 
   const cReadAction = function (forward, cursorPath, cursorOffset) {
-    return Chain.mapper(function (viewBlock) {
+    return Chain.mapper(function (viewBlock: any) {
       const container = Hierarchy.follow(Element.fromDom(viewBlock.get()), cursorPath).getOrDie();
       const rng = document.createRange();
       rng.setStart(container.dom(), cursorOffset);
@@ -27,7 +26,7 @@ UnitTest.asynctest('browser.tinymce.core.delete.CefDeleteActionTest', function (
   };
 
   const cAssertRemoveElementAction = function (elementPath) {
-    return Chain.op(function (actionOption) {
+    return Chain.op(function (actionOption: Option<any>) {
       const element = Hierarchy.follow(Element.fromDom(viewBlock.get()), elementPath).getOrDie();
       const action = actionOption.getOrDie();
       Assertions.assertEq('Should be expected action type', 'remove', actionName(action));
@@ -36,7 +35,7 @@ UnitTest.asynctest('browser.tinymce.core.delete.CefDeleteActionTest', function (
   };
 
   const cAssertMoveToElementAction = function (elementPath) {
-    return Chain.op(function (actionOption) {
+    return Chain.op(function (actionOption: Option<any>) {
       const element = Hierarchy.follow(Element.fromDom(viewBlock.get()), elementPath).getOrDie();
       const action = actionOption.getOrDie();
       Assertions.assertEq('Should be expected action type', 'moveToElement', actionName(action));
@@ -45,7 +44,7 @@ UnitTest.asynctest('browser.tinymce.core.delete.CefDeleteActionTest', function (
   };
 
   const cAssertMoveToPositionAction = function (elementPath, offset) {
-    return Chain.op(function (actionOption) {
+    return Chain.op(function (actionOption: Option<any>) {
       const container = Hierarchy.follow(Element.fromDom(viewBlock.get()), elementPath).getOrDie();
       const action = actionOption.getOrDie();
       Assertions.assertEq('Should be expected action type', 'moveToPosition', actionName(action));
@@ -54,7 +53,7 @@ UnitTest.asynctest('browser.tinymce.core.delete.CefDeleteActionTest', function (
     });
   };
 
-  const cAssertActionNone = Chain.op(function (actionOption) {
+  const cAssertActionNone = Chain.op(function (actionOption: Option<any>) {
     Assertions.assertEq('Action value should be none', true, actionOption.isNone());
   });
 
@@ -202,6 +201,16 @@ UnitTest.asynctest('browser.tinymce.core.delete.CefDeleteActionTest', function (
         cSetHtml('<p contenteditable="false">b</p><p><br></p><p contenteditable="false">b</p>'),
         cReadAction(false, [1], 0),
         cAssertRemoveElementAction([1])
+      ])),
+      Logger.t('Should be removeElement since caret positioned before BR', Chain.asStep(viewBlock, [
+        cSetHtml('<p><span contenteditable="false">A</span>\ufeff<br /><span contenteditable="false">B</span></p>'),
+        cReadAction(true, [0], 1),
+        cAssertRemoveElementAction([0, 2])
+      ])),
+      Logger.t('Should be removeElement since caret positioned after BR', Chain.asStep(viewBlock, [
+        cSetHtml('<p><span contenteditable="false">A</span><br />\ufeff<span contenteditable="false">B</span></p>'),
+        cReadAction(false, [0], 3),
+        cAssertRemoveElementAction([0, 1])
       ]))
     ])),
 

@@ -13,15 +13,15 @@ UnitTest.asynctest('browser.tinymce.core.EditorRemoveTest', (success, failure) =
     skin_url: '/project/js/tinymce/skins/lightgray'
   };
 
-  const cAssertTextareaDisplayStyle = (expected) => Chain.op((editor) => {
+  const cAssertTextareaDisplayStyle = (expected) => Chain.op((editor: any) => {
     const textareaElement = editor.getElement();
 
     RawAssertions.assertEq('element does not have the expected style', expected, textareaElement.style.display);
   });
 
-  const cCreateEditor = Chain.on((_, next, die) => next(Chain.wrap(new Editor('editor', {}, EditorManager))));
+  const cCreateEditor = Chain.mapper(() => new Editor('editor', {}, EditorManager));
 
-  const cRemoveEditor = Chain.op((editor) => editor.remove());
+  const cRemoveEditor = Chain.op((editor: any) => editor.remove());
 
   Pipeline.async({}, [
     Logger.t('remove editor without initializing it', Chain.asStep({}, [

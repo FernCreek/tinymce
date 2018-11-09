@@ -5,6 +5,7 @@ import { Attr, Element, Insert, Remove, Selectors, Traverse } from '@ephox/sugar
 
 import EditorManager from 'tinymce/core/api/EditorManager';
 import Plugin from 'tinymce/plugins/table/Plugin';
+import { document } from '@ephox/dom-globals';
 
 UnitTest.asynctest('browser.tinymce.plugins.table.TableAsBodyTest', function () {
   const success = arguments[arguments.length - 2];
@@ -31,7 +32,7 @@ UnitTest.asynctest('browser.tinymce.plugins.table.TableAsBodyTest', function () 
   };
 
   const cFromSettings = function (settings, html) {
-    return Chain.on(function (_, next, die) {
+    return Chain.async(function (_, next, die) {
       const randomId = Id.generate('tiny-loader');
       settings = settings || {};
       const target = Element.fromHtml(html);
@@ -43,7 +44,7 @@ UnitTest.asynctest('browser.tinymce.plugins.table.TableAsBodyTest', function () 
         selector: '#' + randomId,
         init_instance_callback (editor) {
           setTimeout(function () {
-            next(Chain.wrap(editor));
+            next(editor);
           }, 0);
         }
       }));
@@ -51,21 +52,21 @@ UnitTest.asynctest('browser.tinymce.plugins.table.TableAsBodyTest', function () 
   };
 
   const cExecCommand = function (command, value?) {
-    return Chain.op(function (editor) {
+    return Chain.op(function (editor: any) {
       editor.execCommand(command, false, value);
     });
   };
 
   const cAssertContent = function (expected) {
-    return Chain.op(function (editor) {
+    return Chain.op(function (editor: any) {
       Assertions.assertHtml('Checking TinyMCE content', expected, editor.getContent());
     });
   };
 
-  const cRemove = Chain.op(function (editor) {
+  const cRemove = Chain.op(function (editor: any) {
     const id = editor.id;
     editor.remove();
-    Selectors.one('#' + id).bind(Remove.remove);
+    Selectors.one('#' + id).each(Remove.remove);
   });
 
   const lazyBody = function (editor) {
@@ -73,7 +74,7 @@ UnitTest.asynctest('browser.tinymce.plugins.table.TableAsBodyTest', function () 
   };
 
   const cSetSelection = function (startPath, soffset, finishPath, foffset) {
-    return Chain.op(function (editor) {
+    return Chain.op(function (editor: any) {
       const range = createDomSelection(lazyBody(editor), startPath, soffset, finishPath, foffset);
       editor.selection.setRng(range);
       editor.nodeChanged();

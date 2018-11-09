@@ -11,6 +11,7 @@
 import DomParser from 'tinymce/core/api/html/DomParser';
 import Schema from 'tinymce/core/api/html/Schema';
 import Tools from 'tinymce/core/api/util/Tools';
+import { navigator } from '@ephox/dom-globals';
 
 /**
  * This class contails various utility functions for the paste plugin.
@@ -53,12 +54,17 @@ function innerText(html: string) {
       return;
     }
 
-    // img/input/hr
+    // Ignore wbr, to replicate innerText on Chrome/Firefox
+    if (name === 'wbr') {
+      return;
+    }
+
+    // img/input/hr but ignore wbr as it's just a potential word break
     if (shortEndedElements[name]) {
       text += ' ';
     }
 
-    // Ingore script, video contents
+    // Ignore script, video contents
     if (ignoreElements[name]) {
       text += ' ';
       return;

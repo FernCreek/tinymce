@@ -22,6 +22,7 @@ import { StyleMap, Styles } from '../html/Styles';
 import Tools from '../util/Tools';
 import { GeomRect } from 'tinymce/core/api/geom/Rect';
 import NodeType from 'tinymce/core/dom/NodeType';
+import { HTMLElement, Node, Window, Document, Element, DocumentFragment, NamedNodeMap, Range, window, document } from '@ephox/dom-globals';
 
 /**
  * Utility class for various DOM manipulation and retrieval functions.
@@ -137,6 +138,7 @@ export interface DOMUtilsSettings {
   root_element: HTMLElement;
   collect: Function;
   onSetAttrib: Function;
+  contentCssCors: boolean;
 }
 
 export type Target = Node | Window | Array<Node | Window>;
@@ -245,7 +247,7 @@ export function DOMUtils(doc: Document, settings: Partial<DOMUtilsSettings> = {}
   let counter = 0;
   const stdMode = true;
   const boxModel = true;
-  const styleSheetLoader = StyleSheetLoader(doc);
+  const styleSheetLoader = StyleSheetLoader(doc, { contentCssCors: settings.contentCssCors });
   const boundEvents = [];
   const schema = settings.schema ? settings.schema : Schema({});
   const styles = Styles({

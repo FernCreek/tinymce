@@ -1,8 +1,8 @@
 /**
- * CaretFinder.js
+ * CaretFinder.ts
  *
  * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
+ * Copyright (c) 1999-2018 Ephox Corp. All rights reserved
  *
  * License: http://www.tinymce.com/license
  * Contributing: http://www.tinymce.com/contributing
@@ -14,6 +14,7 @@ import CaretPosition from './CaretPosition';
 import * as CaretUtils from './CaretUtils';
 import { CaretWalker } from './CaretWalker';
 import NodeType from '../dom/NodeType';
+import { Node, Element, Text } from '@ephox/dom-globals';
 
 const walkToPositionIn = (forward: boolean, root: Node, start: Node) => {
   const position = forward ? CaretPosition.before(start) : CaretPosition.after(start);
@@ -89,10 +90,13 @@ const positionIn = (forward: boolean, element: Element): Option<CaretPosition> =
   }
 };
 
+const nextPosition = Fun.curry(fromPosition, true) as (root: Node, pos: CaretPosition) => Option<CaretPosition>;
+const prevPosition = Fun.curry(fromPosition, false) as (root: Node, pos: CaretPosition) => Option<CaretPosition>;
+
 export default {
   fromPosition,
-  nextPosition: Fun.curry(fromPosition, true) as (root: Node, pos: CaretPosition) => Option<CaretPosition>,
-  prevPosition: Fun.curry(fromPosition, false) as (root: Node, pos: CaretPosition) => Option<CaretPosition>,
+  nextPosition,
+  prevPosition,
   navigate,
   positionIn,
   firstPositionIn: Fun.curry(positionIn, true) as (element: Element) => Option<CaretPosition>,

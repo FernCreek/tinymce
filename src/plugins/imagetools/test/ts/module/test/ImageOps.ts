@@ -1,8 +1,8 @@
 import { Chain, Guard, Mouse, Pipeline, Step, UiFinder } from '@ephox/agar';
-import Clicks from '@ephox/agar/lib/main/ts/ephox/agar/mouse/Clicks';
+import * as Clicks from '@ephox/agar/lib/main/ts/ephox/agar/mouse/Clicks';
 import { Fun, Result } from '@ephox/katamari';
 import { TinyDom, TinyUi } from '@ephox/mcagar';
-import { Attr, DomEvent, PredicateFilter, Selectors, Visibility } from '@ephox/sugar';
+import { Attr, DomEvent, PredicateFilter, Selectors, Visibility, Element } from '@ephox/sugar';
 
 export default function (editor) {
   const ui = TinyUi(editor);
@@ -28,21 +28,21 @@ export default function (editor) {
   };
 
   const cFindChildWithState = function (selector, predicate) {
-    return Chain.on(function (scope, next, die) {
+    return Chain.async(function (scope: Element, next, die) {
       const children = PredicateFilter.descendants(scope, function (element) {
         return Selectors.is(element, selector) && predicate(element);
       });
-      children.length ? next(Chain.wrap(children[0])) : die();
+      children.length ? next(children[0]) : die('No children with state');
     });
   };
 
   const cDragSlider = Chain.fromChains([
     UiFinder.cFindIn('div[role="slider"]'),
-    Chain.on(function (element, next, die) {
+    Chain.async(function (element, next, die) {
       const unbindMouseMove = DomEvent.bind(element, 'mousemove', function (e) {
         Clicks.mouseup(element);
         unbindMouseMove();
-        next(Chain.wrap(element));
+        next(element);
       }).unbind;
 
       const unbindMouseDown = DomEvent.bind(element, 'mousedown', function (e) {

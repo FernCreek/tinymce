@@ -3,6 +3,7 @@ import { UnitTest } from '@ephox/bedrock';
 import { Uint8Array, Window } from '@ephox/sand';
 
 import Conversions from 'tinymce/themes/inlite/file/Conversions';
+import { Blob } from '@ephox/dom-globals';
 
 UnitTest.asynctest('atomic.core.ConvertTest', function () {
   const success = arguments[arguments.length - 2];
@@ -10,7 +11,7 @@ UnitTest.asynctest('atomic.core.ConvertTest', function () {
 
   const base64ToBlob = function (base64, type) {
     const buff = Window.atob(base64);
-    const bytes = new Uint8Array(buff.length);
+    const bytes = Uint8Array(buff.length);
 
     for (let i = 0; i < bytes.length; i++) {
       bytes[i] = buff.charCodeAt(i);

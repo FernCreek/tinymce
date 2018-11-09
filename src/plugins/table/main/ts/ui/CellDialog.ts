@@ -11,10 +11,11 @@
 import { Fun } from '@ephox/katamari';
 import Tools from 'tinymce/core/api/util/Tools';
 import Styles from '../actions/Styles';
-import Util from '../alien/Util';
+import * as Util from '../alien/Util';
 import Helpers from './Helpers';
 import { hasAdvancedCellTab, getCellClassList } from '../api/Settings';
 import { Editor } from 'tinymce/core/api/Editor';
+import { HTMLElement, Node, HTMLTableCellElement } from '@ephox/dom-globals';
 
 /**
  * @class tinymce.table.ui.CellDialog
@@ -74,18 +75,20 @@ const onSubmitCellForm = function (editor: Editor, cells: Node[], evt) {
   let data: FormData;
 
   function setAttrib(elm: Node, name: string, value: string) {
-    if (value) {
+    if (cells.length === 1 || value) {
       dom.setAttrib(elm, name, value);
     }
   }
 
   function setStyle(elm: Node, name: string, value: string) {
-    if (value) {
+    if (cells.length === 1 || value) {
       dom.setStyle(elm, name, value);
     }
   }
 
-  Helpers.updateStyleField(editor, evt);
+  if (hasAdvancedCellTab(editor)) {
+    Helpers.syncAdvancedStyleFields(editor, evt);
+  }
   data = evt.control.rootControl.toJSON();
 
   editor.undoManager.transact(function () {

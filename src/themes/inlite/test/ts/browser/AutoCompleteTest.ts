@@ -13,6 +13,8 @@ import TextpatternPlugin from 'tinymce/plugins/textpattern/Plugin';
 import Theme from 'tinymce/themes/inlite/Theme';
 
 import Toolbar from '../module/test/Toolbar';
+import { document } from '@ephox/dom-globals';
+import { Element } from '@ephox/sugar';
 
 UnitTest.asynctest('browser.AutoCompleteTest', function () {
   const success = arguments[arguments.length - 2];
@@ -27,7 +29,7 @@ UnitTest.asynctest('browser.AutoCompleteTest', function () {
   Theme();
 
   const cKeyStroke = function (keyvalue, modifiers) {
-    return Chain.op(function (dispatcher) {
+    return Chain.op(function (dispatcher: Element) {
       Keyboard.keystroke(keyvalue, modifiers, dispatcher);
     });
   };

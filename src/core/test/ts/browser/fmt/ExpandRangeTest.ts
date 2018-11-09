@@ -12,13 +12,13 @@ UnitTest.asynctest('browser.tinymce.core.fmt.ExpandRangeTest', function () {
   ModernTheme();
 
   const cSetRawContent = function (html) {
-    return Chain.op(function (editor) {
+    return Chain.op(function (editor: any) {
       editor.getBody().innerHTML = html;
     });
   };
 
   const cExpandRng = function (startPath, startOffset, endPath, endOffset, format, remove) {
-    return Chain.mapper(function (editor) {
+    return Chain.mapper(function (editor: any) {
       const startContainer = Hierarchy.follow(Element.fromDom(editor.getBody()), startPath).getOrDie();
       const endContainer = Hierarchy.follow(Element.fromDom(editor.getBody()), endPath).getOrDie();
 
@@ -31,7 +31,7 @@ UnitTest.asynctest('browser.tinymce.core.fmt.ExpandRangeTest', function () {
   };
 
   const cAssertRange = function (editor, startPath, startOffset, endPath, endOffset) {
-    return Chain.op(function (rng) {
+    return Chain.op(function (rng: any) {
       const startContainer = Hierarchy.follow(Element.fromDom(editor.getBody()), startPath).getOrDie();
       const endContainer = Hierarchy.follow(Element.fromDom(editor.getBody()), endPath).getOrDie();
 
@@ -171,10 +171,25 @@ UnitTest.asynctest('browser.tinymce.core.fmt.ExpandRangeTest', function () {
       ])),
 
       Logger.t('Expand selector format', GeneralSteps.sequence([
-        Logger.t('Do not expand if selector does not match', Chain.asStep(editor, [
+        Logger.t('Do not expand over element if selector does not match', Chain.asStep(editor, [
           cSetRawContent('<p>ab</p>'),
           cExpandRng([0, 0], 1, [0, 0], 1, selectorFormat, false),
-          cAssertRange(editor, [0, 0], 1, [0, 0], 1)
+          cAssertRange(editor, [0, 0], 0, [0, 0], 2)
+        ])),
+        Logger.t('Do not expand outside of element if selector does not match - from bookmark at middle', Chain.asStep(editor, [
+          cSetRawContent('<p>a<span data-mce-type="bookmark">&#65279;</span>b</p>'),
+          cExpandRng([0, 1, 0], 0, [0, 1, 0], 0, selectorFormat, false),
+          cAssertRange(editor, [0, 0], 0, [0, 2], 1)
+        ])),
+        Logger.t('Do not expand outside of element if selector does not match - from bookmark at start', Chain.asStep(editor, [
+          cSetRawContent('<p><span data-mce-type="bookmark">&#65279;</span>ab</p>'),
+          cExpandRng([0, 0, 0], 0, [0, 0, 0], 0, selectorFormat, false),
+          cAssertRange(editor, [0], 0, [0, 1], 2)
+        ])),
+        Logger.t('Do not expand outside of element if selector does not match - from bookmark at end', Chain.asStep(editor, [
+          cSetRawContent('<p>ab<span data-mce-type="bookmark">&#65279;</span></p>'),
+          cExpandRng([0, 1, 0], 0, [0, 1, 0], 0, selectorFormat, false),
+          cAssertRange(editor, [0, 0], 0, [0], 2)
         ])),
         Logger.t('Expand since selector matches', Chain.asStep(editor, [
           cSetRawContent('<div>ab</div>'),

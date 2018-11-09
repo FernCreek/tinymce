@@ -9,6 +9,7 @@ import { Element, SelectorFind } from '@ephox/sugar';
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import Plugin from 'tinymce/plugins/table/Plugin';
 import Theme from 'tinymce/themes/modern/Theme';
+import { document } from '@ephox/dom-globals';
 
 UnitTest.asynctest('browser.tinymce.plugins.table.TableDialogTest', function () {
   const success = arguments[arguments.length - 2];
@@ -40,7 +41,7 @@ UnitTest.asynctest('browser.tinymce.plugins.table.TableDialogTest', function () 
     };
 
     const cFakeEventOn = function (event) {
-      return Chain.op(function (elm) {
+      return Chain.op(function (elm: Element) {
         DOMUtils.DOM.fire(elm.dom(), event);
       });
     };

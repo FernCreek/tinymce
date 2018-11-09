@@ -14,6 +14,7 @@ import NodeType from './dom/NodeType';
 import Arr from './util/Arr';
 import Delay from './api/util/Delay';
 import Fun from './util/Fun';
+import { document } from '@ephox/dom-globals';
 
 /**
  * This module contains logic overriding the drag/drop logic of the editor.
@@ -219,10 +220,10 @@ const drop = function (state, editor) {
 
 const stop = function (state, editor) {
   return function () {
-    removeDragState(state);
     if (state.dragging) {
       editor.fire('dragend');
     }
+    removeDragState(state);
   };
 };
 

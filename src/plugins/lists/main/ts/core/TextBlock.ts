@@ -12,10 +12,11 @@ import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import Env from 'tinymce/core/api/Env';
 import NodeType from './NodeType';
 import Utils from '../api/Utils';
+import { DocumentFragment } from '@ephox/dom-globals';
 
 const DOM = DOMUtils.DOM;
 
-const createNewTextBlock = function (editor, contentNode, blockName?, liStyle?) {
+const createNewTextBlock = function (editor, contentNode, blockName?, liStyle?): DocumentFragment {
   let node, textBlock;
   const fragment = DOM.createFragment();
   let hasContentNode;

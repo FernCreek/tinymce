@@ -17,6 +17,7 @@ import SplitList from '../core/SplitList';
 import TextBlock from '../core/TextBlock';
 import Utils from '../api/Utils';
 import { Editor } from 'tinymce/core/api/Editor';
+import { HTMLLIElement } from '@ephox/dom-globals';
 
 const DOM = DOMUtils.DOM;
 
