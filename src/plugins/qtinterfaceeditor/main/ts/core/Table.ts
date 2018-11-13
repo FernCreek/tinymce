@@ -123,7 +123,7 @@ const setCellProperties = (editor, json) => saveRowCellProperties(editor, json, 
 const setCommonJSON = (tablePlugin, $ele, json, getMarginsFn, getBorderFn, borderNames, getBorderStyleFn) => {
   setJSONMargins(getMarginsFn($ele), json);
   const borders = getBorderInterface(getBorderFn, $ele, borderNames);
-  json.borders = borders;
+  json.borders = JSON.parse(JSON.stringify(borders));
   setJSONBorderStyle(getBorderStyleFn(borders), json);
 };
 // Sets table specific json
