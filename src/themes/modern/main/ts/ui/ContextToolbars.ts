@@ -121,14 +121,20 @@ const addContextualToolbars = function (editor) {
 
     panel = match.toolbar.panel;
 
+    elementRect = getElementRect(match.element);
+    panelRect = DOM.getRect(panel.getEl());
+    contentAreaRect = DOM.getRect(editor.getContentAreaContainer() || editor.getBody());
+
+    // Toolbar is too large for the editor
+    if (panelRect.w >= contentAreaRect.w) {
+      hideAllFloatingPanels(editor);
+      return;
+    }
+
     // Only show the panel on some events not for example nodeChange since that fires when context menu is opened
     if (shouldShow) {
       panel.show();
     }
-
-    elementRect = getElementRect(match.element);
-    panelRect = DOM.getRect(panel.getEl());
-    contentAreaRect = DOM.getRect(editor.getContentAreaContainer() || editor.getBody());
 
     const delta = UiContainer.getUiContainerDelta(panel).getOr({ x: 0, y: 0 });
     elementRect.x += delta.x;
