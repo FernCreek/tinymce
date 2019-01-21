@@ -79,6 +79,7 @@ const applyReadOnlyMode = (editor) => {
     editor._clickBlocker.unbind();
     editor._clickBlocker = null;
   }
+  editor.readonly = 1;
 };
 // Applies edit mode to the editor
 const applyEditMode = (editor) => {
