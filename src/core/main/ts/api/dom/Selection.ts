@@ -524,7 +524,7 @@ export const Selection = function (dom: DOMUtils, win: Window, serializer, edito
   };
 
   const combineTextDecorations = (style): string => {
-    let adjustedStyle  = style, textDec, textDecorations = '';
+    let adjustedStyle = style, textDec, textDecorations = '';
     const decorationRegex = /text-decoration:([^;]+);/gi;
     while ((textDec = decorationRegex.exec(style)) !== null) {
       // Needed to avoid infinite loops with zero-width matches
@@ -535,13 +535,13 @@ export const Selection = function (dom: DOMUtils, win: Window, serializer, edito
       if (textDec[1] && textDec[1].length > 0) {
         textDecorations += textDec[1] + ' ';
       }
-      if (textDecorations.length > 0) {
-        textDecorations = ' text-decoration: ' + textDecorations + ';';
-        // Remove all of the text decorations from the style
-        adjustedStyle = style.replace(decorationRegex, '');
-        // Add in our combined text decoration styling
-        adjustedStyle += textDecorations;
-      }
+    }
+    if (textDecorations.length > 0) {
+      textDecorations = ' text-decoration: ' + textDecorations + ';';
+      // Remove all of the text decorations from the style
+      adjustedStyle = style.replace(decorationRegex, '');
+      // Add in our combined text decoration styling
+      adjustedStyle += textDecorations;
     }
     return adjustedStyle;
   };
