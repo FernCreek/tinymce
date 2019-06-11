@@ -1,20 +1,17 @@
 /**
- * LineUtils.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
-import Arr from '../util/Arr';
+import ArrUtils from '../util/ArrUtils';
 import NodeType from '../dom/NodeType';
 import { NodeClientRect, getClientRects } from '../dom/Dimensions';
 import * as GeomClientRect from '../geom/ClientRect';
 import * as CaretUtils from './CaretUtils';
 import * as CaretCandidate from './CaretCandidate';
-import { Fun } from '@ephox/katamari';
+import { Fun, Arr } from '@ephox/katamari';
 import { ClientRectLine, VDirection } from 'tinymce/core/caret/LineWalker';
 import { isFakeCaretTarget } from 'tinymce/core/caret/FakeCaret';
 import { Node, ClientRect, HTMLElement } from '@ephox/dom-globals';
@@ -31,7 +28,7 @@ const distanceToRectRight = (clientRect: NodeClientRect, clientX: number) => Mat
 const isInside = (clientX: number, clientRect: ClientRect): boolean => clientX >= clientRect.left && clientX <= clientRect.right;
 
 const findClosestClientRect = (clientRects: ClientRect[], clientX: number): NodeClientRect => {
-  return Arr.reduce(clientRects, (oldClientRect, clientRect) => {
+  return ArrUtils.reduce(clientRects, (oldClientRect, clientRect) => {
     let oldDistance, newDistance;
 
     oldDistance = Math.min(distanceToRectLeft(oldClientRect, clientX), distanceToRectRight(oldClientRect, clientX));
@@ -89,7 +86,7 @@ const findLineNodeRects = (root: Node, targetNodeRect: NodeClientRect): ClientRe
 };
 
 const getFakeCaretTargets = (root: HTMLElement): HTMLElement[] => {
-  return Arr.filter(Arr.toArray(root.getElementsByTagName('*')), isFakeCaretTarget);
+  return Arr.filter(Arr.from(root.getElementsByTagName('*')), isFakeCaretTarget) as HTMLElement[];
 };
 
 const caretInfo = (clientRect: NodeClientRect, clientX: number): CaretInfo => {

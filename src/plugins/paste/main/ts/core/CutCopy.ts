@@ -1,11 +1,8 @@
 /**
- * CutCopy.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import Env from 'tinymce/core/api/Env';
@@ -94,8 +91,16 @@ const getData = (editor: Editor): SelectionContentData => (
   }
 );
 
+const isTableSelection = (editor: Editor): boolean => {
+  return !!editor.dom.getParent(editor.selection.getStart(), 'td[data-mce-selected],th[data-mce-selected]', editor.getBody());
+};
+
+const hasSelectedContent = (editor: Editor): boolean => {
+  return !editor.selection.isCollapsed() || isTableSelection(editor);
+};
+
 const cut = (editor: Editor) => (evt: ClipboardEvent) => {
-  if (editor.selection.isCollapsed() === false) {
+  if (hasSelectedContent(editor)) {
     editor.dom.updateCachedStylesOnElements(editor.selection.getSelectedBlocks());
     setClipboardData(evt, getData(editor), fallback(editor), () => {
       // Chrome fails to execCommand from another execCommand with this message:
@@ -108,7 +113,7 @@ const cut = (editor: Editor) => (evt: ClipboardEvent) => {
 };
 
 const copy = (editor: Editor) => (evt: ClipboardEvent) => {
-  if (editor.selection.isCollapsed() === false) {
+  if (hasSelectedContent(editor)) {
     setClipboardData(evt, getData(editor), fallback(editor), noop);
   }
 };

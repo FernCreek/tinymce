@@ -1,20 +1,21 @@
 /**
- * NodeType.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Text, Comment, Document, Element, Node, HTMLElement } from '@ephox/dom-globals';
+import { Text, Comment, Document, Element, Node, HTMLElement, DocumentFragment } from '@ephox/dom-globals';
 
 const isNodeType = function (type) {
   return function (node: Node) {
     return !!node && node.nodeType === type;
   };
 };
+
+// Firefox can allow you to get a selection on a restricted node, such as file/number inputs. These nodes
+// won't implement the Object prototype, so Object.getPrototypeOf() will return null or something similar.
+const isRestrictedNode = (node: Node): boolean => !!node && !Object.getPrototypeOf(node);
 
 const isElement = isNodeType(1) as (node: Node) => node is HTMLElement;
 
@@ -99,6 +100,7 @@ const hasContentEditableState = function (value: string) {
 const isText = isNodeType(3) as (node: Node) => node is Text;
 const isComment = isNodeType(8) as (node: Node) => node is Comment;
 const isDocument = isNodeType(9) as (node: Node) => node is Document;
+const isDocumentFragment = isNodeType(11) as (node: Node) => node is DocumentFragment;
 const isBr = matchNodeNames('br') as (node: Node) => node is Element;
 const isContentEditableTrue = hasContentEditableState('true') as (node: Node) => node is HTMLElement;
 const isContentEditableFalse = hasContentEditableState('false') as (node: Node) => node is HTMLElement;
@@ -108,9 +110,11 @@ export default {
   isElement,
   isComment,
   isDocument,
+  isDocumentFragment,
   isBr,
   isContentEditableTrue,
   isContentEditableFalse,
+  isRestrictedNode,
   matchNodeNames,
   hasPropValue,
   hasAttribute,

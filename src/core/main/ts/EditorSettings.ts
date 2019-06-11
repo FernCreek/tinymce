@@ -1,17 +1,14 @@
 /**
- * DefaultSettings.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import { Arr, Fun, Obj, Option, Strings, Struct, Type } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
 import Tools from './api/util/Tools';
-import { Editor } from 'tinymce/core/api/Editor';
+import { Editor } from './api/Editor';
 
 export interface ParamTypeMap {
   'hash': Record<string, string>;
@@ -159,13 +156,7 @@ const getEditorSettings = function (editor, id, documentBaseUrl, defaultOverride
   return combineSettings(isTouch, defaultSettings, defaultOverrideSettings, settings);
 };
 
-const get = function (editor, name) {
-  return Option.from(editor.settings[name]);
-};
-
 const getFiltered = (predicate: (x: any) => boolean, editor, name: string) => Option.from(editor.settings[name]).filter(predicate);
-
-const getString = Fun.curry(getFiltered, Type.isString);
 
 const getParamObject = (value: string) => {
   let output = {};
@@ -215,8 +206,6 @@ const getParam = (editor: Editor, name: string, defaultVal?: any, type?: string)
 
 export {
   getEditorSettings,
-  get,
-  getString,
   getParam,
   combineSettings
 };

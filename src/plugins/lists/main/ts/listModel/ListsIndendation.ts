@@ -1,49 +1,46 @@
 /**
- * ListsIndentation.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2018 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Arr, Option, Options, Fun } from '@ephox/katamari';
-import { Element, InsertAll, Remove, Fragment } from '@ephox/sugar';
+import { Arr, Fun, Option, Options } from '@ephox/katamari';
+import { Element, Fragment, InsertAll, Remove } from '@ephox/sugar';
+import { Editor } from 'tinymce/core/api/Editor';
+import Selection from '../core/Selection';
 import { composeList } from './ComposeList';
 import { Entry, isIndented, isSelected } from './Entry';
-import { IndentValue, indentEntry } from './Indentation';
+import { indentEntry, Indentation } from './Indentation';
 import { normalizeEntries } from './NormalizeEntries';
-import { ItemTuple, parseLists, EntrySet } from './ParseLists';
-import { Editor } from 'tinymce/core/api/Editor';
-import TextBlock from '../core/TextBlock';
-import Selection from '../core/Selection';
+import { EntrySet, ItemSelection, parseLists } from './ParseLists';
 import { hasFirstChildList } from './Util';
+import { createTextBlock } from '../core/TextBlock';
 
 const outdentedComposer = (editor: Editor, entries: Entry[]): Element[] => {
   return Arr.map(entries, (entry) => {
     const content = Fragment.fromElements(entry.content);
-    return Element.fromDom(TextBlock.createNewTextBlock(editor, content.dom()));
+    return Element.fromDom(createTextBlock(editor, content.dom()));
   });
 };
 
-const indentedComposer = (entries: Entry[]): Element[] => {
+const indentedComposer = (editor: Editor, entries: Entry[]): Element[] => {
   normalizeEntries(entries);
-  return composeList(entries).toArray();
+  return composeList(editor.contentDocument, entries).toArray();
 };
 
 const composeEntries = (editor, entries: Entry[]): Element[] => {
   return Arr.bind(Arr.groupBy(entries, isIndented), (entries) => {
     const groupIsIndented = Arr.head(entries).map(isIndented).getOr(false);
-    return groupIsIndented ? indentedComposer(entries) : outdentedComposer(editor, entries);
+    return groupIsIndented ? indentedComposer(editor, entries) : outdentedComposer(editor, entries);
   });
 };
 
-const indentSelectedEntries = (entries: Entry[], indentation: IndentValue): void => {
+const indentSelectedEntries = (entries: Entry[], indentation: Indentation): void => {
   Arr.each(Arr.filter(entries, isSelected), (entry) => indentEntry(indentation, entry));
 };
 
-const getItemSelection = (editor: Editor): Option<ItemTuple> => {
+const getItemSelection = (editor: Editor): Option<ItemSelection> => {
   const selectedListItems = Arr.map(Selection.getSelectedListItems(editor), Element.fromDom);
 
   return Options.liftN([
@@ -52,10 +49,10 @@ const getItemSelection = (editor: Editor): Option<ItemTuple> => {
   ], (start, end) => ({ start, end }));
 };
 
-const listsIndentation = (editor: Editor, lists: Element[], indentation: IndentValue) => {
-  const parsedLists: EntrySet[] = parseLists(lists, getItemSelection(editor));
+const listsIndentation = (editor: Editor, lists: Element[], indentation: Indentation) => {
+  const entrySets: EntrySet[] = parseLists(lists, getItemSelection(editor));
 
-  Arr.each(parsedLists, (entrySet) => {
+  Arr.each(entrySets, (entrySet) => {
     indentSelectedEntries(entrySet.entries, indentation);
     InsertAll.before(entrySet.sourceList, composeEntries(editor, entrySet.entries));
     Remove.remove(entrySet.sourceList);

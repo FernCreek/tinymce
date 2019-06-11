@@ -1,11 +1,8 @@
 /**
- * SelectionOverrides.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import { Arr } from '@ephox/katamari';
@@ -27,11 +24,10 @@ import { FakeCaret, isFakeCaretTarget } from './caret/FakeCaret';
 import { Editor } from 'tinymce/core/api/Editor';
 import EditorFocus from 'tinymce/core/focus/EditorFocus';
 import { Range, Element, Node, HTMLElement, MouseEvent } from '@ephox/dom-globals';
+import { isBeforeContentEditableFalse, isAfterContentEditableFalse } from './caret/CaretPositionPredicates';
 
 const isContentEditableTrue = NodeType.isContentEditableTrue;
 const isContentEditableFalse = NodeType.isContentEditableFalse;
-const isAfterContentEditableFalse = CaretUtils.isAfterContentEditableFalse;
-const isBeforeContentEditableFalse = CaretUtils.isBeforeContentEditableFalse;
 
 interface SelectionOverrides {
   showCaret: (direction: number, node: Element, before: boolean, scrollIntoView?: boolean) => Range;

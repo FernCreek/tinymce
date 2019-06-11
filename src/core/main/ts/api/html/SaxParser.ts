@@ -1,11 +1,8 @@
 /**
- * SaxParser.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import Schema from './Schema';
@@ -110,6 +107,19 @@ const findEndTagIndex = function (schema, html, startIndex) {
   }
 
   return index;
+};
+
+const checkBogusAttribute = (regExp: RegExp, attrString: string) => {
+  const matches = regExp.exec(attrString);
+
+  if (matches) {
+    const name = matches[1];
+    const value = matches[2];
+
+    return typeof name === 'string' && name.toLowerCase() === 'data-mce-bogus' ? value : null;
+  } else {
+    return null;
+  }
 };
 
 /**
@@ -315,6 +325,18 @@ export function SaxParser(settings, schema = Schema()) {
         // Is self closing tag for example an <li> after an open <li>
         if (fixSelfClosing && selfClosing[value] && stack.length > 0 && stack[stack.length - 1].name === value) {
           processEndTag(value);
+        }
+
+        // Always invalidate element if it's marked as bogus
+        const bogusValue = checkBogusAttribute(attrRegExp, matches[8]);
+        if (bogusValue !== null) {
+          if (bogusValue === 'all') {
+            index = findEndTagIndex(schema, html, tokenRegExp.lastIndex);
+            tokenRegExp.lastIndex = index;
+            continue;
+          }
+
+          isValidElement = false;
         }
 
         // Validate element

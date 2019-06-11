@@ -1,11 +1,8 @@
 /**
- * InsertBlock.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import Settings from '../api/Settings';
@@ -16,11 +13,24 @@ import InsertLi from './InsertLi';
 import NewLineUtils from './NewLineUtils';
 import NormalizeRange from '../selection/NormalizeRange';
 import Zwsp from '../text/Zwsp';
-import Tools from '../api/util/Tools';
 import { isCaretNode } from 'tinymce/core/fmt/FormatContainer';
+import DOMUtils from '../api/dom/DOMUtils';
+import { Element as DomElement, DocumentFragment, KeyboardEvent } from '@ephox/dom-globals';
+import { PredicateFilter, Element, Node } from '@ephox/sugar';
+import { Arr } from '@ephox/katamari';
+import { Editor } from '../api/Editor';
+import { EditorEvent } from '../api/dom/EventUtils';
+import Bookmarks from '../bookmark/Bookmarks';
 
-const isEmptyAnchor = function (elm) {
-  return elm && elm.nodeName === 'A' && Tools.trim(Zwsp.trim(elm.innerText || elm.textContent)).length === 0;
+const trimZwsp = (fragment: DocumentFragment) => {
+  Arr.each(PredicateFilter.descendants(Element.fromDom(fragment), Node.isText), (text) => {
+    const rawNode = text.dom();
+    rawNode.nodeValue = Zwsp.trim(rawNode.nodeValue);
+  });
+};
+
+const isEmptyAnchor = function (dom: DOMUtils, elm: DomElement) {
+  return elm && elm.nodeName === 'A' && dom.isEmpty(elm);
 };
 
 const isTableCell = function (node) {
@@ -71,7 +81,7 @@ const trimInlineElementsOnLeftSideOfBlock = function (dom, nonEmptyElementsMap, 
     if (!node.hasChildNodes() || (node.firstChild === node.lastChild && node.firstChild.nodeValue === '')) {
       dom.remove(node);
     } else {
-      if (isEmptyAnchor(node)) {
+      if (isEmptyAnchor(dom, node)) {
         dom.remove(node);
       }
     }
@@ -206,7 +216,7 @@ const addBrToBlockIfNeeded = function (dom, block) {
   }
 };
 
-const insert = function (editor, evt) {
+const insert = function (editor: Editor, evt: EditorEvent<KeyboardEvent>) {
   let tmpRng, editableRoot, container, offset, parentBlock, shiftKey;
   let newBlock, fragment, containerBlock, parentBlockName, containerBlockName, newBlockName, isAfterLastNodeInContainer;
   const dom = editor.dom;
@@ -235,7 +245,8 @@ const insert = function (editor, evt) {
       // Clone any parent styles
       do {
         if (textInlineElements[node.nodeName]) {
-          if (isCaretNode(node)) {
+          // Ignore caret or bookmark nodes when cloning
+          if (isCaretNode(node) || Bookmarks.isBookmarkNode(node)) {
             continue;
           }
 
@@ -427,6 +438,7 @@ const insert = function (editor, evt) {
     tmpRng = includeZwspInRange(rng).cloneRange();
     tmpRng.setEndAfter(parentBlock);
     fragment = tmpRng.extractContents();
+    trimZwsp(fragment);
     trimLeadingLineBreaks(fragment);
     newBlock = fragment.firstChild;
     dom.insertAfter(fragment, parentBlock);

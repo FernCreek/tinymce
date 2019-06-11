@@ -1,11 +1,8 @@
 /**
- * Actions.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import Tools from 'tinymce/core/api/util/Tools';
@@ -141,7 +138,10 @@ const ignoreWord = function (editor: Editor, startedState: Cell<boolean>, textMa
 };
 
 const finish = function (editor: Editor, startedState: Cell<boolean>, textMatcherState: Cell<DomTextMatcher>) {
+  const bookmark = editor.selection.getBookmark();
   getTextMatcher(editor, textMatcherState).reset();
+  editor.selection.moveToBookmark(bookmark);
+
   textMatcherState.set(null);
 
   if (startedState.get()) {
@@ -213,6 +213,8 @@ const markErrors = function (editor: Editor, startedState: Cell<boolean>, textMa
     hasDictionarySupport
   });
 
+  const bookmark = editor.selection.getBookmark();
+
   getTextMatcher(editor, textMatcherState).find(Settings.getSpellcheckerWordcharPattern(editor)).filter(function (match) {
     return !!suggestions[match.text];
   }).wrap(function (match) {
@@ -222,6 +224,8 @@ const markErrors = function (editor: Editor, startedState: Cell<boolean>, textMa
       'data-mce-word': match.text
     });
   });
+
+  editor.selection.moveToBookmark(bookmark);
 
   startedState.set(true);
   Events.fireSpellcheckStart(editor);

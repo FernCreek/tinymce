@@ -1,16 +1,13 @@
 /**
- * SplitList.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import NodeType from './NodeType';
-import TextBlock from './TextBlock';
+import { createTextBlock } from './TextBlock';
 import Tools from 'tinymce/core/api/util/Tools';
 
 const DOM = DOMUtils.DOM;
@@ -27,7 +24,7 @@ const splitList = function (editor, ul, li, newBlock?, liStyle?) {
   };
 
   bookmarks = DOM.select('span[data-mce-type="bookmark"]', ul);
-  newBlock = newBlock || TextBlock.createNewTextBlock(editor, li, null, liStyle);
+  newBlock = newBlock || createTextBlock(editor, li);
   tmpRng = DOM.createRng();
   tmpRng.setStartAfter(li);
   tmpRng.setEndAfter(ul);

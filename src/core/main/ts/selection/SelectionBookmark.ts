@@ -1,7 +1,15 @@
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ */
+
 import { Fun, Option } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
 import { Compare, Element, Node, Text, Traverse, Selection } from '@ephox/sugar';
 import { document } from '@ephox/dom-globals';
+import NodeType from '../dom/NodeType';
 
 const browser = PlatformDetection.detect().browser;
 
@@ -26,8 +34,8 @@ const normalizeRng = function (rng) {
   );
 };
 
-const isOrContains = function (root, elm) {
-  return Compare.contains(root, elm) || Compare.eq(root, elm);
+const isOrContains = function (root: Element, elm: Element) {
+  return !NodeType.isRestrictedNode(elm.dom()) && (Compare.contains(root, elm) || Compare.eq(root, elm));
 };
 
 const isRngInRoot = function (root) {
@@ -35,14 +43,6 @@ const isRngInRoot = function (root) {
     return isOrContains(root, rng.start()) && isOrContains(root, rng.finish());
   };
 };
-
-// var dumpRng = function (rng) {
-//   console.log('start', rng.start().dom());
-//   console.log('soffset', rng.soffset());
-//   console.log('finish', rng.finish().dom());
-//   console.log('foffset', rng.foffset());
-//   return rng;
-// };
 
 const shouldStore = function (editor) {
   return editor.inline === true || browser.isIE();

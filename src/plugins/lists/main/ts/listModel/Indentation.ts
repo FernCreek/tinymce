@@ -1,32 +1,29 @@
 /**
- * Indentation.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2018 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import { Entry } from './Entry';
 
-export const enum IndentValue {
+export const enum Indentation {
   Indent = 'Indent',
   Outdent = 'Outdent',
   Flatten = 'Flatten'
 }
 
-export const indentEntry = (indentation: IndentValue, entry: Entry): void => {
+export const indentEntry = (indentation: Indentation, entry: Entry): void => {
   switch (indentation) {
-    case IndentValue.Indent:
+    case Indentation.Indent:
       entry.depth ++;
       break;
 
-    case IndentValue.Outdent:
+    case Indentation.Outdent:
       entry.depth --;
       break;
 
-    case IndentValue.Flatten:
+    case Indentation.Flatten:
       entry.depth = 0;
   }
 };

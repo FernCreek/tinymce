@@ -57,6 +57,7 @@ module.exports = function (grunt) {
             format: 'iife',
             banner: '(function () {',
             footer: '})();',
+            onwarn: swag.onwarn,
             plugins: [
               swag.nodeResolve({
                 basedir: __dirname,
@@ -83,6 +84,7 @@ module.exports = function (grunt) {
             format: 'iife',
             banner: '(function () {',
             footer: '})();',
+            onwarn: swag.onwarn,
             plugins: [
               swag.nodeResolve({
                 basedir: __dirname,
@@ -91,7 +93,11 @@ module.exports = function (grunt) {
                   'shims': 'lib/shims'
                 }, [
                   [`tinymce/plugins/${name}`, `lib/plugins/${name}/main/ts`]
-                ])
+                ]),
+                mappers: [
+                  swag.mappers.replaceDir('./lib/core/main/ts/api', './lib/globals/tinymce/core/api'),
+                  swag.mappers.invalidDir('./lib/core/main/ts')
+                ]
               }),
               swag.remapImports()
             ]
@@ -107,6 +113,7 @@ module.exports = function (grunt) {
             format: 'iife',
             banner: '(function () {',
             footer: '})();',
+            onwarn: swag.onwarn,
             plugins: [
               swag.nodeResolve({
                 basedir: __dirname,
@@ -115,7 +122,11 @@ module.exports = function (grunt) {
                   'tinymce/ui': 'lib/ui/main/ts'
                 }, [
                   [`tinymce/themes/${name}`, `lib/themes/${name}/main/ts`]
-                ])
+                ]),
+                mappers: [
+                  swag.mappers.replaceDir('./lib/core/main/ts/api', './lib/globals/tinymce/core/api'),
+                  swag.mappers.invalidDir('./lib/core/main/ts')
+                ]
               }),
               swag.remapImports()
             ]
@@ -726,6 +737,16 @@ module.exports = function (grunt) {
         singleTimeout: 300000,
         customRoutes: 'src/core/test/json/routes.json',
         name: 'chrome-headless'
+      },
+      'firefox-headless': {
+        browser: 'firefox-headless',
+        config: 'tsconfig.json',
+        testfiles: ['src/**/test/ts/**/*Test.ts'],
+        stopOnFailure: true,
+        overallTimeout: 600000,
+        singleTimeout: 300000,
+        customRoutes: 'src/core/test/json/routes.json',
+        name: 'firefox-headless'
       },
       chrome: {
         browser: 'chrome',

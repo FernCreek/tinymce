@@ -1,15 +1,13 @@
 /**
- * DomSerializerFilters.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Arr } from '@ephox/katamari';
+import { Arr, Option } from '@ephox/katamari';
 import Entities from '../api/html/Entities';
+import Zwsp from '../text/Zwsp';
 
 declare const unescape: any;
 
@@ -80,7 +78,13 @@ const register = function (htmlParser, settings, dom) {
       node = nodes[i];
 
       if (node.attributes.map['data-mce-type'] === 'bookmark' && !args.cleanup) {
-        node.remove();
+        // We maybe dealing with a "filled" bookmark. If so just remove the node, otherwise unwrap it
+        const hasChildren = Option.from(node.firstChild).exists((firstChild) => !Zwsp.isZwsp(firstChild.value));
+        if (hasChildren) {
+          node.unwrap();
+        } else {
+          node.remove();
+        }
       }
     }
   });

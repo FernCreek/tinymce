@@ -1,11 +1,8 @@
 /**
- * CaretContainer.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import NodeType from '../dom/NodeType';
@@ -105,12 +102,22 @@ const appendInline = (node: Node): Node => {
 
 const isBeforeInline = (pos: CaretPosition): boolean => {
   const container = pos.container();
-  return pos && NodeType.isText(container) && container.data.charAt(pos.offset()) === Zwsp.ZWSP;
+  if (!pos || !NodeType.isText(container)) {
+    return false;
+  }
+
+  // The text nodes may not be normalized, so check the current node and the previous one
+  return container.data.charAt(pos.offset()) === Zwsp.ZWSP || pos.isAtStart() && isCaretContainerInline(container.previousSibling);
 };
 
 const isAfterInline = (pos: CaretPosition): boolean => {
   const container = pos.container();
-  return pos && NodeType.isText(container) && container.data.charAt(pos.offset() - 1) === Zwsp.ZWSP;
+  if (!pos || !NodeType.isText(container)) {
+    return false;
+  }
+
+  // The text nodes may not be normalized, so check the current node and the next one
+  return container.data.charAt(pos.offset() - 1) === Zwsp.ZWSP || pos.isAtEnd() && isCaretContainerInline(container.nextSibling);
 };
 
 const createBogusBr = (): Element => {

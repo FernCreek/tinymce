@@ -1,11 +1,8 @@
 /**
- * Clipboard.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import { Arr, Fun, Option } from '@ephox/katamari';
@@ -26,8 +23,12 @@ const extractSelected = function (cells) {
   });
 };
 
-const serializeElement = function (editor: Editor, elm) {
-  return editor.selection.serializer.serialize(elm.dom(), {});
+const serializeElements = (editor: Editor, elements: Element[]): string => {
+  return Arr.map(elements, (elm) => editor.selection.serializer.serialize(elm.dom(), {})).join('');
+};
+
+const getTextContent = (elements: Element[]): string => {
+  return Arr.map(elements, (element) => element.dom().innerText).join('');
 };
 
 const registerEvents = function (editor: Editor, selections: Selections, actions: TableActions, cellSelection) {
@@ -35,9 +36,7 @@ const registerEvents = function (editor: Editor, selections: Selections, actions
     const multiCellContext = function (cells) {
       e.preventDefault();
       extractSelected(cells).each(function (elements) {
-        e.content = Arr.map(elements, function (elm) {
-          return serializeElement(editor, elm);
-        }).join('');
+        e.content = e.format === 'text' ? getTextContent(elements) : serializeElements(editor, elements);
       });
     };
 
@@ -51,8 +50,7 @@ const registerEvents = function (editor: Editor, selections: Selections, actions
       const cellOpt = Option.from(editor.dom.getParent(editor.selection.getStart(), 'th,td'));
       cellOpt.each(function (domCell) {
         const cell = Element.fromDom(domCell);
-        const table = TableLookup.table(cell);
-        table.bind(function (table) {
+        TableLookup.table(cell).each(function (table) {
 
           const elements = Arr.filter(Elements.fromHtml(e.content), function (content) {
             return Node.name(content) !== 'meta';

@@ -1,11 +1,8 @@
 /**
- * Selection.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import { Compare, Element as SugarElement } from '@ephox/sugar';
@@ -13,6 +10,7 @@ import Env from '../Env';
 import BookmarkManager from './BookmarkManager';
 import CaretPosition from '../../caret/CaretPosition';
 import ControlSelection from './ControlSelection';
+import NodeType from '../../dom/NodeType';
 import ScrollIntoView from '../../dom/ScrollIntoView';
 import EditorFocus from '../../focus/EditorFocus';
 import CaretRangeFromPoint from '../../selection/CaretRangeFromPoint';
@@ -319,7 +317,7 @@ export const Selection = function (dom: DOMUtils, win: Window, serializer, edito
     }
 
     try {
-      if ((selection = getSel())) {
+      if ((selection = getSel()) && !NodeType.isRestrictedNode(selection.anchorNode)) {
         if (selection.rangeCount > 0) {
           rng = selection.getRangeAt(0);
         } else {

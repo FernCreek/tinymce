@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ */
+
 import { Editor } from 'tinymce/core/api/Editor';
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import { Option } from '@ephox/katamari';
@@ -49,13 +56,14 @@ const remove =  (editor: Editor): void => {
       DOM.remove(element.nextSibling);
     }
 
+    Events.fireRemove(editor);
+    editor.editorManager.remove(editor);
+
     if (!editor.inline && body) {
       restoreOriginalStyles(editor);
     }
 
-    Events.fireRemove(editor);
-
-    editor.editorManager.remove(editor);
+    Events.fireDetach(editor);
     DOM.remove(editor.getContainer());
 
     safeDestroy(_selectionOverrides);

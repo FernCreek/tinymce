@@ -1,17 +1,14 @@
 /**
- * Render.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2016 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import Env from 'tinymce/core/api/Env';
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import Delay from 'tinymce/core/api/util/Delay';
-import Arr from '../alien/Arr';
+import DeepFlatten from '../alien/DeepFlatten';
 import ElementMatcher from './ElementMatcher';
 import Matcher from './Matcher';
 import PredicateId from './PredicateId';
@@ -48,7 +45,7 @@ const createToolbar = function (editor: Editor, selector: string, id: string, it
 const getToolbars = function (editor: Editor): ContextToolbar[] {
   const contextToolbars = editor.contextToolbars;
 
-  return Arr.flatten([
+  return DeepFlatten.flatten([
     contextToolbars ? contextToolbars : [],
     createToolbar(editor, 'img', 'image', 'alignleft aligncenter alignright')
   ]);

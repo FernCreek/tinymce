@@ -1,16 +1,20 @@
-import { GeneralSteps, Logger, Pipeline, Step } from '@ephox/agar';
+import { ApproxStructure, Assertions, GeneralSteps, Logger, Pipeline, Step } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock';
 import { TinyApis, TinyLoader } from '@ephox/mcagar';
+import { PlatformDetection } from '@ephox/sand';
+import { Element } from '@ephox/sugar';
+import { Editor } from 'tinymce/core/api/Editor';
 import InsertNewLine from 'tinymce/core/newline/InsertNewLine';
 import Theme from 'tinymce/themes/modern/Theme';
-import { UnitTest } from '@ephox/bedrock';
 
-UnitTest.asynctest('browser.tinymce.core.newline.InsertNewLine', function () {
-  const success = arguments[arguments.length - 2];
-  const failure = arguments[arguments.length - 1];
+const browser = PlatformDetection.detect().browser;
 
+UnitTest.asynctest('browser.tinymce.core.newline.InsertNewLine', (success, failure) => {
   Theme();
 
-  const sInsertNewline = function (editor, args) {
+  const bookmarkSpan = '<span data-mce-type="bookmark" id="mce_2_start" data-mce-style="overflow:hidden;line-height:0px" style="overflow:hidden;line-height:0px"></span>';
+
+  const sInsertNewline = function (editor: Editor, args) {
     return Step.sync(function () {
       InsertNewLine.insert(editor, args);
     });
@@ -18,6 +22,7 @@ UnitTest.asynctest('browser.tinymce.core.newline.InsertNewLine', function () {
 
   TinyLoader.setup(function (editor, onSuccess, onFailure) {
     const tinyApis = TinyApis(editor);
+    const body = Element.fromDom(editor.getBody());
 
     Pipeline.async({}, [
       tinyApis.sFocus,
@@ -41,6 +46,37 @@ UnitTest.asynctest('browser.tinymce.core.newline.InsertNewLine', function () {
           tinyApis.sSetCursor([0, 0], 2),
           sInsertNewline(editor, { }),
           tinyApis.sAssertContent('<p>ab</p><p>&nbsp;</p>'),
+          tinyApis.sAssertSelection([1], 0, [1], 0)
+        ])),
+        Logger.t('Insert block after bookmark', GeneralSteps.sequence([
+          tinyApis.sSetRawContent(`<p>${bookmarkSpan}<br data-mce-bogus="1"></p>`),
+          tinyApis.sSetCursor([0], 1),
+          sInsertNewline(editor, { }),
+          Assertions.sAssertStructure('Content should only have one bookmark span', ApproxStructure.build((s, str) => {
+            return s.element('body', {
+              children: [
+                s.element('p', {
+                  children: [
+                    ApproxStructure.fromHtml(bookmarkSpan),
+                    s.element('br', {
+                      attrs: {
+                        'data-mce-bogus': str.is('1')
+                      }
+                    })
+                  ]
+                }),
+                s.element('p', {
+                  children: [
+                    s.element('br', {
+                      attrs: {
+                        'data-mce-bogus': str.is('1')
+                      }
+                    })
+                  ]
+                })
+              ]
+            });
+          }), body),
           tinyApis.sAssertSelection([1], 0, [1], 0)
         ]))
       ])),
@@ -93,6 +129,14 @@ UnitTest.asynctest('browser.tinymce.core.newline.InsertNewLine', function () {
           tinyApis.sAssertContent('<div>a</div><div>b</div>')
         ])),
         tinyApis.sDeleteSetting('no_newline_selector')
+      ])),
+      Logger.t('Insert newline before image in link', GeneralSteps.sequence([
+        tinyApis.sSetContent('<p><a href="#">a<img src="about:blank" /></a></p>'),
+        tinyApis.sSetCursor([0, 0], 1),
+        sInsertNewline(editor, { }),
+        tinyApis.sAssertContent('<p><a href="#">a</a></p><p><a href="#"><img src="about:blank" /></a></p>'),
+        // For some bizarre IE issue getSelection().addRange() creates a zwsp from nowhere and moves the caret after it
+        browser.isIE() ? tinyApis.sAssertSelection([1, 0, 0], 1, [1, 0, 0], 1) : tinyApis.sAssertSelection([1, 0], 0, [1, 0], 0)
       ]))
     ], onSuccess, onFailure);
   }, {

@@ -1,11 +1,8 @@
 /**
- * CaretFinder.ts
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2018 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import { Fun, Option } from '@ephox/katamari';
@@ -75,6 +72,12 @@ const navigate = (forward: boolean, root: Element, from: CaretPosition) => {
   });
 };
 
+const navigateIgnore = (forward: boolean, root: Element, from: CaretPosition, ignoreFilter: (pos: CaretPosition) => boolean) => {
+  return navigate(forward, root, from).bind((pos) => {
+    return ignoreFilter(pos) ? navigateIgnore(forward, root, pos, ignoreFilter) : Option.some(pos);
+  });
+};
+
 const positionIn = (forward: boolean, element: Element): Option<CaretPosition> => {
   const startNode = forward ? element.firstChild : element.lastChild;
   if (NodeType.isText(startNode)) {
@@ -98,6 +101,7 @@ export default {
   nextPosition,
   prevPosition,
   navigate,
+  navigateIgnore,
   positionIn,
   firstPositionIn: Fun.curry(positionIn, true) as (element: Element) => Option<CaretPosition>,
   lastPositionIn: Fun.curry(positionIn, false) as (element: Element) => Option<CaretPosition>

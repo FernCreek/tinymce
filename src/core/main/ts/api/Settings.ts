@@ -1,11 +1,8 @@
 /**
- * Settings.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2016 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import { Editor } from 'tinymce/core/api/Editor';
@@ -122,6 +119,10 @@ const shouldUseContentCssCors = (editor: Editor): boolean => {
   return editor.getParam('content_css_cors', false, 'boolean');
 };
 
+const getInlineBoundarySelector = (editor: Editor): string => {
+  return editor.getParam('inline_boundaries_selector', 'a[href],code,.mce-annotation', 'string');
+};
+
 export default {
   getIframeAttrs,
   getDocType,
@@ -146,5 +147,6 @@ export default {
   getImageUploadBasePath,
   getImagesUploadCredentials,
   getImagesUploadHandler,
-  shouldUseContentCssCors
+  shouldUseContentCssCors,
+  getInlineBoundarySelector
 };

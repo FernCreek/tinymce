@@ -1,16 +1,14 @@
 /**
- * DeleteBackspaceKeys.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import BlockBoundaryDelete from '../delete/BlockBoundaryDelete';
 import BlockRangeDelete from '../delete/BlockRangeDelete';
 import CefDelete from '../delete/CefDelete';
+import CefBoundaryDelete from '../delete/CefBoundaryDelete';
 import InlineBoundaryDelete from '../delete/InlineBoundaryDelete';
 import InlineFormatDelete from '../delete/InlineFormatDelete';
 import TableDelete from '../delete/TableDelete';
@@ -25,6 +23,8 @@ const executeKeydownOverride = function (editor: Editor, caret: Cell<Text>, evt:
   MatchKeys.execute([
     { keyCode: VK.BACKSPACE, action: MatchKeys.action(CefDelete.backspaceDelete, editor, false) },
     { keyCode: VK.DELETE, action: MatchKeys.action(CefDelete.backspaceDelete, editor, true) },
+    { keyCode: VK.BACKSPACE, action: MatchKeys.action(CefBoundaryDelete.backspaceDelete, editor, false) },
+    { keyCode: VK.DELETE, action: MatchKeys.action(CefBoundaryDelete.backspaceDelete, editor, true) },
     { keyCode: VK.BACKSPACE, action: MatchKeys.action(InlineBoundaryDelete.backspaceDelete, editor, caret, false) },
     { keyCode: VK.DELETE, action: MatchKeys.action(InlineBoundaryDelete.backspaceDelete, editor, caret, true) },
     { keyCode: VK.BACKSPACE, action: MatchKeys.action(TableDelete.backspaceDelete, editor, false) },

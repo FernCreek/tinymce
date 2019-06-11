@@ -1,17 +1,14 @@
 /**
- * Dimensions.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
-import Arr from '../util/Arr';
 import NodeType from './NodeType';
 import * as ClientRect from '../geom/ClientRect';
 import { HTMLElement, Node } from '@ephox/dom-globals';
+import { Arr } from '@ephox/katamari';
 
 export interface NodeClientRect extends ClientRect.ClientRect {
   node: HTMLElement;
@@ -42,7 +39,7 @@ const getNodeClientRects = (node: Node): NodeClientRect[] => {
 };
 
 const getClientRects = (node: Node[]): NodeClientRect[] => {
-  return Arr.reduce(node, function (result, node) {
+  return Arr.foldl(node, function (result, node) {
     return result.concat(getNodeClientRects(node));
   }, []);
 };

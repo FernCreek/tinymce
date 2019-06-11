@@ -1,17 +1,15 @@
 /**
- * ArrowKeys.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import { PlatformDetection } from '@ephox/sand';
 import BoundarySelection from './BoundarySelection';
 import * as CefNavigation from './CefNavigation';
 import * as TableNavigation from './TableNavigation';
+import * as ContentEndpointNavigation from './ContentEndpointNavigation';
 import MatchKeys from './MatchKeys';
 import VK from '../api/util/VK';
 import { Editor } from 'tinymce/core/api/Editor';
@@ -33,7 +31,9 @@ const executeKeydownOverride = function (editor: Editor, caret: Cell<Text>, evt:
     { keyCode: VK.RIGHT, action: BoundarySelection.move(editor, caret, true) },
     { keyCode: VK.LEFT, action: BoundarySelection.move(editor, caret, false) },
     { keyCode: VK.RIGHT, ctrlKey: !os.isOSX(), altKey: os.isOSX(), action: BoundarySelection.moveNextWord(editor, caret) },
-    { keyCode: VK.LEFT, ctrlKey: !os.isOSX(), altKey: os.isOSX(), action: BoundarySelection.movePrevWord(editor, caret) }
+    { keyCode: VK.LEFT, ctrlKey: !os.isOSX(), altKey: os.isOSX(), action: BoundarySelection.movePrevWord(editor, caret) },
+    { keyCode: VK.UP, action: ContentEndpointNavigation.moveV(editor, false) },
+    { keyCode: VK.DOWN, action: ContentEndpointNavigation.moveV(editor, true) }
   ], evt).each(function (_) {
     evt.preventDefault();
   });

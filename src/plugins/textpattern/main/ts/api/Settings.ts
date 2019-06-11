@@ -1,12 +1,12 @@
 /**
- * Settings.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
+
+import { createPatternSet, PatternSet } from './Pattern';
+import { Obj } from '@ephox/katamari';
 
 const defaultPatterns = [
   { start: '*', end: '*', format: 'italic' },
@@ -23,12 +23,11 @@ const defaultPatterns = [
   { start: '- ', cmd: 'InsertUnorderedList' }
 ];
 
-const getPatterns = function (editorSettings) {
-  return editorSettings.textpattern_patterns !== undefined ?
-    editorSettings.textpattern_patterns :
-    defaultPatterns;
+const getPatternSet = (editorSettings): PatternSet => {
+  const patterns = Obj.get(editorSettings, 'textpattern_patterns').getOr(defaultPatterns);
+  return createPatternSet(patterns);
 };
 
-export default {
-  getPatterns
+export {
+  getPatternSet,
 };

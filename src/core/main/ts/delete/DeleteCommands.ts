@@ -1,11 +1,8 @@
 /**
- * Commands.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import BlockBoundaryDelete from './BlockBoundaryDelete';
@@ -14,6 +11,8 @@ import CefDelete from './CefDelete';
 import DeleteUtils from './DeleteUtils';
 import BoundaryDelete from './InlineBoundaryDelete';
 import TableDelete from './TableDelete';
+import InlineFormatDelete from './InlineFormatDelete';
+import CefBoundaryDelete from './CefBoundaryDelete';
 
 const nativeCommand = function (editor, command) {
   editor.getDoc().execCommand(command, false, null);
@@ -22,6 +21,8 @@ const nativeCommand = function (editor, command) {
 const deleteCommand = function (editor) {
   if (CefDelete.backspaceDelete(editor, false)) {
     return;
+  } else if (CefBoundaryDelete.backspaceDelete(editor, false)) {
+    return;
   } else if (BoundaryDelete.backspaceDelete(editor, false)) {
     return;
   } else if (BlockBoundaryDelete.backspaceDelete(editor, false)) {
@@ -29,6 +30,8 @@ const deleteCommand = function (editor) {
   } else if (TableDelete.backspaceDelete(editor)) {
     return;
   } else if (BlockRangeDelete.backspaceDelete(editor, false)) {
+    return;
+  } else if (InlineFormatDelete.backspaceDelete(editor, false)) {
     return;
   } else {
     nativeCommand(editor, 'Delete');
@@ -39,6 +42,8 @@ const deleteCommand = function (editor) {
 const forwardDeleteCommand = function (editor) {
   if (CefDelete.backspaceDelete(editor, true)) {
     return;
+  } else if (CefBoundaryDelete.backspaceDelete(editor, true)) {
+    return;
   } else if (BoundaryDelete.backspaceDelete(editor, true)) {
     return;
   } else if (BlockBoundaryDelete.backspaceDelete(editor, true)) {
@@ -46,6 +51,8 @@ const forwardDeleteCommand = function (editor) {
   } else if (TableDelete.backspaceDelete(editor)) {
     return;
   } else if (BlockRangeDelete.backspaceDelete(editor, true)) {
+    return;
+  } else if (InlineFormatDelete.backspaceDelete(editor, true)) {
     return;
   } else {
     nativeCommand(editor, 'ForwardDelete');

@@ -1,11 +1,8 @@
 /**
- * DomParser.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import LegacyFilter from '../../html/LegacyFilter';
@@ -178,6 +175,7 @@ export default function (settings?, schema = Schema()) {
   const filterNode = (node: Node): Node => {
     let i, name, list;
 
+    name = node.name;
     // Run element filters
     if (name in nodeFilters) {
       list = matchedNodes[name];

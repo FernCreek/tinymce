@@ -1,106 +1,109 @@
 /**
- * ComposeList.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2018 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Entry } from './Entry';
-import { Element, Insert, InsertAll, Attr, Css, Node, Replication } from '@ephox/sugar';
+import { Document } from '@ephox/dom-globals';
 import { Arr, Option, Options } from '@ephox/katamari';
-import { ListType } from './ListType';
+import { Attr, Css, Element, Insert, InsertAll, Node, Replication } from '@ephox/sugar';
+import { Entry } from './Entry';
+import { ListType } from './Util';
 
-interface Section {
+interface Segment {
   list: Element;
   item: Element;
 }
 
-const createSection = (listType: ListType): Section => {
-  const section: Section = {
-    list: Element.fromTag(listType),
-    item: Element.fromTag('li')
+const joinSegment = (parent: Segment, child: Segment): void => {
+  Insert.append(parent.item, child.list);
+};
+
+const joinSegments = (segments: Segment[]): void => {
+  for (let i = 1; i < segments.length; i++) {
+    joinSegment(segments[i - 1], segments[i]);
+  }
+};
+
+const appendSegments = (head: Segment[], tail: Segment[]): void => {
+  Options.liftN([ Arr.last(head), Arr.head(tail)], joinSegment);
+};
+
+const createSegment = (scope: Document, listType: ListType): Segment => {
+  const segment: Segment = {
+    list: Element.fromTag(listType, scope),
+    item: Element.fromTag('li', scope)
   };
-  Insert.append(section.list, section.item);
-  return section;
+  Insert.append(segment.list, segment.item);
+  return segment;
 };
 
-const joinSections = (parent: Section, appendor: Section): void => {
-  Insert.append(parent.item, appendor.list);
-};
-
-const createJoinedSections = (length: number, listType: ListType): Section[] => {
-  const sections: Section[] = [];
-  for (let i = 0; i < length; i++) {
-    const newSection = createSection(listType);
-    Arr.last(sections).each((lastSection) => joinSections(lastSection, newSection));
-    sections.push(newSection);
+const createSegments = (scope: Document, entry: Entry, size: number): Segment[] => {
+  const segments: Segment[] = [];
+  for (let i = 0; i < size; i++) {
+    segments.push(createSegment(scope, entry.listType));
   }
-  return sections;
+  return segments;
 };
 
-const normalizeSection = (section: Section, entry: Entry): void => {
-  if (Node.name(section.list).toUpperCase() !== entry.listType) {
-    section.list = Replication.mutate(section.list, entry.listType);
+const populateSegments = (segments: Segment[], entry: Entry): void => {
+  for (let i = 0; i < segments.length - 1; i++) {
+    Css.set(segments[i].item, 'list-style-type', 'none');
   }
-  Attr.setAll(section.list, entry.listAttributes);
+  Arr.last(segments).each((segment) => {
+    Attr.setAll(segment.list, entry.listAttributes);
+    Attr.setAll(segment.item, entry.itemAttributes);
+    InsertAll.append(segment.item, entry.content);
+  });
 };
 
-const createItem = (attr: Record<string, any>, content: Element[]): Element => {
-  const item = Element.fromTag('li');
+const normalizeSegment = (segment: Segment, entry: Entry): void => {
+  if (Node.name(segment.list) !== entry.listType) {
+    segment.list = Replication.mutate(segment.list, entry.listType);
+  }
+  Attr.setAll(segment.list, entry.listAttributes);
+};
+
+const createItem = (scope: Document, attr: Record<string, any>, content: Element[]): Element => {
+  const item = Element.fromTag('li', scope);
   Attr.setAll(item, attr);
   InsertAll.append(item, content);
   return item;
 };
 
-const setItem = (section: Section, item: Element): void => {
-  Insert.append(section.list, item);
-  section.item = item;
+const appendItem = (segment: Segment, item: Element): void => {
+  Insert.append(segment.list, item);
+  segment.item = item;
 };
 
-const writeShallow = (outline: Section[], entry: Entry): Section[] => {
-  const newOutline = outline.slice(0, entry.depth);
+const writeShallow = (scope: Document, cast: Segment[], entry: Entry): Segment[] => {
+  const newCast = cast.slice(0, entry.depth);
 
-  Arr.last(newOutline).each((section) => {
-    setItem(section, createItem(entry.itemAttributes, entry.content));
-    normalizeSection(section, entry);
+  Arr.last(newCast).each((segment) => {
+    const item = createItem(scope, entry.itemAttributes, entry.content);
+    appendItem(segment, item);
+    normalizeSegment(segment, entry);
   });
 
-  return newOutline;
+  return newCast;
 };
 
-const populateSections = (sections: Section[], entry: Entry): void => {
-  Arr.last(sections).each((section) => {
-    Attr.setAll(section.list, entry.listAttributes);
-    Attr.setAll(section.item, entry.itemAttributes);
-    InsertAll.append(section.item, entry.content);
-  });
+const writeDeep = (scope: Document, cast: Segment[], entry: Entry): Segment[] => {
+  const segments = createSegments(scope, entry, entry.depth - cast.length);
+  joinSegments(segments);
+  populateSegments(segments, entry);
+  appendSegments(cast, segments);
 
-  for (let i = 0; i < sections.length - 1; i++) {
-    Css.set(sections[i].item, 'list-style-type', 'none');
-  }
+  return cast.concat(segments);
 };
 
-const writeDeep = (outline: Section[], entry: Entry): Section[] => {
-  const newSections = createJoinedSections(entry.depth - outline.length, entry.listType);
-  populateSections(newSections, entry);
-
-  Options.liftN([
-    Arr.last(outline),
-    Arr.head(newSections)
-  ], joinSections);
-  return outline.concat(newSections);
-};
-
-const composeList = (entries: Entry[]): Option<Element> => {
-  const outline: Section[] = Arr.foldl(entries, (outline, entry) => {
-    return entry.depth > outline.length ? writeDeep(outline, entry) : writeShallow(outline, entry);
+const composeList = (scope: Document, entries: Entry[]): Option<Element> => {
+  const cast: Segment[] = Arr.foldl(entries, (cast, entry) => {
+    return entry.depth > cast.length ? writeDeep(scope, cast, entry) : writeShallow(scope, cast, entry);
   }, []);
-  return Arr.head(outline).map((section) => section.list);
+
+  return Arr.head(cast).map((segment) => segment.list);
 };
 
-export {
-  composeList
-};
+export { composeList };

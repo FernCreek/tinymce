@@ -1,28 +1,25 @@
 /**
- * Init.js
- *
- * Released under LGPL License.
- * Copyright (c) 1999-2017 Ephox Corp. All rights reserved
- *
- * License: http://www.tinymce.com/license
- * Contributing: http://www.tinymce.com/contributing
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
  */
 
 import { Type } from '@ephox/katamari';
 import PluginManager from '../api/PluginManager';
 import ThemeManager from '../api/ThemeManager';
 import DOMUtils from '../api/dom/DOMUtils';
+import Tools from '../api/util/Tools';
+import ErrorReporter from '../ErrorReporter';
 import InitContentBody from './InitContentBody';
 import InitIframe from './InitIframe';
-import Tools from '../api/util/Tools';
 
 const DOM = DOMUtils.DOM;
 
 const initPlugin = function (editor, initializedPlugins, plugin) {
   const Plugin = PluginManager.get(plugin);
-  let pluginUrl, pluginInstance;
 
-  pluginUrl = PluginManager.urls[plugin] || editor.documentBaseUrl.replace(/\/$/, '');
+  const pluginUrl = PluginManager.urls[plugin] || editor.documentBaseUrl.replace(/\/$/, '');
   plugin = Tools.trim(plugin);
   if (Plugin && Tools.inArray(initializedPlugins, plugin) === -1) {
     Tools.each(PluginManager.dependencies(plugin), function (dep) {
@@ -33,13 +30,17 @@ const initPlugin = function (editor, initializedPlugins, plugin) {
       return;
     }
 
-    pluginInstance = new Plugin(editor, pluginUrl, editor.$);
+    try {
+      const pluginInstance = new Plugin(editor, pluginUrl, editor.$);
 
-    editor.plugins[plugin] = pluginInstance;
+      editor.plugins[plugin] = pluginInstance;
 
-    if (pluginInstance.init) {
-      pluginInstance.init(editor, pluginUrl);
-      initializedPlugins.push(plugin);
+      if (pluginInstance.init) {
+        pluginInstance.init(editor, pluginUrl);
+        initializedPlugins.push(plugin);
+      }
+    } catch (e) {
+      ErrorReporter.pluginInitError(editor, plugin, e);
     }
   }
 };
