@@ -31,7 +31,7 @@
     "@ephox/sand": "latest",
     "@ephox/snooker": "latest",
     "@ephox/sugar": "latest",
-    "@types/jquery": "^3.3.22"
+    "@types/jquery": "^3.3.22",
     "tslib": "^1.9.3"
   },
   "devDependencies": {
