@@ -13,8 +13,6 @@ import { listsIndentation } from '../listModel/ListsIndendation';
 import { dlIndentation } from '../core/DlIndentation';
 import Range from '../core/Range';
 import Selection from '../core/Selection';
-import Outdent from './Outdent';
-import ToggleList from './ToggleList';
 
 const selectionIndentation = (editor: Editor, indentation: Indentation): boolean => {
   const lists = Arr.map(Selection.getSelectedListRoots(editor), Element.fromDom);
@@ -41,13 +39,11 @@ const indentListSelection = (editor: Editor): boolean => {
 };
 
 const outdentListSelection = (editor: Editor): boolean => {
-  // return selectionIndentation(editor, Indentation.Outdent);
-  Outdent.outdentSelection(editor);
+  return selectionIndentation(editor, Indentation.Outdent);
 };
 
 const flattenListSelection = (editor: Editor): boolean => {
-  // return selectionIndentation(editor, Indentation.Flatten);
-  ToggleList.removeList(editor);
+  return selectionIndentation(editor, Indentation.Flatten);
 };
 
 export {

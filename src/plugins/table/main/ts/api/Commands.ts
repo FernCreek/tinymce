@@ -150,12 +150,12 @@ const registerCommands = function (editor: Editor, actions: TableActions, cellSe
     },
 
     mceTableCutRow (grid) {
-      clipboardRows.set(copyRowSelection());
+      clipboardRows.set(copyRowSelection() as Option<Element[]>);
       actOnSelection(actions.deleteRow);
     },
 
     mceTableCopyRow (grid) {
-      clipboardRows.set(copyRowSelection());
+      clipboardRows.set(copyRowSelection()  as Option<Element[]>);
     },
 
     mceTablePasteRowBefore (grid) {
