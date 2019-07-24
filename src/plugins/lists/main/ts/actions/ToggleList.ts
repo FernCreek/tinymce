@@ -7,7 +7,6 @@
 
 import BookmarkManager from 'tinymce/core/api/dom/BookmarkManager';
 import Tools from 'tinymce/core/api/util/Tools';
-import Outdent from './Outdent';
 import Bookmark from '../core/Bookmark';
 import NodeType from '../core/NodeType';
 import NormalizeLists from '../core/NormalizeLists';
