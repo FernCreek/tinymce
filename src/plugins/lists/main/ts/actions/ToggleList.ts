@@ -9,12 +9,10 @@ import BookmarkManager from 'tinymce/core/api/dom/BookmarkManager';
 import Tools from 'tinymce/core/api/util/Tools';
 import Bookmark from '../core/Bookmark';
 import NodeType from '../core/NodeType';
-import NormalizeLists from '../core/NormalizeLists';
 import Selection from '../core/Selection';
 import { HTMLElement } from '@ephox/dom-globals';
 import Utils from '../api/Utils';
 import { flattenListSelection } from './Indendation';
-import SplitList from '../core/SplitList';
 
 const updateListStyle = function (dom, el, detail) {
   const type = detail['list-style-type'] ? detail['list-style-type'] : null;
@@ -189,58 +187,6 @@ const applyList = function (editor, listName: string, detail = {}) {
   editor.selection.setRng(Bookmark.resolveBookmark(bookmark));
 };
 
-const removeList = function (editor) {
-  const bookmark = Bookmark.createBookmark(editor.selection.getRng(true));
-  const root = Selection.getClosestListRootElm(editor, editor.selection.getStart(true));
-  let listItems = Selection.getSelectedListItems(editor);
-  const emptyListItems = Tools.grep(listItems, function (li) {
-    return editor.dom.isEmpty(li);
-  });
-
-  listItems = Tools.grep(listItems, function (li) {
-    return !editor.dom.isEmpty(li);
-  });
-
-  Tools.each(emptyListItems, function (li) {
-    if (NodeType.isEmpty(editor.dom, li)) {
-      Outdent.outdent(editor, li);
-      return;
-    }
-  });
-
-  let lastFoundLiStyle;
-  Tools.each(listItems, function (li) {
-    let node, rootList;
-
-    if (li.parentNode === editor.getBody()) {
-      return;
-    }
-
-    for (node = li; node && node !== root; node = node.parentNode) {
-      if (NodeType.isListNode(node)) {
-        rootList = node;
-      }
-    }
-
-    lastFoundLiStyle = Utils.getLiStyle(li) || lastFoundLiStyle;
-    if (NodeType.isFirstChild(li)) {
-      Utils.correctLiStyle(lastFoundLiStyle, li);
-    }
-    SplitList.splitList(editor, rootList, li, null, lastFoundLiStyle);
-    if (editor.getBody()) {
-      let newLists = editor.dom.select('ol[data-mce-new-list]', editor.getBody());
-      newLists = newLists.concat(editor.dom.select('ul[data-mce-new-list]', editor.getBody()));
-      Tools.each(newLists, function (list) {
-        list.removeAttribute('data-mce-new-list');
-        mergeWithAdjacentLists(editor.dom, list);
-      });
-    }
-    NormalizeLists.normalizeLists(editor.dom, rootList.parentNode);
-  });
-
-  editor.selection.setRng(Bookmark.resolveBookmark(bookmark));
-};
-
 const isValidLists = function (list1, list2) {
   return list1 && list2 && NodeType.isListNode(list1) && list1.nodeName === list2.nodeName;
 };
@@ -359,6 +305,5 @@ const toggleList = function (editor, listName, detail) {
 
 export default {
   toggleList,
-  removeList,
   mergeWithAdjacentLists
 };
