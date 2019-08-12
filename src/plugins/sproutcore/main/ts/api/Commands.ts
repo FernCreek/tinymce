@@ -87,13 +87,32 @@ const openLinkDialog = (editor) => {
   const viewClass = editor.windowManager.setupLinkPropertiesDialog();
   createAndOpenDialog(editor, viewClass);
 };
+
 /**
- * Opens the insert/edit image dialog
+ * Opens the insert image dialog
  * @param {tinymce.Editor} editor - the editor
  */
-const openImageDialog = (editor) => {
-  const viewClass = editor.windowManager.setupImagePropertiesDialog();
-  createAndOpenDialog(editor, viewClass);
+const openInsertImageDialog = (editor) => {
+  editor.windowManager.setupImagePropertiesDialog();
+  TinySC.displayNgInsertImageDialog(editor);
+};
+
+/**
+ * Opens the edit image dialog
+ * @param {tinymce.Editor} editor - the editor
+ */
+const openEditImageDialog = (editor) => {
+  editor.windowManager.setupImagePropertiesDialog();
+  TinySC.displayNgEditImageDialog(editor);
+};
+
+/**
+ * Opens the edit image size dialog
+ * @param {tinymce.Editor} editor - the editor
+ */
+const openEditImageSizeDialog = (editor) => {
+  editor.windowManager.setupImagePropertiesDialog();
+  TinySC.displayNgEditImageSizeDialog(editor);
 };
 
 /**
@@ -135,7 +154,9 @@ const restoreSelection = (editor) => {
 const register = function (editor) {
   editor.addCommand('scOpenExpandedEditor', () => openExpandedEditor(editor));
   editor.addCommand('mceLink', () => openLinkDialog(editor));
-  editor.addCommand('mceImage', () => openImageDialog(editor));
+  editor.addCommand('mceImage', () => openInsertImageDialog(editor));
+  editor.addCommand('mceEditImage', () => openEditImageDialog(editor));
+  editor.addCommand('mceEditImageSize', () => openEditImageSizeDialog(editor));
   editor.addButton('expanded_editor', {
     title: 'sproutcore.expanded_editor_desc',
     cmd: 'scOpenExpandedEditor',
