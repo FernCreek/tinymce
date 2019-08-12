@@ -17,7 +17,8 @@ PluginManager.add('qtinterface', function (editor) {
   // These methods need to have the editor object applied
   const editorFns = {
     detectImagesLoaded: applyEditorArg(QtInterface.detectImagesLoaded),
-    setReadOnly: applyEditorArg(QtInterface.setReadOnly)
+    setReadOnly: applyEditorArg(QtInterface.setReadOnly),
+    reloadImage: applyEditorArg(QtInterface.reloadImage)
   };
   return Object.assign({}, QtInterface, editorFns);
 });
