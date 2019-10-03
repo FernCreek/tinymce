@@ -45,7 +45,7 @@ const isRngInRoot = function (root) {
 };
 
 const shouldStore = function (editor) {
-  return editor.inline === true || browser.isIE();
+  return editor.inline === true || browser.isIE() || browser.isSafari();
 };
 
 const nativeRangeToSelectionRange = function (r) {

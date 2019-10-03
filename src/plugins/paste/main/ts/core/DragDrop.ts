@@ -54,6 +54,9 @@ const setup = function (editor: Editor, clipboard: Clipboard, draggingInternally
     rng = getCaretRangeFromEvent(editor, e);
 
     if (e.isDefaultPrevented() || draggingInternallyState.get()) {
+      if (draggingInternallyState.get()) {
+        editor.execCommand('mceAddUndoLevel');
+      }
       return;
     }
 
@@ -93,11 +96,7 @@ const setup = function (editor: Editor, clipboard: Clipboard, draggingInternally
   });
 
   editor.on('dragstart', function (e) {
-    // There is no need to set the draggingInternally flag to true if we are not editable. This is fired on mousedown
-    // when content is not editable, which can leave us in a state were drops always fail because dragend is never fired.
-    if (!e.target || e.target.contentEditable === 'true') {
-      draggingInternallyState.set(true);
-    }
+    draggingInternallyState.set(true);
   });
 
   editor.on('dragover dragend', function (e) {
