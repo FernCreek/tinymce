@@ -96,7 +96,9 @@ const setup = function (editor: Editor, clipboard: Clipboard, draggingInternally
   });
 
   editor.on('dragstart', function (e) {
-    draggingInternallyState.set(true);
+    if (!editor.plugins.qtinterface) { // Causes a graphical artifact in QtWebkit
+      draggingInternallyState.set(true);
+    }
   });
 
   editor.on('dragover dragend', function (e) {
