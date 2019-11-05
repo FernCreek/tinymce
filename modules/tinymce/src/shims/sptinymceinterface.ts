@@ -8,6 +8,7 @@
  */
 let SPTinyMCEInterface; // This is used by our our native qt interfaces
 function get() {
+  // @ts-ignore
   SPTinyMCEInterface = (window as any).SPTinyMCEInterface;
 }
 // Common function used by the qtinterface and qtinterface editor

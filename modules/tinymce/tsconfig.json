@@ -7,9 +7,12 @@
     "rootDir": "src",
     "baseUrl": ".",
     "tsBuildInfoFile": "lib/tsconfig.tsbuildinfo",
+    "lib": ["es2015", "dom"],
     "paths": {
       "tinymce": ["src/core/main/ts/api/Main"],
       "tinymce/core/*": ["src/core/main/ts/*"],
+      "shims/tinysc": ["src/shims/tinysc"],
+      "shims/sptinymceinterface": [ "src/shims/sptinymceinterface" ],
       "tinymce/themes/mobile/*": ["src/themes/mobile/main/ts/*"],
       "tinymce/themes/silver/demo/*": ["src/themes/silver/demo/ts/*"],
       "tinymce/themes/silver/*": ["src/themes/silver/main/ts/*"],
@@ -44,10 +47,15 @@
       "tinymce/plugins/paste/*": ["src/plugins/paste/main/ts/*"],
       "tinymce/plugins/preview/*": ["src/plugins/preview/main/ts/*"],
       "tinymce/plugins/print/*": ["src/plugins/print/main/ts/*"],
+      "tinymce/plugins/qtinterface/*": ["src/plugins/qtinterface/main/ts/*"],
+      "tinymce/plugins/qtinterfaceeditor/*": ["src/plugins/qtinterfaceeditor/main/ts/*"],
       "tinymce/plugins/quickbars/*": ["src/plugins/quickbars/main/ts/*"],
       "tinymce/plugins/save/*": ["src/plugins/save/main/ts/*"],
+      "tinymce/plugins/seapine/*": ["src/plugins/seapine/main/ts/*"],
+      "tinymce/plugins/seapinetable/*": ["src/plugins/seapinetable/main/ts/*"],
       "tinymce/plugins/searchreplace/*": ["src/plugins/searchreplace/main/ts/*"],
       "tinymce/plugins/spellchecker/*": ["src/plugins/spellchecker/main/ts/*"],
+      "tinymce/plugins/sproutcore/*": ["src/plugins/sproutcore/main/ts/*"],
       "tinymce/plugins/tabfocus/*": ["src/plugins/tabfocus/main/ts/*"],
       "tinymce/plugins/table/*": ["src/plugins/table/main/ts/*"],
       "tinymce/plugins/template/*": ["src/plugins/template/main/ts/*"],
@@ -71,6 +79,9 @@
     "src/themes/*/test/ts",
     "src/core/dist/globals/tinymce/core/",
     "src/core/dist/globals/**/*.ts",
+    "src/shims/tinysc.ts",
+    "src/shims/sptinymceinterface.ts",
+    "src/shims/jquery.d.ts"
   ],
   "references": [
     { "path": "../acid" },
@@ -86,6 +97,6 @@
     { "path": "../robin" },
     { "path": "../sand" },
     { "path": "../snooker" },
-    { "path": "../sugar" },
+    { "path": "../sugar" }
   ]
 }

@@ -5,12 +5,12 @@
  * License: http://www.tinymce.com/license
  */
 
-import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
+// import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import Env from 'tinymce/core/api/Env';
 
 // Update cached styles on the selection, this way if the user then pastes into an editor all styles will be pasted
-const updateCachedStyles = (editor) => DOMUtils.DOM.updateCachedStylesOnElements(editor.selection.getSelectedBlocks());
-
+// const updateCachedStyles = (editor) => DOMUtils.DOM.updateCachedStylesOnElements(editor.selection.getSelectedBlocks());
+const updateCachedStyles = (editor) => {}; // TODO_KB put this back
 // Copy handler
 const onCopy = (evt, editor): boolean => {
   let allowDefault = true;

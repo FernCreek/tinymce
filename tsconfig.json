@@ -27,16 +27,14 @@
 
   "compilerOptions": {
     "lib": ["es2015", "dom"],
-    "allowSyntheticDefaultImports": true,
     "paths": {
       // duplicate paths, copied from each individual tsconfig.json
       // once there is a webpack path plugin that supports project references this can be deleted
       "tinymce": ["modules/tinymce/src/core/main/ts/api/Main"],
       "tinymce/core/*": ["modules/tinymce/src/core/main/ts/*"],
       "tinymce/themes/mobile/*": ["modules/tinymce/src/themes/mobile/main/ts/*"],
-      "jquery": [ "src/shims/jquery" ],
-      "shims/tinysc": [ "src/shims/tinysc" ],
-      "shims/sptinymceinterface": [ "src/shims/sptinymceinterface" ],
+      "shims/tinysc": [ "modules/tinymce/src/shims/tinysc" ],
+      "shims/sptinymceinterface": [ "modules/tinymce/src/shims/sptinymceinterface" ],
       "tinymce/themes/silver/demo/*": ["modules/tinymce/src/themes/silver/demo/ts/*"],
       "tinymce/themes/silver/*": ["modules/tinymce/src/themes/silver/main/ts/*"],
       "tinymce/plugins/advlist/*": ["modules/tinymce/src/plugins/advlist/main/ts/*"],
@@ -72,22 +70,22 @@
       "tinymce/plugins/print/*": ["modules/tinymce/src/plugins/print/main/ts/*"],
       "tinymce/plugins/quickbars/*": ["modules/tinymce/src/plugins/quickbars/main/ts/*"],
       "tinymce/plugins/save/*": ["modules/tinymce/src/plugins/save/main/ts/*"],
+      "tinymce/plugins/seapine/*": ["modules/tinymce/src/plugins/seapine/main/ts/*"],
+      "tinymce/plugins/seapinetable/*": ["modules/tinymce/src/plugins/seapinetable/main/ts/*"],
       "tinymce/plugins/searchreplace/*": ["modules/tinymce/src/plugins/searchreplace/main/ts/*"],
       "tinymce/plugins/spellchecker/*": ["modules/tinymce/src/plugins/spellchecker/main/ts/*"],
+      "tinymce/plugins/sproutcore/*": ["modules/tinymce/src/plugins/sproutcore/main/ts/*"],
       "tinymce/plugins/tabfocus/*": ["modules/tinymce/src/plugins/tabfocus/main/ts/*"],
       "tinymce/plugins/table/*": ["modules/tinymce/src/plugins/table/main/ts/*"],
       "tinymce/plugins/template/*": ["modules/tinymce/src/plugins/template/main/ts/*"],
-      "tinymce/plugins/qtinterface/*": ["src/plugins/qtinterface/main/ts/*"],
-      "tinymce/plugins/qtinterfaceeditor/*": ["src/plugins/qtinterfaceeditor/main/ts/*"],
+      "tinymce/plugins/qtinterface/*": ["modules/tinymce/src/plugins/qtinterface/main/ts/*"],
+      "tinymce/plugins/qtinterfaceeditor/*": ["modules/tinymce/src/plugins/qtinterfaceeditor/main/ts/*"],
       "tinymce/plugins/textcolor/*": ["modules/tinymce/src/plugins/textcolor/main/ts/*"],
       "tinymce/plugins/textpattern/*": ["modules/tinymce/src/plugins/textpattern/main/ts/*"],
       "tinymce/plugins/toc/*": ["modules/tinymce/src/plugins/toc/main/ts/*"],
-      "tinymce/plugins/seapine/*": ["src/plugins/seapine/main/ts/*"],
-      "tinymce/plugins/seapinetable/*": ["src/plugins/seapinetable/main/ts/*"],
       "tinymce/plugins/visualblocks/*": ["modules/tinymce/src/plugins/visualblocks/main/ts/*"],
       "tinymce/plugins/visualchars/*": ["modules/tinymce/src/plugins/visualchars/main/ts/*"],
       "tinymce/plugins/wordcount/*": ["modules/tinymce/src/plugins/wordcount/main/ts/*"],
-      "tinymce/plugins/sproutcore/*": ["src/plugins/sproutcore/main/ts/*"],
 
       "@ephox/oxide-icons-default": ["modules/oxide-icons-default/dist/js/Main.d.js"],
 

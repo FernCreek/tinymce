@@ -6,4 +6,5 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-export default (window as any).$ as JQueryStatic; // tslint:disable-line:no-default-export no-any
+// @ts-ignore
+declare const $: JQueryStatic; // tslint:disable-line:no-default-export no-any

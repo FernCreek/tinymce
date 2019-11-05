@@ -27,7 +27,7 @@ const getNumFromPxString = (pxString): number => {
 const countTableRows = ($table) => !!$table ? $table.find('tr').length : 0;
 // Table columns is the columns of the row with the most columns
 const countTableColumns = ($table) => {
-  const countRowCols = ($row) => !!$row ? Array.from($row.find('td')).reduce((cols, row) => cols + $(row).prop('colSpan'), 0) : 0;
+  const countRowCols = ($row) => (!!$row ? Array.from($row.find('td')).reduce((cols, row) => cols + $(row).prop('colSpan'), 0) : 0) as number;
   const reducer = (currMaxCols: number, row) => Math.max(countRowCols($(row)), currMaxCols);
   return !!$table ? Array.from($table.find('tr')).reduce(reducer, 0) : 0;
 };
