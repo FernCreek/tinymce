@@ -157,11 +157,6 @@ const register = function (editor) {
   editor.addCommand('mceImage', () => openInsertImageDialog(editor));
   editor.addCommand('mceEditImage', () => openEditImageDialog(editor));
   editor.addCommand('mceEditImageSize', () => openEditImageSizeDialog(editor));
-  editor.addButton('expanded_editor', {
-    title: 'sproutcore.expanded_editor_desc',
-    cmd: 'scOpenExpandedEditor',
-    ui: true
-  });
   editor.on('PastePostProcess', (evt) => pastePostProcess(editor, evt));
   editor.addCommand('storeSelection', () => storeSelection(editor));
   editor.addCommand('restoreSelection', () => restoreSelection(editor));
