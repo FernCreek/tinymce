@@ -79,13 +79,9 @@ class NodeChange {
       if (!e.isDefaultPrevented() && hasAnyRanges(editor)) {
         // Delay nodeChanged call for WebKit edge case issue where the range
         // isn't updated until after you click outside a selected image
-        if (editor.selection.getNode().nodeName === 'IMG') {
-          Delay.setEditorTimeout(editor, function () {
-            editor.nodeChanged();
-          });
-        } else {
+        Delay.setEditorTimeout(editor, function () {
           editor.nodeChanged();
-        }
+        });
       }
     });
   }
