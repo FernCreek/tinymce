@@ -8,7 +8,11 @@
 import Editor from 'tinymce/core/api/Editor';
 
 const getAutoLinkPattern = function (editor: Editor) {
-  return editor.getParam('autolink_pattern', /^(https?:\/\/|ssh:\/\/|ftp:\/\/|file:\/|www\.|(?:mailto:)?[A-Z0-9._%+\-]+@)(.+)$/i);
+  return editor.getParam('autolink_pattern', /\b(?:(?:ttstudio|sscm|ftp|http|https|nntp|telnet|file|doors):\/\/|(?:mailto|news):(?!\/)|www[0-9]?(?=\.)|ftp(?=\.))(?:[$_.+!*(),;\/\\?:@&~=-](?=[A-Za-z0-9%])|[A-Za-z0-9%*])(?:[A-Za-z0-9)]|[$_.+!*(,;\/\\?:@&~=-](?!\s|$)|%[A-Fa-f0-9]{2})*(?:#[\/a-zA-Z0-9][a-zA-Z0-9$_.+!*(),;\/\\?:@&~=%-]*)?/i);
+};
+
+const hasProtocolPattern = function () {
+  return /^(?:ttstudio|sscm|doors|ftp|http|https|nntp|telnet|file):\/\/|(?:mailto|news):(?!\/)|ftp(?=\.)/i;
 };
 
 const getDefaultLinkTarget = function (editor: Editor) {
@@ -17,5 +21,6 @@ const getDefaultLinkTarget = function (editor: Editor) {
 
 export default {
   getAutoLinkPattern,
+  hasProtocolPattern,
   getDefaultLinkTarget
 };
