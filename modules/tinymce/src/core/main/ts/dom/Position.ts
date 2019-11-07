@@ -38,7 +38,6 @@ const hasChild = (elm, child) => elm.children && Arr.contains(elm.children, chil
 
 const getPos = function (body, elm, rootElm) {
   let x = 0, y = 0, offsetParent;
-  const doc = body.ownerDocument;
   let pos;
 
   rootElm = rootElm ? rootElm : body;
@@ -48,13 +47,7 @@ const getPos = function (body, elm, rootElm) {
     // Fallback to offsetParent calculations if the body isn't static better since it stops at the body root
     if (rootElm === body && elm.getBoundingClientRect && Css.get(Element.fromDom(body), 'position') === 'static') {
       pos = elm.getBoundingClientRect();
-
-      // Add scroll offsets from documentElement or body since IE with the wrong box model will use d.body and so do WebKit
-      // Also remove the body/documentelement clientTop/clientLeft on IE 6, 7 since they offset the position
-      x = pos.left + (doc.documentElement.scrollLeft || body.scrollLeft) - doc.documentElement.clientLeft;
-      y = pos.top + (doc.documentElement.scrollTop || body.scrollTop) - doc.documentElement.clientTop;
-
-      return { x, y };
+      return {x: pos.left, y: pos.top};
     }
 
     offsetParent = elm;
