@@ -8,12 +8,15 @@
 //
 // Place your HTML here
 //
+@font-family: Arial, sans-serif;
+@font-size: 12px;
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  line-height: 1.4;
-  margin: 1rem;
+  font-family: @font-family;
+  font-size: @font-size;
 }
+
+/*
 
 table {
   border-collapse: collapse;
@@ -65,3 +68,52 @@ code {
     padding-right: 1rem;
   }
 }
+
+*/
+
+/* Seapine-specific */
+html.staticHeight {
+  height: 100%;
+}
+
+body.staticHeight {
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+p {
+  margin: 0;
+}
+
+p,
+ol,
+ul {
+  clear: both;
+}
+
+ol > li {
+  list-style-type: decimal;
+}
+
+ol > li > ol > li {
+  list-style-type: lower-alpha;
+}
+
+ol > li > ol > li > ol > li {
+  list-style-type: lower-roman;
+}
+
+ul,
+ol {
+  -webkit-margin-after: 0;
+  -webkit-margin-before: 0;
+}
+
+img {
+  margin: 1px;
+}
+
+/* END Seapine */
