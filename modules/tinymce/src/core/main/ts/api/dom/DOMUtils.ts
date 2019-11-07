@@ -199,6 +199,7 @@ interface DOMUtils {
   setStyle (elm: string | Node, styles: StyleMap): void;
   getStyle (elm: string | Node, name: string, computed?: boolean): string;
   setStyles (elm: string | Node, stylesArg: StyleMap): void;
+  updateCachedStylesOnElements (elements: Element[]): void;
   removeAllAttribs (e: RunArguments): any;
   setAttrib (elm: string | Node, name: string, value: string): void;
   setAttribs (elm: string | Node, attrs: Record<string, string>): void;
@@ -1494,6 +1495,24 @@ function DOMUtils(doc: Document, settings: Partial<DOMUtilsSettings> = {}): DOMU
      * tinymce.DOM.setStyles('mydiv', {'background-color': 'red', 'color': 'green'});
      */
     setStyles,
+
+    /**
+     * Forces an update of the cached styles on the passed elements.
+     * @param {HTMLElement[]} elements - The elements to update cached styles on.
+     */
+    updateCachedStylesOnElements (elements) {
+      if (elements && elements.length) {
+        elements.forEach((element) => {
+          if (element) {
+            const walker = new TreeWalker(element, element);
+            while (walker.current()) {
+              updateInternalStyleAttr(styles, this.$$(walker.current()));
+              walker.next();
+            }
+          }
+        });
+      }
+    },
 
     /**
      * Removes all attributes from an element or elements.
