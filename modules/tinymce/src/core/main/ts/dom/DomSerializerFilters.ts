@@ -24,7 +24,7 @@ const register = function (htmlParser, settings, dom) {
   });
 
   // Convert move data-mce-src, data-mce-href and data-mce-style into nodes or process them if needed
-  htmlParser.addAttributeFilter('src,href,style', function (nodes, name) {
+  htmlParser.addAttributeFilter('src,href,style', function (nodes, name, args) {
     let i = nodes.length, node, value;
     const internalName = 'data-mce-' + name;
     const urlConverter = settings.url_converter;
@@ -37,7 +37,9 @@ const register = function (htmlParser, settings, dom) {
       if (value !== undefined) {
         // Set external name to internal value and remove internal
         node.attr(name, value.length > 0 ? value : null);
-        node.attr(internalName, null);
+        if (internalName !== 'data-mce-style' || !args.keepCachedStyles) {
+          node.attr(internalName, null);
+        }
       } else {
         // No internal attribute found then convert the value we have in the DOM
         value = node.attr(name);
@@ -188,11 +190,13 @@ const register = function (htmlParser, settings, dom) {
     'data-mce-selected,data-mce-expando,' +
     'data-mce-type,data-mce-resize',
 
-    function (nodes, name) {
+    function (nodes, name, args) {
       let i = nodes.length;
 
       while (i--) {
-        nodes[i].attr(name, null);
+        if (name !== 'data-mce-style' || !args.keepCachedStyles) {
+          nodes[i].attr(name, null);
+        }
       }
     }
   );
