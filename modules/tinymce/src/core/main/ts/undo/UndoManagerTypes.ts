@@ -36,6 +36,8 @@ export interface UndoManager {
   transact: (callback: () => void) => UndoLevel;
   ignore: (callback: () => void) => void;
   extra: (callback1: () => void, callback2: () => void) => void;
+  getUndoManagerState: () => any;
+  setUndoManagerState: (any) => void;
 }
 
 export type Index = Cell<number>;

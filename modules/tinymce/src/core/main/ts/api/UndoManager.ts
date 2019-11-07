@@ -19,9 +19,9 @@ import Editor from './Editor';
  * @class tinymce.UndoManager
  */
 const UndoManager = function (editor: Editor): UndoManager {
-  const beforeBookmark: Cell<Option<Bookmark>> = Cell(Option.none());
-  const locks: Locks = Cell(0);
-  const index: Index = Cell(0);
+  let beforeBookmark: Cell<Option<Bookmark>> = Cell(Option.none());
+  let locks: Locks = Cell(0);
+  let index: Index = Cell(0);
 
   /*eslint consistent-this:0 */
   const undoManager = {
@@ -34,6 +34,30 @@ const UndoManager = function (editor: Editor): UndoManager {
      * @field {Boolean} typing
      */
     typing: false,
+
+    /**
+     * Populates an object representing the internal state of the undo manager.
+     * @return {Object} Contains the current undo manager state.
+     */
+    getUndoManagerState () {
+      return {
+        index,
+        data: undoManager.data,
+        typing: undoManager.typing,
+        beforeBookmark,
+        locks
+      };
+    },
+
+    /**
+     * Sets internal state of the undo manager to a provided state
+     * @param {Object} stateJSON - The state to set as the internal state.
+     */
+    setUndoManagerState (stateJSON) {
+      ({index, beforeBookmark, locks} = stateJSON);
+      undoManager.data = stateJSON.data;
+      undoManager.typing = stateJSON.typing;
+    },
 
     /**
      * Stores away a bookmark to be used when performing an undo action so that the selection is before
