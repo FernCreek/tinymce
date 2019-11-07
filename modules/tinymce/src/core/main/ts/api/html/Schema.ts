@@ -175,7 +175,7 @@ const compileSchema = function (type: SchemaType) {
   }
 
   // Attributes present on all elements
-  globalAttributes = 'id accesskey class dir lang style tabindex title role';
+  globalAttributes = 'id accesskey class dir lang style tabindex title role data-mce-style';
 
   // Event attributes can be opt-in/opt-out
   /*eventAttributes = split("onabort onblur oncancel oncanplay oncanplaythrough onchange onclick onclose oncontextmenu oncuechange " +
@@ -327,7 +327,7 @@ const compileSchema = function (type: SchemaType) {
     addAttrs('input', 'usemap align');
     addAttrs('select', 'onchange');
     addAttrs('textarea');
-    addAttrs('h1 h2 h3 h4 h5 h6 div p legend caption', 'align');
+    addAttrs('h1 h2 h3 h4 h5 h6 div p legend caption li', 'align');
     addAttrs('ul', 'type compact');
     addAttrs('li', 'type');
     addAttrs('ol dl menu dir', 'compact');
