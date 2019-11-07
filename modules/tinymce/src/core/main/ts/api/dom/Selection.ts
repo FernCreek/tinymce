@@ -473,7 +473,7 @@ const Selection = function (dom: DOMUtils, win: Window, serializer: Serializer, 
    */
   const getNode = (): Element => ElementSelection.getNode(editor.getBody(), getRng());
 
-  const getSelectedBlocks = (startElm: Element, endElm: Element) => ElementSelection.getSelectedBlocks(dom, getRng(), startElm, endElm);
+  const getSelectedBlocks = (startElm?: Element, endElm?: Element) => ElementSelection.getSelectedBlocks(dom, getRng(), startElm, endElm);
 
   const isTableNode = (node): boolean => {
     let tableNode = false;
