@@ -475,6 +475,115 @@ const Selection = function (dom: DOMUtils, win: Window, serializer: Serializer, 
 
   const getSelectedBlocks = (startElm: Element, endElm: Element) => ElementSelection.getSelectedBlocks(dom, getRng(), startElm, endElm);
 
+  const isTableNode = (node): boolean => {
+    let tableNode = false;
+    if (node && node.nodeName) {
+      tableNode = ['TABLE', 'TD', 'TR', 'TH'].indexOf(node.nodeName) !== -1;
+    }
+    return tableNode;
+  };
+
+  const getStylesFromBlockForNode = (node, block): string => {
+    let style = '';
+    if (block) {
+      // Add this block's styling if any is present
+      // Do not add the styling from table items
+      if (!isTableNode(block) && block.style && block.style.cssText) {
+        style += block.style.cssText;
+      }
+      const children = block.childNodes;
+      if (children && children.length) {
+        Array.prototype.find((child) => { // Recursively add the styling of the child nodes that contain the selected node
+          const isSelectedNode = child.isSameNode(node);
+          if (!isSelectedNode) {
+            style += getStylesFromBlockForNode(node, child);
+          }
+          return isSelectedNode;
+        }, children);
+      }
+
+    }
+    return style;
+  };
+
+  const isNodeWithinStrong = (node, block): boolean => {
+    const isStrongNode = (node) => node && node.nodeName === 'STRONG';
+    let inStrong = isStrongNode(block);
+    if (!inStrong && block) {
+      const children = block.childNodes;
+      if (children && children.length) {
+        Array.prototype.find((child) => {
+          let foundOwner = false;
+          if (child.isSameNode(node)) {
+            foundOwner = true;
+            inStrong = isStrongNode(child);
+          } else if (child.contains(node)) {
+            foundOwner = true;
+            inStrong = isStrongNode(child) ? true : isNodeWithinStrong(node, child);
+          }
+          return inStrong || foundOwner;
+        }, children);
+      }
+    }
+    return inStrong;
+  };
+
+  const combineTextDecorations = (style): string => {
+    let adjustedStyle = style, textDec, textDecorations = '';
+    const decorationRegex = /text-decoration:([^;]+);/gi;
+    while ((textDec = decorationRegex.exec(style)) !== null) {
+      // Needed to avoid infinite loops with zero-width matches
+      if (textDec.index === decorationRegex.lastIndex) {
+        decorationRegex.lastIndex++;
+      }
+      // Add the text decoration itself if present to our combined list
+      if (textDec[1] && textDec[1].length > 0) {
+        textDecorations += textDec[1] + ' ';
+      }
+    }
+    if (textDecorations.length > 0) {
+      textDecorations = ' text-decoration: ' + textDecorations + ';';
+      // Remove all of the text decorations from the style
+      adjustedStyle = style.replace(decorationRegex, '');
+      // Add in our combined text decoration styling
+      adjustedStyle += textDecorations;
+    }
+    return adjustedStyle;
+  };
+
+  const getSelectionWithFormatting = (getContentArgs): any => {
+    let selection;
+    const content = getContent({...getContentArgs, contextual: true}), blocks = getSelectedBlocks();
+    if (blocks && blocks.length === 1) {
+      const span = dom.create('span'), node: any = getNode();
+      let style = getStylesFromBlockForNode(node, blocks[0]);
+      if (!isTableNode(node) && node.style && node.style.cssText) {
+        style += node.style.cssText;
+      }
+      span.style.cssText = combineTextDecorations(style);
+      span.innerHTML = content;
+      // If the node is within a strong, go ahead and wrap the span within a new strong tag
+      if (isNodeWithinStrong(node, blocks[0])) {
+        const strong = dom.create('strong');
+        strong.appendChild(span);
+        selection = strong;
+      } else {
+        // Not within a strong, the selection is the span
+        // Do not wrap content in a span if there is no styling that needs to be added
+        selection = style.length === 0 ? content : span;
+      }
+      // Grab the actual HTML from the created HTMLElement
+      if (selection.outerHTML) {
+        // Generate the cached style attribute for copy/cut & paste
+        dom.updateCachedStylesOnElements([selection]);
+        selection = selection.outerHTML;
+      }
+    } else {
+      selection = content;
+    }
+    return selection;
+  };
+
   const isForward = (): boolean => {
     const sel = getSel();
     let anchorRange,
@@ -574,6 +683,7 @@ const Selection = function (dom: DOMUtils, win: Window, serializer: Serializer, 
     setNode,
     getNode,
     getSel,
+    getSelectionWithFormatting,
     setRng,
     getRng,
     getStart,
