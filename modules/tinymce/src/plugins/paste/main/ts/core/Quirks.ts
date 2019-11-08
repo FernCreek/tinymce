@@ -143,7 +143,15 @@ function removeWebKitStyles(editor: Editor, content: string, internal: boolean, 
 
   // Keep internal styles
   content = content.replace(/(<[^>]+) data-mce-style="([^"]+)"([^>]*>)/gi, function (all, before, value, after) {
-    return before + ' style="' + value + '"' + after;
+    // Prefer the internal style attribute over the actual style attribute, remove style if it exists
+    const styleLessBefore = before.replace(/(style=".*?").*/gi, function (match, styleAttr) {
+      return match.replace(styleAttr, '');
+    });
+    const styleLessAfter = after.replace(/(style=".*?").*/gi, function (match, styleAttr) {
+      return match.replace(styleAttr, '');
+    });
+
+    return styleLessBefore + ' style="' + value + '"' + styleLessAfter;
   });
 
   return content;
