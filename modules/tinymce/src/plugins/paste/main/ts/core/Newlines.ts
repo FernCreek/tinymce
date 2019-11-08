@@ -60,7 +60,7 @@ const toBlockElements = function (text: string, rootTag: string, rootAttrs: Root
     return tagOpen + p + tagClose;
   };
 
-  return paragraphs.length === 1 ? paragraphs[0] : Tools.map(paragraphs, stitch).join('');
+  return paragraphs.length === 1 ? paragraphs[0] : Tools.map(paragraphs, stitch).join('<br />');
 };
 
 const convert = function (text: string, rootTag: string | boolean, rootAttrs: RootAttrs) {

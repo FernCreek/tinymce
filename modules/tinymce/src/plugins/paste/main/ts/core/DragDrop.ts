@@ -54,13 +54,16 @@ const setup = function (editor: Editor, clipboard: Clipboard, draggingInternally
     rng = getCaretRangeFromEvent(editor, e);
 
     if (e.isDefaultPrevented() || draggingInternallyState.get()) {
+      if (draggingInternallyState.get()) {
+        editor.execCommand('mceAddUndoLevel');
+      }
       return;
     }
 
     dropContent = clipboard.getDataTransferItems(e.dataTransfer);
     const internal = clipboard.hasContentType(dropContent, InternalHtml.internalHtmlMime());
 
-    if ((!clipboard.hasHtmlOrText(dropContent) || isPlainTextFileUrl(dropContent)) && clipboard.pasteImageData(e, rng)) {
+    if ((editor.settings.paste_prefer_images || !clipboard.hasHtmlOrText(dropContent) || isPlainTextFileUrl(dropContent)) && clipboard.pasteImageData(e, rng)) {
       return;
     }
 
@@ -93,7 +96,9 @@ const setup = function (editor: Editor, clipboard: Clipboard, draggingInternally
   });
 
   editor.on('dragstart', function (e) {
-    draggingInternallyState.set(true);
+    if (!editor.plugins.qtinterface) { // Causes a graphical artifact in QtWebkit
+      draggingInternallyState.set(true);
+    }
   });
 
   editor.on('dragover dragend', function (e) {

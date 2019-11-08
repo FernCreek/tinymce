@@ -5,8 +5,8 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { DataTransfer, ClipboardEvent, HTMLImageElement, Range, Image, Event, DragEvent, navigator, KeyboardEvent, File } from '@ephox/dom-globals';
-import { Cell, Futures, Future, Arr, Singleton } from '@ephox/katamari';
+import { DataTransfer, ClipboardEvent, Range, Event, DragEvent, navigator, KeyboardEvent } from '@ephox/dom-globals';
+import { Cell, Singleton } from '@ephox/katamari';
 import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
 import Delay from 'tinymce/core/api/util/Delay';
@@ -18,7 +18,6 @@ import InternalHtml from './InternalHtml';
 import Newlines from './Newlines';
 import { PasteBin } from './PasteBin';
 import ProcessFilters from './ProcessFilters';
-import SmartPaste from './SmartPaste';
 import * as Whitespace from './Whitespace';
 import Utils from './Utils';
 
@@ -37,7 +36,7 @@ const pasteHtml = (editor: Editor, html: string, internalFlag: boolean) => {
   const args = ProcessFilters.process(editor, InternalHtml.unmark(html), internal);
 
   if (args.cancelled === false) {
-    SmartPaste.insertContent(editor, args.content);
+    editor.insertContent(args.content, {merge: editor.settings.paste_merge_formats !== false, data: {paste: true}});
   }
 };
 
@@ -117,116 +116,55 @@ const hasHtmlOrText = (content: ClipboardContents) => {
   return hasContentType(content, 'text/html') || hasContentType(content, 'text/plain');
 };
 
-const getBase64FromUri = (uri: string) => {
-  let idx;
-
-  idx = uri.indexOf(',');
-  if (idx !== -1) {
-    return uri.substr(idx + 1);
+const pasteImage = (editor: Editor, rng: Range, reader, blob) => {
+  if (rng) {
+    editor.selection.setRng(rng);
+    rng = null;
   }
 
-  return null;
-};
-
-const isValidDataUriImage = (settings, imgElm: HTMLImageElement) => {
-  return settings.images_dataimg_filter ? settings.images_dataimg_filter(imgElm) : true;
-};
-
-const extractFilename = (editor: Editor, str: string) => {
-  const m = str.match(/([\s\S]+?)\.(?:jpeg|jpg|png|gif)$/i);
-  return m ? editor.dom.encode(m[1]) : null;
-};
-
-const uniqueId = Utils.createIdGenerator('mceclip');
-
-const pasteImage = (editor: Editor, imageItem) => {
-  const base64 = getBase64FromUri(imageItem.uri);
-  const id = uniqueId();
-  const name = editor.settings.images_reuse_filename && imageItem.blob.name ? extractFilename(editor, imageItem.blob.name) : id;
-  const img = new Image();
-
-  img.src = imageItem.uri;
-
-  // TODO: Move the bulk of the cache logic to EditorUpload
-  if (isValidDataUriImage(editor.settings, img)) {
-    const blobCache = editor.editorUpload.blobCache;
-    let blobInfo, existingBlobInfo;
-
-    existingBlobInfo = blobCache.findFirst(function (cachedBlobInfo) {
-      return cachedBlobInfo.base64() === base64;
-    });
-
-    if (!existingBlobInfo) {
-      blobInfo = blobCache.create(id, imageItem.blob, base64, name);
-      blobCache.add(blobInfo);
-    } else {
-      blobInfo = existingBlobInfo;
-    }
-
-    pasteHtml(editor, '<img src="' + blobInfo.blobUri() + '">', false);
-  } else {
-    pasteHtml(editor, '<img src="' + imageItem.uri + '">', false);
-  }
+  pasteHtml(editor, '<img src="' + reader.result + '">', false);
 };
 
 const isClipboardEvent = (event: Event): event is ClipboardEvent => event.type === 'paste';
-
-const readBlobsAsDataUris = (items: File[]) => {
-  return Futures.traverse(items, (item: any) => {
-    return Future.nu((resolve) => {
-      const blob = item.getAsFile ? item.getAsFile() : item;
-
-      const reader = new window.FileReader();
-      reader.onload = () => {
-        resolve({
-          blob,
-          uri: reader.result
-        });
-      };
-      reader.readAsDataURL(blob);
-    });
-  });
-};
-
-const getImagesFromDataTransfer = (dataTransfer: DataTransfer) => {
-  const items = dataTransfer.items ? Arr.map(Arr.from(dataTransfer.items), (item) => item.getAsFile()) : [];
-  const files = dataTransfer.files ? Arr.from(dataTransfer.files) : [];
-  const images = Arr.filter(items.length > 0 ? items : files, (file) => /^image\/(jpeg|png|gif|bmp)$/.test(file.type));
-  return images;
-};
 
 /**
  * Checks if the clipboard contains image data if it does it will take that data
  * and convert it into a data url image and paste that image at the caret location.
  *
+ * @param  {Editor} editor - the editor
  * @param  {ClipboardEvent} e Paste/drop event object.
- * @param  {DOMRange} rng Rng object to move selection to.
+ * @param  {Range} rng Rng object to move selection to.
  * @return {Boolean} true/false if the image data was found or not.
  */
-const pasteImageData = (editor, e: ClipboardEvent | DragEvent, rng: Range) => {
+const pasteImageData = (editor: Editor, e: ClipboardEvent | DragEvent, rng: Range) => {
   const dataTransfer = isClipboardEvent(e) ? e.clipboardData : e.dataTransfer;
 
-  if (editor.settings.paste_data_images && dataTransfer) {
-    const images = getImagesFromDataTransfer(dataTransfer);
+  function processItems(items) {
+    let i, item, reader, hadImage = false;
 
-    if (images.length > 0) {
-      e.preventDefault();
+    if (items) {
+      for (i = 0; i < items.length; i++) {
+        item = items[i];
 
-      readBlobsAsDataUris(images).get((blobResults) => {
-        if (rng) {
-          editor.selection.setRng(rng);
+        if (/^image\/(jpeg|png|gif|bmp)$/.test(item.type)) {
+          const blob = item.getAsFile ? item.getAsFile() : item;
+
+          reader = new window.FileReader();
+          reader.onload = pasteImage.bind(null, editor, rng, reader, blob);
+          reader.readAsDataURL(blob);
+
+          e.preventDefault();
+          hadImage = true;
         }
-
-        Arr.each(blobResults, (result) => {
-          pasteImage(editor, result);
-        });
-      });
-
-      return true;
+      }
     }
+
+    return hadImage;
   }
 
-  return false;
+  if (editor.settings.paste_data_images && dataTransfer) {
+    return processItems(dataTransfer.items) || processItems(dataTransfer.files);
+  }
 };
 
 /**
