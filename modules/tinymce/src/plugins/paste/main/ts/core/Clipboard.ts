@@ -28,6 +28,7 @@ declare let window: any;
  * inserted at the current selection in the editor. It will also fire paste events
  * for custom user filtering.
  *
+ * @param {Editor} editor the editor
  * @param {String} html HTML code to paste into the current selection.
  * @param {Boolean?} internalFlag Optional true/false flag if the contents is internal or external.
  */
