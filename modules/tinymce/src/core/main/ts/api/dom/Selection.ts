@@ -92,6 +92,7 @@ interface Selection {
     parents: Element[];
   }) => void) => { unbind: () => void };
   getScrollContainer: () => HTMLElement;
+  getScrollContainers: () => HTMLElement[];
   scrollIntoView: (elm: Element, alignToTop?: boolean) => void;
   placeCaretAt: (clientX: number, clientY: number) => void;
   getBoundingClientRect: () => ClientRect;
@@ -651,6 +652,18 @@ const Selection = function (dom: DOMUtils, win: Window, serializer: Serializer, 
     return scrollContainer;
   };
 
+  const getScrollContainers = (): HTMLElement[] => {
+    const containers: HTMLElement[] = [];
+    let node = editor.getContainer();
+    while (node && node.nodeName !== 'BODY') {
+      if (node.scrollHeight > node.clientHeight) {
+        containers.push(node);
+      }
+      node = node.parentNode as HTMLElement;
+    }
+    return containers;
+  };
+
   const scrollIntoView = (elm: HTMLElement, alignToTop?: boolean) => ScrollIntoView.scrollElementIntoView(editor, elm, alignToTop);
   const placeCaretAt = (clientX: number, clientY: number) => setRng(CaretRangeFromPoint.fromPoint(clientX, clientY, editor.getDoc()));
 
@@ -693,6 +706,7 @@ const Selection = function (dom: DOMUtils, win: Window, serializer: Serializer, 
     selectorChanged,
     selectorChangedWithUnbind,
     getScrollContainer,
+    getScrollContainers,
     scrollIntoView,
     placeCaretAt,
     getBoundingClientRect,

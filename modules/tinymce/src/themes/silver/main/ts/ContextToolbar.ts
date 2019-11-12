@@ -22,7 +22,10 @@ import ToolbarScopes, { ScopedToolbars } from './ui/context/ContextToolbarScopes
 import { forwardSlideEvent, renderContextToolbar } from './ui/context/ContextUi';
 import { renderToolbar } from './ui/toolbar/CommonToolbar';
 import { identifyButtons } from './ui/toolbar/Integration';
+import Events from 'tinymce/themes/silver/api/Events';
+import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 
+const DOM = DOMUtils.DOM;
 const bubbleSize = 12;
 const bubbleAlignments = {
   valignCentre: [],
@@ -125,7 +128,10 @@ const register = (editor: Editor, registryContextToolbars, sink, extras) => {
     );
   };
 
+  const scroll = (e) => Events.fireScrollContent(editor, e);
+
   const forceHide = () => {
+    editor.selection.getScrollContainers().forEach((container) => DOM.unbind(container, 'scroll', scroll));
     InlineView.hide(contextbar);
   };
 
@@ -135,6 +141,7 @@ const register = (editor: Editor, registryContextToolbars, sink, extras) => {
       const contextBarEle = contextbar.element();
       Css.remove(contextBarEle, 'display');
       if (shouldContextToolbarHide()) {
+        editor.selection.getScrollContainers().forEach((container) => DOM.unbind(container, 'scroll', scroll));
         Css.set(contextBarEle, 'display', 'none');
       } else {
         Positioning.positionWithinBounds(sink, anchor, contextbar, Option.some(getBounds()));
@@ -233,9 +240,11 @@ const register = (editor: Editor, registryContextToolbars, sink, extras) => {
     const contextBarEle = contextbar.element();
     Css.remove(contextBarEle, 'display');
     InlineView.showWithinBounds(contextbar, anchor, wrapInPopDialog(toolbarSpec), () => Option.some(getBounds()));
+    editor.selection.getScrollContainers().forEach((container) => DOM.bind(container, 'scroll', forceHide));
 
     // It's possible we may have launched offscreen, if so then hide
     if (shouldContextToolbarHide()) {
+      editor.selection.getScrollContainers().forEach((container) => DOM.unbind(container, 'scroll', forceHide));
       Css.set(contextBarEle, 'display', 'none');
     }
   };
