@@ -24,6 +24,9 @@ let localStorage: Storage;
 
 try {
   localStorage = window.localStorage;
+  if (localStorage === undefined || localStorage === null) {
+    localStorage = FakeStorage.create();
+  }
 } catch (e) {
   localStorage = FakeStorage.create();
 }
