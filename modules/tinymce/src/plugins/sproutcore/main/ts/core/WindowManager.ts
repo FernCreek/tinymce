@@ -35,19 +35,19 @@ const createWindowManager = () => {
         let viewClass;
 
         switch (title) {
-          case 'Table properties': // Insert Table
+          case 'Table Properties': // Insert Table
             viewClass = this.setupTablePropertiesDialog(openArgs.onsubmit);
             break;
-          case 'Cell properties': // Cell Properties
+          case 'Cell Properties': // Cell Properties
             viewClass = this.setupCellPropertiesDialog();
             break;
-          case 'Row properties': // Row Properties
+          case 'Row Properties': // Row Properties
             viewClass = this.setupRowPropertiesDialog();
             break;
-          case 'Source code': // HTML editor, used in debug
+          case 'Source Code': // HTML editor, used in debug
             viewClass = this.setupSourceEditorDialog();
             break;
-          case 'Merge cells':
+          case 'Merge Cells':
           default:
             break; // no-op
         }
