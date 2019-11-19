@@ -63,6 +63,7 @@ const loadPalette = (windowEdit, windowReadOnly, textEdit, textReadOnly) => {
   textEditColor = textEdit;
   windowReadOnlyColor = windowReadOnly;
   applyPalette();
+  applyCSS([['margin', '3px']]);
 };
 
 //////////////////////////////////////////////////////////////////////////
