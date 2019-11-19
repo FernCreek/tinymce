@@ -54,7 +54,9 @@ const UndoManager = function (editor: Editor): UndoManager {
      * @param {Object} stateJSON - The state to set as the internal state.
      */
     setUndoManagerState (stateJSON) {
-      ({index, beforeBookmark, locks} = stateJSON);
+      index = stateJSON.index.clone();
+      locks = stateJSON.locks.clone();
+      beforeBookmark = stateJSON.beforeBookmark.clone();
       undoManager.data = stateJSON.data;
       undoManager.typing = stateJSON.typing;
     },
