@@ -34,6 +34,7 @@ const applyPalette = () => {
       ['color', textColor],
       ['background-color', windowColor]
     ]);
+    document.body.style.backgroundColor = windowColor;
   }
 };
 // Applies the width and overflow to the editor
