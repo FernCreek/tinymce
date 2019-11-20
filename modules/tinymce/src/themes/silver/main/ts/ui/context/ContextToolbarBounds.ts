@@ -75,7 +75,7 @@ const getContextToolbarBounds = (editor: Editor) => {
   // Create a bounds that lets the context toolbar overflow outside the content area, but remains in the viewport
   if (editor.inline && !toolbarOrMenubarEnabled) {
     return getDistractionFreeBounds(editor, contentAreaBox, viewportBounds);
-  } else if (editor.inline) {
+  } else if (editor.inline || !toolbarOrMenubarEnabled) {
     return getInlineBounds(editor, contentAreaBox, viewportBounds);
   } else {
     return getIframeBounds(editor, contentAreaBox, viewportBounds);
