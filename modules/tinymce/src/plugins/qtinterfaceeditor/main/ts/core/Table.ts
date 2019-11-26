@@ -34,7 +34,7 @@ const makeBorderInterfaceFromJSON = (borderNames, jsonBorders) => {
 // Makes an alignment interface from JSON
 const makeAlignmentInterfaceFromJSON = (json) => ({horizontal: json.alignment, vertical: json.alignmentV});
 // Validates the BG color
-const validateBgColor = (color) => (!!color ? color : '#ffffff').toUpperCase();
+const validateBgColor = (color) => (!!color ? color : '').toUpperCase();
 // Sets the JSON alignments
 const setJSONAlignmentBgColor = (plugin, $cells, json) => {
   json.alignment = plugin.getTableCellsTextAlignment($cells) || 'left';

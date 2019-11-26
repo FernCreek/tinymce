@@ -47,7 +47,7 @@ const getEnumForBorderStyleString = (styleString) => {
 };
 
 const getMarginsBgColor = ($jElement, getMarginsFn, rawBgColor) => {
-  return {margins: getMarginsFn($jElement), bgColor: (rawBgColor || '#FFFFFF').toUpperCase()};
+  return {margins: getMarginsFn($jElement), bgColor: (rawBgColor || '').toUpperCase()};
 };
 
 const setBorderColorWidthOnController = (controller, borderStyle) => {

@@ -121,7 +121,7 @@ const applyAlignmentToElement = ($ele, alignment: IAlignment) => {
 
 // Applies the background color to the given selector
 const applyColorToElement = ($ele, bgColor) => {
-  if ($ele && bgColor) {
+  if ($ele && (typeof bgColor === 'string')) {
     $ele.css('background-color', bgColor);
     $ele.removeAttr('bgColor');
   }
@@ -210,7 +210,7 @@ const applyTableBorders = ($table, $cells, tableBorders: ITableBorders, bgColor)
   $tmpCells.css('border-bottom', horizontalCSS);
 
   // Cells need to have their bgColor so when the tables is set it overrides the cells
-  if (bgColor) {
+  if (typeof bgColor === 'string') {
     $tmpCells.prop('bgColor', bgColor);
   }
   // Set the left border on the left cells
