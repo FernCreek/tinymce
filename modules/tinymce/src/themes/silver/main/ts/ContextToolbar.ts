@@ -284,6 +284,7 @@ const register = (editor: Editor, registryContextToolbars, sink, extras) => {
 
   editor.on('init', () => {
     editor.on(hideContextToolbarEvent, forceHide);
+    editor.addCommand('scHideContextToolbars', forceHide);
     editor.on('ScrollContent ScrollWindow longpress', hideOrRepositionIfNecessary);
 
     // FIX: Make it go away when the action makes it go away. E.g. deleting a column deletes the table.
