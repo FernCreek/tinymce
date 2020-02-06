@@ -68,7 +68,7 @@ const getContent = (editor) => {
 const onCut = (editor) => {
   const {html, text} = getContent(editor);
   SPTinyMCEInterface.signalCopyToClipboard(html, text);
-  if (!editor.readonly) {
+  if (editor.mode.get() !== 'readonly') {
     editor.execCommand('delete');
   }
   return false; // Always returns false, so the cut event is killed

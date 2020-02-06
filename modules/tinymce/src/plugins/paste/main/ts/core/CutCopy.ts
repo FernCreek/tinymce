@@ -128,8 +128,10 @@ const copy = (editor: Editor) => (evt: ClipboardEvent) => {
 };
 
 const register = (editor: Editor) => {
-  editor.on('cut', cut(editor));
-  editor.on('copy', copy(editor));
+  if (!editor.settings.plugins.includes('qtinterface')) { // We have our own cut/copy handlers for qt interaction
+    editor.on('cut', cut(editor));
+    editor.on('copy', copy(editor));
+  }
 };
 
 export default {

@@ -73,19 +73,12 @@ const loadPalette = (windowEdit, windowReadOnly, textEdit, textReadOnly) => {
 
 // Applies readonly mode to the editor
 const applyReadOnlyMode = (editor) => {
-  editor.setMode('readonly');
+  editor.mode.set('readonly');
   editor.settings.object_resizing = false;
-  // In setMode, TinyMCE creates a '_clickBlocker' object, that does exactly what you'd expect for anchor tags.
-  // Since in the native client, we still want the user to be able to click hyperlinks, we need to unbind this.
-  if (editor._clickBlocker) {
-    editor._clickBlocker.unbind();
-    editor._clickBlocker = null;
-  }
-  editor.readonly = 1;
 };
 // Applies edit mode to the editor
 const applyEditMode = (editor) => {
-  editor.setMode('design');
+  editor.mode.set('design');
   editor.settings.object_resizing = true;
 };
 // Sets the editor to be readonly or edit mode

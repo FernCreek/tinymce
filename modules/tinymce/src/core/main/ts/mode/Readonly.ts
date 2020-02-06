@@ -5,12 +5,11 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Event, HTMLElement, MouseEvent } from '@ephox/dom-globals';
+import { Event } from '@ephox/dom-globals';
 import { Arr, Option } from '@ephox/katamari';
 import { Attr, Class, Element, SelectorFilter } from '@ephox/sugar';
 import Editor from '../api/Editor';
 import EditorFocus from '../focus/EditorFocus';
-import VK from '../api/util/VK';
 
 const internalContentEditableAttr = 'data-mce-contenteditable';
 
@@ -117,14 +116,8 @@ const registerReadOnlyContentFilters = (editor: Editor) => {
   }
 };
 
-const isClickEvent = (e: Event): e is MouseEvent => e.type === 'click';
-
-const preventReadOnlyEvents = (e: Event) => {
-  const target = e.target as HTMLElement;
-  if (isClickEvent(e) && target.tagName === 'A' && !VK.metaKeyPressed(e)) {
-    e.preventDefault();
-  }
-};
+// We allow clicking links in readonly mode
+const preventReadOnlyEvents = (_: Event) => { };
 
 const registerReadOnlySelectionBlockers = (editor: Editor) => {
   editor.on('ShowCaret', (e) => {
