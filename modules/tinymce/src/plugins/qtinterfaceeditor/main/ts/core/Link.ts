@@ -59,7 +59,7 @@ const addProtocolIfNeeded = (editor, url) =>
 
 // Inserts a link in the editor with the provided information
 const insertLink = (editor, url, displayText) => {
-  const insertContent = (content) => editor.execCommand('mceInsertContent', false, content, {skip_focus: true});
+  const insertContent = (content) => editor.execCommand('mceInsertContent', false, content);
 
   if (url.length === 0) {
     insertContent(displayText);
