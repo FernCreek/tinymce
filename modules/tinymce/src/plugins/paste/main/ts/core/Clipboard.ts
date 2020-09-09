@@ -6,12 +6,11 @@
  */
 
 import { DataTransfer, ClipboardEvent, Range, Event, DragEvent, navigator, KeyboardEvent } from '@ephox/dom-globals';
-import { Arr, Cell, Singleton } from '@ephox/katamari';
+import { Cell, Singleton } from '@ephox/katamari';
 import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
 import Delay from 'tinymce/core/api/util/Delay';
 import { EditorEvent } from 'tinymce/core/api/util/EventDispatcher';
-import Promise from 'tinymce/core/api/util/Promise';
 import VK from 'tinymce/core/api/util/VK';
 import * as Events from '../api/Events';
 import * as Settings from '../api/Settings';
@@ -24,7 +23,7 @@ import * as Whitespace from './Whitespace';
 
 declare let window: any;
 
-const doPaste = (editor: Editor, content: string, internal: boolean, pasteAsText: boolean) => {
+const doPaste = (editor: Editor, content: string, internal: boolean) => {
   const args = ProcessFilters.process(editor, content, internal);
 
   if (args.cancelled === false) {
@@ -43,7 +42,7 @@ const doPaste = (editor: Editor, content: string, internal: boolean, pasteAsText
  */
 const pasteHtml = (editor: Editor, html: string, internalFlag: boolean) => {
   const internal = internalFlag ? internalFlag : InternalHtml.isMarked(html);
-  doPaste(editor, InternalHtml.unmark(html), internal, false);
+  doPaste(editor, InternalHtml.unmark(html), internal);
 };
 
 /**
@@ -56,7 +55,7 @@ const pasteText = (editor: Editor, text: string) => {
   const encodedText = editor.dom.encode(text).replace(/\r\n/g, '\n');
   const normalizedText = Whitespace.normalizeWhitespace(editor, encodedText);
   const html = Newlines.convert(normalizedText, Settings.getForcedRootBlock(editor), Settings.getForcedRootBlockAttrs(editor));
-  doPaste(editor, html, false, true);
+  doPaste(editor, html, false);
 };
 
 export interface ClipboardContents {

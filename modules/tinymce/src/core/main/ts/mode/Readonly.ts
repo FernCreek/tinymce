@@ -117,7 +117,7 @@ const registerReadOnlyContentFilters = (editor: Editor) => {
 };
 
 // We allow clicking links in readonly mode
-const preventReadOnlyEvents = (_: Editor, _: Event) => { };
+const preventReadOnlyEvents = (_: Editor, _1: Event) => { };
 
 const registerReadOnlySelectionBlockers = (editor: Editor) => {
   editor.on('ShowCaret', (e) => {

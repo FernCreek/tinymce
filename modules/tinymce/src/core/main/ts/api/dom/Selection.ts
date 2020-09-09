@@ -72,6 +72,7 @@ interface Selection {
   moveToBookmark: (bookmark: Bookmark) => boolean;
   select: (node: DomNode, content?: boolean) => DomNode;
   isCollapsed: () => boolean;
+  getSelectionWithFormatting: (args: any) => any;
   isForward: () => boolean;
   setNode: (elm: Element) => Element;
   getNode: () => Element;

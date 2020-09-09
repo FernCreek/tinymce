@@ -13,7 +13,7 @@ import { createTextBlock } from './TextBlock';
 const DOM = DOMUtils.DOM;
 
 const splitList = function (editor, ul, li, newBlock?, liStyle?) {
-  let tmpRng, fragment, bookmarks, node;
+  let tmpRng, fragment, bookmarks;
   const removeAndKeepBookmarks = function (targetNode) {
     Tools.each(bookmarks, function (node) {
       targetNode.parentNode.insertBefore(node, li.parentNode);

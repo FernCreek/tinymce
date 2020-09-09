@@ -6,7 +6,7 @@
  */
 
 import { Clipboard } from '../api/Clipboard';
-import Utils from '../core/Utils';
+import * as Utils from '../core/Utils';
 
 const get = function (clipboard: Clipboard, quirks) {
   return {

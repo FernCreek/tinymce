@@ -26,7 +26,7 @@ import * as ToolbarScopes from './ui/context/ContextToolbarScopes';
 import { forwardSlideEvent, renderContextToolbar } from './ui/context/ContextUi';
 import { renderToolbar } from './ui/toolbar/CommonToolbar';
 import { identifyButtons } from './ui/toolbar/Integration';
-import Events from 'tinymce/themes/silver/api/Events';
+import * as Events from 'tinymce/themes/silver/api/Events';
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 
 const DOM = DOMUtils.DOM;
