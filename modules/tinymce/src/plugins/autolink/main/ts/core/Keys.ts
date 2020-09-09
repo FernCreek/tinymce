@@ -70,7 +70,7 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
 
   // We need at least five characters to form a URL,
   // hence, at minimum, five characters from the beginning of the line.
-  const rng = editor.selection.getRng().cloneRange();
+  rng = editor.selection.getRng().cloneRange();
   if (rng.startOffset < 5) {
     // During testing, the caret is placed between two text nodes.
     // The previous text node contains the URL.
@@ -116,7 +116,7 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
     }
   }
 
-  const start = end;
+  start = end;
 
   do {
     // Move the selection one character backwards.
@@ -147,9 +147,7 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
   }
 
   text = rng.toString().trim();
-  const matches = text.match(autoLinkPattern);
-
-  const protocol = Settings.getDefaultLinkProtocol(editor);
+  matches = text.match(autoLinkPattern);
 
   if (matches) {
     // There is a url in the text
