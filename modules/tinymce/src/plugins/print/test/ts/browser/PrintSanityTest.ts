@@ -1,5 +1,5 @@
 import { Pipeline, Log } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { TinyLoader, TinyUi } from '@ephox/mcagar';
 
 import PrintPlugin from 'tinymce/plugins/print/Plugin';
@@ -15,7 +15,7 @@ UnitTest.asynctest('browser.tinymce.plugins.print.PrintSanityTest', (success, fa
 
     Pipeline.async({}, [ Log.step('TBA', 'Print: Assert print button exists',
       tinyUi.sWaitForUi('check print button exists', 'button[aria-label="Print"]')
-    )], onSuccess, onFailure);
+    ) ], onSuccess, onFailure);
   }, {
     plugins: 'print',
     toolbar: 'print',

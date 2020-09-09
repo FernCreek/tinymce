@@ -1,6 +1,6 @@
-import { AlloyComponent, Bubble, HotspotAnchorSpec, Layout, LayoutInside, MaxHeight, MaxWidth, NodeAnchorSpec, SelectionAnchorSpec } from '@ephox/alloy';
+import { AlloyComponent, Bubble, HotspotAnchorSpec, Layout, LayoutInside, MaxHeight, NodeAnchorSpec, SelectionAnchorSpec } from '@ephox/alloy';
 import { Option } from '@ephox/katamari';
-import { Element, Selection } from '@ephox/sugar';
+import { Body, Element, Selection, Traverse } from '@ephox/sugar';
 import Editor from 'tinymce/core/api/Editor';
 import { useFixedContainer } from '../api/Settings';
 
@@ -15,46 +15,43 @@ const bubbleAlignments = {
   top: []
 };
 
-const getToolbarAnchor = (bodyElement: () => Element, lazyAnchorbar: () => AlloyComponent, useFixedToolbarContainer: boolean): () => HotspotAnchorSpec | NodeAnchorSpec => {
-  // If using fixed_toolbar_container, anchor to the inside top of the editable area
-  // Else, anchor below the div.tox-anchorbar in the editor chrome
-  const fixedToolbarAnchor = (): NodeAnchorSpec => ({
+const getInlineDialogAnchor = (contentAreaElement: () => Element, lazyAnchorbar: () => AlloyComponent, lazyUseEditableAreaAnchor: () => boolean): () => HotspotAnchorSpec | NodeAnchorSpec => {
+  const bubble = Bubble.nu(-12, 12, bubbleAlignments);
+  const overrides = {
+    maxHeightFunction: MaxHeight.expandable()
+  };
+
+  const editableAreaAnchor = (): NodeAnchorSpec => ({
     anchor: 'node',
-    root: bodyElement(),
-    node: Option.from(bodyElement()),
-    bubble: Bubble.nu(-12, -12, bubbleAlignments),
+    root: Body.getBody(Traverse.owner(contentAreaElement())),
+    node: Option.from(contentAreaElement()),
+    bubble,
     layouts: {
-      onRtl: () => [ LayoutInside.northeast ],
-      onLtr: () => [ LayoutInside.northwest ]
+      onRtl: () => [ LayoutInside.northwest ],
+      onLtr: () => [ LayoutInside.northeast ]
     },
-    overrides: {
-      maxHeightFunction: MaxHeight.expandable()
-    }
+    overrides
   });
 
   const standardAnchor = (): HotspotAnchorSpec => ({
     anchor: 'hotspot',
     hotspot: lazyAnchorbar(),
-    bubble: Bubble.nu(-12, 12, bubbleAlignments),
+    bubble,
     layouts: {
       onRtl: () => [ Layout.southeast ],
       onLtr: () => [ Layout.southwest ]
     },
-    overrides: {
-      maxHeightFunction: MaxHeight.expandable()
-    }
+    overrides
   });
 
-  return useFixedToolbarContainer ? fixedToolbarAnchor : standardAnchor;
+  return () => lazyUseEditableAreaAnchor() ? editableAreaAnchor() : standardAnchor();
 };
 
-const getBannerAnchor = (bodyElement: () => Element, lazyAnchorbar: () => AlloyComponent, useFixedToolbarContainer: boolean): () => HotspotAnchorSpec | NodeAnchorSpec => {
-  // If using fixed_toolbar_container, anchor to the inside top of the editable area
-  // Else, anchor below the div.tox-anchorbar in the editor chrome
-  const fixedToolbarAnchor = (): NodeAnchorSpec => ({
+const getBannerAnchor = (contentAreaElement: () => Element, lazyAnchorbar: () => AlloyComponent, lazyUseEditableAreaAnchor: () => boolean): () => HotspotAnchorSpec | NodeAnchorSpec => {
+  const editableAreaAnchor = (): NodeAnchorSpec => ({
     anchor: 'node',
-    root: bodyElement(),
-    node: Option.from(bodyElement()),
+    root: Body.getBody(Traverse.owner(contentAreaElement())),
+    node: Option.from(contentAreaElement()),
     layouts: {
       onRtl: () => [ LayoutInside.north ],
       onLtr: () => [ LayoutInside.north ]
@@ -70,57 +67,43 @@ const getBannerAnchor = (bodyElement: () => Element, lazyAnchorbar: () => AlloyC
     }
   });
 
-  return useFixedToolbarContainer ? fixedToolbarAnchor : standardAnchor;
+  return () => lazyUseEditableAreaAnchor() ? editableAreaAnchor() : standardAnchor();
 };
 
-const getToolbarOverflowAnchor = (lazyMoreButton: () => AlloyComponent) => (): HotspotAnchorSpec => {
-  return {
-    anchor: 'hotspot',
-    hotspot: lazyMoreButton(),
-    overrides: {
-      maxWidthFunction: MaxWidth.expandable()
-    },
-    layouts: {
-      onRtl: () => [ Layout.southeast, Layout.southwest ],
-      onLtr: () => [ Layout.southwest, Layout.southeast ]
-    }
-  };
-};
+const getCursorAnchor = (editor: Editor, bodyElement: () => Element) => (): SelectionAnchorSpec => ({
+  anchor: 'selection',
+  root: bodyElement(),
+  getSelection: () => {
+    const rng = editor.selection.getRng();
+    return Option.some(
+      Selection.range(Element.fromDom(rng.startContainer), rng.startOffset, Element.fromDom(rng.endContainer), rng.endOffset)
+    );
+  }
+});
 
-const getCursorAnchor = (editor: Editor, bodyElement: () => Element) => (): SelectionAnchorSpec => {
-  return {
-    anchor: 'selection',
-    root: bodyElement(),
-    getSelection: () => {
-      const rng = editor.selection.getRng();
-      return Option.some(
-        Selection.range(Element.fromDom(rng.startContainer), rng.startOffset, Element.fromDom(rng.endContainer), rng.endOffset)
-      );
-    }
-  };
-};
+const getNodeAnchor = (bodyElement) => (element: Option<Element>): NodeAnchorSpec => ({
+  anchor: 'node',
+  root: bodyElement(),
+  node: element
+});
 
-const getNodeAnchor = (bodyElement) => (element: Option<Element>): NodeAnchorSpec => {
-  return {
-    anchor: 'node',
-    root: bodyElement(),
-    node: element
-  };
-};
-
-const getAnchors = (editor: Editor, lazyAnchorbar: () => AlloyComponent, lazyMoreButton: () => AlloyComponent) => {
+const getAnchors = (editor: Editor, lazyAnchorbar: () => AlloyComponent, isToolbarTop: () => boolean) => {
   const useFixedToolbarContainer: boolean = useFixedContainer(editor);
   const bodyElement = (): Element => Element.fromDom(editor.getBody());
+  const contentAreaElement = (): Element => Element.fromDom(editor.getContentAreaContainer());
+
+  // If using fixed_toolbar_container or if the toolbar is positioned at the bottom
+  // of the editor, some things should anchor to the top of the editable area.
+  const lazyUseEditableAreaAnchor = () => useFixedToolbarContainer || !isToolbarTop();
 
   return {
-    toolbar: getToolbarAnchor(bodyElement, lazyAnchorbar, useFixedToolbarContainer),
-    toolbarOverflow: getToolbarOverflowAnchor(lazyMoreButton),
-    banner: getBannerAnchor(bodyElement, lazyAnchorbar, useFixedToolbarContainer),
+    inlineDialog: getInlineDialogAnchor(contentAreaElement, lazyAnchorbar, lazyUseEditableAreaAnchor),
+    banner: getBannerAnchor(contentAreaElement, lazyAnchorbar, lazyUseEditableAreaAnchor),
     cursor: getCursorAnchor(editor, bodyElement),
     node: getNodeAnchor(bodyElement)
   };
 };
 
-export default {
+export {
   getAnchors
 };

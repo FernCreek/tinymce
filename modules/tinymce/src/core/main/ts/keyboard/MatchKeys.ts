@@ -5,8 +5,8 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Arr, Fun, Merger, Option } from '@ephox/katamari';
 import { KeyboardEvent } from '@ephox/dom-globals';
+import { Arr, Fun, Option } from '@ephox/katamari';
 
 export interface KeyPattern {
   shiftKey?: boolean;
@@ -17,18 +17,15 @@ export interface KeyPattern {
   action: () => boolean;
 }
 
-const defaultPatterns = (patterns: KeyPattern[]): KeyPattern[] => {
-  return Arr.map(patterns, (pattern) => {
-    return Merger.merge({
-      shiftKey: false,
-      altKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      keyCode: 0,
-      action: Fun.noop
-    }, pattern);
-  });
-};
+const defaultPatterns = (patterns: KeyPattern[]): KeyPattern[] => Arr.map(patterns, (pattern) => ({
+  shiftKey: false,
+  altKey: false,
+  ctrlKey: false,
+  metaKey: false,
+  keyCode: 0,
+  action: Fun.noop,
+  ...pattern
+}));
 
 const matchesEvent = function (pattern: KeyPattern, evt: KeyboardEvent) {
   return (
@@ -41,15 +38,12 @@ const matchesEvent = function (pattern: KeyPattern, evt: KeyboardEvent) {
 };
 
 const match = function (patterns: KeyPattern[], evt: KeyboardEvent) {
-  return Arr.bind(defaultPatterns(patterns), (pattern) => {
-    return matchesEvent(pattern, evt) ? [pattern] : [ ];
-  });
+  return Arr.bind(defaultPatterns(patterns), (pattern) => matchesEvent(pattern, evt) ? [ pattern ] : [ ]);
 };
 
 const action = function (f, ...x: any[]) {
-  const args = Array.prototype.slice.call(arguments, 1);
   return function () {
-    return f.apply(null, args);
+    return f.apply(null, x);
   };
 };
 
@@ -57,7 +51,7 @@ const execute = function (patterns: KeyPattern[], evt: KeyboardEvent): Option<Ke
   return Arr.find(match(patterns, evt), (pattern) => pattern.action());
 };
 
-export default {
+export {
   match,
   action,
   execute

@@ -5,8 +5,9 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { atob, Blob, FileReader, XMLHttpRequest } from '@ephox/dom-globals';
+import { Option } from '@ephox/katamari';
 import Promise from '../api/util/Promise';
-import { Blob, XMLHttpRequest, FileReader, atob } from '@ephox/dom-globals';
 
 /**
  * Converts blob/uris back and forth.
@@ -49,11 +50,11 @@ const blobUriToBlob = function (url: string): Promise<Blob> {
 };
 
 const parseDataUri = function (uri: string) {
-  let type, matches;
+  let type;
 
   const uriParts = decodeURIComponent(uri).split(',');
 
-  matches = /data:([^;]+)/.exec(uriParts[0]);
+  const matches = /data:([^;]+)/.exec(uriParts[0]);
   if (matches) {
     type = matches[1];
   }
@@ -64,27 +65,33 @@ const parseDataUri = function (uri: string) {
   };
 };
 
+const buildBlob = (type: string, data: string): Option<Blob> => {
+  let str: string;
+
+  // Might throw error if data isn't proper base64
+  try {
+    str = atob(data);
+  } catch (e) {
+    return Option.none();
+  }
+
+  const arr = new Uint8Array(str.length);
+
+  for (let i = 0; i < arr.length; i++) {
+    arr[i] = str.charCodeAt(i);
+  }
+
+  return Option.some(new Blob([ arr ], { type }));
+};
+
 const dataUriToBlob = function (uri: string): Promise<Blob> {
-  return new Promise(function (resolve) {
-    let str, arr, i;
+  return new Promise((resolve) => {
+    const { type, data } = parseDataUri(uri);
 
-    const uriParts = parseDataUri(uri);
-
-    // Might throw error if data isn't proper base64
-    try {
-      str = atob(uriParts.data);
-    } catch (e) {
-      resolve(new Blob([]));
-      return;
-    }
-
-    arr = new Uint8Array(str.length);
-
-    for (i = 0; i < arr.length; i++) {
-      arr[i] = str.charCodeAt(i);
-    }
-
-    resolve(new Blob([arr], { type: uriParts.type }));
+    buildBlob(type, data).fold(
+      () => resolve(new Blob([])), // TODO: Consider rejecting here instead
+      resolve
+    );
   });
 };
 
@@ -112,7 +119,8 @@ const blobToDataUri = function (blob: Blob): Promise<string> {
   });
 };
 
-export default {
+export {
+  buildBlob,
   uriToBlob,
   blobToDataUri,
   parseDataUri

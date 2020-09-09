@@ -9,8 +9,8 @@ import { HexColour, RgbaColour } from '@ephox/acid';
 import { Menu, Toolbar, Types } from '@ephox/bridge';
 import { Cell, Fun, Option, Strings } from '@ephox/katamari';
 import Editor from 'tinymce/core/api/Editor';
-import Settings from './Settings';
-import Events from '../../../api/Events';
+import * as Events from '../../../api/Events';
+import * as Settings from './Settings';
 
 export interface ColorSwatchDialogData {
   colorpicker: string;
@@ -56,9 +56,7 @@ const registerCommands = (editor: Editor) => {
   });
 };
 
-const calcCols = (colors) => {
-  return Math.max(5, Math.ceil(Math.sqrt(colors)));
-};
+const calcCols = (colors) => Math.max(5, Math.ceil(Math.sqrt(colors)));
 
 const getColorCols = function (editor: Editor) {
   const colors = Settings.getColors(editor);
@@ -83,7 +81,7 @@ const getAdditionalColors = (hasCustom: boolean): Menu.ChoiceMenuItemApi[] => {
   return hasCustom ? [
     remove,
     custom
-  ] : [remove];
+  ] : [ remove ];
 };
 
 const applyColor = function (editor: Editor, format, value, onChoice: (v: string) => void) {
@@ -105,12 +103,10 @@ const applyColor = function (editor: Editor, format, value, onChoice: (v: string
   }
 };
 
-const getMenuColors = (colors: Menu.ChoiceMenuItemApi[], hasCustom: boolean): Menu.ChoiceMenuItemApi[] => {
-  return colors.concat(Settings.getCurrentColors().concat(getAdditionalColors(hasCustom)));
-};
+const getColors = (colors: Menu.ChoiceMenuItemApi[], hasCustom: boolean): Menu.ChoiceMenuItemApi[] => colors.concat(Settings.getCurrentColors().concat(getAdditionalColors(hasCustom)));
 
 const getFetch = (colors: Menu.ChoiceMenuItemApi[], hasCustom: boolean) => (callback) => {
-  callback(getMenuColors(colors, hasCustom));
+  callback(getColors(colors, hasCustom));
 };
 
 const setIconColor = (splitButtonApi: Toolbar.ToolbarSplitButtonInstanceApi, name: string, newColor: string) => {
@@ -130,23 +126,21 @@ const registerTextColorButton = (editor: Editor, name: string, format: string, t
     icon: name === 'forecolor' ? 'text-color' : 'highlight-bg-color',
     select: (value) => {
       const optCurrentRgb = Option.from(getCurrentColor(editor, format));
-      return optCurrentRgb.bind((currentRgb) => {
-        return RgbaColour.fromString(currentRgb).map((rgba) => {
-          const currentHex = HexColour.fromRgba(rgba).value();
-          // note: value = '#FFFFFF', currentHex = 'ffffff'
-          return Strings.contains(value.toLowerCase(), currentHex);
-        });
-      }).getOr(false);
+      return optCurrentRgb.bind((currentRgb) => RgbaColour.fromString(currentRgb).map((rgba) => {
+        const currentHex = HexColour.fromRgba(rgba).value;
+        // note: value = '#FFFFFF', currentHex = 'ffffff'
+        return Strings.contains(value.toLowerCase(), currentHex);
+      })).getOr(false);
     },
     columns: getColorCols(editor),
     fetch: getFetch(Settings.getColors(editor), Settings.hasCustomColors(editor)),
-    onAction: (splitButtonApi) => {
+    onAction: (_splitButtonApi) => {
       // do something with last color
       if (lastColor.get() !== null) {
         applyColor(editor, format, lastColor.get(), () => { });
       }
     },
-    onItemAction: (splitButtonApi, value) => {
+    onItemAction: (_splitButtonApi, value) => {
       applyColor(editor, format, value, (newColor) => {
         lastColor.set(newColor);
 
@@ -191,12 +185,10 @@ const registerTextColorMenuItem = (editor: Editor, name: string, format: string,
 };
 
 const colorPickerDialog = (editor: Editor) => (callback, value: string) => {
-  const getOnSubmit = (callback) => {
-    return (api) => {
-      const data = api.getData();
-      callback(Option.from(data.colorpicker));
-      api.close();
-    };
+  const getOnSubmit = (callback) => (api) => {
+    const data = api.getData();
+    callback(Option.from(data.colorpicker));
+    api.close();
   };
 
   const onAction = (api: Types.Dialog.DialogInstanceApi<ColorSwatchDialogData>, details) => {
@@ -231,7 +223,7 @@ const colorPickerDialog = (editor: Editor) => (callback, value: string) => {
       {
         type: 'cancel',
         name: 'cancel',
-        text: 'Cancel',
+        text: 'Cancel'
       },
       {
         type: 'submit',
@@ -261,4 +253,12 @@ const register = (editor: Editor) => {
   registerTextColorMenuItem(editor, 'backcolor', 'hilitecolor', 'Background color');
 };
 
-export default { register, getColors: getMenuColors, getFetch, colorPickerDialog, getCurrentColor, getColorCols, calcCols };
+export {
+  register,
+  getColors,
+  getFetch,
+  colorPickerDialog,
+  getCurrentColor,
+  getColorCols,
+  calcCols
+};

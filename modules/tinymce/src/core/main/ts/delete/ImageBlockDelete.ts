@@ -7,7 +7,7 @@
 
 import Editor from '../api/Editor';
 import CaretPosition from '../caret/CaretPosition';
-import CaretFinder from '../caret/CaretFinder';
+import * as CaretFinder from '../caret/CaretFinder';
 import { isBeforeImageBlock, isAfterImageBlock } from '../caret/CaretPositionPredicates';
 import { getChildNodeAtRelativeOffset } from '../caret/CaretUtils';
 import { Option } from '@ephox/katamari';
@@ -24,10 +24,8 @@ const deleteCaret = (editor: Editor, forward: boolean): boolean => {
     .getOr(false);
 };
 
-const backspaceDelete = (editor: Editor, forward: boolean): boolean => {
-  return editor.selection.isCollapsed() ? deleteCaret(editor, forward) : false;
-};
+const backspaceDelete = (editor: Editor, forward: boolean): boolean => editor.selection.isCollapsed() ? deleteCaret(editor, forward) : false;
 
-export default {
+export {
   backspaceDelete
 };

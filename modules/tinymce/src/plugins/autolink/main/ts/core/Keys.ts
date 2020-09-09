@@ -5,9 +5,9 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import Env from 'tinymce/core/api/Env';
-import Settings from '../api/Settings';
 import Editor from 'tinymce/core/api/Editor';
+import Env from 'tinymce/core/api/Env';
+import * as Settings from '../api/Settings';
 
 const rangeEqualsDelimiterOrSpace = function (rangeString, delimiter) {
   return rangeString === delimiter || rangeString === ' ' || rangeString.charCodeAt(0) === 160;
@@ -70,7 +70,7 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
 
   // We need at least five characters to form a URL,
   // hence, at minimum, five characters from the beginning of the line.
-  rng = editor.selection.getRng(true).cloneRange();
+  const rng = editor.selection.getRng().cloneRange();
   if (rng.startOffset < 5) {
     // During testing, the caret is placed between two text nodes.
     // The previous text node contains the URL.
@@ -116,7 +116,7 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
     }
   }
 
-  start = end;
+  const start = end;
 
   do {
     // Move the selection one character backwards.
@@ -147,7 +147,9 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
   }
 
   text = rng.toString().trim();
-  matches = text.match(autoLinkPattern);
+  const matches = text.match(autoLinkPattern);
+
+  const protocol = Settings.getDefaultLinkProtocol(editor);
 
   if (matches) {
     // There is a url in the text
@@ -234,7 +236,7 @@ const setup = function (editor: Editor) {
   });
 };
 
-export default {
+export {
   setup,
   addProtocolIfNeeded
 };

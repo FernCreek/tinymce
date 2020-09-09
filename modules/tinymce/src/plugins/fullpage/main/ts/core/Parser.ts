@@ -10,15 +10,15 @@ import DomParser from 'tinymce/core/api/html/DomParser';
 import Node from 'tinymce/core/api/html/Node';
 import Serializer from 'tinymce/core/api/html/Serializer';
 import Tools from 'tinymce/core/api/util/Tools';
-import Settings from '../api/Settings';
-import { HTMLLinkElement } from '@ephox/dom-globals';
+import * as Settings from '../api/Settings';
 
 const parseHeader = function (head: string) {
   // Parse the contents with a DOM parser
   return DomParser({
     validate: false,
     root_name: '#document'
-  }).parse(head);
+  // Parse as XHTML to allow for inclusion of the XML processing instruction
+  }).parse(head, { format: 'xhtml' });
 };
 
 const htmlToData = function (editor: Editor, head: string) {
@@ -103,8 +103,8 @@ const htmlToData = function (editor: Editor, head: string) {
   return data;
 };
 
-const dataToHtml = function (editor, data, head) {
-  let headerFragment, headElement, html, elm, value;
+const dataToHtml = function (editor: Editor, data, head) {
+  let headElement, elm, value;
   const dom = editor.dom;
 
   function setAttr(elm, name, value) {
@@ -119,7 +119,7 @@ const dataToHtml = function (editor, data, head) {
     }
   }
 
-  headerFragment = parseHeader(head);
+  const headerFragment = parseHeader(head);
   headElement = headerFragment.getAll('head')[0];
   if (!headElement) {
     elm = headerFragment.getAll('html')[0];
@@ -235,7 +235,7 @@ const dataToHtml = function (editor, data, head) {
     }
   });
 
-  const currentStyleSheetsMap: Record<string, HTMLLinkElement> = {};
+  const currentStyleSheetsMap: Record<string, Node> = {};
   Tools.each(headerFragment.getAll('link'), function (stylesheet) {
     if (stylesheet.attr('rel') === 'stylesheet') {
       currentStyleSheetsMap[stylesheet.attr('href')] = stylesheet;
@@ -295,7 +295,7 @@ const dataToHtml = function (editor, data, head) {
   }
 
   // Serialize header fragment and crop away body part
-  html = Serializer({
+  const html = Serializer({
     validate: false,
     indent: true,
     indent_before: 'head,html,body,meta,title,script,link,style',
@@ -305,7 +305,7 @@ const dataToHtml = function (editor, data, head) {
   return html.substring(0, html.indexOf('</body>'));
 };
 
-export default {
+export {
   parseHeader,
   htmlToData,
   dataToHtml

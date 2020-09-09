@@ -8,6 +8,7 @@ var header = require('gulp-header');
 var cleanCSS = require('gulp-clean-css');
 var sourcemaps = require('gulp-sourcemaps');
 var rename = require('gulp-rename');
+var chalk = require('chalk');
 var cp = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -27,12 +28,33 @@ gulp.task('lint', function() {
     }));
 });
 
+
 //
 // Build HTML demos
 //
 gulp.task('buildDemos', function() {
   return gulp.src(['./src/demo/**/*'])
     .pipe(gulp.dest('./build'));
+});
+
+//
+// Copy TinyMCE from modules/tinymce to the build folder.
+// NOTE. This task must be run after the buildDemos task
+//
+gulp.task('copyTinymce', function(done) {
+  if (fs.existsSync('../tinymce/js/tinymce/tinymce.min.js')) {
+    return gulp.src(['../tinymce/js/tinymce/**/*'], {
+        base: '../tinymce/js/'
+      })
+      .pipe(gulp.dest('./build'));
+  } else {
+    console.log(chalk.red('Local TinyMCE does not exist. Using cloud version instead'));
+    console.log(chalk.yellow('Run yarn build in the repository root to build a local version of TinyMCE'));
+    const url = 'https://cdn.tiny.cloud/1/qagffr3pkuv17a8on1afax661irst1hbr4e6tbv888sz91jc/tinymce/5-dev/tinymce.min.js'
+    const html = fs.readFileSync('./build/index.html', 'utf8');
+    fs.writeFileSync('./build/index.html', html.replace('/tinymce/tinymce.min.js', url));
+    done();
+  }
 });
 
 // Generate list of available skins and content css:es to populate select field in index.html
@@ -56,7 +78,7 @@ gulp.task('less', function() {
       relativeUrls: true,
       plugins: [autoprefix]
     }))
-    .pipe(gulp.dest('./build/skins/'))
+    .pipe(gulp.dest('./build/skins/'));
 });
 
 //
@@ -80,7 +102,7 @@ gulp.task('copyFonts', function() {
   let base = './build/skins/ui';
 
   return fs.readdirSync(base).reduce((stream, skin) => {
-    return stream.pipe(gulp.dest(base + '/' + skin + '/fonts/'))
+    return stream.pipe(gulp.dest(base + '/' + skin + '/fonts/'));
   }, gulp.src('./src/fonts/**'));
 });
 
@@ -92,9 +114,11 @@ gulp.task('monitor', function (done) {
     root: './build',
     port: 3000,
     livereload: true
-  }, function () { this.server.on('close', done) });
+  }, function () {
+    this.server.on('close', done);
+  });
 
-  gulp.watch('./src/**/*').on('change', gulp.series('css'));
+  gulp.watch('./src/**/*').on('change', gulp.series('css', 'buildDemos', 'copyTinymce'));
 });
 
 //
@@ -103,7 +127,7 @@ gulp.task('monitor', function (done) {
 gulp.task('clean', function () {
   return gulp.src('./build', {
     read: false,
-    allowEmpty: true,
+    allowEmpty: true
   })
   .pipe(clean());
 });
@@ -111,9 +135,9 @@ gulp.task('clean', function () {
 //
 // Build project and watch LESS file changes
 //
-gulp.task('css', gulp.series('lint', 'less', 'minifyCss'))
+gulp.task('css', gulp.series('lint', 'less', 'minifyCss'));
 gulp.task('build', gulp.series('clean', 'css', 'copyFonts'));
 gulp.task('default', gulp.series('build'));
 
-gulp.task('demo-build', gulp.series('css', 'less', 'minifyCss', 'buildDemos', 'buildSkinSwitcher'))
-gulp.task('watch', gulp.series('build', 'buildDemos', 'buildSkinSwitcher', 'monitor'));
+gulp.task('demo-build', gulp.series('css', 'less', 'minifyCss', 'buildDemos', 'buildSkinSwitcher'));
+gulp.task('watch', gulp.series('build', 'buildDemos', 'copyTinymce', 'buildSkinSwitcher', 'monitor'));

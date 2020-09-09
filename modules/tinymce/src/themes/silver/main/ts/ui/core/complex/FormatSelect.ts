@@ -5,16 +5,16 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { AlloyTriggers, AlloyComponent } from '@ephox/alloy';
+import { AlloyComponent, AlloyTriggers } from '@ephox/alloy';
 import { Element } from '@ephox/dom-globals';
 import { Fun, Option } from '@ephox/katamari';
 import Editor from 'tinymce/core/api/Editor';
+import { UiFactoryBackstage } from '../../../backstage/Backstage';
 import { updateMenuText } from '../../dropdown/CommonDropdown';
-import { onActionToggleFormat } from './utils/Utils';
 import { createMenuItems, createSelectButton, SelectSpec } from './BespokeSelect';
 import { buildBasicSettingsDataset, Delimiter } from './SelectDatasets';
 import { findNearest, getCurrentSelectionParents } from './utils/FormatDetection';
-import { UiFactoryBackstage } from '../../../backstage/Backstage';
+import { onActionToggleFormat } from './utils/Utils';
 
 const defaultBlocks = (
   'Paragraph=p;' +
@@ -28,21 +28,15 @@ const defaultBlocks = (
 );
 
 const getSpec = (editor: Editor): SelectSpec => {
-  const getMatchingValue = (nodeChangeEvent) => {
-    return findNearest(editor, () => dataset.data, nodeChangeEvent);
-  };
+  const getMatchingValue = (nodeChangeEvent) => findNearest(editor, () => dataset.data, nodeChangeEvent);
 
-  const isSelectedFor = (format: string) => {
-    return () => {
-      return editor.formatter.match(format);
-    };
-  };
+  const isSelectedFor = (format: string) => () => editor.formatter.match(format);
 
   const getPreviewFor = (format: string) => () => {
     const fmt = editor.formatter.get(format);
     return Option.some({
       tag: fmt.length > 0 ? fmt[0].inline || fmt[0].block || 'div' : 'div',
-      styleAttr: editor.formatter.getCssText(format)
+      styles: editor.dom.parseStyle(editor.formatter.getCssText(format))
     });
   };
 
@@ -54,9 +48,7 @@ const getSpec = (editor: Editor): SelectSpec => {
     });
   };
 
-  const nodeChangeHandler = Option.some((comp: AlloyComponent) => {
-    return (e) => updateSelectMenuText(e.parents, comp);
-  });
+  const nodeChangeHandler = Option.some((comp: AlloyComponent) => (e) => updateSelectMenuText(e.parents, comp));
 
   const setInitialValue = Option.some((comp: AlloyComponent) => {
     const parents = getCurrentSelectionParents(editor);
@@ -80,9 +72,7 @@ const getSpec = (editor: Editor): SelectSpec => {
   };
 };
 
-const createFormatSelect = (editor: Editor, backstage: UiFactoryBackstage) => {
-  return createSelectButton(editor, backstage, getSpec(editor));
-};
+const createFormatSelect = (editor: Editor, backstage: UiFactoryBackstage) => createSelectButton(editor, backstage, getSpec(editor));
 
 // FIX: Test this!
 const formatSelectMenu = (editor: Editor, backstage: UiFactoryBackstage) => {

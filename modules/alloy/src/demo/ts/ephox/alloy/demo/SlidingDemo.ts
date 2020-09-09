@@ -1,4 +1,4 @@
-import { document, console } from '@ephox/dom-globals';
+import { console, document } from '@ephox/dom-globals';
 import { Class, Element } from '@ephox/sugar';
 
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
@@ -11,7 +11,7 @@ import * as HtmlDisplay from 'ephox/alloy/demo/HtmlDisplay';
 
 // tslint:disable:no-console
 
-export default (): void  => {
+export default (): void => {
   const gui = Gui.create();
   const body = Element.fromDom(document.body);
   Class.add(gui.element(), 'gui-root-demo-container');
@@ -34,10 +34,10 @@ export default (): void  => {
               openClass: 'demo-sliding-open',
               shrinkingClass: 'demo-sliding-height-shrinking',
               growingClass: 'demo-sliding-height-growing',
-              onShrunk () {
+              onShrunk() {
                 console.log('height.slider.shrunk');
               },
-              onGrown () {
+              onGrown() {
                 console.log('height.slider.grown');
               }
             })
@@ -56,7 +56,7 @@ export default (): void  => {
             tag: 'button',
             innerHtml: 'Toggle'
           },
-          action () {
+          action() {
             const slider = gui.getByUid('height-slider').getOrDie();
             if (Sliding.hasGrown(slider)) { Sliding.shrink(slider); } else { Sliding.grow(slider); }
           }
@@ -82,10 +82,10 @@ export default (): void  => {
               openClass: 'demo-sliding-open',
               shrinkingClass: 'demo-sliding-width-shrinking',
               growingClass: 'demo-sliding-width-growing',
-              onShrunk () {
+              onShrunk() {
                 console.log('width.slider.shrunk');
               },
-              onGrown () {
+              onGrown() {
                 console.log('width.slider.grown');
               }
             })
@@ -105,7 +105,7 @@ export default (): void  => {
             tag: 'button',
             innerHtml: 'Toggle'
           },
-          action () {
+          action() {
             const slider = gui.getByUid('width-slider').getOrDie();
             if (Sliding.hasGrown(slider)) { Sliding.shrink(slider); } else { Sliding.grow(slider); }
           }

@@ -1,7 +1,7 @@
 import { Arr, Option } from '@ephox/katamari';
 import { WordScope } from '../data/WordScope';
 
-const quoteList = ['\'', '\u2018', '\u2019' ];
+const quoteList = [ `'`, '\u2018', '\u2019' ];
 const whitelist = Arr.bind(quoteList, function (q) {
   return Arr.map([ 'twas' ], function (t) {
     return q + t;
@@ -61,7 +61,7 @@ const text = function (word: string) {
   return r.word();
 };
 
-export default {
+export {
   scope,
   text
 };

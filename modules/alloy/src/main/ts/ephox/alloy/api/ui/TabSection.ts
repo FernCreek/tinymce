@@ -4,7 +4,7 @@ import { Attr } from '@ephox/sugar';
 import * as AlloyTriggers from '../../api/events/AlloyTriggers';
 import * as AlloyParts from '../../parts/AlloyParts';
 import * as TabSectionSchema from '../../ui/schema/TabSectionSchema';
-import { TabSectionSketcher, TabSectionDetail, TabSectionSpec } from '../../ui/types/TabSectionTypes';
+import { TabSectionApis, TabSectionDetail, TabSectionSketcher, TabSectionSpec } from '../../ui/types/TabSectionTypes';
 import { Highlighting } from '../behaviour/Highlighting';
 import { Replacing } from '../behaviour/Replacing';
 import { Representing } from '../behaviour/Representing';
@@ -15,26 +15,26 @@ import * as SystemEvents from '../events/SystemEvents';
 import * as Sketcher from './Sketcher';
 import { CompositeSketchFactory } from './UiSketcher';
 
-const factory: CompositeSketchFactory<TabSectionDetail, TabSectionSpec> = (detail, components, spec, externals) => {
-  const changeTab = (button) => {
+const factory: CompositeSketchFactory<TabSectionDetail, TabSectionSpec> = (detail, components, _spec, _externals) => {
+  const changeTab = (button: AlloyComponent) => {
     const tabValue = Representing.getValue(button);
     AlloyParts.getPart(button, detail, 'tabview').each((tabview) => {
-      const tabWithValue = Arr.find(detail.tabs, (t) => {
-        return t.value === tabValue;
-      });
+      const tabWithValue = Arr.find(detail.tabs, (t) => t.value === tabValue);
 
       tabWithValue.each((tabData) => {
         const panel = tabData.view();
 
         // Update the tabview to refer to the current tab.
-        Attr.set(tabview.element(), 'aria-labelledby', Attr.get(button.element(), 'id'));
+        Attr.getOpt(button.element(), 'id').each((id) => {
+          Attr.set(tabview.element(), 'aria-labelledby', id);
+        });
         Replacing.set(tabview, panel);
         detail.onChangeTab(tabview, button, panel);
       });
     });
   };
 
-  const changeTabBy = (section, byPred: (tbar: AlloyComponent) => Option<AlloyComponent>) => {
+  const changeTabBy = (section: AlloyComponent, byPred: (tbar: AlloyComponent) => Option<AlloyComponent>) => {
     AlloyParts.getPart(section, detail, 'tabbar').each((tabbar) => {
       byPred(tabbar).each(AlloyTriggers.emitExecute);
     });
@@ -50,7 +50,7 @@ const factory: CompositeSketchFactory<TabSectionDetail, TabSectionSpec> = (detai
       Arr.flatten([
 
         detail.selectFirst ? [
-          AlloyEvents.runOnAttached((section, simulatedEvent) => {
+          AlloyEvents.runOnAttached((section, _simulatedEvent) => {
             changeTabBy(section, Highlighting.getFirst);
           })
         ] : [ ],
@@ -69,21 +69,17 @@ const factory: CompositeSketchFactory<TabSectionDetail, TabSectionSpec> = (detai
     ),
 
     apis: {
-      getViewItems (section) {
-        return AlloyParts.getPart(section, detail, 'tabview').map((tabview) => {
-          return Replacing.contents(tabview);
-        }).getOr([ ]);
+      getViewItems(section: AlloyComponent) {
+        return AlloyParts.getPart(section, detail, 'tabview').map((tabview) => Replacing.contents(tabview)).getOr([ ]);
       },
 
       // How should "clickToDismiss" interact with this? At the moment, it will never dismiss
-      showTab (section, tabKey) {
+      showTab(section: AlloyComponent, tabKey: string) {
         // We only change the tab if it isn't currently active because that takes
         // the whole "dismiss" issue out of the equation.
-        const getTabIfNotActive = (tabbar) => {
+        const getTabIfNotActive = (tabbar: AlloyComponent) => {
           const candidates = Highlighting.getCandidates(tabbar);
-          const optTab = Arr.find(candidates, (c) => {
-            return Representing.getValue(c) === tabKey;
-          });
+          const optTab = Arr.find(candidates, (c) => Representing.getValue(c) === tabKey);
 
           return optTab.filter((tab) => !Highlighting.isHighlighted(tabbar, tab));
         };
@@ -95,20 +91,18 @@ const factory: CompositeSketchFactory<TabSectionDetail, TabSectionSpec> = (detai
 
 };
 
-const TabSection = Sketcher.composite({
+const TabSection: TabSectionSketcher = Sketcher.composite<TabSectionSpec, TabSectionDetail, TabSectionApis>({
   name: 'TabSection',
   configFields: TabSectionSchema.schema(),
   partFields: TabSectionSchema.parts(),
   factory,
   apis: {
-    getViewItems (apis, component) {
-      return apis.getViewItems(component);
-    },
+    getViewItems: (apis, component) => apis.getViewItems(component),
     showTab: (apis, component, tabKey) => {
       apis.showTab(component, tabKey);
     }
   }
-}) as TabSectionSketcher;
+});
 
 export {
   TabSection

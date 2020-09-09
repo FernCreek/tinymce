@@ -5,20 +5,10 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import {
-  AlloyComponent,
-  AlloyTriggers,
-  Composing,
-  Disabling,
-  Focusing,
-  Form,
-  Reflecting,
-  Representing,
-  TabSection
-} from '@ephox/alloy';
+import { AlloyComponent, AlloyTriggers, Composing, Disabling, Focusing, Form, Reflecting, Representing, TabSection } from '@ephox/alloy';
 import { ValueSchema } from '@ephox/boulder';
 import { DialogManager, Types } from '@ephox/bridge';
-import { Merger, Option, Type, Obj, Cell } from '@ephox/katamari';
+import { Cell, Obj, Option, Type } from '@ephox/katamari';
 
 import { formBlockEvent, formCloseEvent, formUnblockEvent } from '../general/FormEvents';
 import { bodyChannel, dialogChannel, footerChannel, titleChannel } from './DialogChannels';
@@ -34,9 +24,7 @@ const getCompByName = (access: DialogAccess, name: string): Option<AlloyComponen
       const footer = access.getFooter();
       const footerState = Reflecting.getState(footer);
       return footerState.get().bind((f) => f.lookupByName(form, name));
-    }, (comp) => {
-      return Option.some(comp);
-    });
+    }, (comp) => Option.some(comp));
   } else {
     return Option.none();
   }
@@ -44,11 +32,9 @@ const getCompByName = (access: DialogAccess, name: string): Option<AlloyComponen
 
 const validateData = <T>(access: DialogAccess, data) => {
   const root = access.getRoot();
-  return Reflecting.getState(root).get().map((dialogState: DialogManager.DialogInit<T>) => {
-    return ValueSchema.getOrDie(
-      ValueSchema.asRaw('data', dialogState.dataValidator, data)
-    );
-  }).getOr(data);
+  return Reflecting.getState(root).get().map((dialogState: DialogManager.DialogInit<T>) => ValueSchema.getOrDie(
+    ValueSchema.asRaw('data', dialogState.dataValidator, data)
+  )).getOr(data);
 };
 
 export interface DialogAccess {
@@ -74,9 +60,7 @@ const getDialogApi = <T extends Types.Dialog.DialogData>(
     const root = access.getRoot();
     const valueComp = root.getSystem().isConnected() ? access.getFormWrapper() : root;
     const representedValues = Representing.getValue(valueComp);
-    const menuItemCurrentState = Obj.map(menuItemStates, (cell: any) => {
-      return cell.get();
-    });
+    const menuItemCurrentState = Obj.map(menuItemStates, (cell: any) => cell.get());
     return {
       ...representedValues,
       ...menuItemCurrentState
@@ -87,13 +71,13 @@ const getDialogApi = <T extends Types.Dialog.DialogData>(
     // Currently, the decision is to ignore setData calls that fire after the dialog is closed
     withRoot((_) => {
       const prevData = instanceApi.getData();
-      const mergedData = Merger.merge(prevData, newData);
+      const mergedData = { ...prevData, ...newData };
       const newInternalData = validateData(access, mergedData);
       const form = access.getFormWrapper();
       Representing.setValue(form, newInternalData);
       Obj.each(menuItemStates, (v, k) => {
         if (Obj.has(mergedData, k)) {
-          v.set(mergedData[k]);
+          v.set(mergedData[ k ]);
         }
       });
     });
@@ -141,7 +125,7 @@ const getDialogApi = <T extends Types.Dialog.DialogData>(
   const redial = (d: Types.Dialog.DialogApi<T>): void => {
     withRoot((root) => {
       const dialogInit = doRedial(d);
-      root.getSystem().broadcastOn( [ dialogChannel ], dialogInit);
+      root.getSystem().broadcastOn([ dialogChannel ], dialogInit);
 
       root.getSystem().broadcastOn([ titleChannel ], dialogInit.internalDialog);
       root.getSystem().broadcastOn([ bodyChannel ], dialogInit.internalDialog);

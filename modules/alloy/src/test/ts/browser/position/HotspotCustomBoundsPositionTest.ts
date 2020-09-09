@@ -1,24 +1,24 @@
 import { Assertions, Chain, NamedChain } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
+import { Css } from '@ephox/sugar';
 
 import * as Boxes from 'ephox/alloy/alien/Boxes';
 import { AlloyComponent } from 'ephox/alloy/api/component/ComponentApi';
 import * as GuiFactory from 'ephox/alloy/api/component/GuiFactory';
+import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
 import { Button } from 'ephox/alloy/api/ui/Button';
 import { Container } from 'ephox/alloy/api/ui/Container';
 import * as Layout from 'ephox/alloy/positioning/layout/Layout';
 import * as ChainUtils from 'ephox/alloy/test/ChainUtils';
-import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
 import * as PositionTestUtils from 'ephox/alloy/test/PositionTestUtils';
 import * as Sinks from 'ephox/alloy/test/Sinks';
-import { Css } from '@ephox/sugar';
 
 UnitTest.asynctest('HotspotPositionTest', (success, failure) => {
 
-  GuiSetup.setup((store, doc, body) => {
+  GuiSetup.setup((_store, _doc, _body) => {
     const hotspot = GuiFactory.build(
       Button.sketch({
-        action () { },
+        action() { },
         dom: {
           styles: {
             position: 'absolute',
@@ -43,19 +43,17 @@ UnitTest.asynctest('HotspotPositionTest', (success, failure) => {
       })
     );
 
-  }, (doc, body, gui, component, store) => {
-    const cSetupAnchor = Chain.mapper((hotspot) => {
-      return {
-        anchor: 'hotspot',
-        hotspot,
-        layouts: {
-          onLtr: () => [ Layout.northeast, Layout.southeast ],
-          onRtl: () => [ Layout.northwest, Layout.southwest ]
-        }
-      };
-    });
+  }, (_doc, _body, gui, _component, _store) => {
+    const cSetupAnchor = Chain.mapper((hotspot) => ({
+      anchor: 'hotspot',
+      hotspot,
+      layouts: {
+        onLtr: () => [ Layout.northeast, Layout.southeast ],
+        onRtl: () => [ Layout.northwest, Layout.southwest ]
+      }
+    }));
 
-    const cAssertLayoutDirection = (direction: 'top' | 'bottom') => Chain.op((data: { popup: AlloyComponent }) => {
+    const cAssertLayoutDirection = (direction: 'top' | 'bottom'): Chain<any, any> => Chain.op((data: { popup: AlloyComponent }) => {
       const popup = data.popup.element();
       // Swap the direction name, as the style used is opposite
       const style = direction === 'top' ? 'bottom' : 'top';
@@ -63,7 +61,7 @@ UnitTest.asynctest('HotspotPositionTest', (success, failure) => {
     });
 
     const win = Boxes.win();
-    const bounds100PixelsFromTop = Boxes.bounds(win.x(), win.y() + 100, win.width(), win.height() - 100);
+    const bounds100PixelsFromTop = Boxes.bounds(win.x, win.y + 100, win.width, win.height - 100);
 
     return [
       Chain.asStep({}, [
@@ -85,7 +83,7 @@ UnitTest.asynctest('HotspotPositionTest', (success, failure) => {
           PositionTestUtils.cTestSinkWithinBounds('Relative, bounds 50px from top', 'relative', bounds100PixelsFromTop),
           cAssertLayoutDirection('bottom'),
           PositionTestUtils.cTestSinkWithinBounds('Fixed, bounds 50px from top', 'fixed', bounds100PixelsFromTop),
-          cAssertLayoutDirection('bottom'),
+          cAssertLayoutDirection('bottom')
         ])
       ])
     ];

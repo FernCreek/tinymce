@@ -1,57 +1,40 @@
-import {
-  ApproxStructure,
-  Assertions,
-  Chain,
-  Cursors,
-  FocusTools,
-  GeneralSteps,
-  Keyboard,
-  Keys,
-  Logger,
-  Mouse,
-  Step,
-  UiFinder,
-} from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { ApproxStructure, Assertions, Chain, Cursors, FocusTools, GeneralSteps, Keyboard, Keys, Logger, Mouse, Step, Touch, UiFinder } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
 
 import * as GuiFactory from 'ephox/alloy/api/component/GuiFactory';
 import * as AlloyTriggers from 'ephox/alloy/api/events/AlloyTriggers';
-import { Button } from 'ephox/alloy/api/ui/Button';
 import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
+import { Button } from 'ephox/alloy/api/ui/Button';
 import * as Tagger from 'ephox/alloy/registry/Tagger';
 
 UnitTest.asynctest('ButtonSpecTest', (success, failure) => {
 
-  GuiSetup.setup((store, doc, body) => {
-    return GuiFactory.build(
-      Button.sketch({
-        dom: {
-          tag: 'button',
-          innerHtml: 'ButtonSpecTest.button',
-          classes: [ 'test-button' ]
-        },
-        action: store.adder('button.action'),
-        uid: 'test-button-id'
-      })
-    );
-  }, (doc, body, gui, component, store) => {
+  GuiSetup.setup((store, _doc, _body) => GuiFactory.build(
+    Button.sketch({
+      dom: {
+        tag: 'button',
+        innerHtml: 'ButtonSpecTest.button',
+        classes: [ 'test-button' ]
+      },
+      action: store.adder('button.action'),
+      uid: 'test-button-id'
+    })
+  ), (doc, _body, gui, component, store) => {
     // TODO: Use s prefix for all of these. Or find out why they aren't.
 
     const testStructure = Step.sync(() => {
       Assertions.assertStructure(
         'Checking initial structure of button',
-        ApproxStructure.build((s, str, arr) => {
-          return s.element('button', {
-            classes: [
-              arr.has('test-button')
-            ],
-            attrs: {
-              'type': str.is('button'),
-              'data-alloy-id': str.none()
-            },
-            html: str.is('ButtonSpecTest.button')
-          });
-        }),
+        ApproxStructure.build((s, str, arr) => s.element('button', {
+          classes: [
+            arr.has('test-button')
+          ],
+          attrs: {
+            'type': str.is('button'),
+            'data-alloy-id': str.none()
+          },
+          html: str.is('ButtonSpecTest.button')
+        })),
         component.element()
       );
     });
@@ -74,6 +57,23 @@ UnitTest.asynctest('ButtonSpecTest', (success, failure) => {
           Mouse.cClick
         ]),
         store.sAssertEq('step 3: post click on button text', [ 'button.action' ]),
+        store.sClear
+      ])
+    );
+
+    const testButtonTap = Logger.t(
+      'testing button tap',
+      GeneralSteps.sequence([
+        store.sAssertEq('step 1: no taps', [ ]),
+        Touch.sTapOn(gui.element(), 'button'),
+        store.sAssertEq('step 2: post tap', [ 'button.action' ]),
+        store.sClear,
+        Chain.asStep(gui.element(), [
+          UiFinder.cFindIn('button'),
+          Cursors.cFollow([ 0 ]),
+          Touch.cTap
+        ]),
+        store.sAssertEq('step 3: post tap on button text', [ 'button.action' ]),
         store.sClear
       ])
     );
@@ -118,6 +118,9 @@ UnitTest.asynctest('ButtonSpecTest', (success, failure) => {
 
       // Test clicking
       testButtonClick,
+
+      // Test tapping
+      testButtonTap,
 
       // Test focusing
       testFocusing,

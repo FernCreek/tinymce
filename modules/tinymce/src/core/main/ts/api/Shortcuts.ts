@@ -6,9 +6,9 @@
  */
 
 import { KeyboardEvent } from '@ephox/dom-globals';
-import Tools from './util/Tools';
-import Env from './Env';
 import Editor from './Editor';
+import Env from './Env';
+import Tools from './util/Tools';
 
 /**
  * Contains logic for handling keyboard shortcuts.
@@ -16,9 +16,21 @@ import Editor from './Editor';
  * @class tinymce.Shortcuts
  * @example
  * editor.shortcuts.add('ctrl+a', "description of the shortcut", function() {});
- * editor.shortcuts.add('meta+a', "description of the shortcut", function() {}); // "meta" maps to Command on Mac and Ctrl on PC
  * editor.shortcuts.add('ctrl+alt+a', "description of the shortcut", function() {});
- * editor.shortcuts.add('access+a', "description of the shortcut", function() {}); // "access" maps to ctrl+alt on Mac and shift+alt on PC
+ * // "meta" maps to Command on Mac and Ctrl on PC
+ * editor.shortcuts.add('meta+a', "description of the shortcut", function() {});
+ * // "access" maps to Control+Option on Mac and shift+alt on PC
+ * editor.shortcuts.add('access+a', "description of the shortcut", function() {});
+ *
+ * editor.shortcuts.add(
+ *  'meta+access+c', 'Opens the code editor dialog.', function () {
+ *    editor.execCommand('mceCodeEditor');
+ * });
+ *
+ * editor.shortcuts.add(
+ *  'meta+shift+32', 'Inserts "Hello, World!" for meta+shift+space', function () {
+ *    editor.execCommand('mceInsertContent', false, 'Hello, World!');
+ * });
  */
 
 const each = Tools.each, explode = Tools.explode;
@@ -62,7 +74,7 @@ class Shortcuts {
   private readonly shortcuts: Record<string, Shortcut> = {};
   private pendingPatterns = [];
 
-  constructor(editor: Editor) {
+  public constructor(editor: Editor) {
     this.editor = editor;
     const self = this;
 
@@ -103,13 +115,12 @@ class Shortcuts {
    * @param {Object} scope Optional scope to execute the function in.
    * @return {Boolean} true/false state if the shortcut was added or not.
    */
-  public add (pattern: string, desc: string, cmdFunc: string | any[] | Function, scope?: {}): boolean {
+  public add(pattern: string, desc: string, cmdFunc: string | any[] | Function, scope?: {}): boolean {
     const self = this;
-    let cmd;
 
-    cmd = cmdFunc;
+    const cmd = cmdFunc;
 
-    if (typeof cmdFunc === 'string') {
+    if (typeof cmd === 'string') {
       cmdFunc = function () {
         self.editor.execCommand(cmd, false, null);
       };
@@ -134,7 +145,7 @@ class Shortcuts {
    * @param {String} pattern Shortcut pattern. Like for example: ctrl+alt+o.
    * @return {Boolean} true/false state if the shortcut was removed or not.
    */
-  public remove (pattern: string): boolean {
+  public remove(pattern: string): boolean {
     const shortcut = this.createShortcut(pattern);
 
     if (this.shortcuts[shortcut.id]) {
@@ -145,8 +156,8 @@ class Shortcuts {
     return false;
   }
 
-  private parseShortcut (pattern: string): Shortcut {
-    let id, key;
+  private parseShortcut(pattern: string): Shortcut {
+    let key;
     const shortcut: any = {};
 
     // Parse modifiers and keys ctrl+alt+b for example
@@ -165,7 +176,7 @@ class Shortcuts {
     });
 
     // Generate unique id for modifier combination and set default state for unused modifiers
-    id = [shortcut.keyCode];
+    const id = [ shortcut.keyCode ];
     for (key in modifierNames) {
       if (shortcut[key]) {
         id.push(key);
@@ -199,10 +210,8 @@ class Shortcuts {
     return shortcut;
   }
 
-  private createShortcut (pattern: string, desc?: string, cmdFunc?, scope?) {
-    let shortcuts;
-
-    shortcuts = Tools.map(explode(pattern, '>'), this.parseShortcut);
+  private createShortcut(pattern: string, desc?: string, cmdFunc?, scope?) {
+    const shortcuts = Tools.map(explode(pattern, '>'), this.parseShortcut);
     shortcuts[shortcuts.length - 1] = Tools.extend(shortcuts[shortcuts.length - 1], {
       func: cmdFunc,
       scope: scope || this.editor
@@ -214,15 +223,15 @@ class Shortcuts {
     });
   }
 
-  private hasModifier (e: KeyboardEvent): boolean {
+  private hasModifier(e: KeyboardEvent): boolean {
     return e.altKey || e.ctrlKey || e.metaKey;
   }
 
-  private isFunctionKey (e: KeyboardEvent): boolean {
+  private isFunctionKey(e: KeyboardEvent): boolean {
     return e.type === 'keydown' && e.keyCode >= 112 && e.keyCode <= 123;
   }
 
-  private matchShortcut (e: KeyboardEvent, shortcut: Shortcut) {
+  private matchShortcut(e: KeyboardEvent, shortcut: Shortcut) {
     if (!shortcut) {
       return false;
     }
@@ -243,7 +252,7 @@ class Shortcuts {
     return false;
   }
 
-  private executeShortcutAction (shortcut) {
+  private executeShortcutAction(shortcut) {
     return shortcut.func ? shortcut.func.call(shortcut.scope) : null;
   }
 }

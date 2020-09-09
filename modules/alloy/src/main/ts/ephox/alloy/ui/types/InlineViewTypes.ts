@@ -20,13 +20,14 @@ export interface InlineViewDetail extends SingleSketchDetail {
   onHide: (component: AlloyComponent) => void;
   onEscape: Option<(component: AlloyComponent) => void>;
   getRelated: (component: AlloyComponent) => Option<AlloyComponent>;
+  isExtraPart: (component: AlloyComponent, target: Element) => boolean;
   lazySink: LazySink;
   eventOrder: Record<string, string[]>;
   fireDismissalEventInstead: Option<{
-    event: string
+    event: string;
   }>;
   fireRepositionEventInstead: Option<{
-    event: string
+    event: string;
   }>;
 }
 
@@ -40,22 +41,23 @@ export interface InlineViewSpec extends SingleSketchSpec {
   onHide?: (component: AlloyComponent) => void;
   onEscape?: (component: AlloyComponent) => void;
   getRelated?: (component: AlloyComponent) => Option<AlloyComponent>;
+  isExtraPart?: (component: AlloyComponent, target: Element) => boolean;
   eventOrder?: Record<string, string[]>;
   fireDismissalEventInstead?: {
-    event?: string
+    event?: string;
   };
   fireRepositionEventInstead?: {
-    event: string
+    event?: string;
   };
 }
 
 export interface InlineMenuSpec {
   data: TieredData;
-  menu: Partial<TieredMenuSpec>;
+  menu: Partial<TieredMenuSpec> & { markers: TieredMenuSpec['markers'] };
   type?: 'vertical' | 'horizontal';
 }
 
-export interface InlineViewSketcher extends SingleSketch<InlineViewSpec, InlineViewDetail> {
+export interface InlineViewApis {
   showAt: (component: AlloyComponent, anchor: AnchorSpec, thing: AlloySpec) => void;
   showWithin: (component: AlloyComponent, anchor: AnchorSpec, thing: AlloySpec, boxElement: Option<Element>) => void;
   showWithinBounds: (component: AlloyComponent, anchor: AnchorSpec, thing: AlloySpec, getBounds: () => Option<Bounds>) => void;
@@ -67,3 +69,5 @@ export interface InlineViewSketcher extends SingleSketch<InlineViewSpec, InlineV
   setContent: (component: AlloyComponent, thing: AlloySpec) => void;
   reposition: (component: AlloyComponent) => void;
 }
+
+export interface InlineViewSketcher extends SingleSketch<InlineViewSpec>, InlineViewApis { }

@@ -7,15 +7,15 @@ export default function () {
     selector: 'textarea.tiny-text',
     theme: 'silver',
     toolbar: 'styleselect',
-    plugins: [ 'lists', 'autolink', 'autosave', 'insertdatetime'  ],
+    plugins: [ 'lists', 'autolink', 'autosave', 'insertdatetime' ],
     style_formats: [
-      {title: 'Bold text', inline: 'b'},
-      {title: 'Red text', inline: 'span', styles: {color: '#ff0000'}},
-      {title: 'Red header', block: 'h1', styles: {color: '#ff0000'}},
-      {title: 'Example 1', inline: 'span', classes: 'example1'},
-      {title: 'Example 2', inline: 'span', classes: 'example2'},
-      {title: 'Table styles'},
-      {title: 'Table row 1', selector: 'tr', classes: 'tablerow1'},
+      { title: 'Bold text', inline: 'b' },
+      { title: 'Red text', inline: 'span', styles: { color: '#ff0000' }},
+      { title: 'Red header', block: 'h1', styles: { color: '#ff0000' }},
+      { title: 'Example 1', inline: 'span', classes: 'example1' },
+      { title: 'Example 2', inline: 'span', classes: 'example2' },
+      { title: 'Table styles' },
+      { title: 'Table row 1', selector: 'tr', classes: 'tablerow1' },
       {
         title: 'Headings', items: [
           { title: 'Heading 1', format: 'h1' },
@@ -56,7 +56,7 @@ export default function () {
           { title: 'Justify', icon: 'alignjustify', format: 'alignjustify' }
         ]
       }
-    ],
+    ]
   });
 
   tinymce.init({
@@ -64,6 +64,6 @@ export default function () {
     theme: 'silver',
     toolbar: 'styleselect',
     block_formats: 'Paragraph=p;Header 1=h1;Header 2=h2;Separator Name=|;Header 3=h3',
-    plugins: [ 'lists', 'autolink', 'autosave', 'insertdatetime' ],
+    plugins: [ 'lists', 'autolink', 'autosave', 'insertdatetime' ]
   });
 }

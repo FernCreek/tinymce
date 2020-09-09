@@ -1,5 +1,4 @@
 import { Future, Option } from '@ephox/katamari';
-import { Element } from '@ephox/sugar';
 
 import { AlloyBehaviourRecord } from '../../api/behaviour/Behaviour';
 import { LazySink } from '../../api/component/CommonTypes';
@@ -7,12 +6,11 @@ import { AlloyComponent } from '../../api/component/ComponentApi';
 import { SketchBehaviours } from '../../api/component/SketchBehaviours';
 import { AlloySpec, RawDomSchema } from '../../api/component/SpecTypes';
 import { CompositeSketch, CompositeSketchDetail, CompositeSketchSpec } from '../../api/ui/Sketcher';
-import { AnchorLayout } from '../../positioning/layout/LayoutTypes';
-import { AnchorSpec, AnchorOverrides } from '../../positioning/mode/Anchoring';
+import { AnchorOverrides, AnchorSpec, HasLayoutAnchor, HasLayoutAnchorSpec } from '../../positioning/mode/Anchoring';
 import { TieredData, TieredMenuSpec } from './TieredMenuTypes';
 
 // F is the fetched data
-export interface CommonDropdownDetail<F> extends CompositeSketchDetail {
+export interface CommonDropdownDetail<F> extends CompositeSketchDetail, HasLayoutAnchor {
   uid: string;
   dom: RawDomSchema;
   components: AlloySpec[ ];
@@ -26,10 +24,6 @@ export interface CommonDropdownDetail<F> extends CompositeSketchDetail {
   // TODO test getHotspot and overrides
   getHotspot: (comp: AlloyComponent) => Option<AlloyComponent>;
   getAnchorOverrides: () => AnchorOverrides;
-  layouts: Option<{
-    onLtr: (elem: Element) => AnchorLayout[];
-    onRtl: (elem: Element) => AnchorLayout[];
-  }>;
   matchWidth: boolean;
   useMinWidth: boolean;
   sandboxClasses: string[];
@@ -37,6 +31,7 @@ export interface CommonDropdownDetail<F> extends CompositeSketchDetail {
 }
 
 export interface DropdownDetail extends CommonDropdownDetail<TieredData>, CompositeSketchDetail {
+  dom: RawDomSchema;
   dropdownBehaviours: SketchBehaviours;
   onExecute: (sandbox: AlloyComponent, item: AlloyComponent, value: any) => void;
   toggleClass: string;
@@ -50,7 +45,7 @@ export interface DropdownApis {
   repositionMenus: (comp: AlloyComponent) => void;
 }
 
-export interface DropdownSpec extends CompositeSketchSpec {
+export interface DropdownSpec extends CompositeSketchSpec, HasLayoutAnchorSpec {
   uid?: string;
   dom: RawDomSchema;
   components?: AlloySpec[];
@@ -63,10 +58,6 @@ export interface DropdownSpec extends CompositeSketchSpec {
   sandboxBehaviours?: AlloyBehaviourRecord;
   getHotspot?: (comp: AlloyComponent) => Option<AlloyComponent>;
   getAnchorOverrides?: () => () => AnchorOverrides;
-  layouts?: Option<{
-    onLtr: (elem: Element) => AnchorLayout[];
-    onRtl: (elem: Element) => AnchorLayout[];
-  }>;
 
   toggleClass: string;
   lazySink?: LazySink;
@@ -79,4 +70,4 @@ export interface DropdownSpec extends CompositeSketchSpec {
 
 }
 
-export interface DropdownSketcher extends CompositeSketch<DropdownSpec, DropdownDetail>, DropdownApis { }
+export interface DropdownSketcher extends CompositeSketch<DropdownSpec>, DropdownApis { }

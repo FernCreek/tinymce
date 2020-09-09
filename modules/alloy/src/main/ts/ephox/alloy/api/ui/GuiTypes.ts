@@ -1,25 +1,21 @@
 import { Objects } from '@ephox/boulder';
-import { Id, Option } from '@ephox/katamari';
+import { Id, Obj, Option } from '@ephox/katamari';
 
-import * as FunctionAnnotator from '../../debugging/FunctionAnnotator';
 import { AlloyComponent } from '../../api/component/ComponentApi';
-import { PremadeSpec, AlloySpec } from '../../api/component/SpecTypes';
+import { AlloySpec, PremadeSpec } from '../../api/component/SpecTypes';
+import * as FunctionAnnotator from '../../debugging/FunctionAnnotator';
 
 const premadeTag = Id.generate('alloy-premade');
 
-const premade = (comp: AlloyComponent): PremadeSpec => {
-  return Objects.wrap(premadeTag, comp);
-};
+const premade = (comp: AlloyComponent): PremadeSpec => Objects.wrap(premadeTag, comp);
 
-const getPremade = (spec: AlloySpec): Option<AlloyComponent> => {
-  return Objects.readOptFrom<AlloyComponent>(spec, premadeTag);
-};
+const getPremade = (spec: AlloySpec): Option<AlloyComponent> => Obj.get<any, string>(spec, premadeTag);
 
-const makeApi = (f) => {
-  return FunctionAnnotator.markAsSketchApi((component: AlloyComponent, ...rest/*, ... */) => {
-    return f.apply(undefined, [ component.getApis<any>() ].concat([ component ].concat(rest)));
-  }, f);
-};
+const makeApi = <A, R>(f: (api: A, comp: AlloyComponent, ...rest: any[]) => R) =>
+  FunctionAnnotator.markAsSketchApi(
+    (component: AlloyComponent, ...rest: any[]) => f(component.getApis(), component, ...rest),
+    f
+  );
 
 export {
   makeApi,

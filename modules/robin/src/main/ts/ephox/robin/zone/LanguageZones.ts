@@ -3,8 +3,8 @@ import { Fun, Option } from '@ephox/katamari';
 import { WordDecisionItem } from '../words/WordDecision';
 
 export interface ZoneDetails<E> {
-  lang: () => string;
-  details: () => WordDecisionItem<E>[];
+  readonly lang: string;
+  readonly details: WordDecisionItem<E>[];
 }
 
 export interface LanguageZones<E> {
@@ -45,8 +45,8 @@ const nu = function <E> (defaultLang: string): LanguageZones<E> {
     if (zone.length > 0) {
       // Intentionally, not a zone. These are details
       zones.push({
-        lang: Fun.constant(zoneLang),
-        details: Fun.constant(zone)
+        lang: zoneLang,
+        details: zone
       });
     }
   };
@@ -122,16 +122,16 @@ const nu = function <E> (defaultLang: string): LanguageZones<E> {
 //    (regardless of 'classic'/iframe or 'inline'/div mode).
 // Note: there may be descendant elements with a different language
 const calculate = function <E, D> (universe: Universe<E, D>, item: E) {
-  return universe.up().closest(item, '[lang]', Fun.constant(false)).map(function (el) {
-    return universe.attrs().get(el, 'lang');
+  return universe.up().closest(item, '[lang]', Fun.constant(false)).bind(function (el) {
+    const lang = universe.attrs().get(el, 'lang');
+    return lang === undefined ? Option.none<string>() : Option.some(lang);
   });
 };
 
 const strictBounder = function (envLang: string, onlyLang: string) {
   return function <E, D> (universe: Universe<E, D>, item: E) {
     const itemLang = calculate(universe, item).getOr(envLang);
-    const r = onlyLang !== itemLang;
-    return r;
+    return onlyLang !== itemLang;
   };
 };
 

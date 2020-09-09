@@ -5,48 +5,49 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Document, Element, Event, HTMLElement, HTMLIFrameElement, Window } from '@ephox/dom-globals';
 import { Registry } from '@ephox/bridge';
+import { Document, Element, Event, HTMLElement, HTMLIFrameElement, Window } from '@ephox/dom-globals';
 import { Option } from '@ephox/katamari';
-import Annotator from './Annotator';
-import Selection from './dom/Selection';
-import Schema from './html/Schema';
-import Formatter from './Formatter';
 import * as EditorContent from '../content/EditorContent';
-import SelectionOverrides from '../SelectionOverrides';
+import * as NodeType from '../dom/NodeType';
 import * as EditorRemove from '../EditorRemove';
 import { getEditorSettings, getParam, ParamTypeMap } from '../EditorSettings';
-import { EditorSettings, RawEditorSettings } from './SettingsTypes';
-import EditorFocus from '../focus/EditorFocus';
-import Render from '../init/Render';
-import { create, Mode } from './Mode';
+import { BlobInfoImagePair } from '../file/ImageScanner';
+import * as EditorFocus from '../focus/EditorFocus';
+import * as Render from '../init/Render';
+import { NodeChange } from '../NodeChange';
+import SelectionOverrides from '../SelectionOverrides';
+import { UndoManager } from '../undo/UndoManagerTypes';
+import Quirks from '../util/Quirks';
 import AddOnManager from './AddOnManager';
+import Annotator from './Annotator';
 import DomQuery, { DomQueryConstructor } from './dom/DomQuery';
 import DOMUtils from './dom/DOMUtils';
+import ScriptLoader from './dom/ScriptLoader';
+import Selection from './dom/Selection';
+import DomSerializer from './dom/Serializer';
 import EditorCommands, { EditorCommandCallback } from './EditorCommands';
+import EditorManager from './EditorManager';
 import EditorObservable from './EditorObservable';
+import EditorUpload, { UploadCallback, UploadResult } from './EditorUpload';
 import Env from './Env';
+import Formatter from './Formatter';
+import DomParser from './html/DomParser';
+import Node from './html/Node';
+import Schema from './html/Schema';
+import { create, Mode } from './Mode';
+import NotificationManager from './NotificationManager';
+import { Plugin } from './PluginManager';
+import { EditorSettings, RawEditorSettings } from './SettingsTypes';
 import Shortcuts from './Shortcuts';
+import { Theme } from './ThemeManager';
+import { registry } from './ui/Registry';
+import EventDispatcher, { NativeEventMap } from './util/EventDispatcher';
+import I18n, { TranslatedString, Untranslated } from './util/I18n';
 import Tools from './util/Tools';
 import URI from './util/URI';
-import I18n, { TranslatedString, Untranslated } from './util/I18n';
 import WindowManager from './WindowManager';
-import { registry } from './ui/Registry';
-import EditorManager from './EditorManager';
-import NotificationManager from './NotificationManager';
-import { NodeChange } from '../NodeChange';
-import EditorUpload, { UploadCallback } from './EditorUpload';
-import DomSerializer from './dom/Serializer';
-import DomParser from './html/DomParser';
-import Quirks from '../util/Quirks';
-import EventDispatcher, { NativeEventMap } from './util/EventDispatcher';
-import { BlobInfoImagePair } from '../file/ImageScanner';
-import Node from './html/Node';
-import { Theme } from './ThemeManager';
-import { Plugin } from './PluginManager';
-import NodeType from '../dom/NodeType';
-import ScriptLoader from './dom/ScriptLoader';
-import { UndoManager } from '../undo/UndoManagerTypes';
+import { StyleSheetLoader } from './dom/StyleSheetLoader';
 
 /**
  * This class contains the core logic for a TinyMCE editor.
@@ -70,6 +71,8 @@ import { UndoManager } from '../undo/UndoManagerTypes';
 
 export interface Ui {
   registry: Registry.Registry;
+  /** StyleSheetLoader for styles in the editor UI. For content styles, use editor.dom.styleSheetLoader. */
+  styleSheetLoader: StyleSheetLoader;
 }
 
 export interface EditorConstructor {
@@ -185,7 +188,12 @@ class Editor implements EditorObservable {
   public mode: Mode;
 
   /**
+   * Sets the editor mode. For example: "design", "code" or "readonly".
+   * <br>
+   * <em>Deprecated in TinyMCE 5.0.4</em> - Use <code>editor.mode.set(mode)</code> instead.
    *
+   * @method setMode
+   * @param {String} mode Mode to set the editor in.
    * @deprecated now an alias for editor.mode.set()
    */
   public setMode: (mode: string) => void;
@@ -235,7 +243,7 @@ class Editor implements EditorObservable {
   public hasHiddenInput: boolean;
   public hasVisual: boolean;
   public hidden: boolean;
-  public iframeElement: HTMLIFrameElement;
+  public iframeElement: HTMLIFrameElement | null;
   public iframeHTML: string;
   public initialized: boolean;
   public notificationManager: NotificationManager;
@@ -280,7 +288,7 @@ class Editor implements EditorObservable {
    * @param {Object} settings Settings for the editor.
    * @param {tinymce.EditorManager} editorManager EditorManager instance.
    */
-  constructor (id: string, settings: RawEditorSettings, editorManager: EditorManager) {
+  public constructor(id: string, settings: RawEditorSettings, editorManager: EditorManager) {
     this.editorManager = editorManager;
     this.documentBaseUrl = editorManager.documentBaseURL;
 
@@ -325,7 +333,8 @@ class Editor implements EditorObservable {
     }
 
     this.ui = {
-      registry: registry()
+      registry: registry(),
+      styleSheetLoader: undefined
     };
 
     const self = this;
@@ -337,12 +346,10 @@ class Editor implements EditorObservable {
     editorManager.fire('SetupEditor', { editor: this });
     this.execCallback('setup', this);
 
-    this.$ = DomQuery.overrideDefaults(() => {
-      return {
-        context: this.inline ? this.getBody() : this.getDoc(),
-        element: this.getBody()
-      };
-    });
+    this.$ = DomQuery.overrideDefaults(() => ({
+      context: this.inline ? this.getBody() : this.getDoc(),
+      element: this.getBody()
+    }));
   }
 
   /**
@@ -350,7 +357,7 @@ class Editor implements EditorObservable {
    *
    * @method render
    */
-  public render () {
+  public render() {
     Render.render(this);
   }
 
@@ -361,7 +368,7 @@ class Editor implements EditorObservable {
    * @method focus
    * @param {Boolean} skipFocus Skip DOM focus. Just set is as the active editor.
    */
-  public focus (skipFocus?: boolean) {
+  public focus(skipFocus?: boolean) {
     EditorFocus.focus(this, skipFocus);
   }
 
@@ -371,7 +378,7 @@ class Editor implements EditorObservable {
    * @method hasFocus
    * @return {Boolean} Current focus state of the editor.
    */
-  public hasFocus (): boolean {
+  public hasFocus(): boolean {
     return EditorFocus.hasFocus(this);
   }
 
@@ -383,7 +390,7 @@ class Editor implements EditorObservable {
    * @param {String} name Name of the callback to execute.
    * @return {Object} Return value passed from callback function.
    */
-  public execCallback (name: string, ...x: any[]): any {
+  public execCallback(name: string, ...x: any[]): any {
     const self = this;
     let callback = self.settings[name], scope;
 
@@ -405,7 +412,7 @@ class Editor implements EditorObservable {
       self.callbackLookup[name] = { func: callback, scope };
     }
 
-    return callback.apply(scope || self, Array.prototype.slice.call(arguments, 1));
+    return callback.apply(scope || self, x);
   }
 
   /**
@@ -416,7 +423,7 @@ class Editor implements EditorObservable {
    * @param {String} text String to translate by the language pack data.
    * @return {String} Translated string.
    */
-  public translate (text: Untranslated): TranslatedString {
+  public translate(text: Untranslated): TranslatedString {
     return I18n.translate(text);
   }
 
@@ -438,7 +445,7 @@ class Editor implements EditorObservable {
   public getParam <K extends keyof ParamTypeMap>(name: string, defaultVal: ParamTypeMap[K], type: K): ParamTypeMap[K];
   public getParam <K extends keyof EditorSettings>(name: K, defaultVal?: EditorSettings[K], type?: string): EditorSettings[K];
   public getParam <T>(name: string, defaultVal: T, type: string): T;
-  public getParam (name: string, defaultVal?: any, type?: string): any  {
+  public getParam(name: string, defaultVal?: any, type?: string): any {
     return getParam(this, name, defaultVal, type);
   }
 
@@ -449,7 +456,7 @@ class Editor implements EditorObservable {
    * @method nodeChanged
    * @param {Object} args Optional args to pass to NodeChange event handlers.
    */
-  public nodeChanged (args?: any) {
+  public nodeChanged(args?: any) {
     this._nodeChangeDispatcher.nodeChanged(args);
   }
 
@@ -474,7 +481,7 @@ class Editor implements EditorObservable {
    *    }
    * });
    */
-  public addCommand (name: string, callback: EditorCommandCallback, scope?: object) {
+  public addCommand(name: string, callback: EditorCommandCallback, scope?: object) {
     /**
      * Callback function that gets called when a command is executed.
      *
@@ -495,7 +502,7 @@ class Editor implements EditorObservable {
    * @param {addQueryStateHandlerCallback} callback Function to execute when the command state retrieval occurs.
    * @param {Object} scope Optional scope to execute the function in.
    */
-  public addQueryStateHandler (name: string, callback: () => void, scope?: {}) {
+  public addQueryStateHandler(name: string, callback: () => void, scope?: {}) {
     /**
      * Callback function that gets called when a queryCommandState is executed.
      *
@@ -514,7 +521,7 @@ class Editor implements EditorObservable {
    * @param {addQueryValueHandlerCallback} callback Function to execute when the command value retrieval occurs.
    * @param {Object} scope Optional scope to execute the function in.
    */
-  public addQueryValueHandler (name: string, callback: () => void, scope?: {}) {
+  public addQueryValueHandler(name: string, callback: () => string, scope?: {}) {
     /**
      * Callback function that gets called when a queryCommandValue is executed.
      *
@@ -533,8 +540,25 @@ class Editor implements EditorObservable {
    * @param {String/Function} cmdFunc Command name string or function to execute when the key is pressed.
    * @param {Object} scope Optional scope to execute the function in.
    * @return {Boolean} true/false state if the shortcut was added or not.
+   * @example
+   * editor.addShortcut('ctrl+a', "description of the shortcut", function() {});
+   * editor.addShortcut('ctrl+alt+a', "description of the shortcut", function() {});
+   * // "meta" maps to Command on Mac and Ctrl on PC
+   * editor.addShortcut('meta+a', "description of the shortcut", function() {});
+   * // "access" maps to Control+Option on Mac and shift+alt on PC
+   * editor.addShortcut('access+a', "description of the shortcut", function() {});
+   *
+   * editor.addShortcut(
+   *  'meta+access+c', 'Opens the code editor dialog.', function () {
+   *    editor.execCommand('mceCodeEditor');
+   * });
+   *
+   * editor.addShortcut(
+   *  'meta+shift+32', 'Inserts "Hello, World!" for meta+shift+space', function () {
+   *    editor.execCommand('mceInsertContent', false, 'Hello, World!');
+   * });
    */
-  public addShortcut (pattern: string, desc: string, cmdFunc: string | any[] | Function, scope?: {}) {
+  public addShortcut(pattern: string, desc: string, cmdFunc: string | any[] | Function, scope?: {}) {
     this.shortcuts.add(pattern, desc, cmdFunc, scope);
   }
 
@@ -550,7 +574,7 @@ class Editor implements EditorObservable {
    * @param {mixed} value Optional command value, this can be anything.
    * @param {Object} args Optional arguments object.
    */
-  public execCommand (cmd: string, ui?: boolean, value?: any, args?: any): boolean {
+  public execCommand(cmd: string, ui?: boolean, value?: any, args?: any): boolean {
     return this.editorCommands.execCommand(cmd, ui, value, args);
   }
 
@@ -561,7 +585,7 @@ class Editor implements EditorObservable {
    * @param {string} cmd Command to query state from.
    * @return {Boolean} Command specific state, for example if bold is enabled or not.
    */
-  public queryCommandState (cmd: string): boolean {
+  public queryCommandState(cmd: string): boolean {
     return this.editorCommands.queryCommandState(cmd);
   }
 
@@ -572,7 +596,7 @@ class Editor implements EditorObservable {
    * @param {string} cmd Command to query value from.
    * @return {Object} Command specific value, for example the current font size.
    */
-  public queryCommandValue (cmd: string): string {
+  public queryCommandValue(cmd: string): string {
     return this.editorCommands.queryCommandValue(cmd);
   }
 
@@ -583,7 +607,7 @@ class Editor implements EditorObservable {
    * @param {String} cmd Command that we check support for.
    * @return {Boolean} true/false if the command is supported or not.
    */
-  public queryCommandSupported (cmd: string): boolean {
+  public queryCommandSupported(cmd: string): boolean {
     return this.editorCommands.queryCommandSupported(cmd);
   }
 
@@ -592,7 +616,7 @@ class Editor implements EditorObservable {
    *
    * @method show
    */
-  public show () {
+  public show() {
     const self = this;
 
     if (self.hidden) {
@@ -615,7 +639,7 @@ class Editor implements EditorObservable {
    *
    * @method hide
    */
-  public hide () {
+  public hide() {
     const self = this, doc = self.getDoc();
 
     if (!self.hidden) {
@@ -650,7 +674,7 @@ class Editor implements EditorObservable {
    * @method isHidden
    * @return {Boolean} True/false if the editor is hidden or not.
    */
-  public isHidden () {
+  public isHidden() {
     return !!this.hidden;
   }
 
@@ -672,7 +696,7 @@ class Editor implements EditorObservable {
    * // Show progress after 3 seconds
    * tinymce.activeEditor.setProgressState(true, 3000);
    */
-  public setProgressState (state: boolean, time?: number) {
+  public setProgressState(state: boolean, time?: number) {
     this.fire('ProgressState', { state, time });
   }
 
@@ -685,7 +709,7 @@ class Editor implements EditorObservable {
    * @param {Object} args Optional content object, this gets passed around through the whole load process.
    * @return {String} HTML string that got set into the editor.
    */
-  public load (args?: any): string {
+  public load(args?: any): string {
     const self = this;
     let elm = self.getElement(), html;
 
@@ -713,7 +737,7 @@ class Editor implements EditorObservable {
   }
 
   /**
-   * Saves the contents from a editor out to the textarea or div element that got converted into an editor instance.
+   * Saves the contents from an editor out to the textarea or div element that got converted into an editor instance.
    * This method will move the HTML contents from the editor into that textarea or div by getContent
    * so all events etc that method has will get dispatched as well.
    *
@@ -721,7 +745,7 @@ class Editor implements EditorObservable {
    * @param {Object} args Optional content object, this gets passed around through the whole save process.
    * @return {String} HTML string that got set into the textarea/div.
    */
-  public save (args?: any): string {
+  public save(args?: any): string {
     const self = this;
     let elm = self.getElement(), html, form;
 
@@ -788,12 +812,12 @@ class Editor implements EditorObservable {
    * // Sets the content of a specific editor (my_editor in this example)
    * tinymce.get('my_editor').setContent(data);
    *
-   * // Sets the bbcode contents of the activeEditor editor if the bbcode plugin was added
-   * tinymce.activeEditor.setContent('[b]some[/b] html', {format: 'bbcode'});
+   * // Sets the content of the activeEditor editor using the specified format
+   * tinymce.activeEditor.setContent('<p>Some html</p>', {format: 'html'});
    */
   public setContent (content: string, args?: EditorContent.SetContentArgs): string;
   public setContent (content: Node, args?: EditorContent.SetContentArgs): Node;
-  public setContent (content: EditorContent.Content, args?: EditorContent.SetContentArgs): EditorContent.Content {
+  public setContent(content: EditorContent.Content, args?: EditorContent.SetContentArgs): EditorContent.Content {
     return EditorContent.setContent(this, content, args);
   }
 
@@ -816,7 +840,7 @@ class Editor implements EditorObservable {
    */
   public getContent (args: { format: 'tree' } & EditorContent.GetContentArgs): Node;
   public getContent (args?: EditorContent.GetContentArgs): string;
-  public getContent (args?: EditorContent.GetContentArgs): EditorContent.Content {
+  public getContent(args?: EditorContent.GetContentArgs): EditorContent.Content {
     return EditorContent.getContent(this, args);
   }
 
@@ -827,7 +851,7 @@ class Editor implements EditorObservable {
    * @param {String} content Content to insert.
    * @param {Object} args Optional args to pass to insert call.
    */
-  public insertContent (content: string, args?: any) {
+  public insertContent(content: string, args?: any) {
     if (args) {
       content = extend({ content }, args);
     }
@@ -842,7 +866,7 @@ class Editor implements EditorObservable {
    * @method resetContent
    * @param {String} initialContent An optional string to use as the initial content of the editor.
    */
-  public resetContent (initialContent?: string) {
+  public resetContent(initialContent?: string) {
     // Set the editor content
     if (initialContent === undefined) {
       // editor.startContent is generated by using the `raw` format, so we should set it the same way
@@ -872,7 +896,7 @@ class Editor implements EditorObservable {
    * if (tinymce.activeEditor.isDirty())
    *     alert("You must save your contents.");
    */
-  public isDirty () {
+  public isDirty() {
     return !this.isNotDirty;
   }
 
@@ -892,7 +916,7 @@ class Editor implements EditorObservable {
    *     editor.setDirty(false); // Force not dirty state
    * }
    */
-  public setDirty (state: boolean) {
+  public setDirty(state: boolean) {
     const oldState = !this.isNotDirty;
 
     this.isNotDirty = !state;
@@ -909,7 +933,7 @@ class Editor implements EditorObservable {
    * @method getContainer
    * @return {Element} HTML DOM element for the editor container.
    */
-  public getContainer (): HTMLElement {
+  public getContainer(): HTMLElement {
     const self = this;
 
     if (!self.container) {
@@ -926,7 +950,7 @@ class Editor implements EditorObservable {
    * @method getContentAreaContainer
    * @return {Element} HTML DOM element for the editor area container.
    */
-  public getContentAreaContainer (): HTMLElement {
+  public getContentAreaContainer(): HTMLElement {
     return this.contentAreaContainer;
   }
 
@@ -936,7 +960,7 @@ class Editor implements EditorObservable {
    * @method getElement
    * @return {Element} HTML DOM element for the replaced element.
    */
-  public getElement (): HTMLElement {
+  public getElement(): HTMLElement {
     if (!this.targetElm) {
       this.targetElm = DOM.get(this.id);
     }
@@ -950,7 +974,7 @@ class Editor implements EditorObservable {
    * @method getWin
    * @return {Window} Iframe DOM window object.
    */
-  public getWin (): Window {
+  public getWin(): Window {
     const self = this;
     let elm;
 
@@ -971,7 +995,7 @@ class Editor implements EditorObservable {
    * @method getDoc
    * @return {Document} Iframe DOM document object.
    */
-  public getDoc (): Document {
+  public getDoc(): Document {
     const self = this;
     let win;
 
@@ -993,7 +1017,7 @@ class Editor implements EditorObservable {
    * @method getBody
    * @return {Element} The root element of the editable area.
    */
-  public getBody (): HTMLElement {
+  public getBody(): HTMLElement {
     const doc = this.getDoc();
     return this.bodyElement || (doc ? doc.body : null);
   }
@@ -1009,7 +1033,7 @@ class Editor implements EditorObservable {
    * @param {string/HTMLElement} elm Tag name or HTML DOM element depending on HTML or DOM insert.
    * @return {string} Converted URL string.
    */
-  public convertURL (url: string, name: string, elm?): string {
+  public convertURL(url: string, name: string, elm?): string {
     const self = this, settings = self.settings;
 
     // Use callback instead
@@ -1039,7 +1063,7 @@ class Editor implements EditorObservable {
    * @method addVisual
    * @param {Element} elm Optional root element to loop though to find tables etc that needs the visual aid.
    */
-  public addVisual (elm?: HTMLElement) {
+  public addVisual(elm?: HTMLElement) {
     const self = this;
     const settings = self.settings;
     const dom: DOMUtils = self.dom;
@@ -1091,7 +1115,7 @@ class Editor implements EditorObservable {
    *
    * @method remove
    */
-  public remove () {
+  public remove() {
     EditorRemove.remove(this);
   }
 
@@ -1103,7 +1127,7 @@ class Editor implements EditorObservable {
    * @method destroy
    * @param {Boolean} automatic Optional state if the destroy is an automatic destroy or user called one.
    */
-  public destroy (automatic?: boolean) {
+  public destroy(automatic?: boolean) {
     EditorRemove.destroy(this, automatic);
   }
 
@@ -1114,41 +1138,41 @@ class Editor implements EditorObservable {
    * @param {function} callback Optional callback with images and status for each image.
    * @return {Promise} Promise instance.
    */
-  public uploadImages (callback?: UploadCallback): Promise<BlobInfoImagePair[]> {
+  public uploadImages(callback?: UploadCallback): Promise<UploadResult[]> {
     return this.editorUpload.uploadImages(callback);
   }
 
   // Internal functions
 
-  public _scanForImages (): Promise<BlobInfoImagePair[]> {
+  public _scanForImages(): Promise<BlobInfoImagePair[]> {
     return this.editorUpload.scanForImages();
   }
 
   /**
    * No longer supported, use editor.ui.registry.addButton instead
    */
-  public addButton () {
+  public addButton() {
     throw new Error('editor.addButton has been removed in tinymce 5x, use editor.ui.registry.addButton or editor.ui.registry.addToggleButton or editor.ui.registry.addSplitButton instead');
   }
 
   /**
    * No longer supported, use editor.ui.registry.addSidebar instead
    */
-  public addSidebar () {
+  public addSidebar() {
     throw new Error('editor.addSidebar has been removed in tinymce 5x, use editor.ui.registry.addSidebar instead');
   }
 
   /**
    * No longer supported, use editor.ui.registry.addMenuItem instead
    */
-  public addMenuItem () {
+  public addMenuItem() {
     throw new Error('editor.addMenuItem has been removed in tinymce 5x, use editor.ui.registry.addMenuItem instead');
   }
 
   /**
    * No longer supported, use editor.ui.registry.addContextMenu instead
    */
-  public addContextToolbar () {
+  public addContextToolbar() {
     throw new Error('editor.addContextToolbar has been removed in tinymce 5x, use editor.ui.registry.addContextToolbar instead');
   }
 }

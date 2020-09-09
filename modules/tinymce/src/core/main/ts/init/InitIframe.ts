@@ -11,10 +11,10 @@ import { Attr, Class, Element } from '@ephox/sugar';
 import DOMUtils from '../api/dom/DOMUtils';
 import Editor from '../api/Editor';
 import Env from '../api/Env';
-import Settings from '../api/Settings';
+import * as Settings from '../api/Settings';
 import { TranslatedString } from '../api/util/I18n';
-import Uuid from '../util/Uuid';
-import InitContentBody from './InitContentBody';
+import * as Uuid from '../util/Uuid';
+import * as InitContentBody from './InitContentBody';
 
 const DOM = DOMUtils.DOM;
 
@@ -28,7 +28,7 @@ const relaxDomain = function (editor: Editor, ifr) {
       InitContentBody.initContentBody(editor);
     };
 
-    /*eslint no-script-url:0 */
+    /* eslint no-script-url:0 */
     const domainRelaxUrl = 'javascript:(function(){' +
       'document.open();document.domain="' + document.domain + '";' +
       'var ed = window.parent.tinymce.get("' + editor.id + '");document.write(ed.iframeHTML);' +
@@ -59,9 +59,7 @@ const createIframeElement = function (id: string, title: TranslatedString, heigh
 };
 
 const getIframeHtml = function (editor: Editor) {
-  let bodyId, bodyClass, iframeHTML;
-
-  iframeHTML = Settings.getDocType(editor) + '<html><head>';
+  let iframeHTML = Settings.getDocType(editor) + '<html><head>';
 
   // We only need to override paths if we have to
   // IE has a bug where it remove site absolute urls to relative ones if this is specified
@@ -71,8 +69,8 @@ const getIframeHtml = function (editor: Editor) {
 
   iframeHTML += '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />';
 
-  bodyId = Settings.getBodyId(editor);
-  bodyClass = Settings.getBodyClass(editor);
+  const bodyId = Settings.getBodyId(editor);
+  const bodyClass = Settings.getBodyClass(editor);
 
   if (Settings.getContentSecurityPolicy(editor)) {
     iframeHTML += '<meta http-equiv="Content-Security-Policy" content="' + Settings.getContentSecurityPolicy(editor) + '" />';
@@ -123,6 +121,6 @@ const init = function (editor: Editor, boxInfo) {
   }
 };
 
-export default {
+export {
   init
 };

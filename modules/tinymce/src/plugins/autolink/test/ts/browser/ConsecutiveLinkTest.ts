@@ -2,9 +2,9 @@ import { Pipeline, Step, Log } from '@ephox/agar';
 import { TinyApis, TinyLoader } from '@ephox/mcagar';
 import Env from 'tinymce/core/api/Env';
 import AutolinkPlugin from 'tinymce/plugins/autolink/Plugin';
-import KeyUtils from '../module/test/KeyUtils';
+import * as KeyUtils from '../module/test/KeyUtils';
 import Theme from 'tinymce/themes/silver/Theme';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 
 UnitTest.asynctest('browser.tinymce.plugins.autolink.ConsecutiveLinkTest', (success, failure) => {
 
@@ -14,10 +14,10 @@ UnitTest.asynctest('browser.tinymce.plugins.autolink.ConsecutiveLinkTest', (succ
   TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
     const tinyApis = TinyApis(editor);
     const steps = Env.browser.isIE() ? [] : [
-      tinyApis.sFocus,
+      tinyApis.sFocus(),
       Log.stepsAsStep('TBA', 'AutoLink: Chrome adds a nbsp between link and text', [
         tinyApis.sSetContent('<p><a href="http://www.domain.com">www.domain.com</a>&nbsp;www.domain.com</p>'),
-        tinyApis.sSetCursor([0, 1], 15),
+        tinyApis.sSetCursor([ 0, 1 ], 15),
         Step.sync(function () {
           KeyUtils.type(editor, ' ');
         }),
@@ -25,7 +25,7 @@ UnitTest.asynctest('browser.tinymce.plugins.autolink.ConsecutiveLinkTest', (succ
       ]),
       Log.stepsAsStep('TBA', 'AutoLink: FireFox does not seem to add a nbsp between link and text', [
         tinyApis.sSetContent('<p><a href="http://www.domain.com">www.domain.com</a> www.domain.com</p>'),
-        tinyApis.sSetCursor([0, 1], 15),
+        tinyApis.sSetCursor([ 0, 1 ], 15),
         Step.sync(function () {
           KeyUtils.type(editor, ' ');
         }),

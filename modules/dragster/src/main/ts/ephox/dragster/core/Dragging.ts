@@ -7,8 +7,8 @@ import { Element, EventArgs } from '@ephox/sugar';
 
 interface DragActionEvents {
   registry: {
-    start: Bindable<{}>,
-    stop: Bindable<{}>
+    start: Bindable<{}>;
+    stop: Bindable<{}>;
   };
   trigger: {
     start: () => void;
@@ -91,6 +91,6 @@ const setup = function (mutation: DragMutation, mode: DragMode, settings: Partia
   };
 };
 
-export default {
+export {
   setup
 };

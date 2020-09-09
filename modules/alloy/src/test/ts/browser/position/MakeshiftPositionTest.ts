@@ -1,5 +1,5 @@
 import { Assertions, Chain, NamedChain } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { window } from '@ephox/dom-globals';
 
 import { AlloyComponent } from 'ephox/alloy/api/component/ComponentApi';
@@ -13,10 +13,10 @@ import * as ChainUtils from 'ephox/alloy/test/ChainUtils';
 
 UnitTest.asynctest('MakeshiftPositionTest', (success, failure) => {
 
-  GuiSetup.setup((store, doc, body) => {
+  GuiSetup.setup((_store, _doc, _body) => {
     const button = GuiFactory.build(
       Button.sketch({
-        action () { },
+        action() { },
         dom: {
           styles: {
             position: 'absolute',
@@ -41,14 +41,12 @@ UnitTest.asynctest('MakeshiftPositionTest', (success, failure) => {
       })
     );
 
-  }, (doc, body, gui, component, store) => {
-    const cSetupAnchor = (x: number, y: number) => Chain.mapper(() => {
-      return {
-        anchor: 'makeshift',
-        x,
-        y
-      };
-    });
+  }, (_doc, _body, gui, _component, _store) => {
+    const cSetupAnchor = (x: number, y: number) => Chain.injectThunked(() => ({
+      anchor: 'makeshift',
+      x,
+      y
+    }));
 
     const cAssertPopupNotInNoFitPosition = Chain.op((popup: AlloyComponent) => {
       const box = popup.element().dom().getBoundingClientRect();

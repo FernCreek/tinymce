@@ -1,8 +1,8 @@
-import { Container } from '@ephox/alloy';
 import { Attr, Css, Node, Traverse } from '@ephox/sugar';
 
 import { AlloyComponent } from '../../api/component/ComponentApi';
 import { AlloyEventRecord } from '../../api/events/AlloyEvents';
+import { Container } from '../../api/ui/Container';
 
 const initialAttribute = 'data-initial-z-index';
 
@@ -12,12 +12,10 @@ const initialAttribute = 'data-initial-z-index';
 // were. ASSUMPTION: the blocker has been added as a direct child of the root
 const resetZIndex = (blocker: AlloyComponent): void => {
   Traverse.parent(blocker.element()).filter(Node.isElement).each((root) => {
-    const initZIndex = Attr.get(root, initialAttribute);
-    if (Attr.has(root, initialAttribute)) {
-      Css.set(root, 'z-index', initZIndex);
-    } else {
-      Css.remove(root, 'z-index');
-    }
+    Attr.getOpt(root, initialAttribute).fold(
+      () => Css.remove(root, 'z-index'),
+      (zIndex) => Css.set(root, 'z-index', zIndex)
+    );
 
     Attr.remove(root, initialAttribute);
   });
@@ -45,25 +43,23 @@ const discard = (blocker: AlloyComponent): void => {
   blocker.getSystem().removeFromGui(blocker);
 };
 
-const createComponent = (component: AlloyComponent, blockerClass: string, blockerEvents: AlloyEventRecord) => {
-  return component.getSystem().build(
-    Container.sketch({
-      dom: {
-        // Probably consider doing with classes?
-        styles: {
-          'left': '0px',
-          'top': '0px',
-          'width': '100%',
-          'height': '100%',
-          'position': 'fixed',
-          'z-index': '1000000000000000'
-        },
-        classes: [ blockerClass ]
+const createComponent = (component: AlloyComponent, blockerClass: string, blockerEvents: AlloyEventRecord) => component.getSystem().build(
+  Container.sketch({
+    dom: {
+      // Probably consider doing with classes?
+      styles: {
+        'left': '0px',
+        'top': '0px',
+        'width': '100%',
+        'height': '100%',
+        'position': 'fixed',
+        'z-index': '1000000000000000'
       },
-      events: blockerEvents
-    })
-  );
-};
+      classes: [ blockerClass ]
+    },
+    events: blockerEvents
+  })
+);
 
 export {
   createComponent,

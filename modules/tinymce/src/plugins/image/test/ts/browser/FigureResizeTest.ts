@@ -1,5 +1,5 @@
-import { Assertions, Chain, Guard, Mouse, NamedChain, Pipeline, UiFinder, Log } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { Assertions, Chain, Guard, Log, Mouse, NamedChain, Pipeline, UiFinder } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
 import { ApiChains, Editor as McEditor, TinyDom, UiChains } from '@ephox/mcagar';
 
 import ImagePlugin from 'tinymce/plugins/image/Plugin';
@@ -24,7 +24,7 @@ UnitTest.asynctest('browser.tinymce.plugins.image.FigureResizeTest', (success, f
       return { w: elmStyle.width, h: elmStyle.height };
     }),
     Guard.addLogging('Get element size')
-);
+  );
 
   const cDragHandleRight = function (px) {
     return Chain.control(
@@ -61,7 +61,7 @@ UnitTest.asynctest('browser.tinymce.plugins.image.FigureResizeTest', (success, f
           },
           dimensions: {
             width: '100px',
-            height: '100px',
+            height: '100px'
           },
           caption: true
         }),

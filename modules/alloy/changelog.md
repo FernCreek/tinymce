@@ -6,6 +6,72 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+# [7.0.2] - 2020-05-25
+
+### Fixed
+- Fixed `Tooltipping` behaviour failing to run due to not being listed in the default `alloy.receive` events.
+
+# [7.0.0] - 2020-05-21
+
+### Added
+- Added new `isExtraPart` property to `InlineView`. This allows the component to declare an external component as part of itself for dismissal events.
+- Added new `getModes` and `setModes` API to the docking behaviour.
+- Exposed the `AriaVoice` voice module in the API.
+
+### Changed
+- The `AriaOwner` module, `Boxes` module, `Pinching` behaviour and `SnapConfig`/`SnapOutput` specs no longer use thunked functions and instead use the variable directly.
+- All uses of `Struct.immutableBag` and `Struct.immutable` have been replaced with readonly interfaces.
+- Changed the `Disabling` behaviour to use a lazy `disabled` configuration to determine if the component should be disabled on initial load.
+
+# [6.1.0] - 2020-03-16
+
+### Added
+
+- Added new `isExtraPart` property to `InlineView`. This allows the component to declare an external component as part of itself for dismissal events.
+
+# [6.0.1] - 2020-03-02
+
+### Fixed
+
+- Fixed `Bounder` incorrectly calculating the bottom/right limits, due to not taking into account the element size.
+- Fixed `LayoutInside` incorrectly placing items in the opposite direction.
+
+# [6.0.0] - 2020-02-13
+
+### Removed
+- Removed `getMoreButton` and `getOverflow` methods from the `SplitSlidingToolbar` component.
+- Removed `getMoreButton` method from the `SplitFloatingToolbar` component.
+- Removed `getAnchor` configuration from the `SplitFloatingToolbar` component.
+- Removed `SugarEvent` from exports list.
+- Removed `leftAttr`, `topAttr` and `positionAttr` options from the `Docking` behavior.
+
+### Added
+- Added new `FloatingToolbar` component.
+- Added new vertical directionality for layouts
+- Added `setGroups` and `toggle` methods and `getBounds` configuration to the `FloatingToolbarButton` component.
+
+### Changed
+- Moved modules from "alien" folder into Sugar, Katamari and other folders in Alloy.
+- Changed `Docking` to use `bottom` instead of `top` when docking to the bottom of the viewport.
+- Changed `Docking` to restore the position when undocking using styles which it was previously positioned with.
+
+# [5.1.0] - 2019-12-17
+
+### Added
+- Added new `mouseOrTouch` mode to dragging to support dragging for both mouse and touch events.
+
+### Changed
+- Changed touch/mouse event handling to work with hybrid devices that accept both mouse and touch events.
+- Changed `AlloyEvents.runActionExtra()` to pass the simulated event to the callback.
+
+### Fixed
+- Fixed the `Slider` component not working in some cases on touch devices.
+
+# [5.0.7] - 2019-12-02
+
+### Fixed
+- Improved `Docking` scroll performance by only calculating the offset origin as required.
+
 # [5.0.2] - 2019-11-11
 
 ### Fixed

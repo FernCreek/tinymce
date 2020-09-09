@@ -1,7 +1,5 @@
-import { Fun, Id, Option } from '@ephox/katamari';
+import { Id, Option } from '@ephox/katamari';
 import { Attr, Element, Node, PredicateFind, SelectorFind, Traverse } from '@ephox/sugar';
-
-import { SugarDocument } from '../alien/TypeDefinitions';
 
 const find = (queryElem: Element): Option<Element> => {
   const dependent: Option<Element> = PredicateFind.closest(queryElem, (elem) => {
@@ -12,14 +10,14 @@ const find = (queryElem: Element): Option<Element> => {
 
   return dependent.bind((dep) => {
     const id = Attr.get(dep, 'id');
-    const doc: SugarDocument = Traverse.owner(dep);
+    const doc = Traverse.owner(dep);
 
     return SelectorFind.descendant(doc, '[aria-owns="' + id + '"]');
   });
 };
 
 export interface AriaManager {
-  id: () => string;
+  id: string;
   link: (elem: Element) => void;
   unlink: (elem: Element) => void;
 }
@@ -36,7 +34,7 @@ const manager = (): AriaManager => {
   };
 
   return {
-    id: Fun.constant(ariaId),
+    id: ariaId,
     link,
     unlink
   };

@@ -1,5 +1,5 @@
 import { FieldPresence, FieldSchema, ValueSchema } from '@ephox/boulder';
-import { Id, Result, Option } from '@ephox/katamari';
+import { Id, Option, Result } from '@ephox/katamari';
 
 export interface ButtonApi {
   type: 'button';
@@ -29,17 +29,13 @@ const buttonFields = [
   FieldSchema.field(
     'name',
     'name',
-    FieldPresence.defaultedThunk(() => {
-      return Id.generate('button-name');
-    }),
+    FieldPresence.defaultedThunk(() => Id.generate('button-name')),
     ValueSchema.string
   ),
   FieldSchema.optionString('icon'),
-  FieldSchema.defaultedBoolean('borderless', false),
+  FieldSchema.defaultedBoolean('borderless', false)
 ];
 
 export const buttonSchema = ValueSchema.objOf(buttonFields);
 
-export const createButton = (spec: ButtonApi): Result<Button, ValueSchema.SchemaError<any>> => {
-  return ValueSchema.asRaw<Button>('button', buttonSchema, spec);
-};
+export const createButton = (spec: ButtonApi): Result<Button, ValueSchema.SchemaError<any>> => ValueSchema.asRaw<Button>('button', buttonSchema, spec);

@@ -10,7 +10,7 @@ import { Option } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
 import { Compare, Element, Node, Text, Traverse, Selection } from '@ephox/sugar';
 import Editor from '../api/Editor';
-import NodeType from '../dom/NodeType';
+import * as NodeType from '../dom/NodeType';
 
 const browser = PlatformDetection.detect().browser;
 
@@ -68,8 +68,8 @@ const getBookmark = function (root) {
 
 const validate = function (root, bookmark) {
   return Option.from(bookmark)
-      .filter(isRngInRoot(root))
-      .map(normalizeRng);
+    .filter(isRngInRoot(root))
+    .map(normalizeRng);
 };
 
 const bookmarkToNativeRng = function (bookmark): Option<Range> {
@@ -115,7 +115,7 @@ const restore = function (editor: Editor) {
   });
 };
 
-export default {
+export {
   store,
   storeNative,
   readRange,

@@ -5,14 +5,14 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Arr, Option, Fun } from '@ephox/katamari';
-import { Compare, Insert, Remove, Element, Traverse } from '@ephox/sugar';
-import CaretFinder from '../caret/CaretFinder';
+import { Arr, Fun, Option } from '@ephox/katamari';
+import { Compare, Element, Insert, Remove, Traverse } from '@ephox/sugar';
+import * as CaretFinder from '../caret/CaretFinder';
 import CaretPosition from '../caret/CaretPosition';
 import * as ElementType from '../dom/ElementType';
-import Empty from '../dom/Empty';
-import PaddingBr from '../dom/PaddingBr';
-import Parents from '../dom/Parents';
+import * as Empty from '../dom/Empty';
+import * as PaddingBr from '../dom/PaddingBr';
+import * as Parents from '../dom/Parents';
 
 const getChildrenUntilBlockBoundary = (block: Element) => {
   const children = Traverse.children(block);
@@ -30,7 +30,7 @@ const extractChildren = (block: Element) => {
 
 const removeEmptyRoot = (rootNode: Element, block: Element) => {
   const parents = Parents.parentsAndSelf(block, rootNode);
-  return Arr.find(parents.reverse(), Empty.isEmpty).each(Remove.remove);
+  return Arr.find(parents.reverse(), (element) => Empty.isEmpty(element)).each(Remove.remove);
 };
 
 const isEmptyBefore = (el: Element) => Arr.filter(Traverse.prevSiblings(el), (el) => !Empty.isEmpty(el)).length === 0;
@@ -75,9 +75,7 @@ const findInsertionPoint = (toBlock: Element, block: Element) => {
   return Option.from(parentsAndSelf[parentsAndSelf.length - 1]);
 };
 
-const getInsertionPoint = (fromBlock: Element, toBlock: Element): Option<Element> => {
-  return Compare.contains(toBlock, fromBlock) ? findInsertionPoint(toBlock, fromBlock) : Option.none();
-};
+const getInsertionPoint = (fromBlock: Element, toBlock: Element): Option<Element> => Compare.contains(toBlock, fromBlock) ? findInsertionPoint(toBlock, fromBlock) : Option.none();
 
 const trimBr = (first: boolean, block: Element) => {
   CaretFinder.positionIn(first, block.dom())
@@ -97,10 +95,8 @@ const mergeBlockInto = (rootNode: Element, fromBlock: Element, toBlock: Element)
   );
 };
 
-const mergeBlocks = (rootNode: Element, forward: boolean, block1: Element, block2: Element) => {
-  return forward ? mergeBlockInto(rootNode, block2, block1) : mergeBlockInto(rootNode, block1, block2);
-};
+const mergeBlocks = (rootNode: Element, forward: boolean, block1: Element, block2: Element) => forward ? mergeBlockInto(rootNode, block2, block1) : mergeBlockInto(rootNode, block1, block2);
 
-export default {
+export {
   mergeBlocks
 };

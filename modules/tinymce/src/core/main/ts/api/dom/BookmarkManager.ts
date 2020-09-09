@@ -7,7 +7,7 @@
 
 import { Node } from '@ephox/dom-globals';
 import { Fun } from '@ephox/katamari';
-import Bookmarks from '../../bookmark/Bookmarks';
+import * as Bookmarks from '../../bookmark/Bookmarks';
 import { Bookmark } from '../../bookmark/BookmarkTypes';
 import Selection from './Selection';
 
@@ -65,7 +65,7 @@ function BookmarkManager(selection: Selection): BookmarkManager {
      * // Restore the selection bookmark
      * tinymce.activeEditor.selection.moveToBookmark(bm);
      */
-    moveToBookmark: Fun.curry(Bookmarks.moveToBookmark, selection) as (bookmark: Bookmark) => boolean,
+    moveToBookmark: Fun.curry(Bookmarks.moveToBookmark, selection) as (bookmark: Bookmark) => boolean
   };
 }
 

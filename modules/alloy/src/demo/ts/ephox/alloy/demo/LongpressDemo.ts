@@ -1,5 +1,5 @@
-import { document, console } from '@ephox/dom-globals';
-import { Arr, Future, Result, Option } from '@ephox/katamari';
+import { console, document } from '@ephox/dom-globals';
+import { Arr, Future, Option, Result } from '@ephox/katamari';
 import { Class, Element } from '@ephox/sugar';
 
 import * as GuiFactory from 'ephox/alloy/api/component/GuiFactory';
@@ -41,16 +41,16 @@ export default (): void => {
             innerHtml: 'Menu button (sketch)',
             classes: [ 'tap-menu' ]
           },
-          lazySink () {
+          lazySink() {
             return Result.value(sink);
           },
-          fetch () {
+          fetch() {
             return Future.pure(Option.from(Arr.map([
-              { type: 'item', data: { value: 'alpha', meta: { text: 'Alpha' } } },
-              { type: 'item', data: { value: 'beta', meta: { text: 'Beta'} } }
+              { type: 'item', data: { value: 'alpha', meta: { text: 'Alpha' }}},
+              { type: 'item', data: { value: 'beta', meta: { text: 'Beta' }}}
             ], DemoRenders.orb)));
           },
-          onExecute (component, menuComp, item, data) {
+          onExecute(component, menuComp, item, data) {
             console.log('selected', data.value);
           },
           menuTransition: {
@@ -72,6 +72,7 @@ export default (): void => {
               components: [
                 Menu.parts().items({ })
               ],
+              items: [],
               value: 'touchmenu',
               markers: DemoRenders.orbMarkers()
             }

@@ -1,14 +1,14 @@
 import { ApproxStructure, Assertions, GeneralSteps, Logger, Step } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { Value } from '@ephox/sugar';
 
 import * as GuiFactory from 'ephox/alloy/api/component/GuiFactory';
+import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
 import { Form } from 'ephox/alloy/api/ui/Form';
 import { FormField } from 'ephox/alloy/api/ui/FormField';
 import { HtmlSelect } from 'ephox/alloy/api/ui/HtmlSelect';
 import { Input } from 'ephox/alloy/api/ui/Input';
 import * as TestForm from 'ephox/alloy/test/form/TestForm';
-import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
 import { FormParts } from 'ephox/alloy/ui/types/FormTypes';
 
 UnitTest.asynctest('Basic Form', (success, failure) => {
@@ -47,50 +47,41 @@ UnitTest.asynctest('Basic Form', (success, failure) => {
     ]
   };
 
-  GuiSetup.setup((store, doc, body) => {
-    return GuiFactory.build(
-      Form.sketch((parts: FormParts) => {
-        return {
-          dom: {
-            tag: 'div'
-          },
-          components: [
-            parts.field('form.ant', FormField.sketch(formAntSpec)),
-            parts.field('form.bull', FormField.sketch(formBullSpec))
-          ]
-        };
-      })
-    );
-
-  }, (doc, body, gui, component, store) => {
+  GuiSetup.setup((_store, _doc, _body) => GuiFactory.build(
+    Form.sketch((parts: FormParts) => ({
+      dom: {
+        tag: 'div'
+      },
+      components: [
+        parts.field('form.ant', FormField.sketch(formAntSpec)),
+        parts.field('form.bull', FormField.sketch(formBullSpec))
+      ]
+    }))
+  ), (_doc, _body, _gui, component, _store) => {
     const helper = TestForm.helper(component);
 
-    const sAssertDisplay = (inputText, selectValue) => {
-      return Step.sync(() => {
-        Assertions.assertStructure(
-          'Checking that HTML select and text input have right contents',
-          ApproxStructure.build((s, str, arr) => {
-            return s.element('div', {
+    const sAssertDisplay = (inputText: string, selectValue: string) => Step.sync(() => {
+      Assertions.assertStructure(
+        'Checking that HTML select and text input have right contents',
+        ApproxStructure.build((s, str, _arr) => s.element('div', {
+          children: [
+            s.element('div', {
               children: [
-                s.element('div', {
-                  children: [
-                    s.element('input', { value: str.is(inputText) }),
-                    s.element('label', {})
-                  ]
-                }),
-                s.element('div', {
-                  children: [
-                    s.element('select', { value: str.is(selectValue) }),
-                    s.element('label', { })
-                  ]
-                })
+                s.element('input', { value: str.is(inputText) }),
+                s.element('label', {})
               ]
-            });
-          }),
-          component.element()
-        );
-      });
-    };
+            }),
+            s.element('div', {
+              children: [
+                s.element('select', { value: str.is(selectValue) }),
+                s.element('label', { })
+              ]
+            })
+          ]
+        })),
+        component.element()
+      );
+    });
 
     return [
       Logger.t(

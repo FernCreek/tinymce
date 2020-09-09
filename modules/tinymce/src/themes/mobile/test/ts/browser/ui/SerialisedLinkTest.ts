@@ -1,9 +1,9 @@
 import {
-    ApproxStructure, Assertions, Chain, FocusTools, GeneralSteps, Keyboard, Keys, Logger, Mouse,
-    Pipeline, Step, UiFinder
+  ApproxStructure, Assertions, Chain, FocusTools, GeneralSteps, Keyboard, Keys, Logger, Mouse,
+  Pipeline, Step, UiFinder
 } from '@ephox/agar';
 import { Attachment, TestHelpers } from '@ephox/alloy';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { FieldSchema, ValueSchema } from '@ephox/boulder';
 import { Fun } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
@@ -13,9 +13,9 @@ import IosRealm from 'tinymce/themes/mobile/ui/IosRealm';
 import * as LinkButton from 'tinymce/themes/mobile/ui/LinkButton';
 
 import TestEditor from '../../module/test/ui/TestEditor';
-import TestSelectors from '../../module/test/ui/TestSelectors';
-import TestStyles from '../../module/test/ui/TestStyles';
-import TestUi from '../../module/test/ui/TestUi';
+import * as TestSelectors from '../../module/test/ui/TestSelectors';
+import * as TestStyles from '../../module/test/ui/TestStyles';
+import * as TestUi from '../../module/test/ui/TestUi';
 
 UnitTest.asynctest('Browser Test: ui.SerialisedLinkTest', (success, failure) => {
   const detection = PlatformDetection.detect();
@@ -340,8 +340,8 @@ UnitTest.asynctest('Browser Test: ui.SerialisedLinkTest', (success, failure) => 
       node: Element.fromHtml('<a href="http://prepared-url">Prepared</a>'),
       fields: { },
       expected: [ ],
-      mutations (node) {
-        return Assertions.sAssertStructure('Checking mutated structure', ApproxStructure.build(function (s, str, arr) {
+      mutations(node) {
+        return Assertions.sAssertStructure('Checking mutated structure', ApproxStructure.build(function (s, str, _arr) {
           return s.element('a', {
             attrs: {
               href: str.is('http://prepared-url')
@@ -359,8 +359,8 @@ UnitTest.asynctest('Browser Test: ui.SerialisedLinkTest', (success, failure) => 
         url: 'http://new-url'
       },
       expected: [ ],
-      mutations (node) {
-        return Assertions.sAssertStructure('Checking mutated structure', ApproxStructure.build(function (s, str, arr) {
+      mutations(node) {
+        return Assertions.sAssertStructure('Checking mutated structure', ApproxStructure.build(function (s, str, _arr) {
           return s.element('a', {
             attrs: {
               href: str.is('http://new-url')
@@ -378,8 +378,8 @@ UnitTest.asynctest('Browser Test: ui.SerialisedLinkTest', (success, failure) => 
         url: 'http://new-url'
       },
       expected: [ ],
-      mutations (node) {
-        return Assertions.sAssertStructure('Checking mutated structure', ApproxStructure.build(function (s, str, arr) {
+      mutations(node) {
+        return Assertions.sAssertStructure('Checking mutated structure', ApproxStructure.build(function (s, str, _arr) {
           return s.element('a', {
             attrs: {
               href: str.is('http://new-url')
@@ -398,8 +398,8 @@ UnitTest.asynctest('Browser Test: ui.SerialisedLinkTest', (success, failure) => 
         text: 'new-text'
       },
       expected: [ ],
-      mutations (node) {
-        return Assertions.sAssertStructure('Checking mutated structure', ApproxStructure.build(function (s, str, arr) {
+      mutations(node) {
+        return Assertions.sAssertStructure('Checking mutated structure', ApproxStructure.build(function (s, str, _arr) {
           return s.element('a', {
             attrs: {
               href: str.is('http://new-url')

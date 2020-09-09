@@ -1,5 +1,5 @@
 import { FieldPresence, FieldSchema, ValueSchema } from '@ephox/boulder';
-import { Fun, Id, Option } from '@ephox/katamari';
+import { Id, Option } from '@ephox/katamari';
 import { DialogToggleMenuItemApi, dialogToggleMenuItemSchema, DialogToggleMenuItem as DialogToggleMenuItemType } from './ToggleMenuItem';
 
 export type DialogMenuButtonItemTypes = DialogToggleMenuItemApi;
@@ -25,17 +25,9 @@ export interface DialogMenuButtonApi extends BaseDialogButtonApi {
   tooltip?: string;
   icon?: string;
   items: DialogMenuButtonItemTypes[];
-  onSetup?: (api: DialogMenuButtonInstanceApi) => (api: DialogMenuButtonInstanceApi) => void;
 }
 
 export type DialogButtonApi = DialogNormalButtonApi | DialogMenuButtonApi;
-
-export interface DialogMenuButtonInstanceApi {
-  isDisabled: () => boolean;
-  setDisabled: (state: boolean) => void;
-  isActive: () => boolean;
-  setActive: (state: boolean) => void;
-}
 
 interface BaseDialogButton {
   name: string;
@@ -56,7 +48,6 @@ export interface DialogMenuButton extends BaseDialogButton {
   tooltip: Option<string>;
   icon: Option<string>;
   items: DialogToggleMenuItem[];
-  onSetup: (api: DialogMenuButtonInstanceApi) => (api: DialogMenuButtonInstanceApi) => void;
 }
 
 export type DialogButton = DialogNormalButton | DialogMenuButton;
@@ -65,13 +56,11 @@ const baseButtonFields = [
   FieldSchema.field(
     'name',
     'name',
-    FieldPresence.defaultedThunk(() => {
-      return Id.generate('button-name');
-    }),
+    FieldPresence.defaultedThunk(() => Id.generate('button-name')),
     ValueSchema.string
   ),
   FieldSchema.optionString('icon'),
-  FieldSchema.defaultedStringEnum('align', 'end', ['start', 'end']),
+  FieldSchema.defaultedStringEnum('align', 'end', [ 'start', 'end' ]),
   FieldSchema.defaultedBoolean('primary', false),
   FieldSchema.defaultedBoolean('disabled', false)
 ];
@@ -82,17 +71,16 @@ export const dialogButtonFields = [
 ];
 
 const normalButtonFields = [
-  FieldSchema.strictStringEnum('type', ['submit', 'cancel', 'custom']),
+  FieldSchema.strictStringEnum('type', [ 'submit', 'cancel', 'custom' ]),
   ...dialogButtonFields
 ];
 
 const menuButtonFields = [
-  FieldSchema.strictStringEnum('type', ['menu']),
+  FieldSchema.strictStringEnum('type', [ 'menu' ]),
   FieldSchema.optionString('text'),
   FieldSchema.optionString('tooltip'),
   FieldSchema.optionString('icon'),
   FieldSchema.strictArrayOf('items', dialogToggleMenuItemSchema),
-  FieldSchema.defaultedFunction('onSetup', () => Fun.noop),
   ...baseButtonFields
 ];
 

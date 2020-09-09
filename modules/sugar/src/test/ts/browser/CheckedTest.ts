@@ -1,11 +1,12 @@
-import * as Checked from 'ephox/sugar/api/properties/Checked';
-import Element from 'ephox/sugar/api/node/Element';
-import * as InsertAll from 'ephox/sugar/api/dom/InsertAll';
-import * as Value from 'ephox/sugar/api/properties/Value';
-import { UnitTest, assert } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { HTMLInputElement } from '@ephox/dom-globals';
+import { KAssert } from '@ephox/katamari-assertions';
+import * as InsertAll from 'ephox/sugar/api/dom/InsertAll';
+import Element from 'ephox/sugar/api/node/Element';
+import * as Checked from 'ephox/sugar/api/properties/Checked';
+import * as Value from 'ephox/sugar/api/properties/Value';
 
-UnitTest.test('CheckedTest', function () {
+UnitTest.test('CheckedTest', () => {
   const container = Element.fromTag('div');
 
   const alpha = Element.fromHtml<HTMLInputElement>('<input type="radio" value="alpha"></input>');
@@ -14,9 +15,9 @@ UnitTest.test('CheckedTest', function () {
 
   InsertAll.append(container, [ alpha, beta, gamma ]);
 
-  assert.eq(true, Checked.find(container).isNone());
+  KAssert.eqNone('eq', Checked.find(container));
   Checked.set(beta, true);
-  assert.eq('beta', Value.get(Checked.find(container).getOrDie()));
+  KAssert.eqSome('eq', 'beta', Checked.find(container).map(Value.get));
   Checked.set(alpha, true);
-  assert.eq('alpha', Value.get(Checked.find(container).getOrDie()));
+  KAssert.eqSome('eq', 'alpha', Checked.find(container).map(Value.get));
 });

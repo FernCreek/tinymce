@@ -1,5 +1,5 @@
 import { Chain, Cursors, NamedChain } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { Option, Result } from '@ephox/katamari';
 import { Css, Element, Html } from '@ephox/sugar';
 
@@ -12,7 +12,7 @@ import * as Sinks from 'ephox/alloy/test/Sinks';
 
 UnitTest.asynctest('SelectionInDocPositionTest', (success, failure) => {
 
-  GuiSetup.setup((store, doc, body) => {
+  GuiSetup.setup((_store, _doc, _body) => {
     let content = '';
     for (let i = 0; i < 20; i++) {
       content += '<p>paragraph ' + i + '</p>';
@@ -46,18 +46,16 @@ UnitTest.asynctest('SelectionInDocPositionTest', (success, failure) => {
       })
     );
 
-  }, (doc, body, gui, component, store) => {
-    const cSetupAnchor = Chain.mapper((data: any) => {
-      return {
-        anchor: 'selection',
-        root: data.inline.element(),
-        getSelection () {
-          return Option.some(
-            Cursors.calculate(data.inline.element(), data.path)
-          );
-        }
-      };
-    });
+  }, (_doc, _body, gui, _component, _store) => {
+    const cSetupAnchor = Chain.mapper((data: any) => ({
+      anchor: 'selection',
+      root: data.inline.element(),
+      getSelection() {
+        return Option.some(
+          Cursors.calculate(data.inline.element(), data.path)
+        );
+      }
+    }));
 
     return [
       Chain.asStep({}, [

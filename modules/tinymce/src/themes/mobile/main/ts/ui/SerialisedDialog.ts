@@ -6,18 +6,18 @@
  */
 
 import {
-    AddEventsBehaviour, AlloyEvents, AlloyTriggers, Behaviour, Button, Container, Disabling, Form,
-    Highlighting, Keying, Memento, NativeEvents, Representing
+  AddEventsBehaviour, AlloyEvents, AlloyTriggers, Behaviour, Button, Container, Disabling, Form, Highlighting, Keying, Memento,
+  NativeEvents, Representing
 } from '@ephox/alloy';
 import { FieldSchema, ValueSchema } from '@ephox/boulder';
+import { HTMLElement } from '@ephox/dom-globals';
 import { Arr, Cell, Option, Singleton } from '@ephox/katamari';
 import { Css, SelectorFilter, SelectorFind, Width } from '@ephox/sugar';
 
-import Receivers from '../channels/Receivers';
-import SwipingModel from '../model/SwipingModel';
-import Styles from '../style/Styles';
+import * as Receivers from '../channels/Receivers';
+import * as SwipingModel from '../model/SwipingModel';
+import * as Styles from '../style/Styles';
 import * as UiDomFactory from '../util/UiDomFactory';
-import { HTMLElement } from '@ephox/dom-globals';
 
 const sketch = function (rawSpec) {
   const navigateEvent = 'navigateEvent';
@@ -44,13 +44,13 @@ const sketch = function (rawSpec) {
   const navigationButton = function (direction, directionName, enabled) {
     return Button.sketch({
       dom: UiDomFactory.dom('<span class="${prefix}-icon-' + directionName + ' ${prefix}-icon"></span>'),
-      action (button) {
+      action(button) {
         AlloyTriggers.emitWith(button, navigateEvent, { direction });
       },
       buttonBehaviours: Behaviour.derive([
         Disabling.config({
           disableClass: Styles.resolve('toolbar-navigation-disabled'),
-          disabled: !enabled
+          disabled: () => !enabled
         })
       ])
     });
@@ -120,21 +120,21 @@ const sketch = function (rawSpec) {
           }),
           Keying.config({
             mode: 'special',
-            focusIn (dialog/*, specialInfo */) {
+            focusIn(dialog, _specialInfo) {
               focusInput(dialog);
             },
-            onTab (dialog/*, specialInfo */) {
+            onTab(dialog, _specialInfo) {
               navigate(dialog, +1);
               return Option.some(true);
             },
-            onShiftTab (dialog/*, specialInfo */) {
+            onShiftTab(dialog, _specialInfo) {
               navigate(dialog, -1);
               return Option.some(true);
             }
           }),
 
           AddEventsBehaviour.config(formAdhocEvents, [
-            AlloyEvents.runOnAttached(function (dialog, simulatedEvent) {
+            AlloyEvents.runOnAttached(function (dialog, _simulatedEvent) {
               // Reset state to first screen.
               resetState();
               const dotitems = memDots.get(dialog);
@@ -147,14 +147,14 @@ const sketch = function (rawSpec) {
             AlloyEvents.runOnExecute(spec.onExecute),
 
             AlloyEvents.run(NativeEvents.transitionend(), function (dialog, simulatedEvent) {
-              const event = simulatedEvent.event() as any;
+              const event = simulatedEvent.event();
               if (event.raw().propertyName === 'left') {
                 focusInput(dialog);
               }
             }),
 
             AlloyEvents.run(navigateEvent, function (dialog, simulatedEvent) {
-              const event = simulatedEvent.event() as any;
+              const event = simulatedEvent.event();
               const direction = event.direction();
               navigate(dialog, direction);
             })
@@ -189,21 +189,21 @@ const sketch = function (rawSpec) {
     behaviours: Behaviour.derive([
       Keying.config({
         mode: 'special',
-        focusIn (wrapper) {
+        focusIn(wrapper) {
           const form = memForm.get(wrapper);
           Keying.focusIn(form);
         }
       }),
 
       AddEventsBehaviour.config(wrapperAdhocEvents, [
-        AlloyEvents.run(NativeEvents.touchstart(), function (wrapper, simulatedEvent) {
-          const event = simulatedEvent.event() as any;
+        AlloyEvents.run(NativeEvents.touchstart(), function (_wrapper, simulatedEvent) {
+          const event = simulatedEvent.event();
           spec.state.dialogSwipeState.set(
             SwipingModel.init(event.raw().touches[0].clientX)
           );
         }),
-        AlloyEvents.run(NativeEvents.touchmove(), function (wrapper, simulatedEvent) {
-          const event = simulatedEvent.event() as any;
+        AlloyEvents.run(NativeEvents.touchmove(), function (_wrapper, simulatedEvent) {
+          const event = simulatedEvent.event();
           spec.state.dialogSwipeState.on(function (state) {
             simulatedEvent.event().prevent();
             spec.state.dialogSwipeState.set(
@@ -211,7 +211,7 @@ const sketch = function (rawSpec) {
             );
           });
         }),
-        AlloyEvents.run(NativeEvents.touchend(), function (wrapper/*, simulatedEvent */) {
+        AlloyEvents.run(NativeEvents.touchend(), function (wrapper, _simulatedEvent) {
           spec.state.dialogSwipeState.on(function (state) {
             const dialog = memForm.get(wrapper);
             // Confusing

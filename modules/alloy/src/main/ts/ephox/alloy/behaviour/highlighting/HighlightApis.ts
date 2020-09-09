@@ -1,7 +1,6 @@
-import { Arr, Option, Options, Result } from '@ephox/katamari';
+import { Arr, Option, Options, Result, Num } from '@ephox/katamari';
 import { Class, SelectorFilter, SelectorFind, Element } from '@ephox/sugar';
 
-import * as Cycles from '../../alien/Cycles';
 import { AlloyComponent } from '../../api/component/ComponentApi';
 import * as AlloyTriggers from '../../api/events/AlloyTriggers';
 import * as SystemEvents from '../../api/events/SystemEvents';
@@ -34,7 +33,7 @@ const dehighlight = (component: AlloyComponent, hConfig: HighlightingConfig, hSt
 };
 
 const highlight = (component: AlloyComponent, hConfig: HighlightingConfig, hState: Stateless, target: AlloyComponent): void => {
-  dehighlightAllExcept(component, hConfig, hState, [target]);
+  dehighlightAllExcept(component, hConfig, hState, [ target ]);
 
   if (! isHighlighted(component, hConfig, hState, target)) {
     Class.add(target.element(), hConfig.highlightClass);
@@ -55,7 +54,7 @@ const highlightLast = (component: AlloyComponent, hConfig: HighlightingConfig, h
   });
 };
 
-const highlightAt = (component: AlloyComponent, hConfig: HighlightingConfig, hState: Stateless, index): void => {
+const highlightAt = (component: AlloyComponent, hConfig: HighlightingConfig, hState: Stateless, index: number): void => {
   getByIndex(component, hConfig, hState, index).fold((err) => {
     throw new Error(err);
   }, (firstComp) => {
@@ -71,27 +70,19 @@ const highlightBy = (component: AlloyComponent, hConfig: HighlightingConfig, hSt
   });
 };
 
-const isHighlighted = (component: AlloyComponent, hConfig: HighlightingConfig, hState: Stateless, queryTarget: AlloyComponent): boolean => {
-  return Class.has(queryTarget.element(), hConfig.highlightClass);
-};
+const isHighlighted = (component: AlloyComponent, hConfig: HighlightingConfig, hState: Stateless, queryTarget: AlloyComponent): boolean => Class.has(queryTarget.element(), hConfig.highlightClass);
 
-const getHighlighted = (component: AlloyComponent, hConfig: HighlightingConfig, hState: Stateless): Option<AlloyComponent> => {
-  return SelectorFind.descendant(component.element(), '.' + hConfig.highlightClass).bind((e) => component.getSystem().getByDom(e).toOption());
-};
+const getHighlighted = (component: AlloyComponent, hConfig: HighlightingConfig, _hState: Stateless): Option<AlloyComponent> => SelectorFind.descendant(component.element(), '.' + hConfig.highlightClass).bind((e) => component.getSystem().getByDom(e).toOption());
 
 const getByIndex = (component: AlloyComponent, hConfig: HighlightingConfig, hState: Stateless, index: number): Result<AlloyComponent, string> => {
   const items = SelectorFilter.descendants(component.element(), '.' + hConfig.itemClass);
 
-  return Option.from(items[index]).fold(() => {
-    return Result.error<AlloyComponent, any>('No element found with index ' + index);
-  }, component.getSystem().getByDom);
+  return Option.from(items[index]).fold(() => Result.error<AlloyComponent, any>('No element found with index ' + index), component.getSystem().getByDom);
 };
 
-const getFirst = (component: AlloyComponent, hConfig: HighlightingConfig, hState: Stateless): Option<AlloyComponent> => {
-  return SelectorFind.descendant(component.element(), '.' + hConfig.itemClass).bind((e) => component.getSystem().getByDom(e).toOption());
-};
+const getFirst = (component: AlloyComponent, hConfig: HighlightingConfig, _hState: Stateless): Option<AlloyComponent> => SelectorFind.descendant(component.element(), '.' + hConfig.itemClass).bind((e) => component.getSystem().getByDom(e).toOption());
 
-const getLast = (component: AlloyComponent, hConfig: HighlightingConfig, hState: Stateless): Option<AlloyComponent> => {
+const getLast = (component: AlloyComponent, hConfig: HighlightingConfig, _hState: Stateless): Option<AlloyComponent> => {
   const items: Element[] = SelectorFilter.descendants(component.element(), '.' + hConfig.itemClass);
   const last = items.length > 0 ? Option.some(items[items.length - 1]) : Option.none<Element<any>>();
   return last.bind((c) => component.getSystem().getByDom(c).toOption());
@@ -99,30 +90,22 @@ const getLast = (component: AlloyComponent, hConfig: HighlightingConfig, hState:
 
 const getDelta = (component: AlloyComponent, hConfig: HighlightingConfig, hState: Stateless, delta: number): Option<AlloyComponent> => {
   const items = SelectorFilter.descendants(component.element(), '.' + hConfig.itemClass);
-  const current = Arr.findIndex(items, (item) => {
-    return Class.has(item, hConfig.highlightClass);
-  });
+  const current = Arr.findIndex(items, (item) => Class.has(item, hConfig.highlightClass));
 
   return current.bind((selected) => {
-    const dest = Cycles.cycleBy(selected, delta, 0, items.length - 1);
+    const dest = Num.cycleBy(selected, delta, 0, items.length - 1);
     return component.getSystem().getByDom(items[dest]).toOption();
   });
 };
 
-const getPrevious = (component: AlloyComponent, hConfig: HighlightingConfig, hState: Stateless): Option<AlloyComponent> => {
-  return getDelta(component, hConfig, hState, -1);
-};
+const getPrevious = (component: AlloyComponent, hConfig: HighlightingConfig, hState: Stateless): Option<AlloyComponent> => getDelta(component, hConfig, hState, -1);
 
-const getNext = (component: AlloyComponent, hConfig: HighlightingConfig, hState: Stateless): Option<AlloyComponent> => {
-  return getDelta(component, hConfig, hState, +1);
-};
+const getNext = (component: AlloyComponent, hConfig: HighlightingConfig, hState: Stateless): Option<AlloyComponent> => getDelta(component, hConfig, hState, +1);
 
-const getCandidates = (component: AlloyComponent, hConfig: HighlightingConfig, hState: Stateless): AlloyComponent[] => {
+const getCandidates = (component: AlloyComponent, hConfig: HighlightingConfig, _hState: Stateless): AlloyComponent[] => {
   const items = SelectorFilter.descendants(component.element(), '.' + hConfig.itemClass);
   return Options.cat(
-    Arr.map(items, (i) => {
-      return component.getSystem().getByDom(i).toOption();
-    })
+    Arr.map(items, (i) => component.getSystem().getByDom(i).toOption())
   );
 };
 

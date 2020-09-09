@@ -6,26 +6,26 @@
  */
 
 import {
-    AddEventsBehaviour, AlloyEvents, Behaviour, Button, GuiFactory, Memento, Menu, Representing,
-    TieredMenu, Toggling, Transitioning
+  AddEventsBehaviour, AlloyEvents, Behaviour, Button, GuiFactory, Memento, Menu, Representing,
+  TieredMenu, Toggling, Transitioning
 } from '@ephox/alloy';
 import { Objects } from '@ephox/boulder';
 import { Arr, Merger, Obj, Option } from '@ephox/katamari';
 import { Css, SelectorFind, Width } from '@ephox/sugar';
 
-import Receivers from '../channels/Receivers';
-import Styles from '../style/Styles';
-import Scrollable from '../touch/scroll/Scrollable';
+import * as Receivers from '../channels/Receivers';
+import * as Styles from '../style/Styles';
+import * as Scrollable from '../touch/scroll/Scrollable';
 
 const getValue = function (item): string {
-  return Objects.readOptFrom<string>(item, 'format').getOr(item.title);
+  return Obj.get(item, 'format').getOr(item.title);
 };
 
 const convert = function (formats, memMenuThunk) {
   const mainMenu = makeMenu('Styles', [
   ].concat(
     Arr.map(formats.items, function (k) {
-      return makeItem(getValue(k), k.title, k.isSelected(), k.getPreview(), Objects.hasKey(formats.expansions, getValue(k)));
+      return makeItem(getValue(k), k.title, k.isSelected(), k.getPreview(), Obj.hasNonNullableKey(formats.expansions, getValue(k)));
     })
   ), memMenuThunk, false);
 
@@ -36,7 +36,7 @@ const convert = function (formats, memMenuThunk) {
         item.title,
         item.isSelected !== undefined ? item.isSelected() : false,
         item.getPreview !== undefined ? item.getPreview() : '',
-        Objects.hasKey(formats.expansions, getValue(item))
+        Obj.hasNonNullableKey(formats.expansions, getValue(item))
       );
     });
     return makeMenu(menuName, items, memMenuThunk, true);
@@ -108,7 +108,7 @@ const makeMenu = function (value, items, memMenuThunk, collapsable) {
           },
           GuiFactory.text(value)
         ] : [ GuiFactory.text(value) ],
-        action (item) {
+        action(item) {
           if (collapsable) {
             const comp = memMenuThunk().get(item);
             TieredMenu.collapseMenu(comp);
@@ -126,7 +126,7 @@ const makeMenu = function (value, items, memMenuThunk, collapsable) {
 
         behaviours: Behaviour.derive([
           AddEventsBehaviour.config('adhoc-scrollable-menu', [
-            AlloyEvents.runOnAttached(function (component, simulatedEvent) {
+            AlloyEvents.runOnAttached(function (component, _simulatedEvent) {
               Css.set(component.element(), 'overflow-y', 'auto');
               Css.set(component.element(), '-webkit-overflow-scrolling', 'touch');
               Scrollable.register(component.element());
@@ -174,20 +174,20 @@ const sketch = function (settings) {
     // For animations, need things to stay around in the DOM (at least until animation is done)
     stayInDom: true,
 
-    onExecute (tmenu, item) {
+    onExecute(_tmenu, item) {
       const v = Representing.getValue(item);
       settings.handle(item, v.value);
       return Option.none();
     },
-    onEscape () {
+    onEscape() {
       return Option.none();
     },
-    onOpenMenu (container, menu) {
+    onOpenMenu(container, menu) {
       const w = Width.get(container.element());
       Width.set(menu.element(), w);
       Transitioning.jumpTo(menu, 'current');
     },
-    onOpenSubmenu (container, item, submenu) {
+    onOpenSubmenu(container, item, submenu) {
       const w = Width.get(container.element());
       const menu = SelectorFind.ancestor(item.element(), '[role="menu"]').getOrDie('hacky');
       const menuComp = container.getSystem().getByDom(menu).getOrDie();
@@ -199,7 +199,7 @@ const sketch = function (settings) {
       Transitioning.progressTo(submenu, 'current');
     },
 
-    onCollapseMenu (container, item, menu) {
+    onCollapseMenu(container, item, menu) {
       const submenu = SelectorFind.ancestor(item.element(), '[role="menu"]').getOrDie('hacky');
       const submenuComp = container.getSystem().getByDom(submenu).getOrDie();
       Transitioning.progressTo(submenuComp, 'after');
@@ -223,6 +223,6 @@ const sketch = function (settings) {
   return memMenu.asSpec();
 };
 
-export default {
+export {
   sketch
 };

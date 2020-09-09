@@ -13,7 +13,7 @@ import { formCancelEvent, FormCancelEvent, formSubmitEvent, FormSubmitEvent } fr
 import * as Dialogs from './Dialogs';
 
 export interface ConfirmDialogSetup {
-    backstage: UiFactoryBackstage;
+  backstage: UiFactoryBackstage;
 }
 export const setup = (extras: ConfirmDialogSetup) => {
   const sharedBackstage = extras.backstage.shared;
@@ -39,7 +39,7 @@ export const setup = (extras: ConfirmDialogSetup) => {
     const footerNo = renderFooterButton({
       name: 'no',
       text: 'No',
-      primary: true,
+      primary: false,
       align: 'end',
       disabled: false,
       icon: Option.none()

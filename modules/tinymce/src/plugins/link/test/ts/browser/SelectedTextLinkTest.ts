@@ -1,5 +1,5 @@
 import { FocusTools, Keyboard, Keys, Log, Pipeline, UiFinder, Waiter } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
 import { TinyApis, TinyDom, TinyLoader } from '@ephox/mcagar';
 import LinkPlugin from 'tinymce/plugins/link/Plugin';
@@ -19,7 +19,7 @@ UnitTest.asynctest('browser.tinymce.plugins.link.SelectedTextTest', (success, fa
       Log.steps('TBA', 'Link: complex selections should preserve the text', [
         TestLinkUi.sClearHistory,
         tinyApis.sSetContent('<p><strong>word</strong></p><p><strong>other</strong></p>'),
-        tinyApis.sSetSelection([0], 0, [1], 1),
+        tinyApis.sSetSelection([ 0 ], 0, [ 1 ], 1),
         tinyApis.sExecCommand('mcelink'),
         UiFinder.sWaitForVisible('wait for link dialog', TinyDom.fromDom(document.body), '[role="dialog"]'),
         FocusTools.sSetActiveValue(doc, 'http://something'),
@@ -35,7 +35,7 @@ UnitTest.asynctest('browser.tinymce.plugins.link.SelectedTextTest', (success, fa
         ),
         TestLinkUi.sClearHistory
       ])
-    , onSuccess, onFailure);
+      , onSuccess, onFailure);
   }, {
     plugins: 'link',
     toolbar: '',

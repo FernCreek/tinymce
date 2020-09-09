@@ -1,4 +1,4 @@
-import { UnitTest, assert } from '@ephox/bedrock';
+import { UnitTest, assert } from '@ephox/bedrock-client';
 import { Result, Arr } from '@ephox/katamari';
 import Jsc from '@ephox/wrap-jsverify';
 
@@ -42,7 +42,7 @@ UnitTest.test('SizeInputParsingTest', () => {
   // check that all units work
   Arr.each(units, (unit) => {
     check(Result.error(unit), unit);
-    check(Result.value(nuSize(4, unit as SizeUnit)), '4' + unit);
+    check(Result.value(nuSize(4, unit)), '4' + unit);
   });
 
   const arbPad = Jsc.array(Jsc.elements(' \t'.split(''))).smap(

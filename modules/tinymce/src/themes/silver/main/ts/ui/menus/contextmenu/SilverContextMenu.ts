@@ -7,16 +7,16 @@
 
 import { AddEventsBehaviour, AlloyComponent, AlloyEvents, Behaviour, GuiFactory, InlineView, Sandboxing, SystemEvents } from '@ephox/alloy';
 import { Menu } from '@ephox/bridge';
-import { Element as DomElement } from '@ephox/dom-globals';
+import { Element as DomElement, PointerEvent } from '@ephox/dom-globals';
 import { Arr, Fun, Obj, Result, Type } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
 import Editor from 'tinymce/core/api/Editor';
 import { UiFactoryBackstage } from 'tinymce/themes/silver/backstage/Backstage';
 import * as DesktopContextMenu from './platform/DesktopContextMenu';
 import * as MobileContextMenu from './platform/MobileContextMenu';
-import Settings from './Settings';
+import * as Settings from './Settings';
 
-type MenuItem =  string | Menu.MenuItemApi | Menu.NestedMenuItemApi | Menu.SeparatorMenuItemApi;
+type MenuItem = string | Menu.MenuItemApi | Menu.NestedMenuItemApi | Menu.SeparatorMenuItemApi;
 
 const isSeparator = (item: MenuItem): boolean => Type.isString(item) ? item === '|' : item.type === 'separator';
 
@@ -88,7 +88,7 @@ const generateContextMenu = (contextMenus: Record<string, Menu.ContextMenuApi>, 
         return acc;
       }
     } else {
-      return acc.concat([name]);
+      return acc.concat([ name ]);
     }
   }, []);
 
@@ -100,9 +100,16 @@ const generateContextMenu = (contextMenus: Record<string, Menu.ContextMenuApi>, 
   return sections;
 };
 
-const isNativeOverrideKeyEvent = function (editor: Editor, e) {
-  return e.ctrlKey && !Settings.shouldNeverUseNative(editor);
-};
+const isNativeOverrideKeyEvent = (editor: Editor, e: PointerEvent) => e.ctrlKey && !Settings.shouldNeverUseNative(editor);
+
+export const isTriggeredByKeyboard = (editor: Editor, e: PointerEvent) =>
+  // Different browsers trigger the context menu from keyboards differently, so need to check various different things here.
+  // If a longpress touch event, always treat it as a pointer event
+  // Chrome: button = 0, pointerType = undefined & target = the selection range node
+  // Firefox: button = 0, pointerType = undefined & target = body
+  // IE/Edge: button = 2, pointerType = "" & target = body
+  // Safari: N/A (Mac's don't expose a contextmenu keyboard shortcut)
+  e.type !== 'longpress' && (e.button !== 2 || e.target === editor.getBody() && e.pointerType === '');
 
 export const setup = (editor: Editor, lazySink: () => Result<AlloyComponent, Error>, backstage: UiFactoryBackstage) => {
   const detection = PlatformDetection.detect();
@@ -111,7 +118,7 @@ export const setup = (editor: Editor, lazySink: () => Result<AlloyComponent, Err
   const contextmenu = GuiFactory.build(
     InlineView.sketch({
       dom: {
-        tag: 'div',
+        tag: 'div'
       },
       lazySink,
       onEscape: () => editor.focus(),
@@ -120,7 +127,7 @@ export const setup = (editor: Editor, lazySink: () => Result<AlloyComponent, Err
       fireDismissalEventInstead: { },
       inlineBehaviours: Behaviour.derive([
         AddEventsBehaviour.config('dismissContextMenu', [
-          AlloyEvents.run(SystemEvents.dismissRequested(), (comp, se) => {
+          AlloyEvents.run(SystemEvents.dismissRequested(), (comp, _se) => {
             Sandboxing.close(comp);
             editor.focus();
           })
@@ -132,7 +139,6 @@ export const setup = (editor: Editor, lazySink: () => Result<AlloyComponent, Err
   const hideContextMenu = (_e) => InlineView.hide(contextmenu);
 
   const showContextMenu = (e) => {
-    const isLongpress = e.type === 'longpress';
     // Prevent the default if we should never use native
     if (Settings.shouldNeverUseNative(editor)) {
       e.preventDefault();
@@ -142,13 +148,7 @@ export const setup = (editor: Editor, lazySink: () => Result<AlloyComponent, Err
       return;
     }
 
-    // Different browsers trigger the context menu from keyboards differently, so need to check both the button and target here.
-    // If a longpress touch event, always treat it as a pointer event
-    // Chrome: button = 0 & target = the selection range node
-    // Firefox: button = 0 & target = body
-    // IE/Edge: button = 2 & target = body
-    // Safari: N/A (Mac's don't expose a contextmenu keyboard shortcut)
-    const isTriggeredByKeyboardEvent = !isLongpress && (e.button !== 2 || e.target === editor.getBody());
+    const isTriggeredByKeyboardEvent = isTriggeredByKeyboard(editor, e);
 
     const buildMenu = () => {
       // Use the event target element for touch events, otherwise fallback to the current selection
@@ -166,8 +166,8 @@ export const setup = (editor: Editor, lazySink: () => Result<AlloyComponent, Err
   editor.on('init', () => {
     // Hide the context menu when scrolling or resizing
     // Except ResizeWindow on mobile which fires when the keyboard appears/disappears
-    const hideEvents = 'ResizeEditor ScrollContent ScrollWindow longpresscancel' + (isTouch() ? '' : 'ResizeWindow');
+    const hideEvents = 'ResizeEditor ScrollContent ScrollWindow longpresscancel' + (isTouch() ? '' : ' ResizeWindow');
     editor.on(hideEvents, hideContextMenu);
-    editor.on(isTouch() ? 'longpress' : 'longpress contextmenu', showContextMenu);
+    editor.on('longpress contextmenu', showContextMenu);
   });
 };

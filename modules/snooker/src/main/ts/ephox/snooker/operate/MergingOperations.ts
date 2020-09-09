@@ -1,7 +1,7 @@
 import { Arr, Option } from '@ephox/katamari';
-import * as Structs from '../api/Structs';
-import GridRow from '../model/GridRow';
 import { Element } from '@ephox/sugar';
+import * as Structs from '../api/Structs';
+import * as GridRow from '../model/GridRow';
 
 type CompElm = (e1: Element, e2: Element) => boolean;
 type Subst = () => Element;
@@ -43,10 +43,27 @@ const unmerge = function (grid: Structs.RowCells[], target: Element, comparator:
 
 const uniqueCells = function (row: Structs.ElementNew[], comparator: CompElm) {
   return Arr.foldl(row, function (rest, cell) {
-      return Arr.exists(rest, function (currentCell) {
-        return comparator(currentCell.element(), cell.element());
-      }) ? rest : rest.concat([cell]);
+    return Arr.exists(rest, function (currentCell) {
+      return comparator(currentCell.element(), cell.element());
+    }) ? rest : rest.concat([ cell ]);
   }, [] as Structs.ElementNew[]);
+};
+
+const splitCols = (grid: Structs.RowCells[], index: number, comparator: CompElm, substitution: Subst) => {
+  // We don't need to split rows if we're inserting at the first or last row of the old table
+  if (index > 0 && index < grid[0].cells().length) {
+    Arr.each(grid, (row) => {
+      const prevCell = row.cells()[index - 1];
+      const current = row.cells()[index];
+      const isToReplace = comparator(current.element(), prevCell.element());
+
+      if (isToReplace) {
+        GridRow.mutateCell(row, index, Structs.elementnew(substitution(), true));
+      }
+    });
+  }
+
+  return grid;
 };
 
 const splitRows = function (grid: Structs.RowCells[], index: number, comparator: CompElm, substitution: Subst) {
@@ -78,8 +95,9 @@ const splitRows = function (grid: Structs.RowCells[], index: number, comparator:
   return grid;
 };
 
-export default {
+export {
   merge,
   unmerge,
+  splitCols,
   splitRows
 };

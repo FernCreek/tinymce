@@ -1,7 +1,7 @@
-import { assert, UnitTest } from '@ephox/bedrock';
+import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Option } from '@ephox/katamari';
 import { WordScope } from 'ephox/robin/data/WordScope';
-import WordSanitiser from 'ephox/robin/util/WordSanitiser';
+import * as WordSanitiser from 'ephox/robin/util/WordSanitiser';
 
 UnitTest.test('Word Sanitiser', function () {
   const some = Option.some;
@@ -18,12 +18,12 @@ UnitTest.test('Word Sanitiser', function () {
   };
 
   check(ss('one', '<', '>'), ss('one', '<', '>'));
-  check(ss('one', '<', '\''), ss('one\'', '<', '>'));
-  check(ss('one', '\'', '>'), ss('\'one', '<', '>'));
-  check(ss('\'twas', '<', '>'), ss('\'twas', '<', '>'));
-  check(ss('\'twas', '\'', '\''), ss('\'\'twas\'', '<', '>'));
-  check(ss('\'\'one\'\'', '<', '>'), ss('\'\'one\'\'', '<', '>'));
-  check(ss('\'twas', '\'', '>'), ss('\'\'twas', '<', '>'));
+  check(ss('one', '<', `'`), ss(`one'`, '<', '>'));
+  check(ss('one', `'`, '>'), ss(`'one`, '<', '>'));
+  check(ss(`'twas`, '<', '>'), ss(`'twas`, '<', '>'));
+  check(ss(`'twas`, `'`, `'`), ss(`''twas'`, '<', '>'));
+  check(ss(`''one''`, '<', '>'), ss(`''one''`, '<', '>'));
+  check(ss(`'twas`, `'`, '>'), ss(`''twas`, '<', '>'));
 
   check(ss('one', '<', '>'), ss('one', '<', '>'));
   check(ss('one', '<', '\u2018'), ss('one\u2018', '<', '>'));

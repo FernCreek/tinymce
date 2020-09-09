@@ -5,7 +5,7 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Arr, Merger, Obj } from '@ephox/katamari';
+import { Arr, Obj } from '@ephox/katamari';
 import Editor from 'tinymce/core/api/Editor';
 import { getRemovedMenuItems } from 'tinymce/themes/silver/api/Settings';
 import { MenubarItemSpec } from './SilverMenubar';
@@ -29,7 +29,7 @@ const defaultMenus = {
   help: { title: 'Help', items: 'help' }
 };
 
-const make = (menu: {title: string, items: string[]}, registry: MenuRegistry, editor): MenubarItemSpec => {
+const make = (menu: {title: string; items: string[]}, registry: MenuRegistry, editor): MenubarItemSpec => {
   const removedMenuItems = getRemovedMenuItems(editor).split(/[ ,]/);
   return {
     text: menu.title,
@@ -60,16 +60,13 @@ const parseItemsString = (items: string): string[] => {
 };
 
 const identifyMenus = (editor: Editor, registry: MenuRegistry): MenubarItemSpec[] => {
-  const rawMenuData = Merger.merge(defaultMenus, registry.menus);
+  const rawMenuData = { ...defaultMenus, ...registry.menus };
   const userDefinedMenus = Obj.keys(registry.menus).length > 0;
 
   const menubar: string[] = registry.menubar === undefined || registry.menubar === true ? parseItemsString(defaultMenubar) : parseItemsString(registry.menubar === false ? '' : registry.menubar);
-  const validMenus = Arr.filter(menubar, (menuName) => {
-
-    return userDefinedMenus ? ((registry.menus.hasOwnProperty(menuName) && registry.menus[menuName].hasOwnProperty('items')
-      || defaultMenus.hasOwnProperty(menuName)))
-      : defaultMenus.hasOwnProperty(menuName);
-  });
+  const validMenus = Arr.filter(menubar, (menuName) => userDefinedMenus ? (registry.menus.hasOwnProperty(menuName) && registry.menus[menuName].hasOwnProperty('items')
+      || defaultMenus.hasOwnProperty(menuName))
+    : defaultMenus.hasOwnProperty(menuName));
 
   const menus: MenubarItemSpec[] = Arr.map(validMenus, (menuName) => {
     const menuData = rawMenuData[menuName];

@@ -1,19 +1,13 @@
-import { assert, UnitTest } from '@ephox/bedrock';
+import { assert, UnitTest } from '@ephox/bedrock-client';
+import { HTMLDivElement, HTMLTableElement } from '@ephox/dom-globals';
 import { Arr } from '@ephox/katamari';
-import { Body, Element, Insert, Remove, Css } from '@ephox/sugar';
+import { Body, Css, Element, Insert, Remove } from '@ephox/sugar';
 import { ResizeDirection } from 'ephox/snooker/api/ResizeDirection';
-import Deltas from 'ephox/snooker/calc/Deltas';
-import DetailsList from 'ephox/snooker/model/DetailsList';
+import { TableSize } from 'ephox/snooker/api/TableSize';
+import * as Deltas from 'ephox/snooker/calc/Deltas';
 import { Warehouse } from 'ephox/snooker/model/Warehouse';
-import TableSize from 'ephox/snooker/resize/TableSize';
-import { HTMLTableElement, HTMLDivElement } from '@ephox/dom-globals';
 
 UnitTest.test('ResizeTest', function () {
-  const getWarehouse = function (table: Element) {
-    const list = DetailsList.fromTable(table);
-    return Warehouse.generate(list);
-  };
-
   const direction = ResizeDirection.ltr;
 
   const boundBox = '<div style="width: 800px; height: 600px; display: block;"></div>';
@@ -51,19 +45,19 @@ UnitTest.test('ResizeTest', function () {
     const step = tableSize.getCellDelta(delta);
     assert.eq(25, step);
 
-    const warehouse = getWarehouse(table);
+    const warehouse = Warehouse.fromTable(table);
     const widths = tableSize.getWidths(warehouse, direction, tableSize);
 
     // [50%, 50%] existing widths.
-    assert.eq([50, 50], widths);
+    assert.eq([ 50, 50 ], widths);
 
     const deltas = Deltas.determine(widths, 0, step, tableSize);
 
     // [25%, -25%] deltas.
-    assert.eq([25, -25], deltas);
+    assert.eq([ 25, -25 ], deltas);
 
     // Set new width
-    tableSize.setTableWidth(table, [], step);
+    tableSize.adjustTableWidth(step);
     assert.eq(Css.getRaw(table, 'width').getOrDie(), '125%');
 
     Remove.remove(table);
@@ -100,14 +94,12 @@ UnitTest.test('ResizeTest', function () {
     const step = tableSize.getCellDelta(delta);
     assert.eq(25, step);
 
-    const warehouse = getWarehouse(table);
+    const warehouse = Warehouse.fromTable(table);
     const widths = tableSize.getWidths(warehouse, direction, tableSize);
 
-    const expectedWidths = [50, 50];
+    const expectedWidths = [ 50, 50 ];
 
-    const widthDiffs = Arr.map(expectedWidths, (x, i) => {
-      return widths[i] - x;
-    });
+    const widthDiffs = Arr.map(expectedWidths, (x, i) => widths[i] - x);
 
     // percentage width of this table is 100% but phantom treats this as around 804 pixels when we're doing conversions
     // we have pixel width cells of 400px, so the actual widths of the cells in percentages
@@ -120,10 +112,10 @@ UnitTest.test('ResizeTest', function () {
     const deltas = Deltas.determine(widths, 0, step, tableSize);
 
     // [25%, -25%] deltas.
-    assert.eq([25, -25], deltas);
+    assert.eq([ 25, -25 ], deltas);
 
     // Set new width
-    tableSize.setTableWidth(table, [], step);
+    tableSize.adjustTableWidth(step);
     assert.eq(Css.getRaw(table, 'width').getOrDie(), '125%');
 
     Remove.remove(table);
@@ -160,16 +152,16 @@ UnitTest.test('ResizeTest', function () {
     const step = tableSize.getCellDelta(delta);
     assert.eq(200, step);
 
-    const warehouse = getWarehouse(table);
+    const warehouse = Warehouse.fromTable(table);
     const widths = tableSize.getWidths(warehouse, direction, tableSize);
 
     // [50%, 50%] existing widths.
-    assert.eq([400, 400], widths);
+    assert.eq([ 400, 400 ], widths);
 
     const deltas = Deltas.determine(widths, 0, step, tableSize);
 
     // [25%, -25%] deltas.
-    assert.eq([200, -200], deltas);
+    assert.eq([ 200, -200 ], deltas);
 
     Remove.remove(table);
   };
@@ -205,16 +197,16 @@ UnitTest.test('ResizeTest', function () {
     const step = tableSize.getCellDelta(delta);
     assert.eq(200, step);
 
-    const warehouse = getWarehouse(table);
+    const warehouse = Warehouse.fromTable(table);
     const widths = tableSize.getWidths(warehouse, direction, tableSize);
 
     // [50%, 50%] existing widths.
-    assert.eq([400, 400], widths);
+    assert.eq([ 400, 400 ], widths);
 
     const deltas = Deltas.determine(widths, 0, step, tableSize);
 
     // [25%, -25%] deltas.
-    assert.eq([200, -200], deltas);
+    assert.eq([ 200, -200 ], deltas);
 
     Remove.remove(table);
   };

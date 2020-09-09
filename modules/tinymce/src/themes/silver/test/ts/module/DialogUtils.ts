@@ -4,9 +4,7 @@ import { Body } from '@ephox/sugar';
 
 import Editor from 'tinymce/core/api/Editor';
 
-const cOpen = <T>(editor: Editor, spec: Types.Dialog.DialogApi<T>, params: Record<string, any>) => Chain.mapper((_) => {
-  return editor.windowManager.open(spec, params);
-});
+const cOpen = <T>(editor: Editor, spec: Types.Dialog.DialogApi<T>, params: Record<string, any>) => Chain.injectThunked(() => editor.windowManager.open(spec, params));
 
 const cOpenWithStore = <T>(editor: Editor, spec: Types.Dialog.DialogApi<T>, params: Record<string, any>, store: any) => {
   const dialogSpec = {
@@ -30,11 +28,15 @@ const cClose = Chain.fromChainsWith(Body.body(), [
 
 const sClose = Chain.asStep({}, [ cClose ]);
 
+const sWaitForOpen = (selector: string = '[role=dialog]') => UiFinder.sWaitForVisible('Wait for the dialog to open', Body.body(), selector);
+
 export {
   sOpen,
   sClose,
 
   cOpen,
   cOpenWithStore,
-  cClose
+  cClose,
+
+  sWaitForOpen
 };

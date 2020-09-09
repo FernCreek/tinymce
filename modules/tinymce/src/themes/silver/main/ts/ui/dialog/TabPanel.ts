@@ -5,7 +5,23 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloyTriggers, Behaviour, Composing, Form as AlloyForm, Keying, Receiving, Representing, SketchSpec, Tabbar as AlloyTabbar, TabSection as AlloyTabSection, Tabstopping } from '@ephox/alloy';
+import {
+  AddEventsBehaviour,
+  AlloyComponent,
+  AlloyEvents,
+  AlloyTriggers,
+  Behaviour,
+  Composing,
+  Form as AlloyForm,
+  Keying,
+  Receiving,
+  Representing,
+  SketchSpec,
+  Tabbar as AlloyTabbar,
+  TabbarTypes,
+  TabSection as AlloyTabSection,
+  Tabstopping
+} from '@ephox/alloy';
 import { Objects } from '@ephox/boulder';
 import { Arr, Cell, Fun, Merger } from '@ephox/katamari';
 import { toValidValues } from 'tinymce/themes/silver/ui/general/FormValues';
@@ -13,7 +29,7 @@ import { interpretInForm } from 'tinymce/themes/silver/ui/general/UiFactory';
 import { UiFactoryBackstage } from '../../backstage/Backstage';
 import { setMode } from '../alien/DialogTabHeight';
 import { formTabChangeEvent } from '../general/FormEvents';
-import NavigableObject from '../general/NavigableObject';
+import * as NavigableObject from '../general/NavigableObject';
 import { Types } from '@ephox/bridge';
 import { Omit } from '../Omit';
 
@@ -42,7 +58,7 @@ export const renderTabPanel = (spec: TabPanelSpec, backstage: UiFactoryBackstage
 
   const oldTab = Cell(null);
 
-  const allTabs = Arr.map(spec.tabs, function (tab) {
+  const allTabs: Array<Partial<TabbarTypes.TabButtonWithViewSpec>> = Arr.map(spec.tabs, function (tab) {
     return {
       value: tab.name,
       dom: {
@@ -50,45 +66,43 @@ export const renderTabPanel = (spec: TabPanelSpec, backstage: UiFactoryBackstage
         classes: [ 'tox-dialog__body-nav-item' ],
         innerHtml: backstage.shared.providers.translate(tab.title)
       },
-      view () {
+      view() {
         return [
           // Dupe with SilverDialog
-          AlloyForm.sketch((parts) => {
-            return {
-              dom: {
-                tag: 'div',
-                classes: [ 'tox-form' ]
-              },
-              components: Arr.map(tab.items, (item) => interpretInForm(parts, item, backstage)),
-              formBehaviours: Behaviour.derive([
-                Keying.config({
-                  mode: 'acyclic',
-                  useTabstopAt: Fun.not(NavigableObject.isPseudoStop)
-                }),
+          AlloyForm.sketch((parts) => ({
+            dom: {
+              tag: 'div',
+              classes: [ 'tox-form' ]
+            },
+            components: Arr.map(tab.items, (item) => interpretInForm(parts, item, backstage)),
+            formBehaviours: Behaviour.derive([
+              Keying.config({
+                mode: 'acyclic',
+                useTabstopAt: Fun.not(NavigableObject.isPseudoStop)
+              }),
 
-                AddEventsBehaviour.config('TabView.form.events', [
-                  AlloyEvents.runOnAttached(setDataOnForm),
-                  AlloyEvents.runOnDetached(updateDataWithForm)
-                ]),
-                Receiving.config({
-                  channels: Objects.wrapAll([
-                    {
-                      key: SendDataToSectionChannel,
-                      value:  {
-                        onReceive: updateDataWithForm
-                      }
-                    },
-                    {
-                      key: SendDataToViewChannel,
-                      value: {
-                        onReceive: setDataOnForm
-                      }
+              AddEventsBehaviour.config('TabView.form.events', [
+                AlloyEvents.runOnAttached(setDataOnForm),
+                AlloyEvents.runOnDetached(updateDataWithForm)
+              ]),
+              Receiving.config({
+                channels: Objects.wrapAll([
+                  {
+                    key: SendDataToSectionChannel,
+                    value:  {
+                      onReceive: updateDataWithForm
                     }
-                  ])
-                })
-              ])
-            };
-          })
+                  },
+                  {
+                    key: SendDataToViewChannel,
+                    value: {
+                      onReceive: setDataOnForm
+                    }
+                  }
+                ])
+              })
+            ])
+          }))
         ];
       }
     };

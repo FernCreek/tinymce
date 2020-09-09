@@ -1,15 +1,15 @@
-import { LegacyUnit } from '@ephox/mcagar';
 import { Pipeline } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
+import { Fun } from '@ephox/katamari';
+import { LegacyUnit } from '@ephox/mcagar';
+import { Element } from '@ephox/sugar';
+import $ from 'tinymce/core/api/dom/DomQuery';
 import Env from 'tinymce/core/api/Env';
 import { FakeCaret, isFakeCaretTarget } from 'tinymce/core/caret/FakeCaret';
-import $ from 'tinymce/core/api/dom/DomQuery';
-import Zwsp from 'tinymce/core/text/Zwsp';
-import CaretAsserts from '../../module/test/CaretAsserts';
-import ViewBlock from '../../module/test/ViewBlock';
-import { UnitTest } from '@ephox/bedrock';
-import { Element } from '@ephox/sugar';
 import { isFakeCaretTableBrowser } from 'tinymce/core/keyboard/TableNavigation';
-import { Fun } from '@ephox/katamari';
+import * as Zwsp from 'tinymce/core/text/Zwsp';
+import * as CaretAsserts from '../../module/test/CaretAsserts';
+import ViewBlock from '../../module/test/ViewBlock';
 
 UnitTest.asynctest('browser.tinymce.core.caret.FakeCaretTest', function (success, failure) {
   const suite = LegacyUnit.createSuite();
@@ -25,8 +25,12 @@ UnitTest.asynctest('browser.tinymce.core.caret.FakeCaretTest', function (success
     return viewBlock.get();
   };
 
+  const mockEditor: any = {
+    getParam: () => 'p'
+  };
+
   const setup = function () {
-    fakeCaret = FakeCaret(getRoot(), isBlock, Fun.constant(true));
+    fakeCaret = FakeCaret(mockEditor, getRoot(), isBlock, Fun.constant(true));
   };
 
   const teardown = function () {
@@ -38,12 +42,10 @@ UnitTest.asynctest('browser.tinymce.core.caret.FakeCaretTest', function (success
   };
 
   suite.test('show/hide (before, block)', function () {
-    let rng, $fakeCaretElm;
-
     $(getRoot()).html('<div>a</div>');
 
-    rng = fakeCaret.show(true, $('div', getRoot())[0]);
-    $fakeCaretElm = $(getRoot()).children();
+    const rng = fakeCaret.show(true, $('div', getRoot())[0]);
+    const $fakeCaretElm = $(getRoot()).children();
 
     LegacyUnit.equal($fakeCaretElm[0].nodeName, 'P');
     LegacyUnit.equal($fakeCaretElm.attr('data-mce-caret'), 'before');
@@ -54,12 +56,10 @@ UnitTest.asynctest('browser.tinymce.core.caret.FakeCaretTest', function (success
   });
 
   suite.test('show/hide (before, block)', function () {
-    let rng, $fakeCaretElm;
-
     $(getRoot()).html('<div>a</div>');
 
-    rng = fakeCaret.show(false, $('div', getRoot())[0]);
-    $fakeCaretElm = $(getRoot()).children();
+    const rng = fakeCaret.show(false, $('div', getRoot())[0]);
+    const $fakeCaretElm = $(getRoot()).children();
 
     LegacyUnit.equal($fakeCaretElm[1].nodeName, 'P');
     LegacyUnit.equal($fakeCaretElm.eq(1).attr('data-mce-caret'), 'after');
@@ -70,12 +70,10 @@ UnitTest.asynctest('browser.tinymce.core.caret.FakeCaretTest', function (success
   });
 
   suite.test('show/hide (before, inline)', function () {
-    let rng, $fakeCaretText;
-
     $(getRoot()).html('<span>a</span>');
 
-    rng = fakeCaret.show(true, $('span', getRoot())[0]);
-    $fakeCaretText = $(getRoot()).contents();
+    const rng = fakeCaret.show(true, $('span', getRoot())[0]);
+    const $fakeCaretText = $(getRoot()).contents();
 
     LegacyUnit.equal($fakeCaretText[0].nodeName, '#text');
     LegacyUnit.equal($fakeCaretText[0].data, Zwsp.ZWSP);
@@ -86,12 +84,10 @@ UnitTest.asynctest('browser.tinymce.core.caret.FakeCaretTest', function (success
   });
 
   suite.test('show/hide (after, inline)', function () {
-    let rng, $fakeCaretText;
-
     $(getRoot()).html('<span>a</span>');
 
-    rng = fakeCaret.show(false, $('span', getRoot())[0]);
-    $fakeCaretText = $(getRoot()).contents();
+    const rng = fakeCaret.show(false, $('span', getRoot())[0]);
+    const $fakeCaretText = $(getRoot()).contents();
 
     LegacyUnit.equal($fakeCaretText[1].nodeName, '#text');
     LegacyUnit.equal($fakeCaretText[1].data, Zwsp.ZWSP);
@@ -106,18 +102,14 @@ UnitTest.asynctest('browser.tinymce.core.caret.FakeCaretTest', function (success
   });
 
   suite.test('show before TD', function () {
-    let rng;
-
     getRoot().innerHTML = '<table><tr><td contenteditable="false">x</td></tr></table>';
-    rng = fakeCaret.show(false, $('td', getRoot())[0]);
+    const rng = fakeCaret.show(false, $('td', getRoot())[0]);
     LegacyUnit.equal(true, rng === null, 'Should be null since TD is not a valid caret target');
   });
 
   suite.test('show before TH', function () {
-    let rng;
-
     getRoot().innerHTML = '<table><tr><th contenteditable="false">x</th></tr></table>';
-    rng = fakeCaret.show(false, $('th', getRoot())[0]);
+    const rng = fakeCaret.show(false, $('th', getRoot())[0]);
     LegacyUnit.equal(true, rng === null, 'Should be null since TH is not a valid caret target');
   });
 

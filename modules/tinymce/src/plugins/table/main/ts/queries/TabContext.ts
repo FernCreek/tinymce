@@ -8,16 +8,14 @@
 import { KeyboardEvent } from '@ephox/dom-globals';
 import { Arr, Option } from '@ephox/katamari';
 import { CellNavigation, TableLookup } from '@ephox/snooker';
-import {
-    Compare, CursorPosition, Element, Node, Selection, SelectorFilter, SelectorFind, WindowSelection
-} from '@ephox/sugar';
+import { Compare, CursorPosition, Element, Node, Selection, SelectorFilter, SelectorFind, WindowSelection } from '@ephox/sugar';
 
 import Editor from 'tinymce/core/api/Editor';
 import VK from 'tinymce/core/api/util/VK';
-
-import * as Util from '../alien/Util';
-import TableTargets from './TableTargets';
 import { TableActions } from '../actions/TableActions';
+
+import * as Util from '../core/Util';
+import * as TableTargets from './TableTargets';
 
 const forward = function (editor: Editor, isRoot, cell, lazyWire) {
   return go(editor, isRoot, CellNavigation.next(cell), lazyWire);
@@ -41,7 +39,7 @@ const getNewRowCursorPosition = function (editor: Editor, table) {
   });
 };
 
-const go: any = function (editor: Editor, isRoot, cell, actions, lazyWire) { // TODO: forwars/backward is calling without actions
+const go: any = function (editor: Editor, isRoot, cell, actions, _lazyWire) { // TODO: forwars/backward is calling without actions
   return cell.fold(Option.none, Option.none, function (current, next) {
     return CursorPosition.first(next).map(function (cell) {
       return getCellFirstCursorPosition(editor, cell);
@@ -57,7 +55,7 @@ const go: any = function (editor: Editor, isRoot, cell, actions, lazyWire) { // 
   });
 };
 
-const rootElements = ['table', 'li', 'dl'];
+const rootElements = [ 'table', 'li', 'dl' ];
 
 const handle = function (event: KeyboardEvent, editor: Editor, actions: TableActions, lazyWire) {
   if (event.keyCode === VK.TAB) {
@@ -82,6 +80,6 @@ const handle = function (event: KeyboardEvent, editor: Editor, actions: TableAct
   }
 };
 
-export default {
+export {
   handle
 };

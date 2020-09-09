@@ -11,10 +11,10 @@ import { HTMLElement } from '@ephox/sand';
 import DomQuery from 'tinymce/core/api/dom/DomQuery';
 import Editor from 'tinymce/core/api/Editor';
 import Tools from 'tinymce/core/api/util/Tools';
-import NodeType from './NodeType';
+import * as NodeType from './NodeType';
 
-const getParentList = function (editor) {
-  const selectionStart = editor.selection.getStart(true);
+const getParentList = (editor: Editor, node?: Node) => {
+  const selectionStart = node || editor.selection.getStart(true);
 
   return editor.dom.getParent(selectionStart, 'OL,UL,DL', getClosestListRootElm(editor, selectionStart));
 };
@@ -59,9 +59,7 @@ const getSelectedListItems = function (editor) {
   });
 };
 
-const getSelectedDlItems = (editor: Editor): Node[] => {
-  return Arr.filter(getSelectedListItems(editor), NodeType.isDlItemNode);
-};
+const getSelectedDlItems = (editor: Editor): Node[] => Arr.filter(getSelectedListItems(editor), NodeType.isDlItemNode);
 
 const getClosestListRootElm = function (editor, elm) {
   const parentTableCell = editor.dom.getParents(elm, 'TD,TH');
@@ -97,7 +95,7 @@ const isList = (editor: Editor): boolean => {
   return HTMLElement.isPrototypeOf(list);
 };
 
-export default {
+export {
   isList,
   getParentList,
   getSelectedSubLists,

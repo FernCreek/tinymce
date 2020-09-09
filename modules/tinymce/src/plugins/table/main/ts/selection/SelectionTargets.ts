@@ -1,36 +1,29 @@
+import { HTMLTableCaptionElement, HTMLTableCellElement } from '@ephox/dom-globals';
 import { Arr, Cell, Option, Thunk } from '@ephox/katamari';
-import { TableLookup } from '@ephox/snooker';
+import { RunOperation, TableLookup } from '@ephox/snooker';
 import { Element, Node } from '@ephox/sugar';
 import Editor from 'tinymce/core/api/Editor';
-import TableTargets from '../queries/TableTargets';
+import * as TableTargets from '../queries/TableTargets';
 import { Selections } from './Selections';
 import * as TableSelection from './TableSelection';
-
-export interface Targets {
-  element: () => Element;
-  mergable: () => Option<any>;
-  unmergable: () => Option<any>;
-  selection: () => Element[];
-}
 
 export type SelectionTargets = ReturnType<typeof getSelectionTargets>;
 
 export const getSelectionTargets = (editor: Editor, selections: Selections) => {
-  const targets = Cell<Option<Targets>>(Option.none());
+  const targets = Cell<Option<RunOperation.CombinedTargets>>(Option.none());
   const changeHandlers = Cell([]);
 
-  const findTargets = (): Option<Targets> => {
-    return TableSelection.getSelectionStartCellOrCaption(editor).bind((cellOrCaption) => {
-      const table = TableLookup.table(cellOrCaption);
-      return table.map((table) => {
-        if (Node.name(cellOrCaption) === 'caption') {
-          return TableTargets.notCell(cellOrCaption);
-        } else {
-          return TableTargets.forMenu(selections, table, cellOrCaption);
-        }
-      });
+  const findTargets = (): Option<RunOperation.CombinedTargets> => TableSelection.getSelectionStartCellOrCaption(editor).bind((cellOrCaption) => {
+    const table = TableLookup.table(cellOrCaption);
+    const isCaption = (elem: Element<HTMLTableCaptionElement | HTMLTableCellElement>): elem is Element<HTMLTableCaptionElement> => Node.name(elem) === 'caption';
+    return table.map((table) => {
+      if (isCaption(cellOrCaption)) {
+        return TableTargets.noMenu(cellOrCaption);
+      } else {
+        return TableTargets.forMenu(selections, table, cellOrCaption);
+      }
     });
-  };
+  });
 
   const resetTargets = () => {
     // Reset the targets
@@ -40,7 +33,7 @@ export const getSelectionTargets = (editor: Editor, selections: Selections) => {
     Arr.each(changeHandlers.get(), (handler) => handler());
   };
 
-  const onSetup = (api, isDisabled: (targets: Targets) => boolean) => {
+  const onSetup = (api, isDisabled: (targets: RunOperation.CombinedTargets) => boolean) => {
     const handler = () => targets.get().fold(() => {
       api.setDisabled(true);
     }, (targets) => {
@@ -51,7 +44,7 @@ export const getSelectionTargets = (editor: Editor, selections: Selections) => {
     handler();
 
     // Register the handler so we can update the state when resetting targets
-    changeHandlers.set(changeHandlers.get().concat([handler]));
+    changeHandlers.set(changeHandlers.get().concat([ handler ]));
 
     return () => {
       changeHandlers.set(Arr.filter(changeHandlers.get(), (h) => h !== handler));
@@ -60,14 +53,18 @@ export const getSelectionTargets = (editor: Editor, selections: Selections) => {
 
   const onSetupTable = (api) => onSetup(api, (_) => false);
   const onSetupCellOrRow = (api) => onSetup(api, (targets) => Node.name(targets.element()) === 'caption');
+  const onSetupPasteable = (getClipboardData: () => Option<Element[]>) => (api) => onSetup(api, (targets) =>
+    Node.name(targets.element()) === 'caption' || getClipboardData().isNone()
+  );
   const onSetupMergeable = (api) => onSetup(api, (targets) => targets.mergable().isNone());
   const onSetupUnmergeable = (api) => onSetup(api, (targets) => targets.unmergable().isNone());
 
-  editor.on('NodeChange TableSelectorChange', resetTargets);
+  editor.on('NodeChange ExecCommand TableSelectorChange', resetTargets);
 
   return {
     onSetupTable,
     onSetupCellOrRow,
+    onSetupPasteable,
     onSetupMergeable,
     onSetupUnmergeable,
     resetTargets,

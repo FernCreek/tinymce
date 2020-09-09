@@ -1,6 +1,9 @@
 import { GeneralSteps, Logger, Step, UiFinder } from '@ephox/agar';
+import { Element } from '@ephox/sugar';
 
-const dismiss = (gui, element) => {
+import { GuiSystem } from 'ephox/alloy/api/system/Gui';
+
+const dismiss = (gui: GuiSystem, element: Element) => {
   gui.broadcastOn([
     'dismiss.popups'
   ], {
@@ -8,46 +11,40 @@ const dismiss = (gui, element) => {
   });
 };
 
-const reposition = (gui) => {
+const reposition = (gui: GuiSystem) => {
   gui.broadcastOn([
     'reposition.popups'
   ], { });
 };
 
-const sDismiss = (label, gui, element) => {
-  return Logger.t(
-    'Broadcast dismiss: ' + label,
-    GeneralSteps.sequence([
-      Step.sync(() => {
-        dismiss(gui, element);
-      })
-    ])
-  );
-};
+const sDismiss = (label: string, gui: GuiSystem, element: Element) => Logger.t(
+  'Broadcast dismiss: ' + label,
+  GeneralSteps.sequence([
+    Step.sync(() => {
+      dismiss(gui, element);
+    })
+  ])
+);
 
-const sDismissOn = (label, gui, selector) => {
-  return Logger.t(
-    'Broadcast dismiss: ' + label,
-    GeneralSteps.sequence([
-      Step.sync(() => {
-        const item = UiFinder.findIn(gui.element(), selector).getOrDie();
+const sDismissOn = (label: string, gui: GuiSystem, selector: string) => Logger.t(
+  'Broadcast dismiss: ' + label,
+  GeneralSteps.sequence([
+    Step.sync(() => {
+      const item = UiFinder.findIn(gui.element(), selector).getOrDie();
 
-        dismiss(gui, item);
-      })
-    ])
-  );
-};
+      dismiss(gui, item);
+    })
+  ])
+);
 
-const sReposition = (label, gui) => {
-  return Logger.t(
-    'Broadcast reposition: ' + label,
-    GeneralSteps.sequence([
-      Step.sync(() => {
-        reposition(gui);
-      })
-    ])
-  );
-};
+const sReposition = (label: string, gui: GuiSystem) => Logger.t(
+  'Broadcast reposition: ' + label,
+  GeneralSteps.sequence([
+    Step.sync(() => {
+      reposition(gui);
+    })
+  ])
+);
 
 export {
   sDismissOn,

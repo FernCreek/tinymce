@@ -1,19 +1,17 @@
-import { Chain, Pipeline, Assertions, ApproxStructure, RawAssertions, Step, Guard, Log } from '@ephox/agar';
-import { Element, Html, SelectorFind, Node } from '@ephox/sugar';
-import { UnitTest } from '@ephox/bedrock';
-import { read, write, create, isImage, isFigure, defaultData, getStyleValue } from 'tinymce/plugins/image/core/ImageData';
-import { Merger, Obj, Arr } from '@ephox/katamari';
+import { ApproxStructure, Assertions, Chain, Guard, Log, Pipeline, Step } from '@ephox/agar';
+import { Assert, UnitTest } from '@ephox/bedrock-client';
+import { Arr, Obj } from '@ephox/katamari';
+import { Element, Html, Node, SelectorFind } from '@ephox/sugar';
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
+import { create, defaultData, getStyleValue, ImageData, isFigure, isImage, read, write } from 'tinymce/plugins/image/core/ImageData';
 
 UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success, failure) => {
-  const cSetHtml = (html) => {
-    return Chain.control(
-      Chain.op(function (elm: Element) {
-        Html.set(elm, html);
-      }),
-      Guard.addLogging('Set html')
-    );
-  };
+  const cSetHtml = (html: string) => Chain.control(
+    Chain.op(function (elm: Element) {
+      Html.set(elm, html);
+    }),
+    Guard.addLogging('Set html')
+  );
 
   const normalizeCss = (cssText: string) => {
     const css = DOMUtils.DOM.styles.parse(cssText);
@@ -26,12 +24,10 @@ UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success,
     return DOMUtils.DOM.styles.serialize(newCss);
   };
 
-  const cCreate = (data) => {
-    return Chain.control(
-      Chain.inject(Element.fromDom(create(normalizeCss, data))),
-      Guard.addLogging(`Create ${data}`)
-    );
-  };
+  const cCreate = (data: ImageData) => Chain.control(
+    Chain.inject(Element.fromDom(create(normalizeCss, data))),
+    Guard.addLogging(`Create ${data}`)
+  );
   const cReadFromImage = Chain.control(
     Chain.mapper(function (elm: Element) {
       const img = Node.name(elm) === 'img' ? elm : SelectorFind.descendant(elm, 'img').getOrDie('failed to find image');
@@ -47,51 +43,45 @@ UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success,
     Guard.addLogging('Write to image')
   );
 
-  const cUpdateModel = (props) => {
-    return Chain.control(
-      Chain.mapper(function (data: any) {
-        return { model: Merger.merge(data.model, props), image: data.image, parent: data.parent };
-      }),
-      Guard.addLogging('Update data model')
-    );
-  };
+  const cUpdateModel = (props) => Chain.control(
+    Chain.mapper(function (data: any) {
+      return { model: { ...data.model, ...props }, image: data.image, parent: data.parent };
+    }),
+    Guard.addLogging('Update data model')
+  );
 
-  const cAssertModel = (model) => {
-    return Chain.control(
-      Chain.op(function (data: any) {
-        RawAssertions.assertEq('', model, data.model);
-      }),
-      Guard.addLogging('Assert model')
-    );
-  };
+  const cAssertModel = (model) => Chain.control(
+    Chain.op(function (data: any) {
+      Assert.eq('', model, data.model);
+    }),
+    Guard.addLogging('Assert model')
+  );
 
-  const cAssertStructure = (structure) => {
-    return Chain.control(
-        Chain.op(function (data: any) {
-        Assertions.assertStructure('', structure, data.parent);
-      }),
-      Guard.addLogging('Assert structure')
-    );
-  };
+  const cAssertStructure = (structure) => Chain.control(
+    Chain.op(function (data: any) {
+      Assertions.assertStructure('', structure, data.parent);
+    }),
+    Guard.addLogging('Assert structure')
+  );
 
   const cAssertImage = Chain.control(
     Chain.op(function (data: any) {
-      RawAssertions.assertEq('Should be an image', true, isImage(data.image.dom()));
+      Assert.eq('Should be an image', true, isImage(data.image.dom()));
     }),
     Guard.addLogging('Assert image')
   );
 
   const cAssertFigure = Chain.op(function (data: any) {
-    RawAssertions.assertEq('Parent should be a figure', true, isFigure(data.image.dom().parentNode));
+    Assert.eq('Parent should be a figure', true, isFigure(data.image.dom().parentNode));
   });
 
   Pipeline.async({}, [
     Log.step('TBA', 'Image: getStyleValue from image data', Step.sync(() => {
-      RawAssertions.assertEq('Should not produce any styles', '', getStyleValue(normalizeCss, defaultData()));
-      RawAssertions.assertEq('Should produce border width', 'border-width: 1px;', getStyleValue(normalizeCss, Merger.merge(defaultData(), { border: '1' })));
-      RawAssertions.assertEq('Should produce style', 'border-style: solid;', getStyleValue(normalizeCss, Merger.merge(defaultData(), { borderStyle: 'solid' })));
-      RawAssertions.assertEq('Should produce style & border', 'border-style: solid; border-width: 1px;', getStyleValue(normalizeCss, Merger.merge(defaultData(), { border: '1', borderStyle: 'solid' })));
-      RawAssertions.assertEq('Should produce compact border', 'border: 2px dotted red;', getStyleValue(normalizeCss, Merger.merge(defaultData(), { style: 'border: 1px solid red', border: '2', borderStyle: 'dotted' })));
+      Assert.eq('Should not produce any styles', '', getStyleValue(normalizeCss, defaultData()));
+      Assert.eq('Should produce border width', 'border-width: 1px;', getStyleValue(normalizeCss, { ...defaultData(), border: '1' }));
+      Assert.eq('Should produce style', 'border-style: solid;', getStyleValue(normalizeCss, { ...defaultData(), borderStyle: 'solid' }));
+      Assert.eq('Should produce style & border', 'border-style: solid; border-width: 1px;', getStyleValue(normalizeCss, { ...defaultData(), border: '1', borderStyle: 'solid' }));
+      Assert.eq('Should produce compact border', 'border: 2px dotted red;', getStyleValue(normalizeCss, { ...defaultData(), style: 'border: 1px solid red', border: '2', borderStyle: 'dotted' }));
     })),
     Log.chainsAsStep('TBA', 'Image: Create image from data', [
       cCreate({
@@ -106,7 +96,8 @@ UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success,
         hspace: '2',
         vspace: '3',
         border: '4',
-        borderStyle: 'dotted'
+        borderStyle: 'dotted',
+        isDecorative: false
       }),
       cReadFromImage,
       cAssertModel({
@@ -121,7 +112,8 @@ UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success,
         hspace: '2',
         vspace: '3',
         border: '4',
-        borderStyle: 'dotted'
+        borderStyle: 'dotted',
+        isDecorative: false
       }),
       cAssertStructure(ApproxStructure.build(function (s, str) {
         return s.element('img', {
@@ -159,7 +151,8 @@ UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success,
         hspace: '',
         vspace: '',
         border: '',
-        borderStyle: ''
+        borderStyle: '',
+        isDecorative: false
       }),
       cReadFromImage,
       cAssertModel({
@@ -174,7 +167,8 @@ UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success,
         hspace: '',
         vspace: '',
         border: '',
-        borderStyle: ''
+        borderStyle: '',
+        isDecorative: false
       }),
       cAssertStructure(ApproxStructure.build(function (s, str) {
         return s.element('img', {
@@ -212,7 +206,8 @@ UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success,
         hspace: '2',
         vspace: '3',
         border: '4',
-        borderStyle: 'dotted'
+        borderStyle: 'dotted',
+        isDecorative: false
       }),
       cReadFromImage,
       cAssertModel({
@@ -227,7 +222,8 @@ UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success,
         hspace: '2',
         vspace: '3',
         border: '4',
-        borderStyle: 'dotted'
+        borderStyle: 'dotted',
+        isDecorative: false
       }),
       cAssertStructure(ApproxStructure.build(function (s, str) {
         return s.element('figure', {
@@ -268,6 +264,62 @@ UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success,
       })),
       cAssertFigure
     ]),
+    Log.chainsAsStep('TBA', 'Image: Create decorative image from data', [
+      cCreate({
+        src: 'some.gif',
+        alt: 'alt',
+        title: 'title',
+        width: '100',
+        height: '200',
+        class: 'class',
+        style: 'border: 1px solid red',
+        caption: false,
+        hspace: '2',
+        vspace: '3',
+        border: '4',
+        borderStyle: 'dotted',
+        isDecorative: true
+      }),
+      cReadFromImage,
+      cAssertModel({
+        src: 'some.gif',
+        alt: '',
+        title: 'title',
+        width: '100',
+        height: '200',
+        class: 'class',
+        style: 'border: 4px dotted red; margin: 3px 2px;',
+        caption: false,
+        hspace: '2',
+        vspace: '3',
+        border: '4',
+        borderStyle: 'dotted',
+        isDecorative: true
+      }),
+      cAssertStructure(ApproxStructure.build(function (s, str) {
+        return s.element('img', {
+          attrs: {
+            src: str.is('some.gif'),
+            alt: str.is(''),
+            title: str.is('title'),
+            width: str.is('100'),
+            height: str.is('200'),
+            class: str.is('class'),
+            role: str.is('presentation')
+          },
+          styles: {
+            'border-width': str.is('4px'),
+            'border-style': str.is('dotted'),
+            'border-color': str.is('red'),
+            'margin-top': str.is('3px'),
+            'margin-bottom': str.is('3px'),
+            'margin-left': str.is('2px'),
+            'margin-right': str.is('2px')
+          }
+        });
+      })),
+      cAssertImage
+    ]),
     Chain.asStep(Element.fromTag('div'), Log.chains('TBA', 'Image: Read/write model to simple image without change', [
       cSetHtml('<img src="some.gif">'),
       cReadFromImage,
@@ -283,7 +335,8 @@ UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success,
         hspace: '',
         vspace: '',
         border: '',
-        borderStyle: ''
+        borderStyle: '',
+        isDecorative: false
       }),
       cWriteToImage,
       cAssertStructure(ApproxStructure.build(function (s, str) {
@@ -327,7 +380,8 @@ UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success,
         hspace: '2',
         vspace: '1',
         border: '1',
-        borderStyle: 'solid'
+        borderStyle: 'solid',
+        isDecorative: false
       }),
       cWriteToImage,
       cAssertStructure(ApproxStructure.build(function (s, str) {
@@ -371,7 +425,8 @@ UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success,
         hspace: '1',
         vspace: '2',
         border: '3',
-        borderStyle: 'dotted'
+        borderStyle: 'dotted',
+        isDecorative: false
       }),
       cWriteToImage,
       cAssertStructure(ApproxStructure.build(function (s, str) {
@@ -415,7 +470,8 @@ UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success,
         hspace: '3',
         vspace: '4',
         border: '4',
-        borderStyle: 'dotted'
+        borderStyle: 'dotted',
+        isDecorative: false
       }),
       cWriteToImage,
       cAssertStructure(ApproxStructure.build(function (s, str) {
@@ -438,6 +494,38 @@ UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success,
                 'margin-bottom': str.is('4px'),
                 'margin-left': str.is('3px'),
                 'margin-right': str.is('3px')
+              }
+            })
+          ]
+        });
+      }))
+    ])),
+    Chain.asStep(Element.fromTag('div'), Log.chains('TBA', 'Image: write null as alt will remove the attribute', [
+      cSetHtml('<img src="some.gif" alt="alt">'),
+      cReadFromImage,
+      cUpdateModel({
+        src: 'some2.gif',
+        alt: null,
+        title: '',
+        width: '',
+        height: '',
+        class: '',
+        style: '',
+        caption: false,
+        hspace: '',
+        vspace: '',
+        border: '',
+        borderStyle: '',
+        isDecorative: false
+      }),
+      cWriteToImage,
+      cAssertStructure(ApproxStructure.build(function (s, str) {
+        return s.element('div', {
+          children: [
+            s.element('img', {
+              attrs: {
+                src: str.is('some2.gif'),
+                alt: str.none('no alt')
               }
             })
           ]
@@ -548,7 +636,8 @@ UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success,
         hspace: '',
         vspace: '',
         border: '',
-        borderStyle: ''
+        borderStyle: '',
+        isDecorative: false
       }),
       cWriteToImage,
       cAssertStructure(ApproxStructure.build(function (s, str) {
@@ -593,7 +682,8 @@ UnitTest.asynctest('browser.tinymce.plugins.image.core.ImageDataTest', (success,
         hspace: '',
         vspace: '',
         border: '',
-        borderStyle: ''
+        borderStyle: '',
+        isDecorative: false
       }),
       cUpdateModel({
         width: '150',

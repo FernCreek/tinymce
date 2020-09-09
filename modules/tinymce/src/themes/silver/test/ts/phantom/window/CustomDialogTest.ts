@@ -1,23 +1,10 @@
-import {
-  Assertions,
-  Chain,
-  FocusTools,
-  GeneralSteps,
-  Keyboard,
-  Keys,
-  Logger,
-  Mouse,
-  Pipeline,
-  Step,
-  UiFinder,
-  Waiter,
-} from '@ephox/agar';
+import { Assertions, Chain, FocusTools, GeneralSteps, Keyboard, Keys, Logger, Mouse, Pipeline, Step, UiFinder, Waiter } from '@ephox/agar';
 import { TestHelpers } from '@ephox/alloy';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
 import { Arr, Cell } from '@ephox/katamari';
 import { Body, Element } from '@ephox/sugar';
-import WindowManager from 'tinymce/themes/silver/ui/dialog/WindowManager';
+import * as WindowManager from 'tinymce/themes/silver/ui/dialog/WindowManager';
 import TestExtras from '../../module/TestExtras';
 
 const GuiSetup = TestHelpers.GuiSetup;
@@ -30,17 +17,15 @@ UnitTest.asynctest('WindowManager:custom-dialog Test', (success, failure) => {
 
   const testLog = Cell([ ]);
 
-  const sAssertFocusedCheckbox = (label: string, expected: boolean) => {
-    return Logger.t(
-      label,
-      Chain.asStep(doc, [
-        FocusTools.cGetFocused,
-        Chain.op((checkbox) => {
-          Assertions.assertEq('Checking checked status', expected, checkbox.dom().checked);
-        })
-      ])
-    );
-  };
+  const sAssertFocusedCheckbox = (label: string, expected: boolean) => Logger.t(
+    label,
+    Chain.asStep(doc, [
+      FocusTools.cGetFocused,
+      Chain.op((checkbox) => {
+        Assertions.assertEq('Checking checked status', expected, checkbox.dom().checked);
+      })
+    ])
+  );
 
   const selectors = {
     field1: 'input', // nothing more useful, because it does not have a label
@@ -100,7 +85,7 @@ UnitTest.asynctest('WindowManager:custom-dialog Test', (success, failure) => {
             },
             {
               name: 'f4-charmap',
-              type: 'collection',
+              type: 'collection'
               // columns: 'auto'
             },
             {
@@ -269,16 +254,14 @@ UnitTest.asynctest('WindowManager:custom-dialog Test', (success, failure) => {
           { label: 'f3', selector: selectors.field3 },
           { label: 'f2', selector: selectors.field2 },
           { label: 'first input', selector: selectors.field1 }
-        ], (dest) => {
-          return [
-            Keyboard.sKeydown(doc, Keys.tab(), { shiftKey: true }),
-            FocusTools.sTryOnSelector(
-              'Focus should move to ' + dest.label,
-              doc,
-              dest.selector
-            )
-          ];
-        })
+        ], (dest) => [
+          Keyboard.sKeydown(doc, Keys.tab(), { shiftKey: true }),
+          FocusTools.sTryOnSelector(
+            'Focus should move to ' + dest.label,
+            doc,
+            dest.selector
+          )
+        ])
       )
     ),
 
@@ -304,7 +287,7 @@ UnitTest.asynctest('WindowManager:custom-dialog Test', (success, failure) => {
       Waiter.sTryUntil(
         'Wait for the dialog to disappear',
         UiFinder.sNotExists(Body.body(), '.tox-button--icon[aria-label="Close"]')
-      ),
+      )
     ])
   ], () => {
     helpers.destroy();

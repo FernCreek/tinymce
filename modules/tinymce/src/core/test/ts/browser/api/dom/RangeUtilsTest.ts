@@ -2,11 +2,9 @@ import { Assertions, GeneralSteps, Logger, Pipeline, Step } from '@ephox/agar';
 import RangeUtils from 'tinymce/core/api/dom/RangeUtils';
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import ViewBlock from '../../../module/test/ViewBlock';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 
-UnitTest.asynctest('browser.tinymce.core.api.dom.RangeUtilsTest', function () {
-  const success = arguments[arguments.length - 2];
-  const failure = arguments[arguments.length - 1];
+UnitTest.asynctest('browser.tinymce.core.api.dom.RangeUtilsTest', function (success, failure) {
   const DOM = DOMUtils.DOM;
   const viewBlock = ViewBlock();
 
@@ -24,7 +22,7 @@ UnitTest.asynctest('browser.tinymce.core.api.dom.RangeUtilsTest', function () {
     Assertions.assertEq('endOffset should be equal', true, expected.endOffset === actual.endOffset);
   };
 
-  const sTestDontNormalizeAtAnchors = Logger.t('Don\'t normalize at anchors', Step.sync(function () {
+  const sTestDontNormalizeAtAnchors = Logger.t(`Don't normalize at anchors`, Step.sync(function () {
     viewBlock.update('a<a href="#">b</a>c');
 
     const rng1 = createRange(viewBlock.get().firstChild, 1, viewBlock.get().firstChild, 1);

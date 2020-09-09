@@ -1,4 +1,4 @@
-import { assert, UnitTest } from '@ephox/bedrock';
+import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Gene, TestUniverse, TextGene } from '@ephox/boss';
 import { Option } from '@ephox/katamari';
 import * as Extract from 'ephox/phoenix/api/general/Extract';
@@ -27,7 +27,7 @@ UnitTest.test('api.Extract.find', function () {
     ])
   );
 
-  const check = function (expected: Option<{ id: string, offset: number }>, topId: string, offset: number) {
+  const check = function (expected: Option<{ id: string; offset: number }>, topId: string, offset: number) {
     const top = Finder.get(doc, topId);
     const actual = Extract.find(doc, top, offset);
     expected.fold(function () {

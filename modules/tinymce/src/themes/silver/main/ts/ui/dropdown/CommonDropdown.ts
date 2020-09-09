@@ -5,37 +5,25 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+/* eslint-disable max-len */
 import {
-  AddEventsBehaviour,
-  AlloyComponent,
-  AlloyEvents,
-  AlloyTriggers,
-  Behaviour,
-  CustomEvent,
-  Dropdown as AlloyDropdown,
-  Focusing,
-  GuiFactory,
-  Keying,
-  Memento,
-  Replacing,
-  Representing,
-  SimulatedEvent,
-  SketchSpec,
-  SugarEvent,
-  TieredData,
-  Unselecting,
+  AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloyTriggers, Behaviour, CustomEvent, Dropdown as AlloyDropdown, Focusing, GuiFactory,
+  Keying, Memento, Replacing, Representing, SimulatedEvent, SketchSpec, TieredData, Unselecting
 } from '@ephox/alloy';
 import { Types } from '@ephox/bridge';
-import { Future, Id, Merger, Option, Arr, Cell, Fun } from '@ephox/katamari';
+import { Arr, Cell, Fun, Future, Id, Merger, Option } from '@ephox/katamari';
+import { EventArgs } from '@ephox/sugar';
 import { toolbarButtonEventOrder } from 'tinymce/themes/silver/ui/toolbar/button/ButtonEvents';
 
 import { UiFactoryBackstageShared } from '../../backstage/Backstage';
+import * as ReadOnly from '../../ReadOnly';
+import { DisablingConfigs } from '../alien/DisablingConfigs';
 import { renderLabel, renderReplacableIconFromPack } from '../button/ButtonSlices';
+import { onControlAttached, onControlDetached, OnDestroy } from '../controls/Controls';
 import * as Icons from '../icons/Icons';
 import { componentRenderPipeline } from '../menus/item/build/CommonMenuItem';
 import * as MenuParts from '../menus/menu/MenuParts';
-import { DisablingConfigs } from '../alien/DisablingConfigs';
-import { onControlAttached, onControlDetached, OnDestroy } from '../controls/Controls';
+/* eslint-enable max-len */
 
 export const updateMenuText = Id.generate('update-menu-text');
 export const updateMenuIcon = Id.generate('update-menu-icon');
@@ -60,13 +48,23 @@ export interface CommonDropdownSpec<T> {
   columns: Types.ColumnTypes;
   presets: Types.PresetTypes;
   classes: string[];
-  dropdownBehaviours: Array<Behaviour.NamedConfiguredBehaviour<Behaviour.BehaviourConfigSpec, Behaviour.BehaviourConfigDetail>>;
+  dropdownBehaviours: Array<Behaviour.NamedConfiguredBehaviour<
+  Behaviour.BehaviourConfigSpec, Behaviour.BehaviourConfigDetail>>;
 }
+
 // TODO: Use renderCommonStructure here.
-const renderCommonDropdown = <T>(spec: CommonDropdownSpec<T>, prefix: string, sharedBackstage: UiFactoryBackstageShared): SketchSpec => {
+const renderCommonDropdown = <T>(
+  spec: CommonDropdownSpec<T>,
+  prefix: string,
+  sharedBackstage: UiFactoryBackstageShared
+): SketchSpec => {
   const editorOffCell = Cell(Fun.noop);
-  const optMemDisplayText = spec.text.map((text) => Memento.record(renderLabel(text, prefix, sharedBackstage.providers)));
-  const optMemDisplayIcon = spec.icon.map((iconName) => Memento.record(renderReplacableIconFromPack(iconName, sharedBackstage.providers.icons)));
+  const optMemDisplayText = spec.text.map(
+    (text) => Memento.record(renderLabel(text, prefix, sharedBackstage.providers))
+  );
+  const optMemDisplayIcon = spec.icon.map(
+    (iconName) => Memento.record(renderReplacableIconFromPack(iconName, sharedBackstage.providers.icons))
+  );
 
   /*
    * The desired behaviour here is:
@@ -76,7 +74,7 @@ const renderCommonDropdown = <T>(spec: CommonDropdownSpec<T>, prefix: string, sh
    *   expand it (without highlighting any items in the expanded menu).
    *   It also needs to close the previous menu
    */
-  const onLeftOrRightInMenu = (comp: AlloyComponent, se: SimulatedEvent<SugarEvent>) => {
+  const onLeftOrRightInMenu = (comp: AlloyComponent, se: SimulatedEvent<EventArgs>) => {
     // The originating dropdown is stored on the sandbox itself.
     const dropdown: AlloyComponent = Representing.getValue(comp);
 
@@ -132,7 +130,8 @@ const renderCommonDropdown = <T>(spec: CommonDropdownSpec<T>, prefix: string, sh
       // TODO: Not quite working. Can still get the button focused.
       dropdownBehaviours: Behaviour.derive([
         ...spec.dropdownBehaviours,
-        DisablingConfigs.button(spec.disabled),
+        DisablingConfigs.button(() => spec.disabled || sharedBackstage.providers.isReadOnly()),
+        ReadOnly.receivingConfig(),
         Unselecting.config({ }),
         Replacing.config({ }),
         AddEventsBehaviour.config('dropdown-events', [
@@ -147,7 +146,9 @@ const renderCommonDropdown = <T>(spec: CommonDropdownSpec<T>, prefix: string, sh
           }),
           AlloyEvents.run<UpdateMenuIconEvent>(updateMenuIcon, (comp, se) => {
             optMemDisplayIcon.bind((mem) => mem.getOpt(comp)).each((displayIcon) => {
-              Replacing.set(displayIcon, [ renderReplacableIconFromPack(se.event().icon(), sharedBackstage.providers.icons) ] );
+              Replacing.set(displayIcon, [
+                renderReplacableIconFromPack(se.event().icon(), sharedBackstage.providers.icons)
+              ] );
             });
           })
         ])
@@ -173,9 +174,7 @@ const renderCommonDropdown = <T>(spec: CommonDropdownSpec<T>, prefix: string, sh
         menu: MenuParts.part(false, spec.columns, spec.presets)
       },
 
-      fetch: () => {
-        return Future.nu(spec.fetch);
-      }
+      fetch: () => Future.nu(spec.fetch)
     })
   );
 

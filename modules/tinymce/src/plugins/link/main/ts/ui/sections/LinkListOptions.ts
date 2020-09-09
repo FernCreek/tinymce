@@ -5,11 +5,12 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import Settings from '../../api/Settings';
-import { Future, Option, Type } from '@ephox/katamari';
+import { Option, Type } from '@ephox/katamari';
+import Promise from 'tinymce/core/api/util/Promise';
 import XHR from 'tinymce/core/api/util/XHR';
-import { ListItem } from '../DialogTypes';
+import * as Settings from '../../api/Settings';
 import { ListOptions } from '../../core/ListOptions';
+import { ListItem } from '../DialogTypes';
 
 const parseJson = (text: string): Option<ListItem[]> => {
   // Do some proper modelling.
@@ -20,11 +21,11 @@ const parseJson = (text: string): Option<ListItem[]> => {
   }
 };
 
-const getLinks = (editor): Future<Option<ListItem[]>> => {
+const getLinks = (editor): Promise<Option<ListItem[]>> => {
   const extractor = (item) => editor.convertURL(item.value || item.url, 'href');
 
   const linkList = Settings.getLinkList(editor);
-  return Future.nu<Option<ListItem[]>>((callback) => {
+  return new Promise<Option<ListItem[]>>((callback) => {
     // TODO - better handling of failure
     if (Type.isString(linkList)) {
       XHR.send({
@@ -35,17 +36,15 @@ const getLinks = (editor): Future<Option<ListItem[]>> => {
     } else if (Type.isFunction(linkList)) {
       linkList((output) => callback(Option.some(output)));
     } else {
-      callback(Option.from(linkList as ListItem[]));
+      callback(Option.from(linkList));
     }
-  }).map((optItems) => {
-    return optItems.bind(ListOptions.sanitizeWith(extractor)).map((items) => {
-      if (items.length > 0) {
-        return [{ text: 'None', value: '' }].concat(items);
-      } else {
-        return items;
-      }
-    });
-  });
+  }).then((optItems) => optItems.bind(ListOptions.sanitizeWith(extractor)).map((items) => {
+    if (items.length > 0) {
+      return [{ text: 'None', value: '' }].concat(items);
+    } else {
+      return items;
+    }
+  }));
 };
 
 export const LinkListOptions = {

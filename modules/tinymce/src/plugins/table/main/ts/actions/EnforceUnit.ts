@@ -5,34 +5,40 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Arr } from '@ephox/katamari';
-import { Css, Element, SelectorFilter, Traverse } from '@ephox/sugar';
-import { getPixelWidth } from '../alien/Util';
 import { HTMLTableElement } from '@ephox/dom-globals';
+import { Arr } from '@ephox/katamari';
+import { TableConversions, TableDirection, TableLookup } from '@ephox/snooker';
+import { Attr, Css, Element } from '@ephox/sugar';
+import Editor from 'tinymce/core/api/Editor';
+import * as Direction from '../queries/Direction';
+import * as TableSize from '../queries/TableSize';
 
-const calculatePercentageWidth = (element: Element, parent: Element): string => {
-  return getPixelWidth(element.dom()) / getPixelWidth(parent.dom()) * 100 + '%';
+const enforcePercentage = (editor: Editor, table: Element<HTMLTableElement>) => {
+  const direction = TableDirection(Direction.directionAt);
+  const tableSizing = TableSize.get(editor, table);
+  TableConversions.convertToPercentSize(table, direction, tableSizing);
 };
 
-const enforcePercentage = (rawTable: HTMLTableElement) => {
-  const table = Element.fromDom(rawTable);
+const enforcePixels = (editor: Editor, table: Element<HTMLTableElement>) => {
+  const direction = TableDirection(Direction.directionAt);
+  const tableSizing = TableSize.get(editor, table);
+  TableConversions.convertToPixelSize(table, direction, tableSizing);
+};
 
-  Traverse.parent(table).map((parent) => calculatePercentageWidth(table, parent)).each((tablePercentage) => {
-    Css.set(table, 'width', tablePercentage);
+const enforceNone = TableConversions.convertToNoneSize;
 
-    Arr.each(SelectorFilter.descendants(table, 'tr'), (tr) => {
-      Arr.each(Traverse.children(tr), (td) => {
-        Css.set(td, 'width', calculatePercentageWidth(td, tr));
-      });
-    });
+const syncPixels = (table: Element<HTMLTableElement>) => {
+  // Ensure the specified width matches the actual cell width
+  Arr.each(TableLookup.cells(table), (cell) => {
+    const computedWidth = Css.get(cell, 'width');
+    Css.set(cell, 'width', computedWidth);
+    Attr.remove(cell, 'width');
   });
-};
-
-const enforcePixels = (table: HTMLTableElement) => {
-  Css.set(Element.fromDom(table), 'width', getPixelWidth(table).toString() + 'px');
 };
 
 export {
   enforcePercentage,
-  enforcePixels
+  enforcePixels,
+  enforceNone,
+  syncPixels
 };

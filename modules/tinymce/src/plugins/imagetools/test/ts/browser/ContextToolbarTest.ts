@@ -1,15 +1,15 @@
-import { Log, Pipeline, Chain, UiFinder, FocusTools, Keyboard, Keys, GeneralSteps, Waiter, NamedChain } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { Chain, FocusTools, GeneralSteps, Keyboard, Keys, Log, NamedChain, Pipeline, UiFinder, Waiter } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
-import { TinyApis, TinyDom, TinyLoader, TinyUi, UiChains} from '@ephox/mcagar';
+import { Option } from '@ephox/katamari';
+import { TinyApis, TinyDom, TinyLoader, TinyUi, UiChains } from '@ephox/mcagar';
+import { Element } from '@ephox/sugar';
 
 import ImagePlugin from 'tinymce/plugins/image/Plugin';
 import ImageToolsPlugin from 'tinymce/plugins/imagetools/Plugin';
 import Theme from 'tinymce/themes/silver/Theme';
-import { Element } from '@ephox/sugar';
-import ImageUtils from '../module/test/ImageUtils';
 import ImageOps from '../module/test/ImageOps';
-import { Option } from '@ephox/katamari';
+import * as ImageUtils from '../module/test/ImageUtils';
 
 UnitTest.asynctest('browser.tinymce.plugins.imagetools.ContextToolbarTest', (success, failure) => {
   Theme();
@@ -24,28 +24,24 @@ UnitTest.asynctest('browser.tinymce.plugins.imagetools.ContextToolbarTest', (suc
 
     const srcUrl = '/project/tinymce/src/plugins/imagetools/demo/img/dogleft.gif';
 
-    const sOpenContextToolbar = (source) => {
-      return GeneralSteps.sequence([
-        ImageUtils.sLoadImage(editor, source, {width: 460, height: 598}),
-        tinyApis.sSelect('img', []),
-        tinyUi.sWaitForUi('Wait for table context toolbar', '.tox-toolbar button[aria-label="Rotate counterclockwise"]'),
-      ]);
-    };
+    const sOpenContextToolbar = (source) => GeneralSteps.sequence([
+      ImageUtils.sLoadImage(editor, source, { width: 460, height: 598 }),
+      tinyApis.sSelect('img', []),
+      tinyUi.sWaitForUi('Wait for table context toolbar', '.tox-toolbar button[aria-label="Rotate counterclockwise"]')
+    ]);
 
     // Use keyboard shortcut ctrl+F9 to navigate to the context toolbar
     const sPressKeyboardShortcutKey = Keyboard.sKeydown(Element.fromDom(editor.getDoc()), 120, { ctrl: true });
     const sPressRightArrowKey = Keyboard.sKeydown(doc, Keys.right(), { });
 
     // Assert focus is on the expected toolbar button
-    const sAssertFocusOnItem = (label, selector) => {
-      return FocusTools.sTryOnSelector(`Focus should be on: ${label}`, doc, selector);
-    };
+    const sAssertFocusOnItem = (label, selector) => FocusTools.sTryOnSelector(`Focus should be on: ${label}`, doc, selector);
 
     const sWaitForDialogOpenThenCloseDialog = (childSelector: string) => {
       const selector = 'div[role="dialog"]';
       return GeneralSteps.sequence([
         Chain.asStep(editor, [
-          tinyUi.cWaitForPopup('wait for dialog', `div.tox-dialog__title`),
+          tinyUi.cWaitForPopup('wait for dialog', 'div.tox-dialog__title'),
           tinyUi.cWaitForPopup('wait for dialog child element', childSelector),
           UiChains.cCloseDialog(selector)
         ]),
@@ -59,17 +55,14 @@ UnitTest.asynctest('browser.tinymce.plugins.imagetools.ContextToolbarTest', (suc
       return dom.getAttrib(element, 'src');
     };
 
-    const cGetImageSrc = Chain.mapper(getImageSrc);
+    const cGetImageSrc = Chain.injectThunked(getImageSrc);
 
-    const cClickContextToolbarButton = (label) => {
-      return Chain.fromParent(tinyUi.cWaitForPopup('wait for Imagetools toolbar', '.tox-pop__dialog div'), [
-        imgOps.cClickToolbarButton(label)
-      ]);
-    };
+    const cClickContextToolbarButton = (label) => Chain.fromParent(tinyUi.cWaitForPopup('wait for Imagetools toolbar', '.tox-pop__dialog div'), [
+      imgOps.cClickToolbarButton(label)
+    ]);
 
-    const sAssertImageFlip = (label) => {
-      return Chain.asStep({editor}, [
-        Chain.label(`Assert ${label}`,
+    const sAssertImageFlip = (label) => Chain.asStep({ editor }, [
+      Chain.label(`Assert ${label}`,
         NamedChain.asChain([
           NamedChain.direct(NamedChain.inputName(), Chain.identity, 'editor'),
           Chain.label('Store img src before flip', NamedChain.write('srcBeforeFlip', cGetImageSrc)),
@@ -80,11 +73,10 @@ UnitTest.asynctest('browser.tinymce.plugins.imagetools.ContextToolbarTest', (suc
             return newSrc !== oldSrc;
           })
         ]))
-      ]);
-    };
+    ]);
 
     Pipeline.async({}, [
-      tinyApis.sFocus,
+      tinyApis.sFocus(),
       Log.stepsAsStep('TBA', 'ImageTools: context toolbar keyboard navigation test', [
         sOpenContextToolbar(srcUrl),
         sPressKeyboardShortcutKey,
@@ -110,14 +102,14 @@ UnitTest.asynctest('browser.tinymce.plugins.imagetools.ContextToolbarTest', (suc
         Waiter.sTryUntil('Wait for image to be rotated', tinyApis.sAssertContentPresence({ 'img[width="460"][height="598"]': 1 })),
         sAssertImageFlip('Flip horizontally'),
         sAssertImageFlip('Flip vertically'),
-        Chain.asStep({}, [cClickContextToolbarButton('Edit image')]),
+        Chain.asStep({}, [ cClickContextToolbarButton('Edit image') ]),
         /* Previously there was a fixed wait here, waiting for the dialog to display.
         Without this wait, you can't see the dialog if you're watching the test.
         However, the below DOM assertions insist that the dialog is, indeed, there.
         */
         sWaitForDialogOpenThenCloseDialog('div.tox-image-tools__image>img'),
-        Chain.asStep({}, [cClickContextToolbarButton('Image options')]),
-        sWaitForDialogOpenThenCloseDialog('div.tox-form'),
+        Chain.asStep({}, [ cClickContextToolbarButton('Image options') ]),
+        sWaitForDialogOpenThenCloseDialog('div.tox-form')
       ])
     ], onSuccess, onFailure);
   }, {

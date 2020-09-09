@@ -5,6 +5,7 @@ import * as Behaviour from '../../api/behaviour/Behaviour';
 import { Replacing } from '../../api/behaviour/Replacing';
 import { SketchBehaviours } from '../../api/component/SketchBehaviours';
 import * as PartType from '../../parts/PartType';
+import { CustomListDetail } from '../types/CustomListTypes';
 
 const schema: () => FieldProcessorAdt[] = Fun.constant([
   FieldSchema.defaulted('shell', false),
@@ -13,15 +14,13 @@ const schema: () => FieldProcessorAdt[] = Fun.constant([
   SketchBehaviours.field('listBehaviours', [ Replacing ])
 ]);
 
-const customListDetail = (detail) => {
-  return {
-    behaviours: Behaviour.derive([
-      Replacing.config({ })
-    ])
-  };
-};
+const customListDetail = () => ({
+  behaviours: Behaviour.derive([
+    Replacing.config({ })
+  ])
+});
 
-const itemsPart = PartType.optional({
+const itemsPart = PartType.optional<CustomListDetail>({
   name: 'items',
   overrides: customListDetail
 });

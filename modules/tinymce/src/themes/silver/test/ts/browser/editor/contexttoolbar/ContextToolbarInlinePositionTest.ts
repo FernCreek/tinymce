@@ -1,5 +1,5 @@
 import { Assertions, Log, Pipeline, Step, UiFinder, Waiter } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { TinyApis, TinyLoader } from '@ephox/mcagar';
 import { Body, Css, Element, Location, Scroll } from '@ephox/sugar';
 import Editor from 'tinymce/core/api/Editor';
@@ -38,33 +38,31 @@ UnitTest.asynctest('Inline editor ContextToolbar Position test', (success, failu
         });
       }), 10, 1000);
 
-      const sTestPositionWhileScrolling = (scenario: Scenario) => {
-        return Log.stepsAsStep('TBA', scenario.label, [
-          tinyApis.sSetContent(`<p style="height: 100px"></p><p style="height: 25px;${scenario.contentStyles || ''}">${scenario.content}</p><p style="height: 100px"></p>`),
-          sScrollTo(0, -250),
-          tinyApis.sSetCursor(scenario.cursor.elementPath, scenario.cursor.offset),
-          UiFinder.sWaitForVisible('Waiting for toolbar to appear above content', Body.body(), '.tox-pop.tox-pop--bottom' + scenario.classes),
-          sAssertPosition('absolute', 'bottom', 1637),
+      const sTestPositionWhileScrolling = (scenario: Scenario) => Log.stepsAsStep('TBA', scenario.label, [
+        tinyApis.sSetContent(`<p style="height: 100px"></p><p style="height: 25px;${scenario.contentStyles || ''}">${scenario.content}</p><p style="height: 100px"></p>`),
+        sScrollTo(0, -250),
+        tinyApis.sSetCursor(scenario.cursor.elementPath, scenario.cursor.offset),
+        UiFinder.sWaitForVisible('Waiting for toolbar to appear above content', Body.body(), '.tox-pop.tox-pop--bottom' + scenario.classes),
+        sAssertPosition('absolute', 'bottom', 1637),
 
-          // Position the link at the top of the viewport, just below the toolbar
-          sScrollTo(0, -80),
-          UiFinder.sWaitForVisible('Waiting for toolbar to appear below content', Body.body(), '.tox-pop.tox-pop--top' + scenario.classes),
-          sAssertPosition('fixed', 'top', 109),
+        // Position the link at the top of the viewport, just below the toolbar
+        sScrollTo(0, -80),
+        UiFinder.sWaitForVisible('Waiting for toolbar to appear below content', Body.body(), '.tox-pop.tox-pop--top' + scenario.classes),
+        sAssertPosition('fixed', 'top', 109),
 
-          // Position the element offscreen and check the toolbar is hidden
-          sScrollTo(0, 100),
-          UiFinder.sWaitForHidden('Waiting for toolbar to be hidden', Body.body(), '.tox-pop'),
+        // Position the element offscreen and check the toolbar is hidden
+        sScrollTo(0, 100),
+        UiFinder.sWaitForHidden('Waiting for toolbar to be hidden', Body.body(), '.tox-pop'),
 
-          // Position the element back into view
-          sScrollTo(0, -250),
-          UiFinder.sWaitForVisible('Waiting for toolbar to appear above content', Body.body(), '.tox-pop.tox-pop--bottom' + scenario.classes),
-          sAssertPosition('absolute', 'bottom', 1637),
+        // Position the element back into view
+        sScrollTo(0, -250),
+        UiFinder.sWaitForVisible('Waiting for toolbar to appear above content', Body.body(), '.tox-pop.tox-pop--bottom' + scenario.classes),
+        sAssertPosition('absolute', 'bottom', 1637),
 
-          // Position the element behind the docked toolbar and check the toolbar is hidden
-          sScrollTo(0, -10),
-          UiFinder.sWaitForHidden('Waiting for toolbar to be hidden', Body.body(), '.tox-pop'),
-        ]);
-      };
+        // Position the element behind the docked toolbar and check the toolbar is hidden
+        sScrollTo(0, -10),
+        UiFinder.sWaitForHidden('Waiting for toolbar to be hidden', Body.body(), '.tox-pop')
+      ]);
 
       Pipeline.async({ }, [
         Step.sync(() => {
@@ -73,7 +71,16 @@ UnitTest.asynctest('Inline editor ContextToolbar Position test', (success, failu
             'margin-bottom': '1500px'
           });
         }),
-        tinyApis.sFocus,
+        tinyApis.sFocus(),
+
+        Log.stepsAsStep('TBA', 'Context toolbar position', [
+          tinyApis.sSetContent('<p><a href="http://tiny.cloud">link</a></p>'),
+          sScrollTo(0, -250),
+          tinyApis.sSetCursor([ 0, 0, 0 ], 1),
+          UiFinder.sWaitForVisible('Waiting for toolbar to appear below the content area container', Body.body(), '.tox-pop.tox-pop--top.tox-pop--align-left'),
+          sAssertPosition('absolute', 'top', -1489)
+        ]),
+
         Log.stepsAsStep('TBA', 'Context toolbar position while scrolling', [
           // north/south
           sTestPositionWhileScrolling({
@@ -114,7 +121,6 @@ UnitTest.asynctest('Inline editor ContextToolbar Position test', (success, failu
     {
       theme: 'silver',
       inline: true,
-      height: 500,
       base_url: '/project/tinymce/js/tinymce',
       content_style: 'p { margin: 0; }',
       setup: (ed: Editor) => {

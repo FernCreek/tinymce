@@ -1,11 +1,12 @@
-import { document, console } from '@ephox/dom-globals';
-import { Arr, Future, Obj, Result, Option } from '@ephox/katamari';
+import { console, document } from '@ephox/dom-globals';
+import { Arr, Future, Obj, Option, Result } from '@ephox/katamari';
 import { Class, Element } from '@ephox/sugar';
 
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
 import { Keying } from 'ephox/alloy/api/behaviour/Keying';
 import { Representing } from 'ephox/alloy/api/behaviour/Representing';
 import { Tabstopping } from 'ephox/alloy/api/behaviour/Tabstopping';
+import * as Memento from 'ephox/alloy/api/component/Memento';
 import * as Attachment from 'ephox/alloy/api/system/Attachment';
 import * as Gui from 'ephox/alloy/api/system/Gui';
 import { Button } from 'ephox/alloy/api/ui/Button';
@@ -16,11 +17,21 @@ import { SplitDropdown } from 'ephox/alloy/api/ui/SplitDropdown';
 import { tieredMenu as TieredMenu } from 'ephox/alloy/api/ui/TieredMenu';
 import * as DemoSink from 'ephox/alloy/demo/DemoSink';
 import * as HtmlDisplay from 'ephox/alloy/demo/HtmlDisplay';
-import * as Memento from 'ephox/alloy/api/component/Memento';
 
 import * as DemoRenders from './forms/DemoRenders';
 
 // tslint:disable:no-console
+
+const makeItem = (v: string, t: string, c?: string): DemoRenders.DemoItem => ({
+  type: 'item',
+  data: {
+    value: v,
+    meta: {
+      text: t,
+      ...c ? { 'item-class': c } : { }
+    }
+  }
+});
 
 export default (): void => {
   const gui = Gui.create();
@@ -34,9 +45,7 @@ export default (): void => {
 
   gui.add(sink);
 
-  const lazySink = () => {
-    return Result.value(sink);
-  };
+  const lazySink = () => Result.value(sink);
 
   const menuMarkers = DemoRenders.tieredMarkers();
 
@@ -88,7 +97,7 @@ export default (): void => {
         }),
         SplitDropdown.parts().sink({ })
       ],
-      fetch () {
+      fetch() {
         const wMenu = DemoRenders.menu({
           value: 'demo.1.widget.menu',
           items: [ wDoubleInput ]
@@ -99,10 +108,10 @@ export default (): void => {
         );
       },
       lazySink,
-      onExecute () {
+      onExecute() {
         console.log('split-dropdown button clicked');
       },
-      onItemExecute () {
+      onItemExecute() {
         console.log('split-dropdown menuitem clicked');
       },
       parts: {
@@ -138,15 +147,13 @@ export default (): void => {
         }
       },
 
-      fetch () {
+      fetch() {
         const menu = DemoRenders.menu({
           value: 'demo.2.widget',
           items: [ wDoubleInput ]
         });
 
-        return Future.pure(menu).map((m) => {
-          return Option.some(TieredMenu.singleData('demo.2.menu', menu));
-        });
+        return Future.pure(menu).map(() => Option.some(TieredMenu.singleData('demo.2.menu', menu)));
       }
     })
   );
@@ -191,15 +198,13 @@ export default (): void => {
             }
           },
 
-          fetch () {
+          fetch() {
             const menu = DemoRenders.menu({
               value: 'demo.2.widget',
               items: [ wDoubleInput ]
             });
 
-            return Future.pure(menu).map((m) => {
-              return Option.some(TieredMenu.singleData('demo.2.menu', menu));
-            });
+            return Future.pure(menu).map(() => Option.some(TieredMenu.singleData('demo.2.menu', menu)));
           }
         })
       ]
@@ -229,19 +234,7 @@ export default (): void => {
           }
         }
       },
-      fetch () {
-        const makeItem = (v, t) => {
-          return {
-            type: 'item',
-            data: {
-              value: v,
-              meta: {
-                text: t
-              }
-            }
-          };
-        };
-
+      fetch() {
         const data = Arr.map([
           makeItem('alpha', '+Alpha'),
           makeItem('beta', '+Beta'),
@@ -291,24 +284,11 @@ export default (): void => {
 
       matchWidth: true,
 
-      fetch () {
-        const makeItem = (v, t, c) => {
-          return {
-            type: 'item',
-            data: {
-              value: v,
-              meta: {
-                'text': t,
-                'item-class': c
-              }
-            }
-          };
-        };
-
+      fetch() {
         const data = Arr.map([
           makeItem('alpha', 'Alpha', 'class-alpha'),
           makeItem('beta', 'Beta', 'class-beta'),
-          { type: 'separator', data: { value: 'text', meta: { text: '-- separator --' } } },
+          { type: 'separator', data: { value: 'text', meta: { text: '-- separator --' }}} as DemoRenders.DemoSeparatorItem,
           makeItem('gamma', 'Gamma', 'class-gamma'),
           makeItem('delta', 'Delta', 'class-delta')
         ], DemoRenders.item);
@@ -322,7 +302,7 @@ export default (): void => {
           return Option.some(TieredMenu.singleData('basic-list', menu));
         });
       },
-      onExecute (sandbox, item, itemValue) {
+      onExecute(sandbox, item) {
         console.log('*** dropdown demo execute on: ' + Representing.getValue(item));
       }
     })
@@ -351,24 +331,11 @@ export default (): void => {
 
       toggleClass: 'demo-selected',
 
-      onExecute (sandbox, item, itemValue) {
+      onExecute(sandbox, item) {
         console.trace();
         console.log('*** dropdown menu demo execute on: ' + Representing.getValue(item).value + ' ***');
       },
-      fetch () {
-        const makeItem = (v, t, c) => {
-          return {
-            type: 'item',
-            data: {
-              value: v,
-              meta: {
-                'text': t,
-                'item-class': c
-              }
-            }
-          };
-        };
-
+      fetch() {
         const future = Future.pure({
           primary: 'tools-menu',
           menus: Obj.map({
@@ -404,14 +371,14 @@ export default (): void => {
                       Container.sketch({
                         components: [
                           Button.sketch({
-                            action (...args) { console.log('clicked on a button', ...args); },
+                            action(...args) { console.log('clicked on a button', ...args); },
                             dom: {
                               tag: 'button',
                               innerHtml: '-'
                             }
                           }),
                           Button.sketch({
-                            action (...args) { console.log('clicked on a button', ...args); },
+                            action(...args) { console.log('clicked on a button', ...args); },
                             dom: {
                               tag: 'button',
                               innerHtml: '+'
@@ -433,7 +400,7 @@ export default (): void => {
                       })
                     ])
                   })
-                }
+                } as DemoRenders.DemoWidgetItem
               ], DemoRenders.item)
             },
             'packages-menu': {
@@ -475,9 +442,7 @@ export default (): void => {
           }
         });
 
-        return future.map((f) => {
-          return Option.from(TieredMenu.tieredData(f.primary, f.menus, f.expansions));
-        });
+        return future.map((f) => Option.from(TieredMenu.tieredData(f.primary, f.menus, f.expansions)));
       }
     })
   );

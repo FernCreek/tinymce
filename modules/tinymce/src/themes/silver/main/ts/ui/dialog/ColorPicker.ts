@@ -51,13 +51,13 @@ const translate = function (key) {
 
 type ColorPickerSpec = Omit<Types.ColorPicker.ColorPicker, 'type'>;
 
-export const renderColorPicker = (spec: ColorPickerSpec): SimpleSpec => {
+export const renderColorPicker = (_spec: ColorPickerSpec): SimpleSpec => {
   const getClass = (key: string) => 'tox-' + key;
 
   const colourPickerFactory = ColourPicker.makeFactory(translate, getClass);
 
   const onValidHex = (form) => {
-    AlloyTriggers.emitWith(form, formActionEvent, { name: 'hex-valid', value: true },  );
+    AlloyTriggers.emitWith(form, formActionEvent, { name: 'hex-valid', value: true }, );
   };
 
   const onInvalidHex = (form) => {
@@ -68,7 +68,7 @@ export const renderColorPicker = (spec: ColorPickerSpec): SimpleSpec => {
     colourPickerFactory.sketch({
       dom: {
         tag: 'div',
-        classes: [getClass('color-picker-container')],
+        classes: [ getClass('color-picker-container') ],
         attributes: {
           role: 'presentation'
         }

@@ -1,12 +1,12 @@
 import { Assertions, Chain, GeneralSteps, Logger, Mouse, Pipeline, Step, UiFinder, Waiter } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+
+import { TestHelpers } from '@ephox/alloy';
+import { UnitTest } from '@ephox/bedrock-client';
 import { Types } from '@ephox/bridge';
 import { console } from '@ephox/dom-globals';
 import { Cell } from '@ephox/katamari';
 import { Body, Value } from '@ephox/sugar';
-import WindowManager from 'tinymce/themes/silver/ui/dialog/WindowManager';
-
-import { TestHelpers } from '@ephox/alloy';
+import * as WindowManager from 'tinymce/themes/silver/ui/dialog/WindowManager';
 import TestExtras from '../../module/TestExtras';
 
 UnitTest.asynctest('WindowManager:redial Test', (success, failure) => {
@@ -61,7 +61,7 @@ UnitTest.asynctest('WindowManager:redial Test', (success, failure) => {
     }
   };
 
-  const dialogB: Types.Dialog.DialogApi<any> =  {
+  const dialogB: Types.Dialog.DialogApi<any> = {
     title: 'DialogB',
     body: {
       type: 'panel',
@@ -72,7 +72,7 @@ UnitTest.asynctest('WindowManager:redial Test', (success, failure) => {
         type: 'custom',
         name: 'Dest.DialogC',
         text: 'Destination: DialogC'
-      },
+      }
     ],
     initialData: { },
     onSubmit: (api) => {
@@ -87,7 +87,7 @@ UnitTest.asynctest('WindowManager:redial Test', (success, failure) => {
     }
   };
 
-  const dialogC: Types.Dialog.DialogApi<any> =  {
+  const dialogC: Types.Dialog.DialogApi<any> = {
     title: 'DialogC',
     body: {
       type: 'tabpanel',
@@ -136,9 +136,7 @@ UnitTest.asynctest('WindowManager:redial Test', (success, failure) => {
   };
 
   const sTestOpen = Chain.asStep({ }, [
-    Chain.mapper((_) => {
-      return windowManager.open(dialogA, {}, () => store.adder('closeWindow')() );
-    }),
+    Chain.injectThunked(() => windowManager.open(dialogA, {}, () => store.adder('closeWindow')() )),
     Chain.op((dialogApi) => {
       currentDialogApi.set(dialogApi);
     })

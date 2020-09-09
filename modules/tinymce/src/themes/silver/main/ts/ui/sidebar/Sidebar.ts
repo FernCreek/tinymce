@@ -6,31 +6,19 @@
  */
 
 import {
-  AddEventsBehaviour,
-  AlloyComponent,
-  AlloyEvents,
-  AlloyTriggers,
-  Behaviour,
-  Composing,
-  CustomEvent,
-  Replacing,
-  Sliding,
-  SystemEvents,
-  Tabstopping,
-  Focusing,
-  SlotContainer,
-  SlotContainerTypes,
+  AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloyTriggers, Behaviour, Composing, CustomEvent, Focusing, Replacing, Sliding,
+  SlotContainer, SlotContainerTypes, SystemEvents, Tabstopping
 } from '@ephox/alloy';
+import { ValueSchema } from '@ephox/boulder';
 import { Sidebar as BridgeSidebar } from '@ephox/bridge';
 import { HTMLElement } from '@ephox/dom-globals';
-import { Arr, Id, Option, Obj, Cell, Fun } from '@ephox/katamari';
+import { Arr, Cell, Fun, Id, Obj, Option } from '@ephox/katamari';
 import { Css, Width } from '@ephox/sugar';
 import Editor from 'tinymce/core/api/Editor';
+import { onControlAttached, onControlDetached } from 'tinymce/themes/silver/ui/controls/Controls';
 
 import { ComposingConfigs } from '../alien/ComposingConfigs';
 import { SimpleBehaviours } from '../alien/SimpleBehaviours';
-import { onControlAttached, onControlDetached } from 'tinymce/themes/silver/ui/controls/Controls';
-import { ValueSchema } from '@ephox/boulder';
 
 export type SidebarConfig = Record<string, BridgeSidebar.SidebarApi>;
 
@@ -59,13 +47,9 @@ const setup = (editor: Editor) => {
   });
 };
 
-const getApi = (comp: AlloyComponent): BridgeSidebar.SidebarInstanceApi => {
-  return {
-    element: (): HTMLElement => {
-      return comp.element().dom();
-    }
-  };
-};
+const getApi = (comp: AlloyComponent): BridgeSidebar.SidebarInstanceApi => ({
+  element: (): HTMLElement => comp.element().dom()
+});
 
 const makePanels = (parts: SlotContainerTypes.SlotContainerParts, panelConfigs: SidebarConfig) => {
   const specs = Arr.map(Obj.keys(panelConfigs), (name) => {
@@ -87,7 +71,7 @@ const makePanels = (parts: SlotContainerTypes.SlotContainerParts, panelConfigs: 
       {
         dom: {
           tag: 'div',
-          classes: ['tox-sidebar__pane']
+          classes: [ 'tox-sidebar__pane' ]
         },
         behaviours: SimpleBehaviours.unnamedEvents([
           onControlAttached(spec, editorOffCell),
@@ -106,22 +90,20 @@ const makePanels = (parts: SlotContainerTypes.SlotContainerParts, panelConfigs: 
   });
 };
 
-const makeSidebar = (panelConfigs: SidebarConfig) => SlotContainer.sketch((parts) => {
-  return {
-    dom: {
-      tag: 'div',
-      classes: ['tox-sidebar__pane-container'],
-    },
-    components: makePanels(parts, panelConfigs),
-    slotBehaviours: SimpleBehaviours.unnamedEvents([
-      AlloyEvents.runOnAttached((slotContainer) => SlotContainer.hideAllSlots(slotContainer))
-    ])
-  };
-});
+const makeSidebar = (panelConfigs: SidebarConfig) => SlotContainer.sketch((parts) => ({
+  dom: {
+    tag: 'div',
+    classes: [ 'tox-sidebar__pane-container' ]
+  },
+  components: makePanels(parts, panelConfigs),
+  slotBehaviours: SimpleBehaviours.unnamedEvents([
+    AlloyEvents.runOnAttached((slotContainer) => SlotContainer.hideAllSlots(slotContainer))
+  ])
+}));
 
 const setSidebar = (sidebar: AlloyComponent, panelConfigs: SidebarConfig) => {
   const optSlider = Composing.getCurrent(sidebar);
-  optSlider.each((slider) => Replacing.set(slider, [makeSidebar(panelConfigs)]));
+  optSlider.each((slider) => Replacing.set(slider, [ makeSidebar(panelConfigs) ]));
 };
 
 const toggleSidebar = (sidebar: AlloyComponent, name: string) => {
@@ -170,74 +152,72 @@ interface FixSizeEvent extends CustomEvent {
 const fixSize = Id.generate('FixSizeEvent');
 const autoSize = Id.generate('AutoSizeEvent');
 
-const renderSidebar = (spec) => {
-  return {
-    uid: spec.uid,
-    dom: {
-      tag: 'div',
-      classes: ['tox-sidebar'],
-      attributes: {
-        role: 'complementary'
-      }
-    },
-    components: [
-      {
-        dom: {
-          tag: 'div',
-          classes: ['tox-sidebar__slider']
-        },
-        components: [
-          // this will be replaced on setSidebar
-        ],
-        behaviours: Behaviour.derive([
-          Tabstopping.config({ }),
-          Focusing.config({ }), // TODO use Keying and use focusIn, but need to handle if sidebar contains nothing
-          Sliding.config({
-            dimension: {
-              property: 'width'
-            },
-            closedClass: 'tox-sidebar--sliding-closed',
-            openClass: 'tox-sidebar--sliding-open',
-            shrinkingClass: 'tox-sidebar--sliding-shrinking',
-            growingClass: 'tox-sidebar--sliding-growing',
-            onShrunk: (slider: AlloyComponent) => {
-              const optSlotContainer = Composing.getCurrent(slider);
-              optSlotContainer.each(SlotContainer.hideAllSlots);
-              AlloyTriggers.emit(slider, autoSize);
-            },
-            onGrown: (slider: AlloyComponent) => {
-              AlloyTriggers.emit(slider, autoSize);
-            },
-            onStartGrow: (slider: AlloyComponent) => {
-              AlloyTriggers.emitWith(slider, fixSize, { width: Css.getRaw(slider.element(), 'width').getOr('') });
-            },
-            onStartShrink: (slider: AlloyComponent) => {
-              AlloyTriggers.emitWith(slider, fixSize, { width: Width.get(slider.element()) + 'px' });
-            }
-          }),
-          Replacing.config({}),
-          Composing.config({
-            find: (comp: AlloyComponent) => {
-              const children = Replacing.contents(comp);
-              return Arr.head(children);
-            }
-          })
-        ])
-      }
-    ],
-    behaviours: Behaviour.derive([
-      ComposingConfigs.childAt(0),
-      AddEventsBehaviour.config('sidebar-sliding-events', [
-        AlloyEvents.run<FixSizeEvent>(fixSize, (comp, se) => {
-          Css.set(comp.element(), 'width', se.event().width());
+const renderSidebar = (spec) => ({
+  uid: spec.uid,
+  dom: {
+    tag: 'div',
+    classes: [ 'tox-sidebar' ],
+    attributes: {
+      role: 'complementary'
+    }
+  },
+  components: [
+    {
+      dom: {
+        tag: 'div',
+        classes: [ 'tox-sidebar__slider' ]
+      },
+      components: [
+        // this will be replaced on setSidebar
+      ],
+      behaviours: Behaviour.derive([
+        Tabstopping.config({ }),
+        Focusing.config({ }), // TODO use Keying and use focusIn, but need to handle if sidebar contains nothing
+        Sliding.config({
+          dimension: {
+            property: 'width'
+          },
+          closedClass: 'tox-sidebar--sliding-closed',
+          openClass: 'tox-sidebar--sliding-open',
+          shrinkingClass: 'tox-sidebar--sliding-shrinking',
+          growingClass: 'tox-sidebar--sliding-growing',
+          onShrunk: (slider: AlloyComponent) => {
+            const optSlotContainer = Composing.getCurrent(slider);
+            optSlotContainer.each(SlotContainer.hideAllSlots);
+            AlloyTriggers.emit(slider, autoSize);
+          },
+          onGrown: (slider: AlloyComponent) => {
+            AlloyTriggers.emit(slider, autoSize);
+          },
+          onStartGrow: (slider: AlloyComponent) => {
+            AlloyTriggers.emitWith(slider, fixSize, { width: Css.getRaw(slider.element(), 'width').getOr('') });
+          },
+          onStartShrink: (slider: AlloyComponent) => {
+            AlloyTriggers.emitWith(slider, fixSize, { width: Width.get(slider.element()) + 'px' });
+          }
         }),
-        AlloyEvents.run(autoSize, (comp, se) => {
-          Css.remove(comp.element(), 'width');
+        Replacing.config({}),
+        Composing.config({
+          find: (comp: AlloyComponent) => {
+            const children = Replacing.contents(comp);
+            return Arr.head(children);
+          }
         })
       ])
+    }
+  ],
+  behaviours: Behaviour.derive([
+    ComposingConfigs.childAt(0),
+    AddEventsBehaviour.config('sidebar-sliding-events', [
+      AlloyEvents.run<FixSizeEvent>(fixSize, (comp, se) => {
+        Css.set(comp.element(), 'width', se.event().width());
+      }),
+      AlloyEvents.run(autoSize, (comp, _se) => {
+        Css.remove(comp.element(), 'width');
+      })
     ])
-  };
-};
+  ])
+});
 
 export {
   setSidebar,

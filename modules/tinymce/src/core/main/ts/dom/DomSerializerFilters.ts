@@ -6,12 +6,15 @@
  */
 
 import { Arr, Option } from '@ephox/katamari';
+import DOMUtils from '../api/dom/DOMUtils';
+import DomParser from '../api/html/DomParser';
 import Entities from '../api/html/Entities';
-import Zwsp from '../text/Zwsp';
+import * as Zwsp from '../text/Zwsp';
+import { DomSerializerSettings } from './DomSerializer';
 
 declare const unescape: any;
 
-const register = function (htmlParser, settings, dom) {
+const register = (htmlParser: DomParser, settings: DomSerializerSettings, dom: DOMUtils) => {
   // Convert tabindex back to elements when serializing contents
   htmlParser.addAttributeFilter('data-mce-tabindex', function (nodes, name) {
     let i = nodes.length, node;
@@ -106,8 +109,8 @@ const register = function (htmlParser, settings, dom) {
     let i = nodes.length, node, value, type;
 
     const trim = function (value) {
-      /*jshint maxlen:255 */
-      /*eslint max-len:0 */
+      /* jshint maxlen:255 */
+      /* eslint max-len:0 */
       return value.replace(/(<!--\[CDATA\[|\]\]-->)/g, '\n')
         .replace(/^[\r\n]*|[\r\n]*$/g, '')
         .replace(/^\s*((<!--)?(\s*\/\/)?\s*<!\[CDATA\[|(<!--\s*)?\/\*\s*<!\[CDATA\[\s*\*\/|(\/\/)?\s*<!--|\/\*\s*<!--\s*\*\/)\s*[\r\n]*/gi, '')
@@ -144,10 +147,10 @@ const register = function (htmlParser, settings, dom) {
     while (i--) {
       node = nodes[i];
 
-      if (node.value.indexOf('[CDATA[') === 0) {
+      if (settings.preserve_cdata && node.value.indexOf('[CDATA[') === 0) {
         node.name = '#cdata';
         node.type = 4;
-        node.value = node.value.replace(/^\[CDATA\[|\]\]$/g, '');
+        node.value = dom.decode(node.value.replace(/^\[CDATA\[|\]\]$/g, ''));
       } else if (node.value.indexOf('mce:protected ') === 0) {
         node.name = '#text';
         node.type = 3;
@@ -188,7 +191,7 @@ const register = function (htmlParser, settings, dom) {
   htmlParser.addAttributeFilter(
     'data-mce-src,data-mce-href,data-mce-style,' +
     'data-mce-selected,data-mce-expando,' +
-    'data-mce-type,data-mce-resize',
+    'data-mce-type,data-mce-resize,data-mce-placeholder',
 
     function (nodes, name, args) {
       let i = nodes.length;
@@ -212,15 +215,13 @@ const register = function (htmlParser, settings, dom) {
  * Example of what happens: <body>text</body> becomes <body>text<br><br></body>
  */
 const trimTrailingBr = function (rootNode) {
-  let brNode1, brNode2;
-
   const isBr = function (node) {
     return node && node.name === 'br';
   };
 
-  brNode1 = rootNode.lastChild;
+  const brNode1 = rootNode.lastChild;
   if (isBr(brNode1)) {
-    brNode2 = brNode1.prev;
+    const brNode2 = brNode1.prev;
 
     if (isBr(brNode2)) {
       brNode1.remove();
@@ -229,7 +230,7 @@ const trimTrailingBr = function (rootNode) {
   }
 };
 
-export default {
+export {
   register,
   trimTrailingBr
 };

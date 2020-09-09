@@ -1,4 +1,4 @@
-import { assert, UnitTest } from '@ephox/bedrock';
+import { assert, UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
 import { Arr, Fun } from '@ephox/katamari';
 import { Attr, Element, Html, Insert, InsertAll, Remove } from '@ephox/sugar';
@@ -31,10 +31,10 @@ UnitTest.test('DomSearchTest', function () {
     assert.eq(expected, Html.get(container));
   };
 
-  check('<span data-word="Sed">Sed</span>', ['Sed'], ['Sed']);
+  check('<span data-word="Sed">Sed</span>', [ 'Sed' ], [ 'Sed' ]);
   check('<span data-word="Sed">Sed</span> ut perspiciatis <span data-word="unde">u</span><span data-word="unde">nde</span>' +
-    ' omnis <span data-word="iste">iste</span> natus error <span data-word="sit">sit</span> voluptatem', ['Sed', ' ut per', 'spiciatis u', 'nde om', 'ni', 's iste', ' natus', ' error', ' sit voluptatem'], ['Sed', 'iste', 'unde', 'sit']);
-  check('<span data-word="Sed">Sed</span> <span data-word="ut">ut</span> per', ['Sed', ' ut per'], ['Sed', 'ut']);
+    ' omnis <span data-word="iste">iste</span> natus error <span data-word="sit">sit</span> voluptatem', [ 'Sed', ' ut per', 'spiciatis u', 'nde om', 'ni', 's iste', ' natus', ' error', ' sit voluptatem' ], [ 'Sed', 'iste', 'unde', 'sit' ]);
+  check('<span data-word="Sed">Sed</span> <span data-word="ut">ut</span> per', [ 'Sed', ' ut per' ], [ 'Sed', 'ut' ]);
 
   Remove.remove(container);
 });

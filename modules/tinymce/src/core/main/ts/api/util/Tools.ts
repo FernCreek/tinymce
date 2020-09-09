@@ -6,8 +6,8 @@
  */
 
 import { window } from '@ephox/dom-globals';
+import * as ArrUtils from '../../util/ArrUtils';
 import Env from '../Env';
-import ArrUtils from '../../util/ArrUtils';
 
 type ArrayCallback<T, R> = (x: T, i: number, xs: ReadonlyArray<T>) => R;
 type ObjCallback<T, R> = (value: T[keyof T], key: string, obj: T) => R;
@@ -21,9 +21,9 @@ interface Tools {
   toArray <T>(obj: ArrayLike<T>): T[];
   hasOwn (obj: any, name: string): boolean;
   makeMap <T>(items: ArrayLike<T> | string, delim?: string | RegExp, map?: Record<string, T | string>): Record<string, T | string>;
-  each <T>(arr: ReadonlyArray<T>, cb: ArrayCallback<T, any>, scope?: any): void;
+  each <T>(arr: ArrayLike<T>, cb: ArrayCallback<T, any>, scope?: any): void;
   each <T>(obj: T, cb: ObjCallback<T, any>, scope?: any): void;
-  map <T, U>(arr: ReadonlyArray<T>, cb: ArrayCallback<T, U>, scope?: any): Array<U>;
+  map <T, U>(arr: ArrayLike<T>, cb: ArrayCallback<T, U>, scope?: any): Array<U>;
   map <T, U>(obj: T, cb: ObjCallback<T, U>, scope?: any): Array<U>;
   extend (obj: {}, ext: {}, ...objs: {}[]): any;
   create (name: string, p: {}, root?: {});
@@ -117,7 +117,6 @@ const hasOwnProperty = function (obj, prop) {
 
 /**
  * Creates a class, subclass or static singleton.
- * More details on this method can be found in the TinyMCE Documentation.
  *
  * @method create
  * @param {String} s Class name, inheritance and prefix.
@@ -163,14 +162,14 @@ const hasOwnProperty = function (obj, prop) {
  */
 const create = function (s, p, root?) {
   const self = this;
-  let sp, ns, cn, scn, c, de = 0;
+  let sp, scn, c, de = 0;
 
   // Parse : <prefix> <class>:<super class>
   s = /^((static) )?([\w.]+)(:([\w.]+))?/.exec(s);
-  cn = s[3].match(/(^|\.)(\w+)$/i)[2]; // Class name
+  const cn = s[3].match(/(^|\.)(\w+)$/i)[2]; // Class name
 
   // Create namespace for new class
-  ns = self.createNS(s[3].replace(/\.\w+$/, ''), root);
+  const ns = self.createNS(s[3].replace(/\.\w+$/, ''), root);
 
   // Class already exists
   if (ns[cn]) {
@@ -241,31 +240,25 @@ const create = function (s, p, root?) {
   }
 
   // Add static methods
-  /*jshint sub:true*/
-  /*eslint dot-notation:0*/
+  /* jshint sub:true*/
+  /* eslint dot-notation:0*/
   self.each(p.static, function (f, n) {
     ns[cn][n] = f;
   });
 };
 
-const extend = function (obj, ext, ...x: any[]) {
-  let i, l, name;
-  const args = arguments;
-  let value;
-
-  for (i = 1, l = args.length; i < l; i++) {
-    ext = args[i];
-    for (name in ext) {
+const extend = function (obj, ...exts: any[]) {
+  for (let i = 0; i < exts.length; i++) {
+    const ext = exts[i];
+    for (const name in ext) {
       if (ext.hasOwnProperty(name)) {
-        value = ext[name];
-
+        const value = ext[name];
         if (value !== undefined) {
           obj[name] = value;
         }
       }
     }
   }
-
   return obj;
 };
 

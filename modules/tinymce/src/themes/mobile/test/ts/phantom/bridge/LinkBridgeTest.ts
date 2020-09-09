@@ -1,11 +1,12 @@
-import { ApproxStructure, Assertions, Logger, RawAssertions } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { ApproxStructure, Assertions, Logger } from '@ephox/agar';
+import { TestHelpers } from '@ephox/alloy';
+import { Assert, UnitTest } from '@ephox/bedrock-client';
 import { FieldSchema, Objects, ValueSchema } from '@ephox/boulder';
 import { Cell, Fun, Option, Result } from '@ephox/katamari';
+import { KAssert } from '@ephox/katamari-assertions';
 import { Element } from '@ephox/sugar';
 
-import LinkBridge from 'tinymce/themes/mobile/bridge/LinkBridge';
-import { TestHelpers } from '@ephox/alloy';
+import * as LinkBridge from 'tinymce/themes/mobile/bridge/LinkBridge';
 
 UnitTest.test('Test: phantom.bridge.LinkBridgeTest', function () {
   const store = TestHelpers.TestStore();
@@ -21,14 +22,14 @@ UnitTest.test('Test: phantom.bridge.LinkBridgeTest', function () {
       getContent: editorState.content.get,
       select: Fun.noop
     },
-    insertContent (data) {
+    insertContent(data) {
       store.adder({ method: 'insertContent', data })();
     },
-    execCommand (name) {
+    execCommand(name) {
       store.adder({ method: 'execCommand', data: name })();
     },
     dom: {
-      createHTML (tag, attributes, innerText) {
+      createHTML(tag, attributes, innerText) {
         return { tag, attributes, innerText };
       },
       encode: Fun.identity
@@ -50,13 +51,13 @@ UnitTest.test('Test: phantom.bridge.LinkBridgeTest', function () {
       editorState.start.set(Element.fromText(scenario.nodeText).dom());
       editorState.content.set(scenario.selection);
       const info = LinkBridge.getInfo(editor);
-      RawAssertions.assertEq('Checking getInfo (no link)', {
+      Assert.eq('Checking getInfo (no link)', {
         url: '',
         text: scenario.expected,
         title: '',
         target: ''
       }, Objects.narrow(info, [ 'url', 'text', 'target', 'title' ]));
-      RawAssertions.assertEq('Checking link is not set', true, info.link.isNone());
+      KAssert.eqNone('Checking link is not set', info.link);
     });
   };
 
@@ -74,8 +75,8 @@ UnitTest.test('Test: phantom.bridge.LinkBridgeTest', function () {
       editorState.start.set(Element.fromHtml(scenario.linkHtml).dom());
       editorState.content.set(scenario.selection);
       const info = LinkBridge.getInfo(editor);
-      RawAssertions.assertEq('Checking getInfo (link)', scenario.expected, Objects.narrow(info, [ 'url', 'text', 'target', 'title' ]));
-      RawAssertions.assertEq('Checking link is set', true, info.link.isSome());
+      Assert.eq('Checking getInfo (link)', scenario.expected, Objects.narrow(info, [ 'url', 'text', 'target', 'title' ]));
+      Assert.eq('Checking link is set', true, info.link.isSome());
     });
   };
 
@@ -88,10 +89,10 @@ UnitTest.test('Test: phantom.bridge.LinkBridgeTest', function () {
         text: toResult(info, 'text'),
         title: toResult(info, 'title'),
         target: toResult(info, 'target'),
-        link: toResult(info, 'link'),
+        link: toResult(info, 'link')
       })).getOrDie('Missing info'),
       mutations: Option.from(rawScenario.mutations).getOr(Fun.noop),
-      expected: Option.from(rawScenario.expected).getOr([]),
+      expected: Option.from(rawScenario.expected).getOr([])
     };
 
     Logger.sync('setInfo ... ' + scenario.label, function () {
@@ -174,7 +175,7 @@ UnitTest.test('Test: phantom.bridge.LinkBridgeTest', function () {
     info: {
       url: 'hi'
     },
-    mutations (elem) {
+    mutations(_elem) {
 
     },
     expected: [
@@ -197,7 +198,7 @@ UnitTest.test('Test: phantom.bridge.LinkBridgeTest', function () {
       url: 'hi',
       text: 'hello'
     },
-    mutations (elem) {
+    mutations(_elem) {
 
     },
     expected: [
@@ -221,7 +222,7 @@ UnitTest.test('Test: phantom.bridge.LinkBridgeTest', function () {
       text: 'hello',
       title: 'Title'
     },
-    mutations (elem) {
+    mutations(_elem) {
 
     },
     expected: [
@@ -247,7 +248,7 @@ UnitTest.test('Test: phantom.bridge.LinkBridgeTest', function () {
       title: 'Title',
       target: 'new'
     },
-    mutations (elem) {
+    mutations(_elem) {
 
     },
     expected: [
@@ -277,8 +278,8 @@ UnitTest.test('Test: phantom.bridge.LinkBridgeTest', function () {
         Element.fromHtml('<a href="http://foo">http://foo</a>')
       )
     },
-    mutations (elem) {
-      Assertions.assertStructure('Checking structure', ApproxStructure.build(function (s, str, arr) {
+    mutations(elem) {
+      Assertions.assertStructure('Checking structure', ApproxStructure.build(function (s, str, _arr) {
         return s.element('a', {
           attrs: {
             href: str.is('hi')
@@ -300,8 +301,8 @@ UnitTest.test('Test: phantom.bridge.LinkBridgeTest', function () {
         Element.fromHtml('<a href="http://foo">Foo</a>')
       )
     },
-    mutations (elem) {
-      Assertions.assertStructure('Checking structure', ApproxStructure.build(function (s, str, arr) {
+    mutations(elem) {
+      Assertions.assertStructure('Checking structure', ApproxStructure.build(function (s, str, _arr) {
         return s.element('a', {
           attrs: {
             href: str.is('hi')
@@ -323,8 +324,8 @@ UnitTest.test('Test: phantom.bridge.LinkBridgeTest', function () {
         Element.fromHtml('<a href="http://foo">Foo</a>')
       )
     },
-    mutations (elem) {
-      Assertions.assertStructure('Checking structure', ApproxStructure.build(function (s, str, arr) {
+    mutations(elem) {
+      Assertions.assertStructure('Checking structure', ApproxStructure.build(function (s, str, _arr) {
         return s.element('a', {
           attrs: {
             href: str.is('hi'),

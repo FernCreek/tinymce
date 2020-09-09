@@ -1,19 +1,7 @@
 import {
-  ApproxStructure,
-  Assertions,
-  Chain,
-  FocusTools,
-  GeneralSteps,
-  Keyboard,
-  Keys,
-  Log,
-  Logger,
-  Mouse,
-  Pipeline,
-  Step,
-  UiFinder,
+  ApproxStructure, Assertions, Chain, FocusTools, GeneralSteps, Keyboard, Keys, Log, Logger, Mouse, Pipeline, Step, UiFinder
 } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
 import { Arr } from '@ephox/katamari';
 import { TinyApis, TinyLoader } from '@ephox/mcagar';
@@ -29,47 +17,37 @@ UnitTest.asynctest('Editor (Silver) test', (success, failure) => {
       const tinyApis = TinyApis(editor);
       const doc = Element.fromDom(document);
 
-      const sAssertFocusOnItem = (itemText: string) => {
-        return FocusTools.sTryOnSelector(
-          `Focus should be on ${itemText}`,
-          doc,
-          `.tox-collection__item:contains("${itemText}")`
-        );
-      };
+      const sAssertFocusOnItem = (itemText: string) => FocusTools.sTryOnSelector(
+        `Focus should be on ${itemText}`,
+        doc,
+        `.tox-collection__item:contains("${itemText}")`
+      );
 
-      const sAssertFocusOnToolbarButton = (buttonText: string) => {
-        return FocusTools.sTryOnSelector(
-          `Focus should be on ${buttonText}`,
-          doc,
-          `.tox-toolbar button:contains("${buttonText}")`
-        );
-      };
+      const sAssertFocusOnToolbarButton = (buttonText: string) => FocusTools.sTryOnSelector(
+        `Focus should be on ${buttonText}`,
+        doc,
+        `.tox-toolbar__group button:contains("${buttonText}")`
+      );
 
-      const sAssertFocusOnAlignToolbarButton = () => {
-        return FocusTools.sTryOnSelector(
-          `Focus should be on Align`,
-          doc,
-          `.tox-toolbar button[aria-label="Align"]`
-        );
-      };
+      const sAssertFocusOnAlignToolbarButton = () => FocusTools.sTryOnSelector(
+        'Focus should be on Align',
+        doc,
+        '.tox-toolbar__group button[aria-label="Align"]'
+      );
 
       const sAssertItemTicks = (label: string, expectedTicks: boolean[]) => Logger.t(
         `Checking tick state of items (${label})`,
         Chain.asStep(Body.body(), [
           UiFinder.cFindIn('.tox-selected-menu .tox-collection__group'),
-          Assertions.cAssertStructure('Checking structure', ApproxStructure.build((s, str, arr) => {
-            return s.element('div', {
-              classes: [ arr.has('tox-collection__group') ],
-              children: Arr.map(expectedTicks, (expected) => {
-                return s.element('div', {
-                  attrs: {
-                    'role': str.is('menuitemcheckbox'),
-                    'aria-checked': str.is(expected ? 'true' : 'false')
-                  }
-                });
-              })
-            });
-          }))
+          Assertions.cAssertStructure('Checking structure', ApproxStructure.build((s, str, arr) => s.element('div', {
+            classes: [ arr.has('tox-collection__group') ],
+            children: Arr.map(expectedTicks, (expected) => s.element('div', {
+              attrs: {
+                'role': str.is('menuitemcheckbox'),
+                'aria-checked': str.is(expected ? 'true' : 'false')
+              }
+            }))
+          })))
         ])
       );
 
@@ -77,12 +55,12 @@ UnitTest.asynctest('Editor (Silver) test', (success, failure) => {
         label,
         GeneralSteps.sequence([
           tinyApis.sSetCursor(path, offset),
-            sOpen(menuText),
-            beforeStep,
-            sAssertItemTicks('Checking ticks at location', expectedTicks),
-            afterStep,
-            Keyboard.sKeydown(doc, Keys.escape(), { }),
-            UiFinder.sNotExists(Body.body(), '[role="menu"]'),
+          sOpen(menuText),
+          beforeStep,
+          sAssertItemTicks('Checking ticks at location', expectedTicks),
+          afterStep,
+          Keyboard.sKeydown(doc, Keys.escape(), { }),
+          UiFinder.sNotExists(Body.body(), '[role="menu"]')
         ])
       );
 

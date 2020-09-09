@@ -1,5 +1,5 @@
 import { Assertions, Log, Pipeline, Step, UiFinder } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { TinyApis, TinyLoader } from '@ephox/mcagar';
 import { Body, Css, Element, Location, Scroll } from '@ephox/sugar';
 import Editor from 'tinymce/core/api/Editor';
@@ -35,36 +35,34 @@ UnitTest.asynctest('Distraction free editor ContextToolbar Position test', (succ
         });
       });
 
-      const sTestPositionWhileScrolling = (scenario: Scenario) => {
-        return Log.stepsAsStep('TBA', scenario.label, [
-          tinyApis.sSetContent(`<p style="height: 25px;${scenario.contentStyles || ''}">${scenario.content}</p>`),
-          sScrollTo(0, -250),
-          tinyApis.sSetCursor(scenario.cursor.elementPath, scenario.cursor.offset),
-          UiFinder.sWaitForVisible('Waiting for toolbar to appear above content', Body.body(), '.tox-pop.tox-pop--bottom' + scenario.classes),
-          sAssertPosition('bottom', 1537),
+      const sTestPositionWhileScrolling = (scenario: Scenario) => Log.stepsAsStep('TBA', scenario.label, [
+        tinyApis.sSetContent(`<p style="height: 25px;${scenario.contentStyles || ''}">${scenario.content}</p>`),
+        sScrollTo(0, -250),
+        tinyApis.sSetCursor(scenario.cursor.elementPath, scenario.cursor.offset),
+        UiFinder.sWaitForVisible('Waiting for toolbar to appear above content', Body.body(), '.tox-pop.tox-pop--bottom' + scenario.classes),
+        sAssertPosition('bottom', 1537),
 
-          // Position the link at the top of the viewport
-          sScrollTo(0, 0),
-          UiFinder.sWaitForVisible('Waiting for toolbar to appear below content', Body.body(), '.tox-pop.tox-pop--top' + scenario.classes),
-          sAssertPosition('top', -1496),
+        // Position the link at the top of the viewport
+        sScrollTo(0, 0),
+        UiFinder.sWaitForVisible('Waiting for toolbar to appear below content', Body.body(), '.tox-pop.tox-pop--top' + scenario.classes),
+        sAssertPosition('top', -1496),
 
-          // Position the element off the bottom of the screen and check the toolbar is hidden
-          sScrollTo(0, 100),
-          UiFinder.sWaitForHidden('Waiting for toolbar to be hidden', Body.body(), '.tox-pop'),
+        // Position the element off the bottom of the screen and check the toolbar is hidden
+        sScrollTo(0, 100),
+        UiFinder.sWaitForHidden('Waiting for toolbar to be hidden', Body.body(), '.tox-pop'),
 
-          // Position the element just back into view
-          sScrollTo(0, -60),
-          UiFinder.sWaitForVisible('Waiting for toolbar to appear above content', Body.body(), '.tox-pop.tox-pop--bottom' + scenario.classes),
-          sAssertPosition('bottom', 1537),
+        // Position the element just back into view
+        sScrollTo(0, -60),
+        UiFinder.sWaitForVisible('Waiting for toolbar to appear above content', Body.body(), '.tox-pop.tox-pop--bottom' + scenario.classes),
+        sAssertPosition('bottom', 1537),
 
-          // Position the element off the top of the screen and check the toolbar is hidden
-          sScrollTo(0, 1000),
-          UiFinder.sWaitForHidden('Waiting for toolbar to be hidden', Body.body(), '.tox-pop'),
-        ]);
-      };
+        // Position the element off the top of the screen and check the toolbar is hidden
+        sScrollTo(0, 1000),
+        UiFinder.sWaitForHidden('Waiting for toolbar to be hidden', Body.body(), '.tox-pop')
+      ]);
 
       Pipeline.async({ }, [
-        tinyApis.sFocus,
+        tinyApis.sFocus(),
         Step.sync(() => {
           Css.setAll(Element.fromDom(editor.getContentAreaContainer()), {
             'margin-top': '1500px',

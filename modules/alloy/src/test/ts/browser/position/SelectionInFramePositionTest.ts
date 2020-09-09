@@ -1,13 +1,13 @@
 import { Chain, Cursors, Guard, NamedChain } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { Window } from '@ephox/dom-globals';
 import { Option, Result } from '@ephox/katamari';
-import { Css, DomEvent, Element, Node, Scroll, SelectorFind, Traverse, WindowSelection } from '@ephox/sugar';
+import { Css, DomEvent, Element, Node, Scroll, SelectorFind, SimRange, Traverse, WindowSelection } from '@ephox/sugar';
 
 import * as GuiFactory from 'ephox/alloy/api/component/GuiFactory';
+import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
 import { Container } from 'ephox/alloy/api/ui/Container';
 import * as ChainUtils from 'ephox/alloy/test/ChainUtils';
-import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
 import * as PositionTestUtils from 'ephox/alloy/test/PositionTestUtils';
 import * as Sinks from 'ephox/alloy/test/Sinks';
 import * as Frames from '../../../../demo/ts/ephox/alloy/demo/frames/Frames';
@@ -16,7 +16,7 @@ UnitTest.asynctest('SelectionInFramePositionTest', (success, failure) => {
 
   const frame = Element.fromTag('iframe');
 
-  GuiSetup.setup((store, doc, body) => {
+  GuiSetup.setup((_store, _doc, _body) => {
     let content = '';
     for (let i = 0; i < 20; i++) {
       content += '<p>paragraph ' + i + '</p>';
@@ -47,19 +47,15 @@ UnitTest.asynctest('SelectionInFramePositionTest', (success, failure) => {
       })
     );
 
-  }, (doc, body, gui, component, store) => {
-    const cSetupAnchor = Chain.mapper((data: any) => {
-      return {
-        anchor: 'selection',
-        root: Element.fromDom(data.classic.element().dom().contentWindow.document.body)
-      };
-    });
+  }, (_doc, _body, gui, _component, _store) => {
+    const cSetupAnchor = Chain.mapper((data: any) => ({
+      anchor: 'selection',
+      root: Element.fromDom(data.classic.element().dom().contentWindow.document.body)
+    }));
 
-    const cGetWin = Chain.mapper((frame: any) => {
-      return frame.element().dom().contentWindow;
-    });
+    const cGetWin = Chain.mapper((frame: any) => frame.element().dom().contentWindow);
 
-    const cSetPath = (rawPath) => {
+    const cSetPath = (rawPath: { startPath: number[]; soffset: number; finishPath: number[]; foffset: number }) => {
       const path = Cursors.path(rawPath);
 
       return Chain.binder((win: Window) => {
@@ -72,9 +68,7 @@ UnitTest.asynctest('SelectionInFramePositionTest', (success, failure) => {
           range.finish(),
           range.foffset()
         );
-        return WindowSelection.getExact(win).fold(() => {
-          return Result.error('Could not retrieve the set selection');
-        }, Result.value);
+        return WindowSelection.getExact(win).fold(() => Result.error('Could not retrieve the set selection'), Result.value);
       });
     };
 
@@ -96,11 +90,7 @@ UnitTest.asynctest('SelectionInFramePositionTest', (success, failure) => {
               Chain.control(
                 Chain.binder((data: any) => {
                   const root = Element.fromDom(data.classic.element().dom().contentWindow.document.body);
-                  return SelectorFind.descendant(root, 'p').fold(() => {
-                    return Result.error('Could not find paragraph yet');
-                  }, (p) => {
-                    return Result.value(data);
-                  });
+                  return SelectorFind.descendant(root, 'p').fold(() => Result.error('Could not find paragraph yet'), (_p) => Result.value(data));
                 }),
                 Guard.tryUntil('Waiting for content to load in iframe', 10, 10000)
               )
@@ -169,11 +159,11 @@ UnitTest.asynctest('SelectionInFramePositionTest', (success, failure) => {
                 finishPath: [ 13 ],
                 foffset: 0
               }), 'range2'),
-              NamedChain.direct('range2', Chain.binder((range2) => {
+              NamedChain.direct('range2', Chain.binder((range2: SimRange) => {
                 const start = range2.start();
                 // NOTE: Safari likes to select the text node.
                 const optElement = Node.isText(start) ? Traverse.parent(start) : Option.some(start);
-                return optElement.map((elem) => {
+                return optElement.filter(Node.isHTMLElement).map((elem) => {
                   elem.dom().scrollIntoView();
                   return Scroll.get(
                     Traverse.owner(elem)

@@ -5,12 +5,12 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { Types } from '@ephox/bridge';
+import { File } from '@ephox/dom-globals';
 import { Option } from '@ephox/katamari';
 
 import { ImageData } from '../core/ImageData';
 import { UploadHandler } from '../core/Uploader';
-import { File } from '@ephox/dom-globals';
-import { Types } from '@ephox/bridge';
 
 export interface ListValue {
   text: string;
@@ -36,10 +36,12 @@ export interface ImageDialogInfo {
   hasImageTitle: boolean;
   hasDimensions: boolean;
   hasImageCaption: boolean;
+  hasAccessibilityOptions: boolean;
   url: string;
   basePath: string;
   credentials: boolean;
   handler: UploadHandler;
+  automaticUploads: boolean;
   prependURL: Option<string>;
 }
 
@@ -59,7 +61,8 @@ export interface ImageDialogData {
       border?: string;
       hspace?: string;
       borderstyle?: string;
-    }
+      isDecorative?: boolean;
+    };
   };
   images: string;
   alt: string;
@@ -76,6 +79,7 @@ export interface ImageDialogData {
   hspace: string;
   borderstyle: string;
   fileinput: File[];
+  isDecorative: boolean;
 }
 
 export type API = Types.Dialog.DialogInstanceApi<ImageDialogData>;

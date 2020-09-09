@@ -1,9 +1,9 @@
 import { ApproxStructure, Assertions, Chain, NamedChain, Pipeline, UiFinder } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { Editor as McEditor, UiChains } from '@ephox/mcagar';
 import { PlatformDetection } from '@ephox/sand';
 import { Body, Element, Insert, Remove, Selectors } from '@ephox/sugar';
-import Styles from 'tinymce/themes/mobile/style/Styles';
+import * as Styles from 'tinymce/themes/mobile/style/Styles';
 import mobileTheme from 'tinymce/themes/mobile/Theme';
 
 UnitTest.asynctest('browser.tinymce.themes.mobile.EditorRemoveTest', (success, failure) => {
@@ -16,12 +16,10 @@ UnitTest.asynctest('browser.tinymce.themes.mobile.EditorRemoveTest', (success, f
 
   mobileTheme();
 
-  const cleanedThorAttrsStruct = (str) => {
-    return {
-      'position': str.none(),
-      'background-color': str.none(),
-    };
-  };
+  const cleanedThorAttrsStruct = (str) => ({
+    'position': str.none(),
+    'background-color': str.none()
+  });
 
   Pipeline.async({}, [
     Chain.asStep({}, [
@@ -54,19 +52,15 @@ UnitTest.asynctest('browser.tinymce.themes.mobile.EditorRemoveTest', (success, f
         NamedChain.outputInput
       ]),
       McEditor.cRemove,
-      Chain.mapper(() => Body.body()),
-      Assertions.cAssertStructure('Assert Thor overrides removed from body', ApproxStructure.build((s, str) => {
-        return s.element('body', {
-          attrs: cleanedThorAttrsStruct(str),
-        });
-      })),
+      Chain.injectThunked(Body.body),
+      Assertions.cAssertStructure('Assert Thor overrides removed from body', ApproxStructure.build((s, str) => s.element('body', {
+        attrs: cleanedThorAttrsStruct(str)
+      }))),
       UiFinder.cFindIn('div.tinymce-editor'),
-      Assertions.cAssertStructure('Assert Thor overrides removed from editor div', ApproxStructure.build((s, str) => {
-        return s.element('div', {
-          attrs: cleanedThorAttrsStruct(str),
-          children: []
-        });
-      })),
+      Assertions.cAssertStructure('Assert Thor overrides removed from editor div', ApproxStructure.build((s, str) => s.element('div', {
+        attrs: cleanedThorAttrsStruct(str),
+        children: []
+      }))),
       Chain.op((editorElm) => {
         Remove.remove(editorElm);
       })

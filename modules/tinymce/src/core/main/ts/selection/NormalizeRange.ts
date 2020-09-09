@@ -5,15 +5,15 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Node, HTMLElement, Range } from '@ephox/dom-globals';
+import { HTMLElement, Node, Range } from '@ephox/dom-globals';
 import { Option } from '@ephox/katamari';
-import * as CaretContainer from '../caret/CaretContainer';
-import NodeType from '../dom/NodeType';
-import TreeWalker from '../api/dom/TreeWalker';
-import RangeCompare from './RangeCompare';
 import DOMUtils from '../api/dom/DOMUtils';
-import { isCaretNode } from '../fmt/FormatContainer';
+import TreeWalker from '../api/dom/TreeWalker';
+import * as CaretContainer from '../caret/CaretContainer';
 import { CaretPosition } from '../caret/CaretPosition';
+import * as NodeType from '../dom/NodeType';
+import { isCaretNode } from '../fmt/FormatContainer';
+import * as RangeCompare from './RangeCompare';
 
 const findParent = (node: Node, rootNode: Node, predicate: (node: Node) => boolean) => {
   while (node && node !== rootNode) {
@@ -27,27 +27,17 @@ const findParent = (node: Node, rootNode: Node, predicate: (node: Node) => boole
   return null;
 };
 
-const hasParent = (node: Node, rootNode: Node, predicate: (node: Node) => boolean) => {
-  return findParent(node, rootNode, predicate) !== null;
-};
+const hasParent = (node: Node, rootNode: Node, predicate: (node: Node) => boolean) => findParent(node, rootNode, predicate) !== null;
 
-const hasParentWithName = (node: Node, rootNode: Node, name: string) => {
-  return hasParent(node, rootNode, function (node) {
-    return node.nodeName === name;
-  });
-};
+const hasParentWithName = (node: Node, rootNode: Node, name: string) => hasParent(node, rootNode, function (node) {
+  return node.nodeName === name;
+});
 
-const isTable = (node: Node) => {
-  return node && node.nodeName === 'TABLE';
-};
+const isTable = (node: Node) => node && node.nodeName === 'TABLE';
 
-const isTableCell = (node: Node) => {
-  return node && /^(TD|TH|CAPTION)$/.test(node.nodeName);
-};
+const isTableCell = (node: Node) => node && /^(TD|TH|CAPTION)$/.test(node.nodeName);
 
-const isCeFalseCaretContainer = (node: Node, rootNode: Node) => {
-  return CaretContainer.isCaretContainer(node) && hasParent(node, rootNode, isCaretNode) === false;
-};
+const isCeFalseCaretContainer = (node: Node, rootNode: Node) => CaretContainer.isCaretContainer(node) && hasParent(node, rootNode, isCaretNode) === false;
 
 const hasBrBeforeAfter = (dom: DOMUtils, node: Node, left: boolean) => {
   const walker = new TreeWalker(node, dom.getParent(node.parentNode, dom.isBlock) || dom.getRoot());
@@ -59,9 +49,7 @@ const hasBrBeforeAfter = (dom: DOMUtils, node: Node, left: boolean) => {
   }
 };
 
-const isPrevNode = (node: Node, name: string) => {
-  return node.previousSibling && node.previousSibling.nodeName === name;
-};
+const isPrevNode = (node: Node, name: string) => node.previousSibling && node.previousSibling.nodeName === name;
 
 const hasContentEditableFalseParent = (body: HTMLElement, node: Node) => {
   while (node && node !== body) {
@@ -127,13 +115,13 @@ const findTextNodeRelative = (dom: DOMUtils, isAfterNode: boolean, collapsed: bo
 const normalizeEndPoint = (dom: DOMUtils, collapsed: boolean, start: boolean, rng: Range): Option<CaretPosition> => {
   let container, offset;
   const body = dom.getRoot();
-  let node, nonEmptyElementsMap;
-  let directionLeft, isAfterNode, normalized = false;
+  let node;
+  let directionLeft, normalized = false;
 
   container = rng[(start ? 'start' : 'end') + 'Container'];
   offset = rng[(start ? 'start' : 'end') + 'Offset'];
-  isAfterNode = NodeType.isElement(container) && offset === container.childNodes.length;
-  nonEmptyElementsMap = dom.schema.getNonEmptyElements();
+  const isAfterNode = NodeType.isElement(container) && offset === container.childNodes.length;
+  const nonEmptyElementsMap = dom.schema.getNonEmptyElements();
   directionLeft = start;
 
   if (CaretContainer.isCaretContainer(container)) {
@@ -296,6 +284,6 @@ const normalize = (dom: DOMUtils, rng: Range): Option<Range> => {
   return RangeCompare.isEq(rng, normRng) ? Option.none() : Option.some(normRng);
 };
 
-export default {
+export {
   normalize
 };

@@ -1,5 +1,5 @@
 import { document } from '@ephox/dom-globals';
-import { Class, Css, DomEvent, Element } from '@ephox/sugar';
+import { Class, Css, DomEvent, Element, Traverse } from '@ephox/sugar';
 
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
 import { Positioning } from 'ephox/alloy/api/behaviour/Positioning';
@@ -57,7 +57,7 @@ export default (): void => {
       eventOrder: {
         'alloy.execute': [ 'toggling', 'alloy.base.behaviour' ]
       },
-      action (comp) {
+      action(comp) {
         if (Toggling.isOn(comp)) {
           Attachment.attach(sink, popup);
           Positioning.position(sink, {
@@ -143,7 +143,7 @@ export default (): void => {
             tag: 'button',
             innerHtml: 'Show popup at cursor'
           },
-          action (button) {
+          action(button) {
             Attachment.attach(sink, popup);
             Positioning.position(sink, {
               anchor: 'selection',
@@ -178,11 +178,11 @@ export default (): void => {
             tag: 'button',
             innerHtml: 'Show popup at cursor'
           },
-          action (button) {
+          action(_button) {
             Attachment.attach(sink, popup);
             Positioning.position(sink, {
               anchor: 'selection',
-              root: Element.fromDom(frame.dom().contentWindow.document.body)
+              root: Element.fromDom(Traverse.defaultView(frame).dom().document.body)
             }, popup);
           }
         })

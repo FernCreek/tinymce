@@ -8,13 +8,15 @@
 import { Replacing, Gui, AlloyComponent } from '@ephox/alloy';
 import { Fun, Singleton } from '@ephox/katamari';
 
-import IosWebapp, { MobileWebApp } from '../api/IosWebapp';
-import Styles from '../style/Styles';
+import * as IosWebapp from '../api/IosWebapp';
+import * as Styles from '../style/Styles';
 import ScrollingToolbar from '../toolbar/ScrollingToolbar';
-import CommonRealm from './CommonRealm';
+import * as CommonRealm from './CommonRealm';
 import * as Dropup from './Dropup';
 import OuterContainer from './OuterContainer';
 import { SugarElement } from '../alien/TypeDefinitions';
+
+type MobileWebApp = IosWebapp.MobileWebApp;
 
 export interface MobileRealm {
   system(): Gui.GuiSystem;
@@ -30,10 +32,10 @@ export interface MobileRealm {
   dropup(): Dropup.DropUp;
 }
 
-export default function (scrollIntoView: () => void) {
+export default (scrollIntoView: () => void): MobileRealm => {
   const alloy = OuterContainer({
     classes: [ Styles.resolve('ios-container') ]
-  }) as Gui.GuiSystem;
+  });
 
   const toolbar = ScrollingToolbar();
 
@@ -41,7 +43,7 @@ export default function (scrollIntoView: () => void) {
 
   const switchToEdit = CommonRealm.makeEditSwitch(webapp);
 
-  const socket = CommonRealm.makeSocket() as AlloyComponent;
+  const socket = CommonRealm.makeSocket();
 
   const dropup = Dropup.build(function () {
     webapp.run(function (w) {
@@ -100,5 +102,5 @@ export default function (scrollIntoView: () => void) {
     updateMode,
     socket: Fun.constant(socket),
     dropup: Fun.constant(dropup)
-  } as MobileRealm;
-}
+  };
+};

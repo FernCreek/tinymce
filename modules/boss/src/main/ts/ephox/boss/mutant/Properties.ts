@@ -14,7 +14,7 @@ const parent = function (item: Gene): Option<Gene> {
   return item.parent;
 };
 
-const document = function (item: Gene) {
+const document = function (_item: Gene) {
   return undefined; // currently the test universe does not have documents
 };
 
@@ -46,7 +46,11 @@ const isBoundary = function (item: Gene) {
   return Arr.contains(TagBoundaries, item.name);
 };
 
-export default {
+const isNonEditable = function (item: Gene) {
+  return isElement(item) && item.attrs.contenteditable === 'false';
+};
+
+export {
   children,
   name,
   parent,
@@ -57,5 +61,6 @@ export default {
   getText,
   setText,
   isEmptyTag,
-  isBoundary
+  isBoundary,
+  isNonEditable
 };

@@ -6,30 +6,19 @@
  */
 
 import {
-  AddEventsBehaviour,
-  AlloyEvents,
-  AlloyTriggers,
-  Behaviour,
-  CustomEvent,
-  FormCoupledInputs as AlloyFormCoupledInputs,
-  FormField as AlloyFormField,
-  Input as AlloyInput,
-  NativeEvents,
-  Representing,
-  SketchSpec,
-  Tabstopping,
-  Disabling,
-  AlloyComponent
+  AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloyTriggers, Behaviour, CustomEvent, Disabling,
+  FormCoupledInputs as AlloyFormCoupledInputs, FormField as AlloyFormField, Input as AlloyInput, NativeEvents, Representing, SketchSpec,
+  Tabstopping
 } from '@ephox/alloy';
 import { Types } from '@ephox/bridge';
 import { Id } from '@ephox/katamari';
 import { formChangeEvent } from 'tinymce/themes/silver/ui/general/FormEvents';
 
 import { UiFactoryBackstageProviders } from '../../backstage/Backstage';
+import * as ReadOnly from '../../ReadOnly';
 import * as Icons from '../icons/Icons';
-import { formatSize, makeRatioConverter, noSizeConversion, parseSize, SizeConversion } from '../sizeinput/SizeInputModel';
 import { Omit } from '../Omit';
-import { DisablingConfigs } from '../alien/DisablingConfigs';
+import { formatSize, makeRatioConverter, noSizeConversion, parseSize, SizeConversion } from '../sizeinput/SizeInputModel';
 
 interface RatioEvent extends CustomEvent {
   isField1: () => boolean;
@@ -45,7 +34,7 @@ export const renderSizeInput = (spec: SizeInputSpec, providersBackstage: UiFacto
   const pLock = AlloyFormCoupledInputs.parts().lock({
     dom: {
       tag: 'button',
-      classes: ['tox-lock', 'tox-button', 'tox-button--naked', 'tox-button--icon'],
+      classes: [ 'tox-lock', 'tox-button', 'tox-button--naked', 'tox-button--icon' ],
       attributes: {
         title: providersBackstage.translate(spec.label.getOr('Constrain proportions'))  // TODO: tooltips AP-213
       }
@@ -54,45 +43,49 @@ export const renderSizeInput = (spec: SizeInputSpec, providersBackstage: UiFacto
       {
         dom: {
           tag: 'span',
-          classes: ['tox-icon', 'tox-lock-icon__lock'],
+          classes: [ 'tox-icon', 'tox-lock-icon__lock' ],
           innerHtml: Icons.get('lock', providersBackstage.icons)
         }
       },
       {
         dom: {
           tag: 'span',
-          classes: ['tox-icon', 'tox-lock-icon__unlock'],
+          classes: [ 'tox-icon', 'tox-lock-icon__unlock' ],
           innerHtml: Icons.get('unlock', providersBackstage.icons)
         }
       }
     ],
     buttonBehaviours: Behaviour.derive([
-      DisablingConfigs.button(spec.disabled),
+      Disabling.config({
+        disabled: () => spec.disabled || providersBackstage.isReadOnly()
+      }),
+      ReadOnly.receivingConfig(),
       Tabstopping.config({})
     ])
   });
 
-  const formGroup = (components) => {
-    return {
-      dom: {
-        tag: 'div',
-        classes: [ 'tox-form__group' ]
-      },
-      components
-    };
-  };
+  const formGroup = (components) => ({
+    dom: {
+      tag: 'div',
+      classes: [ 'tox-form__group' ]
+    },
+    components
+  });
 
   const getFieldPart = (isField1) => AlloyFormField.parts().field({
     factory: AlloyInput,
-    inputClasses: ['tox-textfield'],
+    inputClasses: [ 'tox-textfield' ],
     inputBehaviours: Behaviour.derive([
-      Disabling.config({ disabled: spec.disabled }),
+      Disabling.config({
+        disabled: () => spec.disabled || providersBackstage.isReadOnly()
+      }),
+      ReadOnly.receivingConfig(),
       Tabstopping.config({}),
       AddEventsBehaviour.config('size-input-events', [
-        AlloyEvents.run(NativeEvents.focusin(), function (component, simulatedEvent) {
+        AlloyEvents.run(NativeEvents.focusin(), function (component, _simulatedEvent) {
           AlloyTriggers.emitWith(component, ratioEvent, { isField1 });
         }),
-        AlloyEvents.run(NativeEvents.change(), function (component, simulatedEvent) {
+        AlloyEvents.run(NativeEvents.change(), function (component, _simulatedEvent) {
           AlloyTriggers.emitWith(component, formChangeEvent, { name: spec.name });
         })
       ])
@@ -100,15 +93,13 @@ export const renderSizeInput = (spec: SizeInputSpec, providersBackstage: UiFacto
     selectOnFocus: false
   });
 
-  const getLabel = (label: string) => {
-    return {
-      dom: {
-        tag: 'label',
-        classes: ['tox-label'],
-        innerHtml: providersBackstage.translate(label)
-      }
-    };
-  };
+  const getLabel = (label: string) => ({
+    dom: {
+      tag: 'label',
+      classes: [ 'tox-label' ],
+      innerHtml: providersBackstage.translate(label)
+    }
+  });
 
   const widthField = AlloyFormCoupledInputs.parts().field1(
     formGroup([ AlloyFormField.parts().label(getLabel('Width')), getFieldPart(true) ])
@@ -121,13 +112,13 @@ export const renderSizeInput = (spec: SizeInputSpec, providersBackstage: UiFacto
   return AlloyFormCoupledInputs.sketch({
     dom: {
       tag: 'div',
-      classes: ['tox-form__group']
+      classes: [ 'tox-form__group' ]
     },
     components: [
       {
         dom: {
           tag: 'div',
-          classes: ['tox-form__controls-h-stack']
+          classes: [ 'tox-form__controls-h-stack' ]
         },
         components: [
           // NOTE: Form coupled inputs to the FormField.sketch themselves.
@@ -147,7 +138,7 @@ export const renderSizeInput = (spec: SizeInputSpec, providersBackstage: UiFacto
     markers: {
       lockClass: 'tox-locked'
     },
-    onLockedChange(current: AlloyComponent, other: AlloyComponent, lock: AlloyComponent) {
+    onLockedChange(current: AlloyComponent, other: AlloyComponent, _lock: AlloyComponent) {
       parseSize(Representing.getValue(current)).each((size) => {
         converter(size).each((newSize) => {
           Representing.setValue(other, formatSize(newSize));
@@ -156,7 +147,7 @@ export const renderSizeInput = (spec: SizeInputSpec, providersBackstage: UiFacto
     },
     coupledFieldBehaviours: Behaviour.derive([
       Disabling.config({
-        disabled: spec.disabled,
+        disabled: () => spec.disabled || providersBackstage.isReadOnly(),
         onDisabled: (comp) => {
           AlloyFormCoupledInputs.getField1(comp).bind(AlloyFormField.getField).each(Disabling.disable);
           AlloyFormCoupledInputs.getField2(comp).bind(AlloyFormField.getField).each(Disabling.disable);
@@ -168,6 +159,7 @@ export const renderSizeInput = (spec: SizeInputSpec, providersBackstage: UiFacto
           AlloyFormCoupledInputs.getLock(comp).each(Disabling.enable);
         }
       }),
+      ReadOnly.receivingConfig(),
       AddEventsBehaviour.config('size-input-events2', [
         AlloyEvents.run<RatioEvent>(ratioEvent, function (component, simulatedEvent) {
           const isField1 = simulatedEvent.event().isField1();

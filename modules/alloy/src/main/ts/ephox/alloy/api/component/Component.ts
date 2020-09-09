@@ -3,6 +3,7 @@ import { Arr, Cell, Fun, Option, Type } from '@ephox/katamari';
 import { Traverse } from '@ephox/sugar';
 
 import { AlloyBehaviour } from '../../api/behaviour/Behaviour';
+import { ComponentDetail } from '../../api/component/SpecTypes';
 import { AlloySystemApi } from '../../api/system/SystemApi';
 import * as BehaviourBlob from '../../behaviour/common/BehaviourBlob';
 import { BehaviourState } from '../../behaviour/common/BehaviourState';
@@ -53,10 +54,8 @@ const getEvents = (
   return ComponentEvents.combine(bData, info.eventOrder, bList, baseEvents).getOrDie();
 };
 
-const build = (spec): AlloyComponent => {
-  const getMe = () => {
-    return me;
-  };
+const build = (spec: ComponentDetail): AlloyComponent => {
+  const getMe = () => me;
 
   const systemApi = Cell(singleton);
 
@@ -84,20 +83,16 @@ const build = (spec): AlloyComponent => {
   const syncComponents = (): void => {
     // Update the component list with the current children
     const children = Traverse.children(item);
-    const subs = Arr.bind(children, (child) => {
-
-      return systemApi.get().getByDom(child).fold(() => {
-        // INVESTIGATE: Not sure about how to handle text nodes here.
-        return [ ];
-      }, (c) => {
-        return [ c ];
-      });
-    });
+    // INVESTIGATE: Not sure about how to handle text nodes here.
+    const subs = Arr.bind(children, (child) => systemApi.get().getByDom(child).fold(
+      () => [ ],
+      (c) => [ c ]
+    ));
     subcomponents.set(subs);
   };
 
   // TYPIFY (any here is for the info.apis() pathway)
-  const config = <D>(behaviour: AlloyBehaviour<any, D>): D | any => {
+  const config = (behaviour: AlloyBehaviour<any, any>): Option<BehaviourBlob.BehaviourConfigAndState<any, any>> => {
     const b = bData;
     const f = Type.isFunction(b[behaviour.name()]) ? b[behaviour.name()] : () => {
       throw new Error('Could not find ' + behaviour.name() + ' in ' + JSON.stringify(spec, null, 2));
@@ -105,19 +100,11 @@ const build = (spec): AlloyComponent => {
     return f();
   };
 
-  const hasConfigured = (behaviour: AlloyBehaviour<any, any>): boolean => {
-    return Type.isFunction(bData[behaviour.name()]);
-  };
+  const hasConfigured = (behaviour: AlloyBehaviour<any, any>): boolean => Type.isFunction(bData[behaviour.name()]);
 
-  const getApis = <A>(): A => {
-    return info.apis;
-  };
+  const getApis = <A>(): A => info.apis;
 
-  const readState = (behaviourName: string): any => {
-    return bData[behaviourName]().map((b) => {
-      return b.state.readState();
-    }).getOr('not enabled');
-  };
+  const readState = (behaviourName: string): any => bData[behaviourName]().map((b) => b.state.readState()).getOr('not enabled');
 
   const me: AlloyComponent = {
     getSystem: systemApi.get,

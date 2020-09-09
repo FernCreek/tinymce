@@ -10,9 +10,9 @@ import { HTMLAnchorElement } from '@ephox/dom-globals';
 import { Option } from '@ephox/katamari';
 import Editor from 'tinymce/core/api/Editor';
 
-import Actions from '../core/Actions';
-import Utils from '../core/Utils';
-import Settings from '../api/Settings';
+import * as Actions from '../core/Actions';
+import * as Utils from '../core/Utils';
+import * as Settings from '../api/Settings';
 
 const setupButtons = function (editor: Editor) {
   editor.ui.registry.addToggleButton('link', {
@@ -64,9 +64,7 @@ const setupContextMenu = function (editor: Editor) {
   const inLink = 'link unlink openlink';
   const noLink = 'link';
   editor.ui.registry.addContextMenu('link', {
-    update: (element) => {
-      return Utils.hasLinks(editor.dom.getParents(element, 'a') as HTMLAnchorElement[]) ? inLink : noLink;
-    }
+    update: (element) => Utils.hasLinks(editor.dom.getParents(element, 'a') as HTMLAnchorElement[]) ? inLink : noLink
   });
 };
 
@@ -123,9 +121,11 @@ const setupContextToolbars = function (editor: Editor) {
             });
             formApi.hide();
           } else {
-            editor.dom.setAttrib(anchor, 'href', value);
-            collapseSelectionToEnd(editor);
-            formApi.hide();
+            editor.undoManager.transact(() => {
+              editor.dom.setAttrib(anchor, 'href', value);
+              collapseSelectionToEnd(editor);
+              formApi.hide();
+            });
           }
         }
       },
@@ -154,7 +154,7 @@ const setupContextToolbars = function (editor: Editor) {
   });
 };
 
-export default {
+export {
   setupButtons,
   setupMenuItems,
   setupContextMenu,

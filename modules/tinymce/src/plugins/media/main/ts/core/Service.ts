@@ -7,33 +7,33 @@
 
 import Editor from 'tinymce/core/api/Editor';
 import Promise from 'tinymce/core/api/util/Promise';
-import Settings from '../api/Settings';
+import * as Settings from '../api/Settings';
 import * as DataToHtml from './DataToHtml';
 import { MediaData } from './Types';
 
 const cache = {};
 const embedPromise = function (data: MediaData, dataToHtml: DataToHtml.DataToHtmlCallback, handler) {
-  return new Promise<{url: string, html: string}>(function (res, rej) {
+  return new Promise<{url: string; html: string}>(function (res, rej) {
     const wrappedResolve = function (response) {
       if (response.html) {
-        cache[data.source1] = response;
+        cache[data.source] = response;
       }
       return res({
-        url: data.source1,
+        url: data.source,
         html: response.html ? response.html : dataToHtml(data)
       });
     };
-    if (cache[data.source1]) {
-      wrappedResolve(cache[data.source1]);
+    if (cache[data.source]) {
+      wrappedResolve(cache[data.source]);
     } else {
-      handler({ url: data.source1 }, wrappedResolve, rej);
+      handler({ url: data.source }, wrappedResolve, rej);
     }
   });
 };
 
 const defaultPromise = function (data: MediaData, dataToHtml: DataToHtml.DataToHtmlCallback) {
-  return new Promise<{url: string, html: string}>(function (res) {
-    res({ html: dataToHtml(data), url: data.source1 });
+  return new Promise<{url: string; html: string}>(function (res) {
+    res({ html: dataToHtml(data), url: data.source });
   });
 };
 
@@ -53,7 +53,7 @@ const isCached = function (url: string) {
   return cache.hasOwnProperty(url);
 };
 
-export default {
+export {
   getEmbedHtml,
   isCached
 };

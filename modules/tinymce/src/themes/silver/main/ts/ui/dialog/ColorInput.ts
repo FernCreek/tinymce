@@ -6,23 +6,8 @@
  */
 
 import {
-  AddEventsBehaviour,
-  AlloyEvents,
-  AlloySpec,
-  AlloyTriggers,
-  Behaviour,
-  Composing,
-  CustomEvent,
-  Focusing,
-  FormField,
-  Input,
-  Invalidating,
-  Layout,
-  Memento,
-  Representing,
-  SimpleSpec,
-  Tabstopping,
-  AlloyComponent,
+  AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloySpec, AlloyTriggers, Behaviour, Composing, CustomEvent, Disabling, Focusing,
+  FormField, Input, Invalidating, Layout, Memento, Representing, SimpleSpec, Tabstopping
 } from '@ephox/alloy';
 import { Types } from '@ephox/bridge';
 import { Future, Id, Option, Result } from '@ephox/katamari';
@@ -30,11 +15,12 @@ import { Css, Element, Traverse } from '@ephox/sugar';
 
 import { UiFactoryBackstageShared } from '../../backstage/Backstage';
 import { UiFactoryBackstageForColorInput } from '../../backstage/ColorInputBackstage';
+import * as ReadOnly from '../../ReadOnly';
 import { renderLabel } from '../alien/FieldLabeller';
-import ColorSwatch from '../core/color/ColorSwatch';
-import Settings from '../core/color/Settings';
-import { renderPanelButton } from '../general/PanelButton';
+import * as ColorSwatch from '../core/color/ColorSwatch';
+import * as Settings from '../core/color/Settings';
 import { formChangeEvent } from '../general/FormEvents';
+import { renderPanelButton } from '../general/PanelButton';
 import { Omit } from '../Omit';
 
 const colorInputChangeEvent = Id.generate('color-input-change');
@@ -58,17 +44,19 @@ type ColorInputSpec = Omit<Types.ColorInput.ColorInput, 'type'>;
 export const renderColorInput = (spec: ColorInputSpec, sharedBackstage: UiFactoryBackstageShared, colorInputBackstage: UiFactoryBackstageForColorInput): SimpleSpec => {
   const pField = FormField.parts().field({
     factory: Input,
-    inputClasses: ['tox-textfield'],
+    inputClasses: [ 'tox-textfield' ],
 
     onSetValue: (c) => Invalidating.run(c).get(() => { }),
 
     inputBehaviours: Behaviour.derive([
+      Disabling.config({
+        disabled: sharedBackstage.providers.isReadOnly
+      }),
+      ReadOnly.receivingConfig(),
       Tabstopping.config({ }),
       Invalidating.config({
         invalidClass: 'tox-textbox-field-invalid',
-        getRoot: (comp) => {
-          return Traverse.parent(comp.element());
-        },
+        getRoot: (comp) => Traverse.parent(comp.element()),
         notify: {
           onValid: (comp) => {
             // onValid should pass through the value here
@@ -141,10 +129,10 @@ export const renderColorInput = (spec: ColorInputSpec, sharedBackstage: UiFactor
           'aria-label': sharedBackstage.providers.translate('Color swatch')
         }
       },
-      layouts: Option.some({
-        onRtl: () => [ Layout.southeast ],
-        onLtr: () => [ Layout.southwest ]
-      }),
+      layouts: {
+        onRtl: () => [ Layout.southwest, Layout.southeast, Layout.south ],
+        onLtr: () => [ Layout.southeast, Layout.southwest, Layout.south ]
+      },
       components: [],
       fetch: ColorSwatch.getFetch(colorInputBackstage.getColors(), colorInputBackstage.hasCustomColors()),
       columns: colorInputBackstage.getColorCols(),
@@ -156,13 +144,13 @@ export const renderColorInput = (spec: ColorInputSpec, sharedBackstage: UiFactor
   return FormField.sketch({
     dom: {
       tag: 'div',
-      classes: ['tox-form__group']
+      classes: [ 'tox-form__group' ]
     },
     components: pLabel.toArray().concat([
       {
         dom: {
           tag: 'div',
-          classes: ['tox-color-input']
+          classes: [ 'tox-color-input' ]
         },
         components: [
           pField,
@@ -186,8 +174,8 @@ export const renderColorInput = (spec: ColorInputSpec, sharedBackstage: UiFactor
             Composing.getCurrent(comp).each(Focusing.focus);
           });
         }),
-        AlloyEvents.run<ColorPickerCancelEvent>(colorPickerCancelEvent, (comp, se) => {
-          FormField.getField(comp).each((field) => {
+        AlloyEvents.run<ColorPickerCancelEvent>(colorPickerCancelEvent, (comp, _se) => {
+          FormField.getField(comp).each((_field) => {
             Composing.getCurrent(comp).each(Focusing.focus);
           });
         })

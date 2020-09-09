@@ -12,11 +12,11 @@ import { EditorEvent } from 'tinymce/core/api/util/EventDispatcher';
 import Delay from 'tinymce/core/api/util/Delay';
 import VK from 'tinymce/core/api/util/VK';
 import { PatternSet } from '../core/PatternTypes';
-import KeyHandler from './KeyHandler';
+import * as KeyHandler from './KeyHandler';
 
 const setup = function (editor: Editor, patternsState: Cell<PatternSet>) {
-  const charCodes = [',', '.', ';', ':', '!', '?'];
-  const keyCodes = [32];
+  const charCodes = [ ',', '.', ';', ':', '!', '?' ];
+  const keyCodes = [ 32 ];
 
   editor.on('keydown', function (e: EditorEvent<KeyboardEvent>) {
     if (e.keyCode === 13 && !VK.modifierPressed(e)) {
@@ -41,6 +41,6 @@ const setup = function (editor: Editor, patternsState: Cell<PatternSet>) {
   });
 };
 
-export default {
+export {
   setup
 };

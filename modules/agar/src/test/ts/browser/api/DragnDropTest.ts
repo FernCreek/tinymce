@@ -1,11 +1,11 @@
-import { assert, UnitTest } from '@ephox/bedrock';
-import { Element, Insert, Remove, Body, DomEvent, SelectorFind } from '@ephox/sugar';
-import { Pipeline } from 'ephox/agar/api/Pipeline';
-import { sDragnDrop, dragnDrop, sDropFiles, dropFiles, isDraggable } from 'ephox/agar/api/DragnDrop';
-import { Step } from 'ephox/agar/api/Step';
-import { RawAssertions, Logger, GeneralSteps } from 'ephox/agar/api/Main';
-import { createFile } from 'ephox/agar/api/Files';
+import { Assert, assert, UnitTest } from '@ephox/bedrock-client';
 import { Blob } from '@ephox/dom-globals';
+import { Body, DomEvent, Element, Insert, Remove, SelectorFind } from '@ephox/sugar';
+import { dragnDrop, dropFiles, isDraggable, sDragnDrop, sDropItems, sDropFiles } from 'ephox/agar/api/DragnDrop';
+import { createFile } from 'ephox/agar/api/Files';
+import { GeneralSteps, Logger } from 'ephox/agar/api/Main';
+import { Pipeline } from 'ephox/agar/api/Pipeline';
+import { Step } from 'ephox/agar/api/Step';
 
 UnitTest.test('DragDrop.isDraggable', () => {
   const check = (expected: boolean, html: string) => {
@@ -32,7 +32,7 @@ UnitTest.asynctest('DragnDropTest', (success, failure) => {
   });
 
   const sAssertStoreItems = (expectedStoreItems: string[]) => Step.sync(() => {
-    RawAssertions.assertEq('Should have the expetec items', expectedStoreItems, store);
+    Assert.eq('Should have the expetec items', expectedStoreItems, store);
   });
 
   const dragStartUnbinder = DomEvent.bind(draggable, 'dragstart', (evt) => {
@@ -66,7 +66,7 @@ UnitTest.asynctest('DragnDropTest', (success, failure) => {
     }
   });
 
-  const dragEndUnbinder = DomEvent.bind(draggable, 'dragend', (evt) => {
+  const dragEndUnbinder = DomEvent.bind(draggable, 'dragend', (_evt) => {
     store.push('dragend');
   });
 
@@ -77,7 +77,7 @@ UnitTest.asynctest('DragnDropTest', (success, failure) => {
     Logger.t('Drag/drop element with data using selectors', GeneralSteps.sequence([
       sClearStore,
       sDragnDrop('.draggable', '.dropzone'),
-      sAssertStoreItems(['dragstart', 'dragenter', 'dragover', 'drop text: hello', 'dragend'])
+      sAssertStoreItems([ 'dragstart', 'dragenter', 'dragover', 'drop text: hello', 'dragend' ])
     ])),
 
     Logger.t('Drag/drop element with data using elements', GeneralSteps.sequence([
@@ -88,16 +88,16 @@ UnitTest.asynctest('DragnDropTest', (success, failure) => {
 
         dragnDrop(from, to);
       }),
-      sAssertStoreItems(['dragstart', 'dragenter', 'dragover', 'drop text: hello', 'dragend'])
+      sAssertStoreItems([ 'dragstart', 'dragenter', 'dragover', 'drop text: hello', 'dragend' ])
     ])),
 
     Logger.t('Drop files using selector', GeneralSteps.sequence([
       sClearStore,
       sDropFiles([
-        createFile('a.txt', 123, new Blob([''], { type: 'text/plain' })),
-        createFile('b.html', 123, new Blob([''], { type: 'text/html' }))
+        createFile('a.txt', 123, new Blob([ '' ], { type: 'text/plain' })),
+        createFile('b.html', 123, new Blob([ '' ], { type: 'text/html' }))
       ], '.dropzone'),
-      sAssertStoreItems(['dragenter', 'dragover', 'drop files: 2'])
+      sAssertStoreItems([ 'dragenter', 'dragover', 'drop files: 2' ])
     ])),
 
     Logger.t('Drop files using element', GeneralSteps.sequence([
@@ -106,11 +106,20 @@ UnitTest.asynctest('DragnDropTest', (success, failure) => {
         const to = SelectorFind.descendant(Body.body(), '.dropzone').getOrDie('Could not find to element.');
 
         dropFiles([
-          createFile('a.txt', 123, new Blob([''], { type: 'text/plain' })),
-          createFile('b.html', 123, new Blob([''], { type: 'text/html' }))
+          createFile('a.txt', 123, new Blob([ '' ], { type: 'text/plain' })),
+          createFile('b.html', 123, new Blob([ '' ], { type: 'text/html' }))
         ], to);
       }),
-      sAssertStoreItems(['dragenter', 'dragover', 'drop files: 2'])
+      sAssertStoreItems([ 'dragenter', 'dragover', 'drop files: 2' ])
+    ])),
+
+    Logger.t('Drop items using selector', GeneralSteps.sequence([
+      sClearStore,
+      sDropItems([
+        { data: 'hello', type: 'text/plain' },
+        { data: '<p>hello</p>', type: 'text/html' }
+      ], '.dropzone'),
+      sAssertStoreItems([ 'dragenter', 'dragover', 'drop text: hello' ])
     ]))
   ], () => {
     Remove.remove(dropzone);

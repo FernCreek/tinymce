@@ -1,15 +1,13 @@
 import { Assertions, Logger, Pipeline, Step } from '@ephox/agar';
 import { Element } from '@ephox/sugar';
 import * as CaretContainer from 'tinymce/core/caret/CaretContainer';
-import CaretContainerRemove from 'tinymce/core/caret/CaretContainerRemove';
+import * as CaretContainerRemove from 'tinymce/core/caret/CaretContainerRemove';
 import CaretPosition from 'tinymce/core/caret/CaretPosition';
 import Env from 'tinymce/core/api/Env';
 import ViewBlock from '../../module/test/ViewBlock';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 
-UnitTest.asynctest('browser.tinymce.core.CaretContainerRemoveTest', function () {
-  const success = arguments[arguments.length - 2];
-  const failure = arguments[arguments.length - 1];
+UnitTest.asynctest('browser.tinymce.core.CaretContainerRemoveTest', function (success, failure) {
   const viewBlock = ViewBlock();
 
   if (!Env.ceFalse) {

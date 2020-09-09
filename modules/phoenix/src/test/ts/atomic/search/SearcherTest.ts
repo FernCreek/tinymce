@@ -1,4 +1,4 @@
-import { assert, UnitTest } from '@ephox/bedrock';
+import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Gene, TestUniverse, TextGene } from '@ephox/boss';
 import { Arr, Fun } from '@ephox/katamari';
 import * as Searcher from 'ephox/phoenix/search/Searcher';
@@ -70,11 +70,11 @@ UnitTest.test('SearcherTest', function () {
   // paragraphs. This one ends with a partial fo|r and more.
 
   checkWords([
-    { items: ['test'], word: 'test', exact: 'test' },
-    { items: ['word'], word: 'word', exact: 'word' },
-    { items: ['for'], word: 'for', exact: 'for' },
-    { items: ['w', 'or', 'd'], word: 'word', exact: 'word' },
-    { items: ['for'], word: 'for', exact: 'for' },
-    { items: ['tes', 't'], word: 'test', exact: 'test' }
-  ], ['p1', 'p2', 'p3'], ['for', 'test', 'word'], data());
+    { items: [ 'test' ], word: 'test', exact: 'test' },
+    { items: [ 'word' ], word: 'word', exact: 'word' },
+    { items: [ 'for' ], word: 'for', exact: 'for' },
+    { items: [ 'w', 'or', 'd' ], word: 'word', exact: 'word' },
+    { items: [ 'for' ], word: 'for', exact: 'for' },
+    { items: [ 'tes', 't' ], word: 'test', exact: 'test' }
+  ], [ 'p1', 'p2', 'p3' ], [ 'for', 'test', 'word' ], data());
 });

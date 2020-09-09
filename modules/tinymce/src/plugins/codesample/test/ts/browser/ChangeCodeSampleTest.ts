@@ -1,5 +1,5 @@
-import { Pipeline, Log } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { Log, Pipeline } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
 import { TinyLoader } from '@ephox/mcagar';
 import { Element } from '@ephox/sugar';
@@ -25,9 +25,9 @@ UnitTest.asynctest('browser.tinymce.plugins.codesample.ChangeLanguageCodeSampleT
         TestUtils.sSetTextareaContent(jsContent),
         TestUtils.sSubmitDialog(docBody),
         TestUtils.sAssertEditorContents(editorBody, 'javascript', jsContent, 'pre.language-javascript'),
-        TestUtils.sOpenDialogAndAssertInitial(editor, docBody, 'javascript', jsContent),
+        TestUtils.sOpenDialogAndAssertInitial(editor, docBody, 'javascript', jsContent)
       ])
-    , onSuccess, onFailure);
+      , onSuccess, onFailure);
   }, {
     plugins: 'codesample',
     theme: 'silver',

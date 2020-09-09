@@ -4,7 +4,9 @@
  * For LGPL see License.txt in the project root for license information.
  * For commercial licenses see https://www.tiny.cloud/
  */
-import { AlloyEvents, AlloyParts, AlloySpec, AlloyTriggers, Behaviour, DomFactory, GuiFactory, ModalDialog, Reflecting, SystemEvents, } from '@ephox/alloy';
+import {
+  AlloyEvents, AlloyParts, AlloySpec, AlloyTriggers, Behaviour, DomFactory, GuiFactory, ModalDialog, Reflecting, SystemEvents
+} from '@ephox/alloy';
 import { DialogManager, Types } from '@ephox/bridge';
 import { Arr, Cell, Option } from '@ephox/katamari';
 
@@ -30,52 +32,44 @@ export interface DialogSpec {
   extraBehaviours: Behaviour.NamedConfiguredBehaviour<any, any>[];
 }
 
-const getHeader = (title: string, backstage: UiFactoryBackstage) => {
-  return renderModalHeader({
-    title: backstage.shared.providers.translate(title),
-    draggable: backstage.dialog.isDraggableModal()
-  }, backstage.shared.providers);
-};
+const getHeader = (title: string, backstage: UiFactoryBackstage) => renderModalHeader({
+  title: backstage.shared.providers.translate(title),
+  draggable: backstage.dialog.isDraggableModal()
+}, backstage.shared.providers);
 
-const getEventExtras = (lazyDialog, extra: WindowExtra) => {
-  return {
-    onClose: () => extra.closeWindow(),
-    onBlock: (blockEvent: FormBlockEvent) => {
-      ModalDialog.setBusy(lazyDialog(), (d, bs) => {
-        return {
-          dom: {
-            tag: 'div',
-            classes: [ 'tox-dialog__busy-spinner' ],
-            attributes: {
-              'aria-label': blockEvent.message()
-            },
-            styles: {
-              left: '0px',
-              right: '0px',
-              bottom: '0px',
-              top: '0px',
-              position: 'absolute'
-            }
-          },
-          behaviours: bs,
-          components: [
-            {
-              dom: DomFactory.fromHtml(`<div class="tox-spinner"><div></div><div></div><div></div></div>`)
-            }
-          ]
-        };
-      });
-    },
-    onUnblock: () => {
-      ModalDialog.setIdle(lazyDialog());
-    }
-  };
-};
+const getEventExtras = (lazyDialog, extra: WindowExtra) => ({
+  onClose: () => extra.closeWindow(),
+  onBlock: (blockEvent: FormBlockEvent) => {
+    ModalDialog.setBusy(lazyDialog(), (d, bs) => ({
+      dom: {
+        tag: 'div',
+        classes: [ 'tox-dialog__busy-spinner' ],
+        attributes: {
+          'aria-label': blockEvent.message()
+        },
+        styles: {
+          left: '0px',
+          right: '0px',
+          bottom: '0px',
+          top: '0px',
+          position: 'absolute'
+        }
+      },
+      behaviours: bs,
+      components: [
+        {
+          dom: DomFactory.fromHtml('<div class="tox-spinner"><div></div><div></div><div></div></div>')
+        }
+      ]
+    }));
+  },
+  onUnblock: () => {
+    ModalDialog.setIdle(lazyDialog());
+  }
+});
 
 const renderModalDialog = (spec: DialogSpec, initialData, dialogEvents: AlloyEvents.AlloyEventKeyAndHandler<any>[], backstage: UiFactoryBackstage) => {
-  const updateState = (_comp, incoming) => {
-    return Option.some(incoming);
-  };
+  const updateState = (_comp, incoming) => Option.some(incoming);
 
   return GuiFactory.build(Dialogs.renderDialog({
     ...spec,
@@ -96,7 +90,7 @@ const renderModalDialog = (spec: DialogSpec, initialData, dialogEvents: AlloyEve
     eventOrder: {
       [SystemEvents.receive()]: [ 'reflecting', 'receiving' ],
       [SystemEvents.attachedToDom()]: [ 'scroll-lock', 'reflecting', 'messages', 'dialog-events', 'alloy.base.behaviour' ],
-      [SystemEvents.detachedFromDom()]: [ 'alloy.base.behaviour', 'dialog-events', 'messages', 'reflecting', 'scroll-lock' ],
+      [SystemEvents.detachedFromDom()]: [ 'alloy.base.behaviour', 'dialog-events', 'messages', 'reflecting', 'scroll-lock' ]
     }
   }));
 };
@@ -104,7 +98,7 @@ const renderModalDialog = (spec: DialogSpec, initialData, dialogEvents: AlloyEve
 const mapMenuButtons = (buttons: Types.Dialog.DialogButton[]): (Types.Dialog.DialogButton | StoragedMenuButton)[] => {
   const mapItems = (button: Types.Dialog.DialogMenuButton): StoragedMenuButton => {
     const items = Arr.map(button.items, (item: Types.Dialog.DialogToggleMenuItem): StoragedMenuItem => {
-      const cell = Cell<Boolean>(false);
+      const cell = Cell<boolean>(false);
       return {
         ...item,
         storage: cell
@@ -124,18 +118,16 @@ const mapMenuButtons = (buttons: Types.Dialog.DialogButton[]): (Types.Dialog.Dia
   });
 };
 
-const extractCellsToObject = (buttons: (StoragedMenuButton | Types.Dialog.DialogMenuButton | Types.Dialog.DialogNormalButton)[]) => {
-  return Arr.foldl(buttons, (acc, button) => {
-    if (button.type === 'menu') {
-      const menuButton = button as StoragedMenuButton;
-      return Arr.foldl(menuButton.items, (innerAcc, item) => {
-        innerAcc[item.name] = item.storage;
-        return innerAcc;
-      }, acc);
-    }
-    return acc;
-  }, {});
-};
+const extractCellsToObject = (buttons: (StoragedMenuButton | Types.Dialog.DialogMenuButton | Types.Dialog.DialogNormalButton)[]) => Arr.foldl(buttons, (acc, button) => {
+  if (button.type === 'menu') {
+    const menuButton = button as StoragedMenuButton;
+    return Arr.foldl(menuButton.items, (innerAcc, item) => {
+      innerAcc[item.name] = item.storage;
+      return innerAcc;
+    }, acc);
+  }
+  return acc;
+}, {});
 
 export {
   getHeader,

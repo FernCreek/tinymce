@@ -22,11 +22,9 @@ const alertBannerFields = [
   FieldSchema.strictString('text'),
   FieldSchema.strictStringEnum('level', [ 'info', 'warn', 'error', 'success' ]),
   FieldSchema.strictString('icon'),
-  FieldSchema.defaulted('url', ''),
+  FieldSchema.defaulted('url', '')
 ];
 
 export const alertBannerSchema = ValueSchema.objOf(alertBannerFields);
 
-export const createAlertBanner = (spec: AlertBannerApi): Result<AlertBanner, ValueSchema.SchemaError<any>> => {
-  return ValueSchema.asRaw<AlertBanner>('alertbanner', alertBannerSchema, spec);
-};
+export const createAlertBanner = (spec: AlertBannerApi): Result<AlertBanner, ValueSchema.SchemaError<any>> => ValueSchema.asRaw<AlertBanner>('alertbanner', alertBannerSchema, spec);

@@ -1,5 +1,5 @@
 import { Pipeline, Log, FocusTools, Keyboard, Keys } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { TinyApis, TinyLoader } from '@ephox/mcagar';
 import { Element } from '@ephox/sugar';
 import { document } from '@ephox/dom-globals';
@@ -22,17 +22,15 @@ UnitTest.asynctest('browser.tinymce.plugins.help.DialogKeyboardNavTest', (succes
     const sPressDownArrowKey = Keyboard.sKeydown(doc, Keys.down(), { });
 
     // Assert focus is on the expected form element
-    const sAssertFocusOnItem = (label, selector) => {
-      return FocusTools.sTryOnSelector(
-        `Focus should be on: ${label}`,
-        doc,
-        selector
-      );
-    };
+    const sAssertFocusOnItem = (label, selector) => FocusTools.sTryOnSelector(
+      `Focus should be on: ${label}`,
+      doc,
+      selector
+    );
 
     Pipeline.async({}, [
       Log.stepsAsStep('TBA', 'Help: Open dialog', [
-        tinyApis.sFocus,
+        tinyApis.sFocus(),
         tinyApis.sExecCommand('mceHelp')
       ]),
 
@@ -49,6 +47,8 @@ UnitTest.asynctest('browser.tinymce.plugins.help.DialogKeyboardNavTest', (succes
 
       Log.stepsAsStep('TBA', 'Help: test the tab key navigation cycles through all focusable fields in Keyboard Nav tab', [
         sAssertFocusOnItem('Keyboard Nav Tab', '.tox-dialog__body-nav-item:contains("Keyboard Navigation")'),
+        sPressTabKey,
+        sAssertFocusOnItem('Installed Plugins', 'div[role="document"]'),
         sPressTabKey,
         sAssertFocusOnItem('Close Button', '.tox-button:contains("Close")'),
         sPressTabKey,
@@ -78,9 +78,9 @@ UnitTest.asynctest('browser.tinymce.plugins.help.DialogKeyboardNavTest', (succes
       ])
     ], onSuccess, onFailure);
   }, {
-      plugins: 'help',
-      toolbar: 'help',
-      theme: 'silver',
-      base_url: '/project/tinymce/js/tinymce'
-    }, success, failure);
+    plugins: 'help',
+    toolbar: 'help',
+    theme: 'silver',
+    base_url: '/project/tinymce/js/tinymce'
+  }, success, failure);
 });

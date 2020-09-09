@@ -1,19 +1,19 @@
 import { Pipeline } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
+import { Text } from '@ephox/dom-globals';
 import { LegacyUnit, TinyLoader } from '@ephox/mcagar';
+import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
-import HtmlUtils from '../module/test/HtmlUtils';
-import KeyUtils from '../module/test/KeyUtils';
 import Theme from 'tinymce/themes/silver/Theme';
-import { UnitTest } from '@ephox/bedrock';
+import * as HtmlUtils from '../module/test/HtmlUtils';
+import * as KeyUtils from '../module/test/KeyUtils';
 
-UnitTest.asynctest('browser.tinymce.core.UndoManager', function () {
-  const success = arguments[arguments.length - 2];
-  const failure = arguments[arguments.length - 1];
-  const suite = LegacyUnit.createSuite();
+UnitTest.asynctest('browser.tinymce.core.UndoManager', function (success, failure) {
+  const suite = LegacyUnit.createSuite<Editor>();
 
   Theme();
 
-  const ok = function (value, label?) {
+  const ok = function (value: boolean, label?: string) {
     return LegacyUnit.equal(value, true, label);
   };
 
@@ -79,8 +79,6 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function () {
   });
 
   suite.test('Typing state', function (editor) {
-    let selectAllFlags;
-
     editor.undoManager.clear();
     editor.setContent('test');
 
@@ -92,7 +90,7 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function () {
     editor.dom.fire(editor.getBody(), 'keydown', { keyCode: 13 });
     ok(!editor.undoManager.typing);
 
-    selectAllFlags = { keyCode: 65, ctrlKey: false, altKey: false, shiftKey: false };
+    const selectAllFlags: Record<string, any> = { keyCode: 65, ctrlKey: false, altKey: false, shiftKey: false };
 
     if (Env.mac) {
       selectAllFlags.metaKey = true;
@@ -152,7 +150,6 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function () {
   });
 
   suite.test('No undo/redo cmds on Undo/Redo shortcut', function (editor) {
-    let evt;
     const commands = [];
     let added = false;
 
@@ -167,7 +164,7 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function () {
       added = true;
     });
 
-    evt = {
+    const evt = {
       keyCode: 90,
       metaKey: Env.mac,
       ctrlKey: !Env.mac,
@@ -180,11 +177,11 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function () {
     editor.dom.fire(editor.getBody(), 'keyup', evt);
 
     LegacyUnit.strictEqual(added, false);
-    LegacyUnit.deepEqual(commands, ['Undo']);
+    LegacyUnit.deepEqual(commands, [ 'Undo' ]);
   });
 
   suite.test('Transact', function (editor) {
-    let count = 0, level;
+    let count = 0;
 
     editor.undoManager.clear();
 
@@ -192,7 +189,7 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function () {
       count++;
     });
 
-    level = editor.undoManager.transact(function () {
+    const level = editor.undoManager.transact(function () {
       editor.undoManager.add();
       editor.undoManager.add();
     });
@@ -265,8 +262,6 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function () {
   });
 
   suite.test('Extra with changes', function (editor) {
-    let data;
-
     editor.undoManager.clear();
     editor.setContent('<p>abc</p>');
     LegacyUnit.setSelection(editor, 'p', 0);
@@ -280,16 +275,16 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function () {
       editor.insertContent('2');
     });
 
-    data = editor.undoManager.data;
+    const data = editor.undoManager.data;
     LegacyUnit.equal(data.length, 3);
     LegacyUnit.equal(data[0].content, '<p>abc</p>');
-    LegacyUnit.deepEqual(data[0].bookmark, { start: [0, 0, 0] });
-    LegacyUnit.deepEqual(data[0].beforeBookmark, { start: [0, 0, 0] });
+    LegacyUnit.deepEqual(data[0].bookmark, { start: [ 0, 0, 0 ] });
+    LegacyUnit.deepEqual(data[0].beforeBookmark, { start: [ 0, 0, 0 ] });
     LegacyUnit.equal(data[1].content, '<p>a1c</p>');
-    LegacyUnit.deepEqual(data[1].bookmark, { start: [2, 0, 0] });
-    LegacyUnit.deepEqual(data[1].beforeBookmark, { start: [2, 0, 0] });
+    LegacyUnit.deepEqual(data[1].bookmark, { start: [ 2, 0, 0 ] });
+    LegacyUnit.deepEqual(data[1].beforeBookmark, { start: [ 2, 0, 0 ] });
     LegacyUnit.equal(data[2].content, '<p>a2c</p>');
-    LegacyUnit.deepEqual(data[2].bookmark, { start: [2, 0, 0] });
+    LegacyUnit.deepEqual(data[2].bookmark, { start: [ 2, 0, 0 ] });
     LegacyUnit.deepEqual(data[1].beforeBookmark, data[2].bookmark);
   });
 
@@ -474,7 +469,7 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function () {
     LegacyUnit.equal(editor.undoManager.typing, true);
     LegacyUnit.equal(editor.getContent(), '<p>aB</p>');
     editor.undoManager.transact(function () {
-      editor.getBody().firstChild.firstChild.data = 'aBC';
+      (editor.getBody().firstChild.firstChild as Text).data = 'aBC';
     });
     LegacyUnit.equal(editor.undoManager.typing, false);
     LegacyUnit.equal(editor.undoManager.data.length, 3);
@@ -498,6 +493,12 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function () {
     LegacyUnit.equal(editor.undoManager.typing, true);
     LegacyUnit.equal(editor.undoManager.data.length, 0);
     LegacyUnit.equal(editor.getContent(), '<p><em><strong>a</strong></em></p>');
+  });
+
+  suite.test('undo filter for mceRepaint is case insensitive', function (editor) {
+    editor.undoManager.clear();
+    editor.execCommand('mceRepaint');
+    LegacyUnit.equal(editor.undoManager.hasUndo(), false);
   });
 
   TinyLoader.setupLight(function (editor, onSuccess, onFailure) {

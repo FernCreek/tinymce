@@ -1,6 +1,6 @@
 import { Assertions, Chain, GeneralSteps, Logger, Mouse, Pipeline, Waiter } from '@ephox/agar';
 import { TestHelpers } from '@ephox/alloy';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { Types } from '@ephox/bridge';
 import { Cell } from '@ephox/katamari';
 import { TinyLoader } from '@ephox/mcagar';
@@ -17,7 +17,7 @@ UnitTest.asynctest('WindowManager:simple-dialog access Test', (success, failure)
     const currentApi = Cell<Types.Dialog.DialogInstanceApi<any>>({ } as any);
     const store = TestHelpers.TestStore();
 
-    const dialogSpec: Types.Dialog.DialogApi<{ fieldA: string; }> = {
+    const dialogSpec: Types.Dialog.DialogApi<{ fieldA: string }> = {
       title: 'Silver Test Access Dialog',
       body: {
         type: 'panel',
@@ -26,7 +26,7 @@ UnitTest.asynctest('WindowManager:simple-dialog access Test', (success, failure)
             type: 'input',
             name: 'fieldA',
             label: 'Label'
-          },
+          }
         ]
       },
       buttons: [
@@ -36,7 +36,7 @@ UnitTest.asynctest('WindowManager:simple-dialog access Test', (success, failure)
           text: 'Call api.setData after two seconds',
           align: 'start',
           primary: true
-        },
+        }
       ],
       initialData: {
         fieldA: 'Init Value'
@@ -57,7 +57,7 @@ UnitTest.asynctest('WindowManager:simple-dialog access Test', (success, failure)
           api.unblock();
           api.showTab('new tab');
           // Currently, it is only going to validate it if the dialog is still open
-          const redialSpec: Types.Dialog.DialogApi<{ fieldA: string; }> = {
+          const redialSpec: Types.Dialog.DialogApi<{ fieldA: string }> = {
             title: 'temporary redial to check the API',
             body: {
               type: 'panel',

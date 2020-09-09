@@ -8,8 +8,8 @@
 import { Arr } from '@ephox/katamari';
 import * as CaretContainer from './CaretContainer';
 import CaretPosition from './CaretPosition';
-import NodeType from '../dom/NodeType';
-import Zwsp from '../text/Zwsp';
+import * as NodeType from '../dom/NodeType';
+import * as Zwsp from '../text/Zwsp';
 import { Node, Text } from '@ephox/dom-globals';
 
 const isElement = NodeType.isElement;
@@ -71,17 +71,11 @@ const removeElementAndReposition = (caretContainer: Node, pos: CaretPosition): C
   return newPosition;
 };
 
-const removeTextCaretContainer = (caretContainer: Node, pos: CaretPosition) => {
-  return isText(caretContainer) && pos.container() === caretContainer ? removeTextAndReposition(caretContainer, pos) : removeUnchanged(caretContainer, pos);
-};
+const removeTextCaretContainer = (caretContainer: Node, pos: CaretPosition) => isText(caretContainer) && pos.container() === caretContainer ? removeTextAndReposition(caretContainer, pos) : removeUnchanged(caretContainer, pos);
 
-const removeElementCaretContainer = (caretContainer: Node, pos: CaretPosition) => {
-  return pos.container() === caretContainer.parentNode ? removeElementAndReposition(caretContainer, pos) : removeUnchanged(caretContainer, pos);
-};
+const removeElementCaretContainer = (caretContainer: Node, pos: CaretPosition) => pos.container() === caretContainer.parentNode ? removeElementAndReposition(caretContainer, pos) : removeUnchanged(caretContainer, pos);
 
-const removeAndReposition = (container: Node, pos: CaretPosition) => {
-  return CaretPosition.isTextPosition(pos) ? removeTextCaretContainer(container, pos) : removeElementCaretContainer(container, pos);
-};
+const removeAndReposition = (container: Node, pos: CaretPosition) => CaretPosition.isTextPosition(pos) ? removeTextCaretContainer(container, pos) : removeElementCaretContainer(container, pos);
 
 const remove = (caretContainerNode: Node) => {
   if (isElement(caretContainerNode) && CaretContainer.isCaretContainer(caretContainerNode)) {
@@ -98,7 +92,7 @@ const remove = (caretContainerNode: Node) => {
   }
 };
 
-export default {
+export {
   removeAndReposition,
   remove
 };

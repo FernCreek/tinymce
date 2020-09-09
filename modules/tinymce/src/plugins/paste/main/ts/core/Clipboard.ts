@@ -6,22 +6,31 @@
  */
 
 import { DataTransfer, ClipboardEvent, Range, Event, DragEvent, navigator, KeyboardEvent } from '@ephox/dom-globals';
-import { Cell, Singleton } from '@ephox/katamari';
+import { Arr, Cell, Singleton } from '@ephox/katamari';
 import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
 import Delay from 'tinymce/core/api/util/Delay';
 import { EditorEvent } from 'tinymce/core/api/util/EventDispatcher';
-import Tools from 'tinymce/core/api/util/Tools';
+import Promise from 'tinymce/core/api/util/Promise';
 import VK from 'tinymce/core/api/util/VK';
-import Events from '../api/Events';
-import InternalHtml from './InternalHtml';
-import Newlines from './Newlines';
+import * as Events from '../api/Events';
+import * as Settings from '../api/Settings';
+import * as InternalHtml from './InternalHtml';
+import * as Newlines from './Newlines';
 import { PasteBin } from './PasteBin';
-import ProcessFilters from './ProcessFilters';
+import * as ProcessFilters from './ProcessFilters';
+import * as Utils from './Utils';
 import * as Whitespace from './Whitespace';
-import Utils from './Utils';
 
 declare let window: any;
+
+const doPaste = (editor: Editor, content: string, internal: boolean, pasteAsText: boolean) => {
+  const args = ProcessFilters.process(editor, content, internal);
+
+  if (args.cancelled === false) {
+    editor.insertContent(args.content, {merge: editor.settings.paste_merge_formats !== false, data: {paste: true}});
+  }
+};
 
 /**
  * Pastes the specified HTML. This means that the HTML is filtered and then
@@ -34,11 +43,7 @@ declare let window: any;
  */
 const pasteHtml = (editor: Editor, html: string, internalFlag: boolean) => {
   const internal = internalFlag ? internalFlag : InternalHtml.isMarked(html);
-  const args = ProcessFilters.process(editor, InternalHtml.unmark(html), internal);
-
-  if (args.cancelled === false) {
-    editor.insertContent(args.content, {merge: editor.settings.paste_merge_formats !== false, data: {paste: true}});
-  }
+  doPaste(editor, InternalHtml.unmark(html), internal, false);
 };
 
 /**
@@ -49,10 +54,9 @@ const pasteHtml = (editor: Editor, html: string, internalFlag: boolean) => {
  */
 const pasteText = (editor: Editor, text: string) => {
   const encodedText = editor.dom.encode(text).replace(/\r\n/g, '\n');
-  const normalizedText = Whitespace.normalizeWhitespace(encodedText);
-  const html = Newlines.convert(normalizedText, editor.settings.forced_root_block, editor.settings.forced_root_block_attrs);
-
-  pasteHtml(editor, html, false);
+  const normalizedText = Whitespace.normalizeWhitespace(editor, encodedText);
+  const html = Newlines.convert(normalizedText, Settings.getForcedRootBlock(editor), Settings.getForcedRootBlockAttrs(editor));
+  doPaste(editor, html, false, true);
 };
 
 export interface ClipboardContents {
@@ -102,20 +106,12 @@ const getDataTransferItems = (dataTransfer: DataTransfer): ClipboardContents => 
  * @param {ClipboardEvent} clipboardEvent Event fired on paste.
  * @return {Object} Object with mime types and data for those mime types.
  */
-const getClipboardContent = (editor: Editor, clipboardEvent: ClipboardEvent) => {
-  const content = getDataTransferItems(clipboardEvent.clipboardData || (editor.getDoc() as any).dataTransfer);
+const getClipboardContent = (editor: Editor, clipboardEvent: ClipboardEvent) =>
+  getDataTransferItems(clipboardEvent.clipboardData || (editor.getDoc() as any).dataTransfer);
 
-  // Edge 15 has a broken HTML Clipboard API see https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/11877517/
-  return Utils.isMsEdge() ? Tools.extend(content, { 'text/html': '' }) : content;
-};
+const hasContentType = (clipboardContent: ClipboardContents, mimeType: string) => mimeType in clipboardContent && clipboardContent[mimeType].length > 0;
 
-const hasContentType = (clipboardContent: ClipboardContents, mimeType: string) => {
-  return mimeType in clipboardContent && clipboardContent[mimeType].length > 0;
-};
-
-const hasHtmlOrText = (content: ClipboardContents) => {
-  return hasContentType(content, 'text/html') || hasContentType(content, 'text/plain');
-};
+const hasHtmlOrText = (content: ClipboardContents) => hasContentType(content, 'text/html') || hasContentType(content, 'text/plain');
 
 const pasteImage = (editor: Editor, rng: Range, reader, blob) => {
   if (rng) {
@@ -134,7 +130,7 @@ const isClipboardEvent = (event: Event): event is ClipboardEvent => event.type =
  *
  * @param  {Editor} editor - the editor
  * @param  {ClipboardEvent} e Paste/drop event object.
- * @param  {Range} rng Rng object to move selection to.
+ * @param  {DOMRange} rng Rng object to move selection to.
  * @return {Boolean} true/false if the image data was found or not.
  */
 const pasteImageData = (editor: Editor, e: ClipboardEvent | DragEvent, rng: Range) => {
@@ -163,7 +159,7 @@ const pasteImageData = (editor: Editor, e: ClipboardEvent | DragEvent, rng: Rang
     return hadImage;
   }
 
-  if (editor.settings.paste_data_images && dataTransfer) {
+  if (Settings.getPasteDataImages(editor) && dataTransfer) {
     return processItems(dataTransfer.items) || processItems(dataTransfer.files);
   }
 };
@@ -180,9 +176,7 @@ const isBrokenAndroidClipboardEvent = (e: ClipboardEvent) => {
   return navigator.userAgent.indexOf('Android') !== -1 && clipboardData && clipboardData.items && clipboardData.items.length === 0;
 };
 
-const isKeyboardPasteEvent = (e: KeyboardEvent) => {
-  return (VK.metaKeyPressed(e) && e.keyCode === 86) || (e.shiftKey && e.keyCode === 45);
-};
+const isKeyboardPasteEvent = (e: KeyboardEvent) => (VK.metaKeyPressed(e) && e.keyCode === 86) || (e.shiftKey && e.keyCode === 45);
 
 const registerEventHandlers = (editor: Editor, pasteBin: PasteBin, pasteFormat: Cell<string>) => {
   const keyboardPasteEvent = Singleton.value();
@@ -236,8 +230,8 @@ const registerEventHandlers = (editor: Editor, pasteBin: PasteBin, pasteFormat: 
     }
   });
 
-  function insertClipboardContent(clipboardContent, isKeyBoardPaste, plainTextMode, internal) {
-    let content, isPlainTextHtml;
+  function insertClipboardContent(clipboardContent: ClipboardContents, isKeyBoardPaste: boolean, plainTextMode: boolean, internal: boolean) {
+    let content;
 
     // Grab HTML from Clipboard API or paste bin as a fallback
     if (hasContentType(clipboardContent, 'text/html')) {
@@ -257,11 +251,11 @@ const registerEventHandlers = (editor: Editor, pasteBin: PasteBin, pasteFormat: 
 
     pasteBin.remove();
 
-    isPlainTextHtml = (internal === false && Newlines.isPlainText(content));
+    const isPlainTextHtml = (internal === false && Newlines.isPlainText(content));
 
     // If we got nothing from clipboard API and pastebin or the content is a plain text (with only
     // some BRs, Ps or DIVs as newlines) then we fallback to plain/text
-    if (!content.length || isPlainTextHtml) {
+    if (!content.length || (isPlainTextHtml)) {
       plainTextMode = true;
     }
 
@@ -378,9 +372,7 @@ const registerEventsAndFilters = (editor: Editor, pasteBin: PasteBin, pasteForma
   // Remove all data images from paste for example from Gecko
   // except internal images like video elements
   editor.parser.addNodeFilter('img', (nodes, name, args) => {
-    const isPasteInsert = (args) => {
-      return args.data && args.data.paste === true;
-    };
+    const isPasteInsert = (args) => args.data && args.data.paste === true;
 
     const remove = (node) => {
       if (!node.attr('data-mce-object') && src !== Env.transparentSrc) {
@@ -388,15 +380,11 @@ const registerEventsAndFilters = (editor: Editor, pasteBin: PasteBin, pasteForma
       }
     };
 
-    const isWebKitFakeUrl = (src) => {
-      return src.indexOf('webkit-fake-url') === 0;
-    };
+    const isWebKitFakeUrl = (src) => src.indexOf('webkit-fake-url') === 0;
 
-    const isDataUri = (src) => {
-      return src.indexOf('data:') === 0;
-    };
+    const isDataUri = (src: string) => src.indexOf('data:') === 0;
 
-    if (!editor.settings.paste_data_images && isPasteInsert(args)) {
+    if (!Settings.getPasteDataImages(editor) && isPasteInsert(args)) {
       let i = nodes.length;
 
       while (i--) {
@@ -409,7 +397,7 @@ const registerEventsAndFilters = (editor: Editor, pasteBin: PasteBin, pasteForma
         // Safari on Mac produces webkit-fake-url see: https://bugs.webkit.org/show_bug.cgi?id=49141
         if (isWebKitFakeUrl(src)) {
           remove(nodes[i]);
-        } else if (!editor.settings.allow_html_data_urls && isDataUri(src)) {
+        } else if (!Settings.getAllowHtmlDataUrls(editor) && isDataUri(src)) {
           remove(nodes[i]);
         }
       }

@@ -7,14 +7,15 @@
 
 import { AlloyComponent, AlloySpec, Behaviour, Composite, CustomList, Keying, RawDomSchema, Sketcher, SketchSpec, Toolbar, UiSketcher } from '@ephox/alloy';
 import { FieldSchema } from '@ephox/boulder';
-import { Arr, Id, Option } from '@ephox/katamari';
-import { ToolbarDrawer } from '../../api/Settings';
+import { Arr, Id, Option, Result } from '@ephox/katamari';
+import { ToolbarMode } from '../../api/Settings';
+import { UiFactoryBackstageProviders } from '../../backstage/Backstage';
 
-import { renderHeader } from '../header/CommonHeader';
-import SilverMenubar from '../menus/menubar/SilverMenubar';
+import { HeaderSpec, renderHeader } from '../header/CommonHeader';
+import SilverMenubar, { SilverMenubarSpec } from '../menus/menubar/SilverMenubar';
 import * as Sidebar from '../sidebar/Sidebar';
 import * as Throbber from '../throbber/Throbber';
-import { renderFloatingMoreToolbar, renderSlidingMoreToolbar, renderToolbar, renderToolbarGroup, ToolbarSpec } from '../toolbar/CommonToolbar';
+import { MoreDrawerData, MoreDrawerToolbarSpec, renderFloatingMoreToolbar, renderSlidingMoreToolbar, renderToolbar, renderToolbarGroup } from '../toolbar/CommonToolbar';
 
 export interface OuterContainerSketchSpec extends Sketcher.CompositeSketchSpec {
   dom: RawDomSchema;
@@ -27,7 +28,25 @@ export interface OuterContainerSketchDetail extends Sketcher.CompositeSketchDeta
   uid: string;
   behaviours: Record<string, Behaviour.ConfiguredBehaviour<any, any>>;
 }
-export interface OuterContainerSketch extends Sketcher.CompositeSketch<OuterContainerSketchSpec, OuterContainerSketchDetail>, OuterContainerApis {
+export interface OuterContainerSketch extends Sketcher.CompositeSketch<OuterContainerSketchSpec>, OuterContainerApis {
+}
+
+interface MultipleToolbarSketchSpec {
+  uid?: string;
+  dom: RawDomSchema;
+  onEscape: () => { };
+  type: ToolbarMode;
+  providers: UiFactoryBackstageProviders;
+}
+
+interface ToolbarSketchSpec extends MoreDrawerData {
+  uid?: string;
+  dom: RawDomSchema;
+  attributes?: Record<string, string>;
+  onEscape: () => { };
+  type: ToolbarMode;
+  getSink: () => Result<AlloyComponent, string>;
+  providers: UiFactoryBackstageProviders;
 }
 
 interface OuterContainerApis {
@@ -41,7 +60,6 @@ interface OuterContainerApis {
   setToolbar: (comp: AlloyComponent, groups) => void;
   setToolbars: (comp: AlloyComponent, toolbars) => void;
   refreshToolbar: (comp: AlloyComponent) => void;
-  getMoreButton: (comp: AlloyComponent) => Option<AlloyComponent>;
   getThrobber: (comp: AlloyComponent) => Option<AlloyComponent>;
   focusToolbar: (comp: AlloyComponent) => void;
   setMenubar: (comp: AlloyComponent, groups) => void;
@@ -51,10 +69,9 @@ interface OuterContainerApis {
 interface ToolbarApis {
   setGroups: (toolbar: AlloyComponent, groups: SketchSpec[]) => void;
   refresh: (toolbar: AlloyComponent) => void;
-  getMoreButton: (toolbar: AlloyComponent) => Option<AlloyComponent>;
 }
 
-const factory: UiSketcher.CompositeSketchFactory<OuterContainerSketchDetail, OuterContainerSketchSpec> = function (detail, components, spec) {
+const factory: UiSketcher.CompositeSketchFactory<OuterContainerSketchDetail, OuterContainerSketchSpec> = function (detail, components, _spec) {
   const apis: OuterContainerApis = {
     getSocket(comp) {
       return Composite.parts.getPart(comp, detail, 'socket');
@@ -92,23 +109,13 @@ const factory: UiSketcher.CompositeSketchFactory<OuterContainerSketchDetail, Out
     },
     refreshToolbar(comp) {
       const toolbar = Composite.parts.getPart(comp, detail, 'toolbar');
-      toolbar.each((toolbar) => {
-        return toolbar.getApis<ToolbarApis>().refresh(toolbar);
-      });
-    },
-    getMoreButton(comp) {
-      const toolbar = Composite.parts.getPart(comp, detail, 'toolbar');
-      return toolbar.bind((toolbar) => {
-        return toolbar.getApis<ToolbarApis>().getMoreButton(toolbar);
-      });
+      toolbar.each((toolbar) => toolbar.getApis<ToolbarApis>().refresh(toolbar));
     },
     getThrobber(comp) {
       return Composite.parts.getPart(comp, detail, 'throbber');
     },
     focusToolbar(comp) {
-      const optToolbar = Composite.parts.getPart(comp, detail, 'toolbar').orThunk(() => {
-        return Composite.parts.getPart(comp, detail, 'multiple-toolbar');
-      });
+      const optToolbar = Composite.parts.getPart(comp, detail, 'toolbar').orThunk(() => Composite.parts.getPart(comp, detail, 'multiple-toolbar'));
 
       optToolbar.each(function (toolbar) {
         Keying.focusIn(toolbar);
@@ -135,7 +142,7 @@ const factory: UiSketcher.CompositeSketchFactory<OuterContainerSketchDetail, Out
   };
 };
 
-const partMenubar = Composite.partType.optional({
+const partMenubar = Composite.partType.optional<OuterContainerSketchDetail, SilverMenubarSpec>({
   factory: SilverMenubar,
   name: 'menubar',
   schema: [
@@ -143,47 +150,42 @@ const partMenubar = Composite.partType.optional({
   ]
 });
 
-const toolbarFactory = (spec) => {
-  if (spec.split === ToolbarDrawer.sliding) {
+const toolbarFactory = (spec: ToolbarSketchSpec) => {
+  if (spec.type === ToolbarMode.sliding) {
     return renderSlidingMoreToolbar;
-  } else if (spec.split === ToolbarDrawer.floating) {
+  } else if (spec.type === ToolbarMode.floating) {
     return renderFloatingMoreToolbar;
   } else {
     return renderToolbar;
   }
 };
 
-const partMultipleToolbar = Composite.partType.optional({
+const partMultipleToolbar = Composite.partType.optional<OuterContainerSketchDetail, MultipleToolbarSketchSpec>({
   factory: {
-    sketch: (spec) => {
-      return CustomList.sketch({
-        uid: spec.uid,
-        dom: spec.dom,
+    sketch: (spec) => CustomList.sketch({
+      uid: spec.uid,
+      dom: spec.dom,
 
-        listBehaviours: Behaviour.derive([
-          Keying.config({
-            mode: 'acyclic',
-            selector: '.tox-toolbar'
-          })
-        ]),
+      listBehaviours: Behaviour.derive([
+        Keying.config({
+          mode: 'acyclic',
+          selector: '.tox-toolbar'
+        })
+      ]),
 
-        makeItem: () => {
-          return renderToolbar({
-            type: spec.split,
-            uid: Id.generate('multiple-toolbar-item'),
-            backstage: spec.backstage,
-            cyclicKeying: false,
-            getSink: spec.getSink,
-            initGroups: [ ],
-            onEscape: () => Option.none()
-          });
-        },
-        setupItem: (mToolbar, tc, data, index) => {
-          Toolbar.setGroups(tc, data);
-        },
-        shell: true
-      });
-    }
+      makeItem: () => renderToolbar({
+        type: spec.type,
+        uid: Id.generate('multiple-toolbar-item'),
+        cyclicKeying: false,
+        initGroups: [ ],
+        providers: spec.providers,
+        onEscape: () => Option.none()
+      }),
+      setupItem: (_mToolbar, tc, data, _index) => {
+        Toolbar.setGroups(tc, data);
+      },
+      shell: true
+    })
   },
   name: 'multiple-toolbar',
   schema: [
@@ -192,12 +194,12 @@ const partMultipleToolbar = Composite.partType.optional({
   ]
 });
 
-const partToolbar = Composite.partType.optional({
+const partToolbar = Composite.partType.optional<OuterContainerSketchDetail, ToolbarSketchSpec>({
   factory: {
     sketch: (spec) => {
       const renderer = toolbarFactory(spec);
-      const toolbarSpec: ToolbarSpec = {
-        type: spec.split,
+      const toolbarSpec: MoreDrawerToolbarSpec = {
+        type: spec.type,
         uid: spec.uid,
         onEscape: () => {
           spec.onEscape();
@@ -206,12 +208,13 @@ const partToolbar = Composite.partType.optional({
         cyclicKeying: false,
         initGroups: [],
         getSink: spec.getSink,
-        backstage: spec.backstage,
+        providers: spec.providers,
         moreDrawerData: {
           lazyToolbar: spec.lazyToolbar,
           lazyMoreButton: spec.lazyMoreButton,
           lazyHeader: spec.lazyHeader
-        }
+        },
+        attributes: spec.attributes
       };
       return renderer(toolbarSpec);
     }
@@ -224,7 +227,7 @@ const partToolbar = Composite.partType.optional({
   ]
 });
 
-const partHeader = Composite.partType.optional({
+const partHeader = Composite.partType.optional<OuterContainerSketchDetail, HeaderSpec>({
   factory: {
     sketch: renderHeader
   },
@@ -262,7 +265,7 @@ const partThrobber = Composite.partType.optional({
   ]
 });
 
-export default Sketcher.composite({
+export default Sketcher.composite<OuterContainerSketchSpec, OuterContainerSketchDetail, OuterContainerApis>({
   name: 'OuterContainer',
   factory,
   configFields: [
@@ -306,14 +309,9 @@ export default Sketcher.composite({
       apis.setToolbar(comp, groups);
     },
     setToolbars(apis, comp, ts) {
-      const renderedToolbars = Arr.map(ts, (g) => {
-        return Arr.map(g, renderToolbarGroup);
-      });
+      const renderedToolbars = Arr.map(ts, (g) => Arr.map(g, renderToolbarGroup));
 
       apis.setToolbars(comp, renderedToolbars);
-    },
-    getMoreButton(apis, comp) {
-      return apis.getMoreButton(comp);
     },
     refreshToolbar(apis, comp) {
       return apis.refreshToolbar(comp);

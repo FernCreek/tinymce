@@ -2,10 +2,10 @@ import { Attachment, Behaviour, Channels, Debugging, DomFactory, Gui, GuiFactory
 import { console, document, window } from '@ephox/dom-globals';
 import { Fun, Future, Id, Option, Result } from '@ephox/katamari';
 import { Body, Class } from '@ephox/sugar';
-import { UiFactoryBackstage } from 'tinymce/themes/silver/backstage/Backstage';
-import { LinkInformation, UrlData, UrlValidationHandler } from 'tinymce/themes/silver/backstage/UrlInputBackstage';
-import I18n from 'tinymce/core/api/util/I18n';
 import Editor from 'tinymce/core/api/Editor';
+import I18n from 'tinymce/core/api/util/I18n';
+import { UiFactoryBackstage } from 'tinymce/themes/silver/backstage/Backstage';
+import { ApiUrlData, LinkInformation, UrlValidationHandler } from 'tinymce/themes/silver/backstage/UrlInputBackstage';
 
 const setupDemo = () => {
 
@@ -14,7 +14,7 @@ const setupDemo = () => {
     throw Error('old sinks found, a previous demo did not call helpers.destroy() leaving artifacts, found: ' + oldSink.length);
   }
 
-// begin of demo helpers
+  // begin of demo helpers
   const sink = GuiFactory.build({
     dom: DomFactory.fromHtml('<div class="mce-silver-sink"></div>'),
     behaviours: Behaviour.derive([
@@ -29,22 +29,22 @@ const setupDemo = () => {
 
   const fakeHistory = (fileType: string): string[] => {
     if (fileType === 'image') {
-      return ['https://i.stack.imgur.com/8JoS3.png'];
+      return [ 'https://i.stack.imgur.com/8JoS3.png' ];
     } else if (fileType === 'media') {
       return [];
     } else if (fileType === 'file') {
-      return ['https://www.tiny.cloud/'];
+      return [ 'https://www.tiny.cloud/' ];
     }
     return [];
-};
+  };
 
   const fakeLinkInfo: LinkInformation = {
     targets: [
-      { type: 'anchor', title: 'Google', url: 'http://www.google.com.au', level: 0, attach: Fun.noop},
+      { type: 'anchor', title: 'Google', url: 'http://www.google.com.au', level: 0, attach: Fun.noop },
       { type: 'header', title: 'Header', url: '#header', level: 1, attach: () => {
-          // tslint:disable-next-line:no-console
+        // tslint:disable-next-line:no-console
         console.log('This is where the ID would be attached to the header so it can be linked');
-      }}
+      } }
     ],
     anchorTop: '#top',
     anchorBottom: '#bottom'
@@ -52,11 +52,11 @@ const setupDemo = () => {
 
   const fakeValidator: UrlValidationHandler = (info, callback) => {
     if (info.url === 'test-valid' || /^https?:\/\/www\.google\.com\/google\.jpg$/.test(info.url)) {
-      callback({ message: 'Yep, that\'s valid...', status: 'valid' });
+      callback({ message: `Yep, that's valid...`, status: 'valid' });
     } else if (info.url === 'test-unknown' || /\.(?:jpg|png|gif)$/.test(info.url)) {
-      callback({ message: 'Hmm, I don\'t know...', status: 'unknown' });
+      callback({ message: `Hmm, I don't know...`, status: 'unknown' });
     } else if (info.url === 'test-invalid') {
-      callback({ message: 'No, no, definitly not, just don\'t, STOP...', status: 'invalid' });
+      callback({ message: `No, no, definitly not, just don't, STOP...`, status: 'invalid' });
     } else {
       callback({ message: '', status: 'none' });
     }
@@ -104,60 +104,50 @@ const setupDemo = () => {
       providers: {
         icons: () => <Record<string, string>> {},
         menuItems: () => <Record<string, any>> {},
-        translate: I18n.translate
+        translate: I18n.translate,
+        isReadOnly: () => false
       },
       interpreter: (x) => x,
       getSink: () => Result.value(sink),
       anchors: {
-        toolbar: () => {
+        inlineDialog: () =>
           // NOTE: Non-sensical
-          return {
+          ({
             anchor: 'hotspot',
             hotspot: sink
-          };
-        },
-        toolbarOverflow: () => {
+          }),
+        banner: () =>
           // NOTE: Non-sensical
-          return {
+          ({
             anchor: 'hotspot',
             hotspot: sink
-          };
-        },
-        banner: () => {
+          }),
+        cursor: () =>
           // NOTE: Non-sensical
-          return {
-            anchor: 'hotspot',
-            hotspot: sink
-          };
-        },
-        cursor: () => {
-          // NOTE: Non-sensical
-          return {
+          ({
             anchor: 'selection',
             root: Body.body()
-          };
-        },
-        node: (elem) => {
+          }),
+        node: (elem) =>
           // NOTE: Non-sensical
-          return {
+          ({
             anchor: 'node',
             root: Body.body(),
             node: elem
-          };
-        }
+          })
       }
     },
     colorinput: fakecolorinputBackstage,
     urlinput: {
       getHistory: fakeHistory,
-      addToHistory: (url: string, fileType: string) => {},
+      addToHistory: (_url: string, _fileType: string) => {},
       getLinkInformation: () => Option.some(fakeLinkInfo),
       getValidationHandler: () => Option.some(fakeValidator),
-      getUrlPicker: (filetype) => Option.some((entry: UrlData) => {
+      getUrlPicker: (_filetype) => Option.some((entry: ApiUrlData) => {
         const newUrl = Option.from(window.prompt('File browser would show instead of this...', entry.value));
-        return Future.pure({...entry, value: newUrl.getOr(entry.value)});
+        return Future.pure({ ...entry, value: newUrl.getOr(entry.value) });
       })
-    },
+    }
     // styleselect: StyleFormatsBackstage.init({
     //   on: (name, f) => {
     //     if (name === 'addStyleModifications') {
@@ -235,9 +225,9 @@ const setupDemo = () => {
   };
 
   const mockEditor = {
-    setContent: (content) => {},
-    insertContent: (content: string, args?: any) => {},
-    execCommand: (cmd: string, ui?: boolean, value?: any) => {}
+    setContent: (_content) => {},
+    insertContent: (_content: string, _args?: any) => {},
+    execCommand: (_cmd: string, _ui?: boolean, _value?: any) => {}
   } as Editor;
 
   const extras = {

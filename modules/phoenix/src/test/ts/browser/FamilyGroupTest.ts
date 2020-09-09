@@ -1,4 +1,4 @@
-import { assert, UnitTest } from '@ephox/bedrock';
+import { assert, UnitTest } from '@ephox/bedrock-client';
 import { DomUniverse } from '@ephox/boss';
 import { Document } from '@ephox/dom-globals';
 import { Arr, Fun } from '@ephox/katamari';
@@ -15,6 +15,8 @@ UnitTest.test('FamilyGroupTest', function () {
       return '/';
     }, function (text) {
       return '"' + Text.get(text) + '"';
+    }, function (_text) {
+      return '\\';
     });
   };
 
@@ -30,52 +32,61 @@ UnitTest.test('FamilyGroupTest', function () {
   };
 
   check([
-    ['"text"']
+    [ '"text"' ]
   ], [
-      Element.fromHtml('text')
-    ]);
+    Element.fromHtml('text')
+  ]);
 
   check([
-    ['"Dogs and cats"'],
-    ['"Living together "', '"Mass hysteria"', '"."'],
-    ['"-- Ghostbusters"']
+    [ '"Dogs and cats"' ],
+    [ '"Living together "', '"Mass hysteria"', '"."' ],
+    [ '"-- Ghostbusters"' ]
   ], [
-      Element.fromHtml('<p>Dogs and cats</p>'),
-      Element.fromHtml('<p>Living together <span>Mass hysteria</span>.</p>'),
-      Element.fromText('-- Ghostbusters')
-    ]);
+    Element.fromHtml('<p>Dogs and cats</p>'),
+    Element.fromHtml('<p>Living together <span>Mass hysteria</span>.</p>'),
+    Element.fromText('-- Ghostbusters')
+  ]);
 
   check([
-    ['"Dogs and cats"'],
-    ['"Living tog"'],
-    ['/'],
-    ['"ether "', '"Mass hyste"'],
-    ['/'],
-    ['"ria"', '"."'],
-    ['/'],
-    ['"-- Ghostbusters"']
+    [ '"Dogs and cats"' ],
+    [ '"Living tog"' ],
+    [ '/' ],
+    [ '"ether "', '"Mass hyste"' ],
+    [ '/' ],
+    [ '"ria"', '"."' ],
+    [ '/' ],
+    [ '"-- Ghostbusters"' ]
   ], [
-      Element.fromHtml('<p>Dogs and cats</p>'),
-      Element.fromHtml('<p>Living tog<img />ether <span>Mass hyste<br />ria</span>.</p>'),
-      Element.fromHtml('<hr />'),
-      Element.fromText('-- Ghostbusters')
-    ]);
+    Element.fromHtml('<p>Dogs and cats</p>'),
+    Element.fromHtml('<p>Living tog<img />ether <span>Mass hyste<br />ria</span>.</p>'),
+    Element.fromHtml('<hr />'),
+    Element.fromText('-- Ghostbusters')
+  ]);
 
   check([
-    ['"Dogs and cats"'],
-    ['"Living tog"'],
-    ['/'],
-    ['"ether "', '"Mass hyste"'],
-    ['/'],
-    ['"ria"', '"."'],
-    ['"-- Ghostbusters"'],
-    ['"One"'],
-    ['"Two"'],
-    ['"Three"']
+    [ '"Dogs and cats"' ],
+    [ '"Living tog"' ],
+    [ '/' ],
+    [ '"ether "', '"Mass hyste"' ],
+    [ '/' ],
+    [ '"ria"', '"."' ],
+    [ '"-- Ghostbusters"' ],
+    [ '"One"' ],
+    [ '"Two"' ],
+    [ '"Three"' ]
   ], [
-      Element.fromHtml('<p>Dogs and cats</p>'),
-      Element.fromHtml('<p>Living tog<img />ether <span>Mass hyste<br />ria</span>.</p>'),
-      Element.fromText('-- Ghostbusters'),
-      Element.fromHtml('<div><p>One</p><p>Two</p><p>Three</p></div>')
-    ]);
+    Element.fromHtml('<p>Dogs and cats</p>'),
+    Element.fromHtml('<p>Living tog<img />ether <span>Mass hyste<br />ria</span>.</p>'),
+    Element.fromText('-- Ghostbusters'),
+    Element.fromHtml('<div><p>One</p><p>Two</p><p>Three</p></div>')
+  ]);
+
+  check([
+    [ '"Dogs and cats"' ],
+    [ '"Living together "' ]
+  ], [
+    Element.fromHtml('<p>Dogs and cats</p>'),
+    Element.fromHtml('<p>Living together <span contenteditable="false">Mass hysteria</span></p>')
+  ]
+  );
 });

@@ -7,25 +7,13 @@
 
 import Editor from 'tinymce/core/api/Editor';
 import { getCellClassList } from '../api/Settings';
-import Helpers from './Helpers';
+import * as Helpers from './Helpers';
 import { Option } from '@ephox/katamari';
 import { Types } from '@ephox/bridge';
 
 const getClassList = (editor: Editor) => {
-  const rowClassList = getCellClassList(editor);
-
-  const classes: Types.SelectBox.ExternalSelectBoxItem[] = Helpers.buildListItems(
-    rowClassList,
-    (item) => {
-      if (item.value) {
-        item.textStyle = () => {
-          return editor.formatter.getCssText({ block: 'tr', classes: [item.value] });
-        };
-      }
-    }
-  );
-
-  if (rowClassList.length > 0) {
+  const classes = Helpers.buildListItems(getCellClassList(editor));
+  if (classes.length > 0) {
     return Option.some<Types.Dialog.BodyComponentApi>({
       name: 'class',
       type: 'selectbox',
@@ -92,15 +80,11 @@ const children: Types.Dialog.BodyComponentApi[] = [
   }
 ];
 
-const getItems = (editor: Editor): Types.Dialog.BodyComponentApi[] => {
+const getItems = (editor: Editor): Types.Dialog.BodyComponentApi[] => getClassList(editor).fold(
+  () => children,
+  (classlist) => children.concat(classlist)
+);
 
-  return getClassList(editor).fold(
-    () => children,
-    (classlist) => children.concat(classlist)
-  );
-
-};
-
-export default {
+export {
   getItems
 };

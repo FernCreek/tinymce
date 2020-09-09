@@ -1,8 +1,10 @@
-import { Element } from '@ephox/dom-globals';
-import { Option, Result, Fun } from '@ephox/katamari';
 import { FieldSchema, ValueSchema } from '@ephox/boulder';
-import { BaseToolbarButtonApi, BaseToolbarButtonInstanceApi, BaseToolbarButton, baseToolbarButtonFields } from './ToolbarButton';
-import { BaseToolbarToggleButtonApi, BaseToolbarToggleButtonInstanceApi, BaseToolbarToggleButton, baseToolbarToggleButtonFields } from './ToolbarToggleButton';
+import { Element } from '@ephox/dom-globals';
+import { Fun, Option, Result } from '@ephox/katamari';
+import { BaseToolbarButton, BaseToolbarButtonApi, baseToolbarButtonFields, BaseToolbarButtonInstanceApi } from './ToolbarButton';
+import {
+  BaseToolbarToggleButton, BaseToolbarToggleButtonApi, baseToolbarToggleButtonFields, BaseToolbarToggleButtonInstanceApi
+} from './ToolbarToggleButton';
 
 export type ContextToolbarPosition = 'node' | 'selection' | 'line';
 export type ContextScope = 'node' | 'editor';
@@ -29,7 +31,7 @@ export interface ContextToggleButtonInstanceApi extends BaseToolbarToggleButtonI
 
 }
 
-export interface ContextButtonApi extends BaseToolbarButtonApi<ContextButtonInstanceApi>  {
+export interface ContextButtonApi extends BaseToolbarButtonApi<ContextButtonInstanceApi> {
   type?: 'contextformbutton';
   primary?: boolean;
   onAction: (formApi: ContextFormInstanceApi, api: ContextButtonInstanceApi) => void;
@@ -104,8 +106,8 @@ export interface ContextForm extends ContextBar {
 
 const contextBarFields = [
   FieldSchema.defaultedFunction('predicate', () => false),
-  FieldSchema.defaultedStringEnum('scope', 'node', ['node', 'editor']),
-  FieldSchema.defaultedStringEnum('position', 'selection', ['node', 'selection', 'line']),
+  FieldSchema.defaultedStringEnum('scope', 'node', [ 'node', 'editor' ]),
+  FieldSchema.defaultedStringEnum('position', 'selection', [ 'node', 'selection', 'line' ])
 ];
 
 const contextButtonFields = baseToolbarButtonFields.concat([
@@ -151,10 +153,6 @@ const contextToolbarSchema = ValueSchema.objOf([
   FieldSchema.strictString('items')
 ].concat(contextBarFields));
 
-export const createContextToolbar = (spec: ContextToolbarApi): Result<ContextToolbar, ValueSchema.SchemaError<any>> => {
-  return ValueSchema.asRaw<ContextToolbar>('ContextToolbar', contextToolbarSchema, spec);
-};
+export const createContextToolbar = (spec: ContextToolbarApi): Result<ContextToolbar, ValueSchema.SchemaError<any>> => ValueSchema.asRaw<ContextToolbar>('ContextToolbar', contextToolbarSchema, spec);
 
-export const createContextForm = (spec: ContextFormApi): Result<ContextForm, ValueSchema.SchemaError<any>> => {
-  return ValueSchema.asRaw<ContextForm>('ContextForm', contextFormSchema, spec);
-};
+export const createContextForm = (spec: ContextFormApi): Result<ContextForm, ValueSchema.SchemaError<any>> => ValueSchema.asRaw<ContextForm>('ContextForm', contextFormSchema, spec);

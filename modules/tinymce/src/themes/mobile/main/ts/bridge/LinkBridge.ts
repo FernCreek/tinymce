@@ -67,7 +67,7 @@ const getTextToApply = function (link, url, info) {
 
 const unlinkIfRequired = function (editor, info) {
   const activeLink = info.link.bind(Fun.identity);
-  activeLink.each(function (link) {
+  activeLink.each(function (_link) {
     editor.execCommand('unlink');
   });
 };
@@ -112,7 +112,7 @@ const query = function (editor) {
   return SelectorFind.closest(start, 'a');
 };
 
-export default {
+export {
   getInfo,
   applyInfo,
   query

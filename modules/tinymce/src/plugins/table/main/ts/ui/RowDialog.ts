@@ -5,120 +5,78 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Element, HTMLElement, Node } from '@ephox/dom-globals';
-import { Fun } from '@ephox/katamari';
-import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
-import Editor from 'tinymce/core/api/Editor';
-import Tools from 'tinymce/core/api/util/Tools';
-
-import Styles from '../actions/Styles';
-import * as Util from '../alien/Util';
-import { hasAdvancedRowTab } from '../api/Settings';
-import { DomModifier } from './DomModifier';
-import Helpers, { RowData } from './Helpers';
-import RowDialogGeneralTab from './RowDialogGeneralTab';
 import { Types } from '@ephox/bridge';
+import { HTMLTableRowElement } from '@ephox/dom-globals';
+import { Arr, Fun } from '@ephox/katamari';
+import Editor from 'tinymce/core/api/Editor';
+import * as Styles from '../actions/Styles';
+import { hasAdvancedRowTab } from '../api/Settings';
+import { switchSectionType } from '../core/TableSections';
+import * as Util from '../core/Util';
+import * as TableSelection from '../selection/TableSelection';
+import { DomModifier } from './DomModifier';
+import * as Helpers from './Helpers';
+import * as RowDialogGeneralTab from './RowDialogGeneralTab';
 
-const switchRowType = (dom: DOMUtils, rowElm: HTMLElement, toType: string) => {
-  const tableElm = dom.getParent(rowElm, 'table');
-  const oldParentElm = rowElm.parentNode;
-  let parentElm = dom.select(toType, tableElm as Element)[0];
+type RowData = Helpers.RowData;
 
-  if (!parentElm) {
-    parentElm = dom.create(toType);
-    if (tableElm.firstChild) {
-      // caption tag should be the first descendant of the table tag (see TINY-1167)
-      if (tableElm.firstChild.nodeName === 'CAPTION') {
-        dom.insertAfter(parentElm, tableElm.firstChild);
-      } else {
-        tableElm.insertBefore(parentElm, tableElm.firstChild);
-      }
-    } else {
-      tableElm.appendChild(parentElm);
-    }
-  }
-
-  parentElm.appendChild(rowElm);
-
-  if (!oldParentElm.hasChildNodes()) {
-    dom.remove(oldParentElm);
-  }
+const updateSimpleProps = (modifier: DomModifier, data: RowData) => {
+  modifier.setAttrib('scope', data.scope);
+  modifier.setAttrib('class', data.class);
+  modifier.setStyle('height', Util.addPxSuffix(data.height));
 };
 
-const updateAdvancedProps = (modifier: DomModifier, data: RowData): void => {
+const updateAdvancedProps = (modifier: DomModifier, data: RowData) => {
   modifier.setStyle('background-color', data.backgroundcolor);
   modifier.setStyle('border-color', data.bordercolor);
   modifier.setStyle('border-style', data.borderstyle);
 };
 
-const onSubmitRowForm = (editor: Editor, rows: HTMLElement[], oldData: RowData, api) => {
-  const dom = editor.dom;
+const applyRowData = (editor: Editor, rows: HTMLTableRowElement[], oldData: RowData, data: RowData) => {
+  const isSingleRow = rows.length === 1;
 
+  Arr.each(rows, (rowElm) => {
+    // Switch row type
+    if (data.type !== Util.getNodeName(rowElm.parentNode)) {
+      switchSectionType(editor, rowElm, data.type);
+    }
+
+    const modifier = isSingleRow ? DomModifier.normal(editor, rowElm) : DomModifier.ifTruthy(editor, rowElm);
+
+    updateSimpleProps(modifier, data);
+
+    if (hasAdvancedRowTab(editor)) {
+      updateAdvancedProps(modifier, data);
+    }
+
+    if (data.align !== oldData.align) {
+      Styles.unApplyAlign(editor, rowElm);
+      Styles.applyAlign(editor, rowElm, data.align);
+    }
+  });
+};
+
+const onSubmitRowForm = (editor: Editor, rows: HTMLTableRowElement[], oldData: RowData, api) => {
   const data: RowData = api.getData();
   api.close();
 
-  // When selection length is 1, allow things to be turned off/cleared
-  const createModifier: (dom, node: Node) => DomModifier = rows.length === 1 ? DomModifier.normal : DomModifier.ifTruthy;
-
   editor.undoManager.transact(() => {
-    Tools.each(rows, (rowElm) => {
-
-      // Switch row type
-      if (data.type !== rowElm.parentNode.nodeName.toLowerCase()) {
-        switchRowType(editor.dom, rowElm, data.type);
-      }
-
-      const modifier = createModifier(dom, rowElm);
-
-      modifier.setAttrib('scope', data.scope);
-      modifier.setAttrib('class', data.class);
-      modifier.setStyle('height', Util.addSizeSuffix(data.height));
-
-      if (hasAdvancedRowTab(editor)) {
-        updateAdvancedProps(modifier, data);
-      }
-
-      if (data.align !== oldData.align) {
-        Styles.unApplyAlign(editor, rowElm);
-        Styles.applyAlign(editor, rowElm, data.align);
-      }
-    });
+    applyRowData(editor, rows, oldData, data);
     editor.focus();
   });
 };
 
 const open = (editor: Editor) => {
-  const dom = editor.dom;
-  let tableElm, cellElm, rowElm;
-  const rows = [];
+  const rows = TableSelection.getRowsFromSelection(editor);
 
-  tableElm = dom.getParent(editor.selection.getStart(), 'table');
-
-  if (!tableElm) {
-    // If this element is null, return now to avoid crashing.
-    return;
-  }
-
-  cellElm = dom.getParent(editor.selection.getStart(), 'td,th');
-
-  Tools.each(tableElm.rows, (row) => {
-    Tools.each(row.cells, (cell) => {
-      if ((dom.getAttrib(cell, 'data-mce-selected') || cell === cellElm) && rows.indexOf(row) < 0) {
-        rows.push(row);
-        return false;
-      }
-    });
-  });
-
-  rowElm = rows[0];
-  if (!rowElm) {
-    // If this element is null, return now to avoid crashing.
+  // Check if there are any rows to operate on
+  if (rows.length === 0) {
     return;
   }
 
   // Get current data and find shared values between rows
-  const rowsData: RowData[] = Tools.map(rows, (rowElm) => Helpers.extractDataFromRowElement(editor, rowElm, hasAdvancedRowTab(editor)));
-  const data: RowData = Helpers.getSharedValues(rowsData);
+  const rowsData: RowData[] = Arr.map(rows, (rowElm) => Helpers.extractDataFromRowElement(editor, rowElm, hasAdvancedRowTab(editor)));
+  const data = Helpers.getSharedValues<RowData>(rowsData);
 
   const dialogTabPanel: Types.Dialog.TabPanelApi = {
     type: 'tabpanel',
@@ -150,7 +108,7 @@ const open = (editor: Editor) => {
       {
         type: 'cancel',
         name: 'cancel',
-        text: 'Cancel',
+        text: 'Cancel'
       },
       {
         type: 'submit',
@@ -160,10 +118,9 @@ const open = (editor: Editor) => {
       }
     ],
     initialData: data,
-    onSubmit: Fun.curry(onSubmitRowForm, editor, rows, data),
+    onSubmit: Fun.curry(onSubmitRowForm, editor, rows, data)
   });
 };
 
-export default {
-  open
-};
+export { open };
+

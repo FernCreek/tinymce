@@ -5,83 +5,84 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 import { document, window } from '@ephox/dom-globals';
-import { Fun, Singleton } from '@ephox/katamari';
+import { Fun, Singleton, Cell } from '@ephox/katamari';
 import { Css, Element, VisualViewport } from '@ephox/sugar';
-import Events from '../api/Events';
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import Env from 'tinymce/core/api/Env';
 import Delay from 'tinymce/core/api/util/Delay';
-import Thor from './Thor';
+import * as Events from '../api/Events';
+import * as Thor from './Thor';
+import Editor from 'tinymce/core/api/Editor';
 
 const DOM = DOMUtils.DOM;
 
-const getScrollPos = function () {
+const getScrollPos = () => {
   const vp = VisualViewport.getBounds(window);
 
   return {
-    x: vp.x(),
-    y: vp.y()
+    x: vp.x,
+    y: vp.y
   };
 };
 
-const setScrollPos = function (pos) {
+const setScrollPos = (pos) => {
   window.scrollTo(pos.x, pos.y);
 };
 
-/* tslint:disable-next-line:no-string-literal */
-const visualViewport: VisualViewport.VisualViewport = window['visualViewport'];
+const viewportUpdate = VisualViewport.get().fold(
+  () => ({ bind: Fun.noop, unbind: Fun.noop }),
+  (visualViewport) => {
+    const editorContainer = Singleton.value<Element>();
+    const resizeBinder = Singleton.unbindable();
+    const scrollBinder = Singleton.unbindable();
 
-const viewportUpdate = visualViewport === undefined ? { bind: Fun.noop, unbind: Fun.noop } : (() => {
-  const editorContainer = Singleton.value<Element>();
+    const refreshScroll = () => {
+      document.body.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+    };
 
-  const refreshScroll = () => {
-    document.body.scrollTop = 0;
-    document.documentElement.scrollTop = 0;
-  };
+    const refreshVisualViewport = () => {
+      window.requestAnimationFrame(() => {
+        editorContainer.on((container) => Css.setAll(container, {
+          top: visualViewport.offsetTop + 'px',
+          left: visualViewport.offsetLeft + 'px',
+          height: visualViewport.height + 'px',
+          width: visualViewport.width + 'px'
+        }));
+      });
+    };
 
-  const refreshVisualViewport = () => {
-    window.requestAnimationFrame(() => {
-      editorContainer.on((container) => Css.setAll(container, {
-        top: visualViewport.offsetTop + 'px',
-        left: visualViewport.offsetLeft + 'px',
-        height: visualViewport.height + 'px',
-        width: visualViewport.width + 'px'
-      }));
-    });
-  };
+    const update = Delay.throttle(() => {
+      refreshScroll();
+      refreshVisualViewport();
+    }, 50);
 
-  const update = Delay.throttle(() => {
-    refreshScroll();
-    refreshVisualViewport();
-  }, 50);
+    const bind = (element) => {
+      editorContainer.set(element);
+      update();
+      resizeBinder.set(VisualViewport.bind('resize', update));
+      scrollBinder.set(VisualViewport.bind('scroll', update));
+    };
 
-  const bind = (element) => {
-    editorContainer.set(element);
-    update();
-    visualViewport.addEventListener('resize', update);
-    visualViewport.addEventListener('scroll', update);
-  };
+    const unbind = () => {
+      editorContainer.on(() => {
+        resizeBinder.clear();
+        scrollBinder.clear();
+      });
+      editorContainer.clear();
+    };
 
-  const unbind = () => {
-    editorContainer.on(() => {
-      visualViewport.removeEventListener('scroll', update);
-      visualViewport.removeEventListener('resize', update);
-    });
-    editorContainer.clear();
-  };
+    return {
+      bind,
+      unbind
+    };
+  }
+);
 
-  return {
-    bind,
-    unbind
-  };
-})();
-
-const toggleFullscreen = function (editor, fullscreenState) {
+const toggleFullscreen = (editor: Editor, fullscreenState: Cell<any>) => {
   const body = document.body;
   const documentElement = document.documentElement;
-  let editorContainerStyle;
-  let editorContainer, iframe, iframeStyle;
-  editorContainer = editor.getContainer();
+  const editorContainer = editor.getContainer();
   const editorContainerS = Element.fromDom(editorContainer);
 
   const fullscreenInfo = fullscreenState.get();
@@ -89,9 +90,22 @@ const toggleFullscreen = function (editor, fullscreenState) {
 
   const isTouch = Env.deviceType.isTouch();
 
-  editorContainerStyle = editorContainer.style;
-  iframe = editor.getContentAreaContainer().firstChild;
-  iframeStyle = iframe.style;
+  const editorContainerStyle = editorContainer.style;
+
+  const iframe = editor.iframeElement;
+  const iframeStyle = iframe.style;
+
+  const cleanup = () => {
+    if (isTouch) {
+      Thor.restoreStyles(editor.dom);
+    }
+
+    DOM.removeClass(body, 'tox-fullscreen');
+    DOM.removeClass(documentElement, 'tox-fullscreen');
+    DOM.removeClass(editorContainer, 'tox-fullscreen');
+
+    viewportUpdate.unbind();
+  };
 
   if (!fullscreenInfo) {
     const newFullScreenInfo = {
@@ -105,7 +119,7 @@ const toggleFullscreen = function (editor, fullscreenState) {
     };
 
     if (isTouch) {
-      Thor.clobberStyles(editorContainerS, editorBody);
+      Thor.clobberStyles(editor.dom, editorContainerS, editorBody);
     }
 
     iframeStyle.width = iframeStyle.height = '100%';
@@ -117,7 +131,7 @@ const toggleFullscreen = function (editor, fullscreenState) {
 
     viewportUpdate.bind(editorContainerS);
 
-    editor.on('remove', viewportUpdate.unbind);
+    editor.on('remove', cleanup);
 
     fullscreenState.set(newFullScreenInfo);
     Events.fireFullscreenStateChanged(editor, true);
@@ -130,21 +144,15 @@ const toggleFullscreen = function (editor, fullscreenState) {
     editorContainerStyle.top = fullscreenInfo.containerTop;
     editorContainerStyle.left = fullscreenInfo.containerLeft;
 
-    if (isTouch) {
-      Thor.restoreStyles();
-    }
-    DOM.removeClass(body, 'tox-fullscreen');
-    DOM.removeClass(documentElement, 'tox-fullscreen');
-    DOM.removeClass(editorContainer, 'tox-fullscreen');
     setScrollPos(fullscreenInfo.scrollPos);
 
     fullscreenState.set(null);
     Events.fireFullscreenStateChanged(editor, false);
-    viewportUpdate.unbind();
-    editor.off('remove', viewportUpdate.unbind);
+    cleanup();
+    editor.off('remove', cleanup);
   }
 };
 
-export default {
+export {
   toggleFullscreen
 };

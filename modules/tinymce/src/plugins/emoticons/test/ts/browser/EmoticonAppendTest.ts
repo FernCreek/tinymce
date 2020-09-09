@@ -1,5 +1,5 @@
 import { ApproxStructure, Assertions, Chain, FocusTools, Keyboard, Keys, Log, Pipeline, StructAssert, UiFinder, Waiter } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
 import { TinyApis, TinyLoader, TinyUi } from '@ephox/mcagar';
 import { Attr, Body, Element } from '@ephox/sugar';
@@ -12,17 +12,15 @@ UnitTest.asynctest('browser.tinymce.plugins.emoticons.AppendTest', (success, fai
   EmoticonsPlugin();
   SilverTheme();
 
-  const tabElement = (s, str, arr) => (name): StructAssert => {
-    return s.element('div', {
-      attrs: {
-        role: str.is('tab')
-      },
-      classes: [ arr.has('tox-tab'), arr.has('tox-dialog__body-nav-item') ],
-      children: [
-        s.text(str.is(name))
-      ]
-    });
-  };
+  const tabElement = (s, str, arr) => (name): StructAssert => s.element('div', {
+    attrs: {
+      role: str.is('tab')
+    },
+    classes: [ arr.has('tox-tab'), arr.has('tox-dialog__body-nav-item') ],
+    children: [
+      s.text(str.is(name))
+    ]
+  });
 
   TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
     const tinyApis = TinyApis(editor);
@@ -32,23 +30,21 @@ UnitTest.asynctest('browser.tinymce.plugins.emoticons.AppendTest', (success, fai
 
     Pipeline.async({},
       Log.steps('TBA', 'Emoticons: Open dialog, verify custom categories listed and search for custom emoticon', [
-        tinyApis.sFocus,
+        tinyApis.sFocus(),
         tinyUi.sClickOnToolbar('click emoticons', 'button'),
         Chain.asStep({}, [
-          tinyUi.cWaitForPopup('wait for popup', 'div[role="dialog"]'),
+          tinyUi.cWaitForPopup('wait for popup', 'div[role="dialog"]')
         ]),
         FocusTools.sTryOnSelector('Focus should start on input', doc, 'input'),
         Chain.asStep(body, [
           UiFinder.cFindIn('[role="tablist"]'),
-          Assertions.cAssertStructure('check custom categories are shown', ApproxStructure.build((s, str, arr) => {
-            return s.element('div', {
-              children: [
-                tabElement(s, str, arr)('All'),
-                tabElement(s, str, arr)('People'),
-                tabElement(s, str, arr)('User Defined')
-              ]
-            });
-          })),
+          Assertions.cAssertStructure('check custom categories are shown', ApproxStructure.build((s, str, arr) => s.element('div', {
+            children: [
+              tabElement(s, str, arr)('All'),
+              tabElement(s, str, arr)('People'),
+              tabElement(s, str, arr)('User Defined')
+            ]
+          })))
         ]),
         FocusTools.sSetActiveValue(doc, 'clock'),
         Chain.asStep(doc, [
@@ -59,9 +55,7 @@ UnitTest.asynctest('browser.tinymce.plugins.emoticons.AppendTest', (success, fai
           'Wait until clock is the first choice (search should filter)',
           Chain.asStep(body, [
             UiFinder.cFindIn('.tox-collection__item:first'),
-            Chain.mapper((item) => {
-              return Attr.get(item, 'data-collection-item-value');
-            }),
+            Chain.mapper((item) => Attr.get(item, 'data-collection-item-value')),
             Assertions.cAssertEq('Search should show custom clock', '⏲')
           ])
         ),

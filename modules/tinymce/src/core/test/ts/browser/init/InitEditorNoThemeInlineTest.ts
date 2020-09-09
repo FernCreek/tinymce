@@ -1,7 +1,7 @@
 import { Assertions, GeneralSteps, Logger, Pipeline, Step } from '@ephox/agar';
 import { TinyApis, TinyLoader } from '@ephox/mcagar';
 import { Element, SelectorFind, Traverse } from '@ephox/sugar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
 
 UnitTest.asynctest('browser.tinymce.core.init.InitEditorNoThemeInlineTest', function (success, failure) {
@@ -31,7 +31,7 @@ UnitTest.asynctest('browser.tinymce.core.init.InitEditorNoThemeInlineTest', func
     theme: false,
     inline: true,
     base_url: '/project/tinymce/js/tinymce',
-    init_instance_callback (editor) {
+    init_instance_callback(editor) {
       editor.fire('SkinLoaded');
     }
   }, success, failure);

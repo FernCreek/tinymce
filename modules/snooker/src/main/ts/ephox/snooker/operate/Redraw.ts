@@ -1,8 +1,9 @@
+import { HTMLTableRowElement } from '@ephox/dom-globals';
 import { Arr, Fun } from '@ephox/katamari';
-import { Attr, Element, Insert, InsertAll, Remove, Replication, SelectorFind, Traverse } from '@ephox/sugar';
-import { RowDataNew, DetailNew, Detail } from '../api/Structs';
+import { Attr, Element, Insert, InsertAll, Remove, Replication, SelectorFilter, SelectorFind, Traverse } from '@ephox/sugar';
+import { Detail, DetailNew, RowDataNew } from '../api/Structs';
 
-const setIfNot = function (element: Element, property: string, value: number, ignore: number) {
+const setIfNot = function (element: Element, property: string, value: number, ignore: number): void {
   if (value === ignore) {
     Attr.remove(element, property);
   } else {
@@ -10,14 +11,24 @@ const setIfNot = function (element: Element, property: string, value: number, ig
   }
 };
 
-const render = function <T extends DetailNew>(table: Element, grid: RowDataNew<T>[]) {
+interface NewRowsAndCells {
+  readonly newRows: Element[];
+  readonly newCells: Element[];
+}
+
+const render = function <T extends DetailNew> (table: Element, grid: RowDataNew<T>[]): NewRowsAndCells {
   const newRows: Element[] = [];
   const newCells: Element[] = [];
+
+  const insertThead = Arr.last(SelectorFilter.children(table, 'caption,colgroup')).fold(
+    () => Fun.curry(Insert.prepend, table),
+    (c) => Fun.curry(Insert.after, c)
+  );
 
   const renderSection = function (gridSection: RowDataNew<T>[], sectionName: 'thead' | 'tbody' | 'tfoot') {
     const section = SelectorFind.child(table, sectionName).getOrThunk(function () {
       const tb = Element.fromTag(sectionName, Traverse.owner(table).dom());
-      Insert.append(table, tb);
+      sectionName === 'thead' ? insertThead(tb) : Insert.append(table, tb); // mutation
       return tb;
     });
 
@@ -78,27 +89,24 @@ const render = function <T extends DetailNew>(table: Element, grid: RowDataNew<T
   renderOrRemoveSection(footSection, 'tfoot');
 
   return {
-    newRows: Fun.constant(newRows),
-    newCells: Fun.constant(newCells)
+    newRows,
+    newCells
   };
 };
 
-const copy = function <T extends Detail> (grid: RowDataNew<T>[]) {
-  const rows = Arr.map(grid, function (row) {
-    // Shallow copy the row element
-    const tr = Replication.shallow(row.element());
-    Arr.each(row.cells(), function (cell) {
-      const clonedCell = Replication.deep(cell.element());
-      setIfNot(clonedCell, 'colspan', cell.colspan(), 1);
-      setIfNot(clonedCell, 'rowspan', cell.rowspan(), 1);
-      Insert.append(tr, clonedCell);
-    });
-    return tr;
+const copy = <T extends Detail> (grid: RowDataNew<T>[]): Element<HTMLTableRowElement>[] => Arr.map(grid, (row) => {
+  // Shallow copy the row element
+  const tr = Replication.shallow(row.element());
+  Arr.each(row.cells(), (cell) => {
+    const clonedCell = Replication.deep(cell.element());
+    setIfNot(clonedCell, 'colspan', cell.colspan(), 1);
+    setIfNot(clonedCell, 'rowspan', cell.rowspan(), 1);
+    Insert.append(tr, clonedCell);
   });
-  return rows;
-};
+  return tr;
+});
 
-export default {
+export {
   render,
   copy
 };

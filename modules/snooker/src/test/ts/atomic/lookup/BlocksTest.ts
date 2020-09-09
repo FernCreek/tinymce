@@ -1,7 +1,7 @@
 import * as Structs from 'ephox/snooker/api/Structs';
-import Blocks from 'ephox/snooker/lookup/Blocks';
+import * as Blocks from 'ephox/snooker/lookup/Blocks';
 import { Warehouse } from 'ephox/snooker/model/Warehouse';
-import { UnitTest, assert } from '@ephox/bedrock';
+import { UnitTest, assert } from '@ephox/bedrock-client';
 import { Element } from '@ephox/sugar';
 
 UnitTest.test('BlocksTest', function () {
@@ -14,5 +14,5 @@ UnitTest.test('BlocksTest', function () {
     f('r3', [ s('h', 1, 1), s('i', 1, 2) ], 'tfoot')
   ]);
 
-  assert.eq(['a', 'd', 'e'], Blocks.columns(warehouse).map(function (c) { return c.getOrDie(); }));
+  assert.eq([ 'a', 'd', 'e' ], Blocks.columns(warehouse).map(function (c) { return c.getOrDie(); }));
 });

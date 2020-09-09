@@ -1,21 +1,19 @@
-import { document, HTMLInputElement, HTMLButtonElement } from '@ephox/dom-globals';
+import { HTMLButtonElement, HTMLInputElement } from '@ephox/dom-globals';
 import { Attr, Css, DomEvent, Element, Html, Insert, InsertAll, Remove, Value } from '@ephox/sugar';
 import { Chain } from 'ephox/agar/api/Chain';
 import * as FocusTools from 'ephox/agar/api/FocusTools';
 import * as Mouse from 'ephox/agar/api/Mouse';
 import { Pipeline } from 'ephox/agar/api/Pipeline';
-import DemoContainer from 'ephox/agar/demo/DemoContainer';
+import * as DemoContainer from 'ephox/agar/demo/DemoContainer';
 
-export default <any> function () {
+export const demo = (): void => {
   DemoContainer.init(
     'Form Demo',
-    function (success, failure) {
-      const doc = Element.fromDom(document);
-
-      const form =  Element.fromTag('form');
+    (success, failure) => {
+      const form = Element.fromTag('form');
 
       const start = Element.fromHtml<HTMLButtonElement>('<button>Go</button>');
-      DomEvent.bind(start, 'click', function () {
+      DomEvent.bind(start, 'click', () => {
         Remove.remove(start);
 
         const labelName = Element.fromTag('label');
@@ -26,7 +24,7 @@ export default <any> function () {
         Attr.set(submit, 'type', 'button');
         Html.set(submit, 'Apply');
 
-        DomEvent.bind(submit, 'click', function () {
+        DomEvent.bind(submit, 'click', () => {
           if (Value.get(fieldName) !== 'test') {
             Css.set(fieldName, 'border', '3px solid red');
           } else {

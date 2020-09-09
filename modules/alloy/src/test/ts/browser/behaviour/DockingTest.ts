@@ -1,72 +1,63 @@
-import { ApproxStructure, Assertions, Cleaner, Logger, Step, Waiter } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { ApproxStructure, Assertions, Cleaner, GeneralSteps, Logger, Step, Waiter } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
 import { window } from '@ephox/dom-globals';
 import { DomEvent, Element } from '@ephox/sugar';
 
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
 import { Docking } from 'ephox/alloy/api/behaviour/Docking';
 import * as GuiFactory from 'ephox/alloy/api/component/GuiFactory';
-import { Container } from 'ephox/alloy/api/ui/Container';
-import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
 import * as SystemEvents from 'ephox/alloy/api/events/SystemEvents';
+import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
+import { Container } from 'ephox/alloy/api/ui/Container';
 
 UnitTest.asynctest('DockingTest', (success, failure) => {
   const cleanup = Cleaner();
 
-  GuiSetup.setup((store, doc, body) => {
-    return GuiFactory.build(
-      Container.sketch({
-        dom: {
-          styles: {
-            'margin-top': '2000px',
-            'margin-bottom': '5000px'
-          }
-        },
-        components: [
-          Container.sketch({
-            dom: {
-              styles: {
-                width: '100px',
-                height: '100px',
-                background: 'blue'
-              }
-            },
-            containerBehaviours: Behaviour.derive([
-              Docking.config({
-                leftAttr: 'data-dock-left',
-                topAttr: 'data-dock-top',
-                positionAttr: 'data-dock-pos',
-                onDocked: store.adder('static.onDocked'),
-                onUndocked: store.adder('static.onUndocked')
-              })
-            ])
-          }),
-          Container.sketch({
-            dom: {
-              styles: {
-                width: '100px',
-                height: '100px',
-                background: 'red',
-                position: 'absolute',
-                top: '2300px',
-                left: '200px'
-              }
-            },
-            containerBehaviours: Behaviour.derive([
-              Docking.config({
-                leftAttr: 'data-dock-left',
-                topAttr: 'data-dock-top',
-                positionAttr: 'data-dock-pos',
-                onDocked: store.adder('absolute.onDocked'),
-                onUndocked: store.adder('absolute.onUndocked')
-              })
-            ])
-          })
-        ]
-      })
-    );
-
-  }, (doc, body, gui, component, store) => {
+  GuiSetup.setup((store, _doc, _body) => GuiFactory.build(
+    Container.sketch({
+      dom: {
+        styles: {
+          'margin-top': '2000px',
+          'margin-bottom': '5000px'
+        }
+      },
+      components: [
+        Container.sketch({
+          dom: {
+            styles: {
+              width: '100px',
+              height: '100px',
+              background: 'blue'
+            }
+          },
+          containerBehaviours: Behaviour.derive([
+            Docking.config({
+              onDocked: store.adder('static.onDocked'),
+              onUndocked: store.adder('static.onUndocked')
+            })
+          ])
+        }),
+        Container.sketch({
+          dom: {
+            styles: {
+              width: '100px',
+              height: '100px',
+              background: 'red',
+              position: 'absolute',
+              top: '2300px',
+              right: '200px'
+            }
+          },
+          containerBehaviours: Behaviour.derive([
+            Docking.config({
+              onDocked: store.adder('absolute.onDocked'),
+              onUndocked: store.adder('absolute.onUndocked')
+            })
+          ])
+        })
+      ]
+    })
+  ), (_doc, _body, gui, component, store) => {
     const staticBox = component.components()[0];
     const absoluteBox = component.components()[1];
     cleanup.add(
@@ -74,39 +65,46 @@ UnitTest.asynctest('DockingTest', (success, failure) => {
         gui.broadcastEvent(SystemEvents.windowScroll(), evt);
       }).unbind
     );
-    const boxWithNoPosition = () => {
-      return ApproxStructure.build((s, str, arr) => {
-        return s.element('div', {
-          styles: {
-            position: str.none()
-          }
-        });
-      });
-    };
+    const boxWithNoPosition = () => ApproxStructure.build((s, str, _arr) => s.element('div', {
+      styles: {
+        position: str.none(),
+        left: str.none(),
+        top: str.none(),
+        right: str.none(),
+        bottom: str.none()
+      }
+    }));
 
-    const boxWithPosition = (position) => {
-      return ApproxStructure.build((s, str, arr) => {
-        return s.element('div', {
-          styles: {
-            position: str.is(position)
-          }
-        });
-      });
-    };
+    const boxWithPosition = (position: string) => ApproxStructure.build((s, str, _arr) => s.element('div', {
+      styles: {
+        position: str.is(position)
+      }
+    }));
 
-    return [
-      // On initial load, it should have no position.
+    const sAssertInitialStructure = Logger.t('Assert initial structure', GeneralSteps.sequence([
       Assertions.sAssertStructure(
-        'On initial load, static box should have neither position: absolute nor position: fixed',
+        'Assert initial structure of staticBox. Box should have neither "position: absolute" nor "position: fixed"',
         boxWithNoPosition(),
         staticBox.element()
       ),
       Assertions.sAssertStructure(
-        'On initial load, absolute box should have position: absolute',
-        boxWithPosition('absolute'),
+        'Assert initial structure of absoluteBox',
+        ApproxStructure.build((s, str, _arr) => s.element('div', {
+          styles: {
+            position: str.is('absolute'),
+            left: str.none(),
+            top: str.is('2300px'),
+            right: str.is('200px'),
+            bottom: str.none()
+          }
+        })),
         absoluteBox.element()
-      ),
-      store.sAssertEq('Before docking', [ ]),
+      )
+    ]));
+
+    return [
+      store.sAssertEq('Store should be empty', [ ]),
+      sAssertInitialStructure,
 
       Logger.t(
         'Scroll completely offscreen',
@@ -130,6 +128,23 @@ UnitTest.asynctest('DockingTest', (success, failure) => {
           boxWithPosition('fixed'),
           absoluteBox.element()
         )
+      ),
+      // For future reference - Docking is always using 'left' and 'top' when docked but this behavior isn't set in stone
+      Logger.t(
+        'When fixed, absoluteBox should be positioned with "top" and "left"',
+        Assertions.sAssertStructure(
+          'Assert structure of absoluteBox',
+          ApproxStructure.build((s, str, _arr) => s.element('div', {
+            styles: {
+              position: str.is('fixed'),
+              left: str.contains('px'), // assert isSome
+              top: str.contains('0px'),
+              right: str.none(),
+              bottom: str.none()
+            }
+          })),
+          absoluteBox.element()
+        ),
       ),
       store.sAssertEq('When docked', [ 'static.onDocked', 'absolute.onDocked' ]),
       store.sClear,
@@ -158,6 +173,10 @@ UnitTest.asynctest('DockingTest', (success, failure) => {
         )
       ),
       store.sAssertEq('After undocked', [ 'static.onUndocked', 'absolute.onUndocked' ]),
+      Logger.t(
+        'After undocking, the structure of the docked elements should be what it originally was',
+        sAssertInitialStructure
+      )
     ];
   }, cleanup.wrap(success), cleanup.wrap(failure));
 });

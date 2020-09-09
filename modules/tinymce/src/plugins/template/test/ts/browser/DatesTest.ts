@@ -1,5 +1,5 @@
 import { Log, Logger, Mouse, Pipeline, Step, UiFinder, Waiter } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
 import { TinyApis, TinyLoader } from '@ephox/mcagar';
 import { Element } from '@ephox/sugar';
@@ -18,11 +18,9 @@ UnitTest.asynctest('browser.tinymce.plugins.template.DatesTest', (success, failu
     const dialogSelector = 'div.tox-dialog';
     const toolbarButtonSelector = '[role="toolbar"] button[aria-label="Insert template"]';
 
-    const sDeleteSetting = (key) => {
-      return Logger.t('Deleting Setting ' + key, Step.sync(() => {
-        delete editor.settings[key];
-      }));
-    };
+    const sDeleteSetting = (key) => Logger.t('Deleting Setting ' + key, Step.sync(() => {
+      delete editor.settings[key];
+    }));
 
     Pipeline.async({}, [
       Log.stepsAsStep('TBA', 'Template: Test cdate in snippet with default class', [
@@ -97,6 +95,6 @@ UnitTest.asynctest('browser.tinymce.plugins.template.DatesTest', (success, failu
     plugins: 'template',
     toolbar: 'template',
     indent: false,
-    base_url: '/project/tinymce/js/tinymce',
+    base_url: '/project/tinymce/js/tinymce'
   }, success, failure);
 });

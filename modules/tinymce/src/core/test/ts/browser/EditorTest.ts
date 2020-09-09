@@ -1,18 +1,17 @@
 import { Pipeline, UiFinder } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
+import { document } from '@ephox/dom-globals';
 import { LegacyUnit, TinyLoader } from '@ephox/mcagar';
+import { Body, Attr, Class } from '@ephox/sugar';
+import Editor from 'tinymce/core/api/Editor';
 import EditorManager from 'tinymce/core/api/EditorManager';
 import Env from 'tinymce/core/api/Env';
-import HtmlUtils from '../module/test/HtmlUtils';
+import * as HtmlUtils from '../module/test/HtmlUtils';
 import URI from 'tinymce/core/api/util/URI';
 import Theme from 'tinymce/themes/silver/Theme';
-import { UnitTest } from '@ephox/bedrock';
-import { document } from '@ephox/dom-globals';
-import { Body, Attr, Class } from '@ephox/sugar';
 
-UnitTest.asynctest('browser.tinymce.core.EditorTest', function () {
-  const success = arguments[arguments.length - 2];
-  const failure = arguments[arguments.length - 1];
-  const suite = LegacyUnit.createSuite();
+UnitTest.asynctest('browser.tinymce.core.EditorTest', function (success, failure) {
+  const suite = LegacyUnit.createSuite<Editor>();
 
   Theme();
 
@@ -394,7 +393,7 @@ UnitTest.asynctest('browser.tinymce.core.EditorTest', function () {
     });
 
     LegacyUnit.equal(editor.translate('input i18n'), 'output i18n');
-    LegacyUnit.equal(editor.translate(['value:{0}{1}', 'a', 'b']), 'value translation:ab');
+    LegacyUnit.equal(editor.translate([ 'value:{0}{1}', 'a', 'b' ]), 'value translation:ab');
   });
 
   suite.test('Treat some paragraphs as empty contents', function (editor) {
@@ -408,22 +407,6 @@ UnitTest.asynctest('browser.tinymce.core.EditorTest', function () {
   suite.test('kamer word boundaries', function (editor) {
     editor.setContent('<p>!\u200b!\u200b!</p>');
     LegacyUnit.equal(editor.getContent(), '<p>!\u200b!\u200b!</p>');
-  });
-
-  suite.test('Padd empty elements with br', function (editor) {
-    editor.settings.padd_empty_with_br = true;
-    editor.setContent('<p>a</p><p></p>');
-    LegacyUnit.equal(editor.getContent(), '<p>a</p><p><br /></p>');
-    delete editor.settings.padd_empty_with_br;
-  });
-
-  suite.test('Padd empty elements with br on insert at caret', function (editor) {
-    editor.settings.padd_empty_with_br = true;
-    editor.setContent('<p>a</p>');
-    LegacyUnit.setSelection(editor, 'p', 1);
-    editor.insertContent('<p>b</p><p></p>');
-    LegacyUnit.equal(editor.getContent(), '<p>a</p><p>b</p><p><br /></p>');
-    delete editor.settings.padd_empty_with_br;
   });
 
   suite.test('Preserve whitespace pre elements', function (editor) {

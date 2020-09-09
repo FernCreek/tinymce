@@ -1,8 +1,8 @@
 import { Universe } from '@ephox/boss';
 import { Arr, Fun, Option } from '@ephox/katamari';
-import Parent from '../api/general/Parent';
+import * as Parent from '../api/general/Parent';
 import { breakToLeft, breakToRight, LeftRight } from '../parent/Breaker';
-import Subset from '../parent/Subset';
+import * as Subset from '../parent/Subset';
 
 // Find the subsection of DIRECT children of parent from [first, last])
 const slice = function <E, D> (universe: Universe<E, D>, parent: E, first: Option<E>, last: Option<E>) {
@@ -37,10 +37,10 @@ const breakLeft = function <E, D> (universe: Universe<E, D>, element: E, common:
   } else {
     const breakage = breakPath(universe, element, common, breakToLeft);
     // Move the first element into the second section of the split because we want to include element in the section.
-    if (breakage.splits().length > 0) {
-      universe.insert().prepend(breakage.splits()[0].second(), element);
+    if (breakage.splits.length > 0) {
+      universe.insert().prepend(breakage.splits[0].second, element);
     }
-    return Option.some(breakage.second().getOr(element));
+    return Option.some(breakage.second.getOr(element));
   }
 };
 
@@ -50,7 +50,7 @@ const breakRight = function <E, D> (universe: Universe<E, D>, element: E, common
     return Option.none<E>();
   } else {
     const breakage = breakPath(universe, element, common, breakToRight);
-    return Option.some(breakage.first());
+    return Option.some(breakage.first);
   }
 };
 
@@ -90,6 +90,6 @@ const fracture = function <E, D> (universe: Universe<E, D>, isRoot: (e: E) => bo
   return universe.eq(start, finish) ? same(universe, isRoot, start, ceiling) : diff(universe, isRoot, start, finish, ceiling);
 };
 
-export default {
+export {
   fracture
 };

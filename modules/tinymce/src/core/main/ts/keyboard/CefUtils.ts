@@ -8,16 +8,15 @@
 import { Element, Range } from '@ephox/dom-globals';
 import CaretPosition from '../caret/CaretPosition';
 import * as CaretUtils from '../caret/CaretUtils';
-import NodeType from '../dom/NodeType';
+import * as NodeType from '../dom/NodeType';
 import Editor from '../api/Editor';
 
 const isContentEditableTrue = NodeType.isContentEditableTrue;
 const isContentEditableFalse = NodeType.isContentEditableFalse;
 
-const showCaret = (direction, editor: Editor, node: Element, before: boolean, scrollIntoView: boolean): Range => {
+const showCaret = (direction, editor: Editor, node: Element, before: boolean, scrollIntoView: boolean): Range =>
   // TODO: Figure out a better way to handle this dependency
-  return editor._selectionOverrides.showCaret(direction, node, before, scrollIntoView);
-};
+  editor._selectionOverrides.showCaret(direction, node, before, scrollIntoView);
 
 const getNodeRange = (node: Element): Range => {
   const rng = node.ownerDocument.createRange();

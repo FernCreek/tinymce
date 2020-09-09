@@ -1,17 +1,18 @@
 import { console } from '@ephox/dom-globals';
-import { Option, Arr } from '@ephox/katamari';
-import * as Sketcher from './Sketcher';
-import * as CustomListSchema from '../../ui/schema/CustomListSchema';
+import { Arr, Option } from '@ephox/katamari';
 import { AlloyComponent } from '../../api/component/ComponentApi';
-import { CompositeSketchFactory } from './UiSketcher';
-import { CustomListDetail, CustomListSpec, CustomListSketcher } from '../../ui/types/CustomListTypes';
-import { Replacing } from '../behaviour/Replacing';
-
-import * as AlloyParts from '../../parts/AlloyParts';
-import * as SketchBehaviours from '../component/SketchBehaviours';
 import { AlloySpec } from '../../api/component/SpecTypes';
 
-const factory: CompositeSketchFactory<CustomListDetail, CustomListSpec> = (detail, components, spec, external) => {
+import * as AlloyParts from '../../parts/AlloyParts';
+import * as CustomListSchema from '../../ui/schema/CustomListSchema';
+import { CustomListApis, CustomListDetail, CustomListSketcher, CustomListSpec } from '../../ui/types/CustomListTypes';
+import { NamedConfiguredBehaviour } from '../behaviour/Behaviour';
+import { Replacing } from '../behaviour/Replacing';
+import * as SketchBehaviours from '../component/SketchBehaviours';
+import * as Sketcher from './Sketcher';
+import { CompositeSketchFactory } from './UiSketcher';
+
+const factory: CompositeSketchFactory<CustomListDetail, CustomListSpec> = (detail, components, _spec, _external) => {
 
   const setItems = (list: AlloyComponent, items: AlloySpec[]) => {
     getListContainer(list).fold(() => {
@@ -30,9 +31,7 @@ const factory: CompositeSketchFactory<CustomListDetail, CustomListSpec> = (detai
 
       const numListsToAdd = numListsRequired - itemComps.length;
       const itemsToAdd = numListsToAdd > 0 ?
-        Arr.range(numListsToAdd, () => {
-          return detail.makeItem();
-        }) : [ ];
+        Arr.range(numListsToAdd, () => detail.makeItem()) : [ ];
 
       const itemsToRemove = itemComps.slice(numListsRequired);
 
@@ -48,12 +47,12 @@ const factory: CompositeSketchFactory<CustomListDetail, CustomListSpec> = (detai
   };
 
   // In shell mode, the group overrides need to be added to the main container, and there can be no children
-  const extra = detail.shell ? { behaviours: [ Replacing.config({ }) ], components: [ ] } :
-    { behaviours: [ ], components };
+  const extra: {
+    behaviours: Array<NamedConfiguredBehaviour<any, any>>;
+    components: AlloySpec[];
+  } = detail.shell ? { behaviours: [ Replacing.config({ }) ], components: [ ] } : { behaviours: [ ], components };
 
-  const getListContainer = (component: AlloyComponent) => {
-    return detail.shell ? Option.some(component) : AlloyParts.getPart(component, detail, 'items');
-  };
+  const getListContainer = (component: AlloyComponent) => detail.shell ? Option.some(component) : AlloyParts.getPart(component, detail, 'items');
 
   return {
     uid: detail.uid,
@@ -70,7 +69,7 @@ const factory: CompositeSketchFactory<CustomListDetail, CustomListSpec> = (detai
   };
 };
 
-const CustomList = Sketcher.composite({
+const CustomList: CustomListSketcher = Sketcher.composite<CustomListSpec, CustomListDetail, CustomListApis>({
   name: CustomListSchema.name(),
   configFields: CustomListSchema.schema(),
   partFields: CustomListSchema.parts(),
@@ -80,7 +79,7 @@ const CustomList = Sketcher.composite({
       apis.setItems(list, items);
     }
   }
-}) as CustomListSketcher;
+});
 
 export {
   CustomList

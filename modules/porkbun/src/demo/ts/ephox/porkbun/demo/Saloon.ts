@@ -1,5 +1,5 @@
-import Binder from 'ephox/porkbun/Binder';
-import Events from 'ephox/porkbun/Events';
+import * as Binder from 'ephox/porkbun/Binder';
+import * as Events from 'ephox/porkbun/Events';
 import { Event, Bindable } from 'ephox/porkbun/Event';
 import { Outlaw, ShootingEvent, Saloon } from './Types';
 
@@ -8,7 +8,7 @@ interface SaloonEvents {
     shooting: Bindable<ShootingEvent>;
   };
   trigger: {
-      shooting: (shooter: Outlaw, target: Outlaw) => void;
+    shooting: (shooter: Outlaw, target: Outlaw) => void;
   };
 }
 
@@ -29,7 +29,7 @@ const create = function (): Saloon {
   };
 
   const events = Events.create({
-    shooting: Event(['shooter', 'target'])
+    shooting: Event([ 'shooter', 'target' ])
   }) as SaloonEvents;
 
   const binder = Binder.create();
@@ -55,7 +55,7 @@ const create = function (): Saloon {
       events.trigger.shooting(patron, event.target());
     });
 
-    binder.bind(patron.events.die, function (event) {
+    binder.bind(patron.events.die, function (_event) {
       stopListening(patron);
     });
   };
@@ -78,6 +78,6 @@ const create = function (): Saloon {
   };
 };
 
-export default {
+export {
   create
 };

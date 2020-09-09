@@ -1,5 +1,5 @@
 import { Assertions, Chain, FocusTools, Guard, Keyboard, Keys, Log, Pipeline, UiFinder, Waiter } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
 import { TinyApis, TinyLoader, TinyUi } from '@ephox/mcagar';
 import { Attr, Body, Element } from '@ephox/sugar';
@@ -30,14 +30,12 @@ UnitTest.asynctest('browser.tinymce.plugins.charmap.SearchTest', (success, failu
 
     Pipeline.async({},
       Log.steps('TBA', 'Charmap: Open dialog, Search for "euro", Euro should be first option', [
-        tinyApis.sFocus,
+        tinyApis.sFocus(),
         tinyUi.sClickOnToolbar('click charmap', 'button[aria-label="Special character"]'),
         Chain.asStep({}, [
-          tinyUi.cWaitForPopup('wait for popup', 'div[role="dialog"]'),
+          tinyUi.cWaitForPopup('wait for popup', 'div[role="dialog"]')
         ]),
-        FocusTools.sTryOnSelector('Focus should start on', doc, '[role="tab"]'), // TODO: Remove duped startup of these tests
-        Keyboard.sKeydown(doc, Keys.tab(), { }),
-        FocusTools.sTryOnSelector('Focus should have moved to input', doc, 'input'),
+        FocusTools.sTryOnSelector('Focus should start on', doc, 'input'), // TODO: Remove duped startup of these tests
         FocusTools.sSetActiveValue(doc, 'euro'),
         Chain.asStep(doc, [
           FocusTools.cGetFocused,
@@ -47,9 +45,7 @@ UnitTest.asynctest('browser.tinymce.plugins.charmap.SearchTest', (success, failu
           'Wait until Euro is the first choice (search should filter)',
           Chain.asStep(Body.body(), [
             UiFinder.cFindIn('.tox-collection__item:first'),
-            Chain.mapper((item) => {
-              return Attr.get(item, 'data-collection-item-value');
-            }),
+            Chain.mapper((item) => Attr.get(item, 'data-collection-item-value')),
             Assertions.cAssertEq('Search should show euro', '€')
           ])
         ),
@@ -61,11 +57,11 @@ UnitTest.asynctest('browser.tinymce.plugins.charmap.SearchTest', (success, failu
           tinyApis.sAssertContent('<p>&euro;</p>')
         )
       ])
-    , onSuccess, onFailure);
+      , onSuccess, onFailure);
   }, {
     plugins: 'charmap',
     toolbar: 'charmap',
     theme: 'silver',
-    base_url: '/project/tinymce/js/tinymce',
+    base_url: '/project/tinymce/js/tinymce'
   }, success, failure);
 });

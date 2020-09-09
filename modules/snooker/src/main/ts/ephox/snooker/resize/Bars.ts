@@ -1,12 +1,11 @@
 import { Arr, Option } from '@ephox/katamari';
-import { Class, Css, Height, Insert, Location, Remove, SelectorFilter, Width, Element, Position } from '@ephox/sugar';
-import Blocks from '../lookup/Blocks';
-import DetailsList from '../model/DetailsList';
-import { Warehouse } from '../model/Warehouse';
-import Styles from '../style/Styles';
-import Bar from './Bar';
+import { Class, Css, Element, Height, Insert, Location, Position, Remove, SelectorFilter, Width } from '@ephox/sugar';
 import { ResizeWire } from '../api/ResizeWire';
-import { BarPositions, RowInfo, ColInfo } from './BarPositions';
+import * as Blocks from '../lookup/Blocks';
+import { Warehouse } from '../model/Warehouse';
+import * as Styles from '../style/Styles';
+import * as Bar from './Bar';
+import { BarPositions, ColInfo, RowInfo } from './BarPositions';
 
 const resizeBar = Styles.resolve('resizer-bar');
 const resizeRowBar = Styles.resolve('resizer-rows');
@@ -20,7 +19,7 @@ const destroy = function (wire: ResizeWire) {
 
 const drawBar = function <T> (wire: ResizeWire, positions: Option<T>[], create: (origin: Position, info: T) => Element) {
   const origin = wire.origin();
-  Arr.each(positions, function (cpOption, i) {
+  Arr.each(positions, function (cpOption) {
     cpOption.each(function (cp) {
       const bar = create(origin, cp);
       Class.add(bar, resizeBar);
@@ -31,7 +30,7 @@ const drawBar = function <T> (wire: ResizeWire, positions: Option<T>[], create: 
 
 const refreshCol = function (wire: ResizeWire, colPositions: Option<ColInfo>[], position: Position, tableHeight: number) {
   drawBar(wire, colPositions, function (origin, cp) {
-    const colBar = Bar.col(cp.col(), cp.x() - origin.left(), position.top() - origin.top(), BAR_THICKNESS, tableHeight);
+    const colBar = Bar.col(cp.col, cp.x - origin.left(), position.top() - origin.top(), BAR_THICKNESS, tableHeight);
     Class.add(colBar, resizeColBar);
     return colBar;
   });
@@ -39,7 +38,7 @@ const refreshCol = function (wire: ResizeWire, colPositions: Option<ColInfo>[], 
 
 const refreshRow = function (wire: ResizeWire, rowPositions: Option<RowInfo>[], position: Position, tableWidth: number) {
   drawBar(wire, rowPositions, function (origin, cp) {
-    const rowBar = Bar.row(cp.row(), position.left() - origin.left(), cp.y() - origin.top(), tableWidth, BAR_THICKNESS);
+    const rowBar = Bar.row(cp.row, position.left() - origin.left(), cp.y - origin.top(), tableWidth, BAR_THICKNESS);
     Class.add(rowBar, resizeRowBar);
     return rowBar;
   });
@@ -57,8 +56,7 @@ const refreshGrid = function (wire: ResizeWire, table: Element, rows: Option<Ele
 const refresh = function (wire: ResizeWire, table: Element, hdirection: BarPositions<RowInfo>, vdirection: BarPositions<ColInfo>) {
   destroy(wire);
 
-  const list = DetailsList.fromTable(table);
-  const warehouse = Warehouse.generate(list);
+  const warehouse = Warehouse.fromTable(table);
   const rows = Blocks.rows(warehouse);
   const cols = Blocks.columns(warehouse);
 
@@ -90,7 +88,7 @@ const isColBar = function (element: Element) {
   return Class.has(element, resizeColBar);
 };
 
-export default {
+export {
   refresh,
   hide,
   show,

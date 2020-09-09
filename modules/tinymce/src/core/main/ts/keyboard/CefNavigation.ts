@@ -5,24 +5,24 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Range, Element } from '@ephox/dom-globals';
-import { Fun, Arr } from '@ephox/katamari';
+import { Element, Range } from '@ephox/dom-globals';
+import { Arr, Fun } from '@ephox/katamari';
+import Editor from '../api/Editor';
 import Env from '../api/Env';
+import * as Settings from '../api/Settings';
 import * as CaretContainer from '../caret/CaretContainer';
 import CaretPosition from '../caret/CaretPosition';
+import { isAfterContentEditableFalse, isAfterTable, isBeforeContentEditableFalse, isBeforeTable } from '../caret/CaretPositionPredicates';
 import * as CaretUtils from '../caret/CaretUtils';
-import { HDirection, CaretWalker } from '../caret/CaretWalker';
+import { CaretWalker, HDirection } from '../caret/CaretWalker';
+import { getPositionsUntilNextLine, getPositionsUntilPreviousLine } from '../caret/LineReader';
 import * as LineUtils from '../caret/LineUtils';
 import * as LineWalker from '../caret/LineWalker';
-import NodeType from '../dom/NodeType';
-import * as CefUtils from './CefUtils';
+import * as NodeType from '../dom/NodeType';
+import * as InlineUtils from '../keyboard/InlineUtils';
 import * as RangeNodes from '../selection/RangeNodes';
-import ArrUtils from '../util/ArrUtils';
-import InlineUtils from '../keyboard/InlineUtils';
-import Settings from '../api/Settings';
-import { isBeforeContentEditableFalse, isAfterContentEditableFalse, isBeforeTable, isAfterTable } from '../caret/CaretPositionPredicates';
-import Editor from '../api/Editor';
-import { getPositionsUntilNextLine, getPositionsUntilPreviousLine } from '../caret/LineReader';
+import * as ArrUtils from '../util/ArrUtils';
+import * as CefUtils from './CefUtils';
 
 const isContentEditableFalse = NodeType.isContentEditableFalse;
 const getSelectedNode = RangeNodes.getSelectedNode;
@@ -76,15 +76,13 @@ const moveToCeFalseHorizontally = (direction: HDirection, editor: Editor, getNex
 type WalkerFunction = (root: Element, pred: (clientRect: LineWalker.ClientRectLine) => boolean, pos: CaretPosition) => LineWalker.ClientRectLine[];
 
 const moveToCeFalseVertically = (direction: LineWalker.VDirection, editor: Editor, walkerFn: WalkerFunction, range: Range) => {
-  let caretPosition, linePositions, nextLinePositions;
-  let closestNextLineRect, caretClientRect, clientX;
-  let dist1, dist2, contentEditableFalseNode;
+  let closestNextLineRect, dist1, dist2, contentEditableFalseNode;
 
   contentEditableFalseNode = getSelectedNode(range);
-  caretPosition = CaretUtils.getNormalizedRangeEndPoint(direction, editor.getBody(), range);
-  linePositions = walkerFn(editor.getBody(), LineWalker.isAboveLine(1), caretPosition);
-  nextLinePositions = Arr.filter(linePositions, LineWalker.isLine(1));
-  caretClientRect = ArrUtils.last(caretPosition.getClientRects());
+  const caretPosition = CaretUtils.getNormalizedRangeEndPoint(direction, editor.getBody(), range);
+  const linePositions = walkerFn(editor.getBody(), LineWalker.isAboveLine(1), caretPosition);
+  const nextLinePositions = Arr.filter(linePositions, LineWalker.isLine(1));
+  const caretClientRect = ArrUtils.last(caretPosition.getClientRects());
 
   if (isBeforeContentEditableFalse(caretPosition) || isBeforeTable(caretPosition)) {
     contentEditableFalseNode = caretPosition.getNode();
@@ -98,7 +96,7 @@ const moveToCeFalseVertically = (direction: LineWalker.VDirection, editor: Edito
     return null;
   }
 
-  clientX = caretClientRect.left;
+  const clientX = caretClientRect.left;
 
   closestNextLineRect = LineUtils.findClosestClientRect(nextLinePositions, clientX);
   if (closestNextLineRect) {
@@ -141,7 +139,7 @@ const exitPreBlock = (editor: Editor, direction: HDirection, range: Range): void
   const getNextVisualCaretPosition = Fun.curry(CaretUtils.getVisualCaretPosition, caretWalker.next);
   const getPrevVisualCaretPosition = Fun.curry(CaretUtils.getVisualCaretPosition, caretWalker.prev);
 
-  if (range.collapsed && editor.settings.forced_root_block) {
+  if (range.collapsed && Settings.hasForcedRootBlock(editor)) {
     pre = editor.dom.getParent(range.startContainer, 'PRE');
     if (!pre) {
       return;
@@ -209,47 +207,41 @@ const getVerticalRange = (editor: Editor, down: boolean): Range => {
   return null;
 };
 
-const moveH = (editor: Editor, forward: boolean) => {
-  return () => {
-    const newRng = getHorizontalRange(editor, forward);
+const moveH = (editor: Editor, forward: boolean) => () => {
+  const newRng = getHorizontalRange(editor, forward);
 
-    if (newRng) {
-      editor.selection.setRng(newRng);
-      return true;
-    } else {
-      return false;
-    }
-  };
+  if (newRng) {
+    editor.selection.setRng(newRng);
+    return true;
+  } else {
+    return false;
+  }
 };
 
-const moveV = (editor: Editor, down: boolean) => {
-  return () => {
-    const newRng = getVerticalRange(editor, down);
+const moveV = (editor: Editor, down: boolean) => () => {
+  const newRng = getVerticalRange(editor, down);
 
-    if (newRng) {
-      editor.selection.setRng(newRng);
-      return true;
-    } else {
-      return false;
-    }
-  };
+  if (newRng) {
+    editor.selection.setRng(newRng);
+    return true;
+  } else {
+    return false;
+  }
 };
 
 const isCefPosition = (forward: boolean) => (pos: CaretPosition) => forward ? isAfterContentEditableFalse(pos) : isBeforeContentEditableFalse(pos);
 
-const moveToLineEndPoint = (editor: Editor, forward: boolean) => {
-  return () => {
-    const from = forward ? CaretPosition.fromRangeEnd(editor.selection.getRng()) : CaretPosition.fromRangeStart(editor.selection.getRng());
-    const result = forward ? getPositionsUntilNextLine(editor.getBody(), from) : getPositionsUntilPreviousLine(editor.getBody(), from);
-    const to = forward ? Arr.last(result.positions) : Arr.head(result.positions);
-    return to.filter(isCefPosition(forward)).fold(
-      Fun.constant(false),
-      (pos) => {
-        editor.selection.setRng(pos.toRange());
-        return true;
-      }
-    );
-  };
+const moveToLineEndPoint = (editor: Editor, forward: boolean) => () => {
+  const from = forward ? CaretPosition.fromRangeEnd(editor.selection.getRng()) : CaretPosition.fromRangeStart(editor.selection.getRng());
+  const result = forward ? getPositionsUntilNextLine(editor.getBody(), from) : getPositionsUntilPreviousLine(editor.getBody(), from);
+  const to = forward ? Arr.last(result.positions) : Arr.head(result.positions);
+  return to.filter(isCefPosition(forward)).fold(
+    Fun.constant(false),
+    (pos) => {
+      editor.selection.setRng(pos.toRange());
+      return true;
+    }
+  );
 };
 
 export {

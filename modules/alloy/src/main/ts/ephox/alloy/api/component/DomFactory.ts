@@ -1,9 +1,10 @@
+import { HTMLElement } from '@ephox/dom-globals';
 import { Arr } from '@ephox/katamari';
 import { Element, Html, Node, Traverse } from '@ephox/sugar';
-import { RawDomSchema, AlloySpec } from '../../api/component/SpecTypes';
-import { HTMLElement } from '@ephox/dom-globals';
 
-const getAttrs = (elem) => {
+import { RawDomSchema, AlloySpec, SketchSpec } from '../../api/component/SpecTypes';
+
+const getAttrs = (elem: Element) => {
   const attributes = elem.dom().attributes !== undefined ? elem.dom().attributes : [ ];
   return Arr.foldl(attributes, (b, attr) => {
     // Make class go through the class path. Do not list it as an attribute.
@@ -15,9 +16,7 @@ const getAttrs = (elem) => {
   }, {});
 };
 
-const getClasses = (elem) => {
-  return Array.prototype.slice.call(elem.dom().classList, 0);
-};
+const getClasses = (elem: Element) => Array.prototype.slice.call(elem.dom().classList, 0);
 
 const fromHtml = (html: string): RawDomSchema => {
   const elem = Element.fromHtml(html);
@@ -35,31 +34,25 @@ const fromHtml = (html: string): RawDomSchema => {
   };
 };
 
-const sketch = (sketcher, html, config) => {
-  return sketcher.sketch({
-    dom: fromHtml(html),
-    ...config
-  });
-};
+const sketch = <T>(sketcher: { sketch: (spec: { dom: RawDomSchema } & T) => SketchSpec}, html: string, config: T) => sketcher.sketch({
+  dom: fromHtml(html),
+  ...config
+});
 
-const dom = (tag: string, classes: string[], attributes = { }, styles = { }) => {
-  return {
+const dom = (tag: string, classes: string[], attributes = { }, styles = { }) => ({
+  tag,
+  classes,
+  attributes,
+  styles
+});
+
+const simple = (tag: string, classes: string[], components: AlloySpec[]) => ({
+  dom: {
     tag,
-    classes,
-    attributes,
-    styles
-  };
-};
-
-const simple = (tag: string, classes: string[], components: AlloySpec[]) => {
-  return {
-    dom: {
-      tag,
-      classes
-    },
-    components
-  };
-};
+    classes
+  },
+  components
+});
 
 export {
   getAttrs,

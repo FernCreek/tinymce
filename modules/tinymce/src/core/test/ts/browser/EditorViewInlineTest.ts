@@ -1,9 +1,9 @@
 import { Assertions, GeneralSteps, Logger, Pipeline, Step, Chain } from '@ephox/agar';
 import { TinyApis, TinyLoader } from '@ephox/mcagar';
 import { Element, Css, Scroll } from '@ephox/sugar';
-import EditorView from 'tinymce/core/EditorView';
+import * as EditorView from 'tinymce/core/EditorView';
 import Theme from 'tinymce/themes/silver/Theme';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 
 UnitTest.asynctest('browser.tinymce.core.EditorViewInlineTest', function (success, failure) {
 
@@ -82,7 +82,7 @@ UnitTest.asynctest('browser.tinymce.core.EditorViewInlineTest', function (succes
       ]))
     ], onSuccess, onFailure);
   }, {
-      inline: true,
-      base_url: '/project/tinymce/js/tinymce'
-    }, success, failure);
+    inline: true,
+    base_url: '/project/tinymce/js/tinymce'
+  }, success, failure);
 });

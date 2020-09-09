@@ -6,31 +6,23 @@
  */
 
 import {
-  AddEventsBehaviour,
-  AlloyComponent,
-  AlloyEvents,
-  AlloyTriggers,
-  Behaviour,
-  CustomEvent,
-  Disabling,
-  Representing,
-  SimpleSpec,
-  SimulatedEvent,
+  AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloyTriggers, Behaviour, CustomEvent, Disabling, Representing, SimpleSpec,
+  SimulatedEvent
 } from '@ephox/alloy';
+import { Types } from '@ephox/bridge';
 import { Blob, console } from '@ephox/dom-globals';
 import { ImageResult, ResultConversions } from '@ephox/imagetools';
 import { Fun, Option } from '@ephox/katamari';
 import { Element } from '@ephox/sugar';
-import { ComposingConfigs } from 'tinymce/themes/silver/ui/alien/ComposingConfigs';
 
 import { UiFactoryBackstageProviders } from 'tinymce/themes/silver/backstage/Backstage';
+import { ComposingConfigs } from 'tinymce/themes/silver/ui/alien/ComposingConfigs';
+import { Omit } from '../../Omit';
 import * as EditPanel from './EditPanel';
 import * as ImagePanel from './ImagePanel';
 import * as ImageToolsEvents from './ImageToolsEvents';
 import * as SideBar from './SideBar';
 import * as ImageToolsState from './state/ImageToolsState';
-import { Types } from '@ephox/bridge';
-import { Omit } from '../../Omit';
 
 type ImageToolsSpec = Omit<Types.ImageTools.ImageTools, 'type'>;
 
@@ -55,7 +47,7 @@ export const renderImageTools = (detail: ImageToolsSpec, providersBackstage: UiF
 
   const undo = (anyInSystem: AlloyComponent, _simulatedEvent: SimulatedEvent<CustomEvent>): void => {
     const url = state.undo();
-    updateSrc(anyInSystem, url).then((oImg) => {
+    updateSrc(anyInSystem, url).then((_oImg) => {
       unblock(anyInSystem);
       updateButtonUndoStates(anyInSystem);
     });
@@ -63,25 +55,23 @@ export const renderImageTools = (detail: ImageToolsSpec, providersBackstage: UiF
 
   const redo = (anyInSystem: AlloyComponent, _simulatedEvent: SimulatedEvent<CustomEvent>): void => {
     const url = state.redo();
-    updateSrc(anyInSystem, url).then((oImg) => {
+    updateSrc(anyInSystem, url).then((_oImg) => {
       unblock(anyInSystem);
       updateButtonUndoStates(anyInSystem);
     });
   };
 
-  const imageResultToBlob = (ir: ImageResult): Promise<Blob> => {
-    return ir.toBlob();
-  };
+  const imageResultToBlob = (ir: ImageResult): Promise<Blob> => ir.toBlob();
 
   const block = (anyInSystem: AlloyComponent): void => {
-    AlloyTriggers.emitWith(anyInSystem, ImageToolsEvents.external.formActionEvent, { name: ImageToolsEvents.external.disable(), value: { } });
+    AlloyTriggers.emitWith(anyInSystem, ImageToolsEvents.external.formActionEvent, { name: ImageToolsEvents.external.disable(), value: { }});
   };
 
   const unblock = (anyInSystem: AlloyComponent): void => {
     editPanel.getApplyButton(anyInSystem).each((applyButton) => {
       Disabling.enable(applyButton);
     });
-    AlloyTriggers.emitWith(anyInSystem, ImageToolsEvents.external.formActionEvent, { name: ImageToolsEvents.external.enable(), value: { } });
+    AlloyTriggers.emitWith(anyInSystem, ImageToolsEvents.external.formActionEvent, { name: ImageToolsEvents.external.enable(), value: { }});
   };
 
   const updateSrc = (anyInSystem: AlloyComponent, src: string): Promise<Option<Element>> => {
@@ -95,14 +85,12 @@ export const renderImageTools = (detail: ImageToolsSpec, providersBackstage: UiF
       then(filter).
       then(imageResultToBlob).
       then(action).
-      then((url) => {
-        return updateSrc(anyInSystem, url).then((oImg) => {
-          updateButtonUndoStates(anyInSystem);
-          swap();
-          unblock(anyInSystem);
-          return oImg;
-        });
-      }).catch((err) => {
+      then((url) => updateSrc(anyInSystem, url).then((oImg) => {
+        updateButtonUndoStates(anyInSystem);
+        swap();
+        unblock(anyInSystem);
+        return oImg;
+      })).catch((err) => {
       // tslint:disable-next-line:no-console
         console.log(err); // TODO: Notify the user?
         unblock(anyInSystem);
@@ -150,7 +138,7 @@ export const renderImageTools = (detail: ImageToolsSpec, providersBackstage: UiF
 
   const cancel = (anyInSystem: AlloyComponent): void => {
     const currentUrl = destroyTempState(anyInSystem);
-    updateSrc(anyInSystem, currentUrl).then((oImg) => {
+    updateSrc(anyInSystem, currentUrl).then((_oImg) => {
       unblock(anyInSystem);
     });
   };
@@ -197,9 +185,7 @@ export const renderImageTools = (detail: ImageToolsSpec, providersBackstage: UiF
       Representing.config({
         store: {
           mode: 'manual',
-          getValue: () => {
-            return state.getBlobState();
-          }
+          getValue: () => state.getBlobState()
         }
       }),
       AddEventsBehaviour.config('image-tools-events', [

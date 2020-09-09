@@ -45,7 +45,7 @@ const open = function (editor: Editor, database: EmojiDatabase) {
 
   const resultsField: Types.Dialog.BodyComponentApi = {
     type: 'collection',
-    name: 'results',
+    name: 'results'
     // TODO TINY-3229 implement collection columns properly
     // columns: 'auto'
   };
@@ -57,7 +57,7 @@ const open = function (editor: Editor, database: EmojiDatabase) {
       tabs: Arr.map(database.listCategories(), (cat) => ({
         title: cat,
         name: cat,
-        items: [searchField, resultsField]
+        items: [ searchField, resultsField ]
       }))
     };
     return {
@@ -97,7 +97,7 @@ const open = function (editor: Editor, database: EmojiDatabase) {
       updateFilter.throttle(dialogApi);
       dialogApi.focus(patternName);
       dialogApi.unblock();
-    }).catch((err) => {
+    }).catch((_err) => {
       dialogApi.redial({
         title: 'Emoticons',
         body: {
@@ -129,6 +129,6 @@ const open = function (editor: Editor, database: EmojiDatabase) {
   }
 };
 
-export default {
+export {
   open
 };

@@ -5,17 +5,18 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import ArrowKeys from './ArrowKeys';
-import BoundarySelection from './BoundarySelection';
-import DeleteBackspaceKeys from './DeleteBackspaceKeys';
-import EnterKey from './EnterKey';
-import SpaceKey from './SpaceKey';
-import CaretContainerInput from '../caret/CaretContainerInput';
+import * as ArrowKeys from './ArrowKeys';
+import * as BoundarySelection from './BoundarySelection';
+import * as DeleteBackspaceKeys from './DeleteBackspaceKeys';
+import * as EnterKey from './EnterKey';
+import * as SpaceKey from './SpaceKey';
+import * as CaretContainerInput from '../caret/CaretContainerInput';
 import Editor from '../api/Editor';
 import * as InputKeys from './InputKeys';
-import HomeEndKeys from './HomeEndKeys';
+import * as HomeEndKeys from './HomeEndKeys';
+import * as Rtc from '../Rtc';
 
-const setup = (editor: Editor): void => {
+const registerKeyboardOverrides = (editor: Editor) => {
   const caret = BoundarySelection.setupSelectedState(editor);
 
   CaretContainerInput.setup(editor);
@@ -27,6 +28,12 @@ const setup = (editor: Editor): void => {
   HomeEndKeys.setup(editor);
 };
 
-export default {
+const setup = (editor: Editor): void => {
+  if (!Rtc.isRtc(editor)) {
+    registerKeyboardOverrides(editor);
+  }
+};
+
+export {
   setup
 };

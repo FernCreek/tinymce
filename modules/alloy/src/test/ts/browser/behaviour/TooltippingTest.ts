@@ -1,17 +1,7 @@
 import {
-  ApproxStructure,
-  Assertions,
-  Chain,
-  FocusTools,
-  Keyboard,
-  Keys,
-  Logger,
-  Mouse,
-  Step,
-  UiFinder,
-  Waiter,
+  ApproxStructure, Assertions, Chain, FocusTools, Keyboard, Keys, Logger, Mouse, Step, StructAssert, UiFinder, Waiter
 } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { Arr, Result } from '@ephox/katamari';
 import { SelectorFind } from '@ephox/sugar';
 
@@ -19,14 +9,15 @@ import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
 import { Focusing } from 'ephox/alloy/api/behaviour/Focusing';
 import { Keying } from 'ephox/alloy/api/behaviour/Keying';
 import { Positioning } from 'ephox/alloy/api/behaviour/Positioning';
+import { Receiving } from 'ephox/alloy/api/behaviour/Receiving';
+import { Replacing } from 'ephox/alloy/api/behaviour/Replacing';
 import { Tooltipping } from 'ephox/alloy/api/behaviour/Tooltipping';
 import { AlloyComponent } from 'ephox/alloy/api/component/ComponentApi';
 import * as GuiFactory from 'ephox/alloy/api/component/GuiFactory';
 import * as Memento from 'ephox/alloy/api/component/Memento';
 import { AlloySpec } from 'ephox/alloy/api/component/SpecTypes';
-import { Container } from 'ephox/alloy/api/ui/Container';
 import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
-import { Replacing } from 'ephox/alloy/api/behaviour/Replacing';
+import { Container } from 'ephox/alloy/api/ui/Container';
 
 UnitTest.asynctest('Tooltipping Behaviour', (success, failure) => {
 
@@ -40,36 +31,36 @@ UnitTest.asynctest('Tooltipping Behaviour', (success, failure) => {
     ])
   });
 
-  GuiSetup.setup((store, doc, body) => {
-    const lazySink = (): Result<AlloyComponent, any> => {
-      return memSink.getOpt(me).fold(
-        () => Result.error('Could not find test sink'),
-        Result.value
-      );
-    };
+  GuiSetup.setup((_store, _doc, _body) => {
+    const lazySink = (): Result<AlloyComponent, any> => memSink.getOpt(me).fold(
+      () => Result.error('Could not find test sink'),
+      Result.value
+    );
 
-    const makeButton = (name: string): AlloySpec => {
-      return Container.sketch({
-        dom: {
-          tag: 'button',
-          classes: [ name ],
-          innerHtml: `${name}-html`
-        },
-        containerBehaviours: Behaviour.derive([
-          Tooltipping.config({
-            lazySink,
-            delay: 10,
-            tooltipDom: {
-              tag: 'span',
-            },
-            tooltipComponents: [
-              GuiFactory.text(`${name}-tooltip`)
-            ]
-          }),
-          Focusing.config({ })
-        ])
-      });
-    };
+    const makeButton = (name: string): AlloySpec => Container.sketch({
+      dom: {
+        tag: 'button',
+        classes: [ name ],
+        innerHtml: `${name}-html`
+      },
+      containerBehaviours: Behaviour.derive([
+        Tooltipping.config({
+          lazySink,
+          delay: 10,
+          tooltipDom: {
+            tag: 'span'
+          },
+          tooltipComponents: [
+            GuiFactory.text(`${name}-tooltip`)
+          ]
+        }),
+        Focusing.config({ }),
+        // Add receiving to ensure the default event order is configured
+        Receiving.config({
+          channels: { }
+        })
+      ])
+    });
 
     const me = GuiFactory.build({
       dom: {
@@ -92,33 +83,31 @@ UnitTest.asynctest('Tooltipping Behaviour', (success, failure) => {
     });
 
     return me;
-  }, (doc, body, gui, component, store) => {
+  }, (doc, _body, gui, component, _store) => {
 
     const alphaButton = component.getSystem().getByDom(
       SelectorFind.descendant(component.element(), '.alpha').getOrDie('Could not find alpha button')
     ).toOption().getOrDie('Could not find alpha button component');
 
-    const sAssertSinkContents = (children) => Waiter.sTryUntil(
+    const sAssertSinkContents = (children: ApproxStructure.Builder<StructAssert[]>) => Waiter.sTryUntil(
       'Waiting for tooltip to appear in sink',
       Assertions.sAssertStructure(
         'Checking structure of sink',
-        ApproxStructure.build((s, str, arr) => {
-          return s.element('div', {
-            children: children(s, str, arr)
-          });
-        }),
+        ApproxStructure.build((s, str, arr) => s.element('div', {
+          children: children(s, str, arr)
+        })),
         memSink.get(component).element()
       )
     );
 
     const sAssertEmptySink = Logger.t(
       'Waiting for sink to be empty',
-      sAssertSinkContents((s, str, arr) => [ ])
+      sAssertSinkContents((_s, _str, _arr) => [ ])
     );
 
     const sAssertSinkHtml = (html: string) => Logger.t(
       'Waiting for ' + html + ' to be in sink',
-      sAssertSinkContents((s, str, arr) => [
+      sAssertSinkContents((s, str, _arr) => [
         s.element('span', {
           html: str.is(html)
         })
@@ -131,11 +120,9 @@ UnitTest.asynctest('Tooltipping Behaviour', (success, failure) => {
         [
           Assertions.sAssertStructure(
             'Check initial tooltipping values',
-            ApproxStructure.build((s, str, arr) => {
-              return s.element('div', {
-                classes: [ arr.has('tooltipping-container') ]
-              });
-            }),
+            ApproxStructure.build((s, _str, arr) => s.element('div', {
+              classes: [ arr.has('tooltipping-container') ]
+            })),
             component.element()
           )
         ]
@@ -179,7 +166,7 @@ UnitTest.asynctest('Tooltipping Behaviour', (success, failure) => {
             UiFinder.cFindIn('span:contains("alpha-tooltip")'),
             Mouse.cMouseOut
           ]),
-          Logger.t('Hovering outside the tooltip should dismiss it after delay', Waiter.sTryUntil('emptysing', sAssertEmptySink)),
+          Logger.t('Hovering outside the tooltip should dismiss it after delay', Waiter.sTryUntil('emptysing', sAssertEmptySink))
         ]
       ),
 

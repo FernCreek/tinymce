@@ -1,15 +1,15 @@
-import { ApproxStructure, Assertions, Chain, FocusTools, GeneralSteps, Keyboard, Keys, Log, Pipeline, Waiter, UiFinder } from '@ephox/agar';
+import { ApproxStructure, Assertions, Chain, FocusTools, GeneralSteps, Keyboard, Keys, Log, Pipeline, UiFinder, Waiter } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
 import { Arr } from '@ephox/katamari';
-import { TinyApis, TinyLoader, TinyUi, TinyDom, UiChains } from '@ephox/mcagar';
+import { TinyApis, TinyDom, TinyLoader, TinyUi, UiChains } from '@ephox/mcagar';
 import { Element } from '@ephox/sugar';
 
 import ImagePlugin from 'tinymce/plugins/image/Plugin';
+import ImageToolsPlugin from 'tinymce/plugins/imagetools/Plugin';
 import LinkPlugin from 'tinymce/plugins/link/Plugin';
 import TablePlugin from 'tinymce/plugins/table/Plugin';
-import ImageToolsPlugin from 'tinymce/plugins/imagetools/Plugin';
 import SilverTheme from 'tinymce/themes/silver/Theme';
-import { UnitTest } from '@ephox/bedrock';
 
 UnitTest.asynctest('SilverContextMenuTest', (success, failure) => {
   SilverTheme();
@@ -25,17 +25,13 @@ UnitTest.asynctest('SilverContextMenuTest', (success, failure) => {
     const doc = Element.fromDom(document);
     const editorBody = Element.fromDom(editor.getBody());
 
-    const sOpenContextMenu = (target) => {
-      return Chain.asStep(editor, [
-        tinyUi.cTriggerContextMenu('trigger context menu', target, '.tox-silver-sink .tox-collection [role="menuitem"]'),
-        Chain.wait(0)
-      ]);
-    };
+    const sOpenContextMenu = (target) => Chain.asStep(editor, [
+      tinyUi.cTriggerContextMenu('trigger context menu', target, '.tox-silver-sink .tox-collection [role="menuitem"]'),
+      Chain.wait(0)
+    ]);
 
     // Assert focus is on the expected menu item
-    const sAssertFocusOnItem = (label, selector) => {
-      return FocusTools.sTryOnSelector(`Focus should be on: ${label}`, doc, selector);
-    };
+    const sAssertFocusOnItem = (label, selector) => FocusTools.sTryOnSelector(`Focus should be on: ${label}`, doc, selector);
 
     // Wait for dialog to open and close dialog
     const sWaitForAndCloseDialog = GeneralSteps.sequence([
@@ -52,9 +48,7 @@ UnitTest.asynctest('SilverContextMenuTest', (success, failure) => {
     const sPressDownArrowKey = Keyboard.sKeydown(doc, Keys.down(), { });
     const sPressEnterKey = Keyboard.sKeydown(doc, Keys.enter(), { });
 
-    const sRepeatDownArrowKey = (index) => {
-      return GeneralSteps.sequence(Arr.range(index, () => sPressDownArrowKey));
-    };
+    const sRepeatDownArrowKey = (index) => GeneralSteps.sequence(Arr.range(index, () => sPressDownArrowKey));
 
     const tableHtml = '<table style="width: 100%;">' +
     '<tbody>' +
@@ -71,15 +65,13 @@ UnitTest.asynctest('SilverContextMenuTest', (success, failure) => {
 
     const imgSrc = '../img/dogleft.jpg';
 
-    const contentInTableHtml = (content: string) => {
-      return '<table style="width: 100%;">' +
+    const contentInTableHtml = (content: string) => '<table style="width: 100%;">' +
        '<tbody>' +
           '<tr>' +
             `<td>${content}</td>` +
           '</tr>' +
         '</tbody>' +
       '</table>';
-    };
 
     const imageInTableHtml = contentInTableHtml('<img src="' + imgSrc + '" width="160" height="100"/>');
     const placeholderImageInTableHtml = contentInTableHtml('<img src="' + imgSrc + '" width="160" height="100" data-mce-placeholder="1"/>');
@@ -87,21 +79,19 @@ UnitTest.asynctest('SilverContextMenuTest', (success, failure) => {
 
     // In Firefox we add a a bogus br element after the link that fixes a gecko link bug when,
     // a link is placed at the end of block elements there is no way to move the caret behind the link.
-    const sAssertRemoveLinkHtmlStructure = Assertions.sAssertStructure('Assert remove link', ApproxStructure.build((s, str) => {
-      return s.element('body', {
-        children: [
-          s.element('p', {
-            children: [
-              s.text(str.is('Tiny')),
-              s.zeroOrOne(s.element('br', {}))
-            ]
-          })
-        ]
-      });
-    }), editorBody);
+    const sAssertRemoveLinkHtmlStructure = Assertions.sAssertStructure('Assert remove link', ApproxStructure.build((s, str) => s.element('body', {
+      children: [
+        s.element('p', {
+          children: [
+            s.text(str.is('Tiny')),
+            s.zeroOrOne(s.element('br', {}))
+          ]
+        })
+      ]
+    })), editorBody);
 
     Pipeline.async({}, [
-      tinyApis.sFocus,
+      tinyApis.sFocus(),
       Log.stepsAsStep('TBA', 'Test context menus on empty editor', [
         sOpenContextMenu('p'),
         sAssertFocusOnItem('Link', '.tox-collection__item:contains("Link...")'),
@@ -142,7 +132,7 @@ UnitTest.asynctest('SilverContextMenuTest', (success, failure) => {
         sAssertFocusOnItem('Delete Table', '.tox-collection__item:contains("Delete table")'),
         Keyboard.sKeydown(doc, Keys.up(), {}),
         sPressEnterKey,
-        sWaitForAndCloseDialog,
+        sWaitForAndCloseDialog
       ]),
       Log.stepsAsStep('TBA', 'Test context menus on image inside a table', [
         tinyApis.sSetContent(imageInTableHtml),
@@ -206,7 +196,7 @@ UnitTest.asynctest('SilverContextMenuTest', (success, failure) => {
         sPressDownArrowKey,
         sAssertFocusOnItem('Table Properties', '.tox-collection__item:contains("Table properties")'),
         sPressDownArrowKey,
-        sAssertFocusOnItem('Delete Table', '.tox-collection__item:contains("Delete table")'),
+        sAssertFocusOnItem('Delete Table', '.tox-collection__item:contains("Delete table")')
       ])
     ], onSuccess, onFailure);
   }, {
@@ -215,6 +205,6 @@ UnitTest.asynctest('SilverContextMenuTest', (success, failure) => {
     toolbar: 'image editimage link table',
     indent: false,
     base_url: '/project/tinymce/js/tinymce',
-    image_caption: true,
+    image_caption: true
   }, success, failure);
 });

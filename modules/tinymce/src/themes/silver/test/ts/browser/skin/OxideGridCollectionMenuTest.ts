@@ -1,18 +1,9 @@
 import {
-  ApproxStructure,
-  Assertions,
-  Chain,
-  FocusTools,
-  Keyboard,
-  Keys,
-  Logger,
-  Mouse,
-  Pipeline,
-  UiFinder,
-  Step,
-  GeneralSteps,
+  ApproxStructure, Assertions, Chain, FocusTools, GeneralSteps, Keyboard, Keys, Logger, Mouse, Pipeline, Step, UiFinder
 } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { TestHelpers } from '@ephox/alloy';
+import { UnitTest } from '@ephox/bedrock-client';
+import { Menu } from '@ephox/bridge';
 import { document, navigator } from '@ephox/dom-globals';
 import { Arr } from '@ephox/katamari';
 import { TinyLoader } from '@ephox/mcagar';
@@ -20,8 +11,6 @@ import { Body, Element } from '@ephox/sugar';
 
 import Editor from 'tinymce/core/api/Editor';
 import Theme from 'tinymce/themes/silver/Theme';
-import { Menu } from '@ephox/bridge';
-import { TestHelpers } from '@ephox/alloy';
 
 UnitTest.asynctest('OxideGridCollectionMenuTest', (success, failure) => {
   Theme();
@@ -44,33 +33,29 @@ UnitTest.asynctest('OxideGridCollectionMenuTest', (success, failure) => {
             UiFinder.cFindIn('[role="menu"]'),
             Assertions.cAssertStructure(
               'Checking structure',
-              ApproxStructure.build((s, str, arr) => {
-                return s.element('div', {
-                  classes: [ arr.has('tox-menu'), arr.has('tox-collection'), arr.has('tox-collection--grid') ],
-                  children: [
-                    s.element('div', {
-                      classes: [ arr.has('tox-collection__group') ],
-                      children: Arr.map([ '1', '2', '3', '4', '5', '6', '7', '8' ], (num) => {
-                        return s.element('div', {
-                          classes: [ arr.has('tox-collection__item') ],
-                          attrs: {
-                            title: str.is(num)
-                          },
+              ApproxStructure.build((s, str, arr) => s.element('div', {
+                classes: [ arr.has('tox-menu'), arr.has('tox-collection'), arr.has('tox-collection--grid') ],
+                children: [
+                  s.element('div', {
+                    classes: [ arr.has('tox-collection__group') ],
+                    children: Arr.map([ '1', '2', '3', '4', '5', '6', '7', '8' ], (num) => s.element('div', {
+                      classes: [ arr.has('tox-collection__item') ],
+                      attrs: {
+                        title: str.is(num)
+                      },
+                      children: [
+                        // NOTE: The oxide demo page has div, but I think that's just a mistake
+                        s.element('div', {
+                          classes: [ arr.has('tox-collection__item-icon') ],
                           children: [
-                            // NOTE: The oxide demo page has div, but I think that's just a mistake
-                            s.element('div', {
-                             classes: [ arr.has('tox-collection__item-icon') ],
-                             children: [
-                               s.element('svg', {})
-                             ]
-                            })
+                            s.element('svg', {})
                           ]
-                        });
-                      })
-                    })
-                  ]
-                });
-              })
+                        })
+                      ]
+                    }))
+                  })
+                ]
+              }))
             )
           ]),
 
@@ -97,14 +82,12 @@ UnitTest.asynctest('OxideGridCollectionMenuTest', (success, failure) => {
           columns: 'auto',
           fetch: (callback) => {
             callback(
-              Arr.map([ '1', '2', '3', '4', '5', '6', '7', '8' ], (num) => {
-                return {
-                  type: 'choiceitem',
-                  value: num,
-                  text: num,
-                  icon: 'fake-icon-name'
-                } as Menu.ChoiceMenuItemApi;
-              })
+              Arr.map([ '1', '2', '3', '4', '5', '6', '7', '8' ], (num) => ({
+                type: 'choiceitem',
+                value: num,
+                text: num,
+                icon: 'fake-icon-name'
+              } as Menu.ChoiceMenuItemApi))
             );
           },
           onAction: store.adder('onAction'),

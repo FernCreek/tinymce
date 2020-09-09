@@ -5,19 +5,21 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { HTMLElement, Node as DomNode, Element as DomElement, Range, Text } from '@ephox/dom-globals';
+import { Element as DomElement, HTMLElement, Node as DomNode, Range, Text } from '@ephox/dom-globals';
 import { Option, Options } from '@ephox/katamari';
-import Env from '../api/Env';
-import * as CaretBookmark from './CaretBookmark';
-import CaretPosition from '../caret/CaretPosition';
-import NodeType from '../dom/NodeType';
-import Tools from '../api/util/Tools';
-import Selection from '../api/dom/Selection';
-import { getParentCaretContainer } from '../fmt/FormatContainer';
-import Zwsp from '../text/Zwsp';
 import DOMUtils from '../api/dom/DOMUtils';
-import CaretFinder from '../caret/CaretFinder';
-import { isPathBookmark, isStringPathBookmark, isIdBookmark, isIndexBookmark, isRangeBookmark, PathBookmark, IdBookmark, Bookmark, IndexBookmark } from './BookmarkTypes';
+import Selection from '../api/dom/Selection';
+import Env from '../api/Env';
+import Tools from '../api/util/Tools';
+import * as CaretFinder from '../caret/CaretFinder';
+import CaretPosition from '../caret/CaretPosition';
+import * as NodeType from '../dom/NodeType';
+import { getParentCaretContainer } from '../fmt/FormatContainer';
+import * as Zwsp from '../text/Zwsp';
+import {
+  Bookmark, IdBookmark, IndexBookmark, isIdBookmark, isIndexBookmark, isPathBookmark, isRangeBookmark, isStringPathBookmark, PathBookmark
+} from './BookmarkTypes';
+import * as CaretBookmark from './CaretBookmark';
 
 const addBogus = (dom: DOMUtils, node: DomNode): DomNode => {
   // Adds a bogus BR element for empty block elements
@@ -29,9 +31,9 @@ const addBogus = (dom: DOMUtils, node: DomNode): DomNode => {
 };
 
 const resolveCaretPositionBookmark = (dom: DOMUtils, bookmark) => {
-  let rng, pos;
+  let pos;
 
-  rng = dom.createRng();
+  const rng = dom.createRng();
   pos = CaretBookmark.resolve(dom.getRoot(), bookmark.start);
   rng.setStart(pos.container(), pos.offset());
 
@@ -238,13 +240,11 @@ const resolveId = (dom: DOMUtils, bookmark: IdBookmark): Option<Range> => {
   );
 };
 
-const resolveIndex = (dom: DOMUtils, bookmark: IndexBookmark): Option<Range> => {
-  return Option.from(dom.select(bookmark.name)[bookmark.index]).map((elm) => {
-    const rng = dom.createRng();
-    rng.selectNode(elm);
-    return rng;
-  });
-};
+const resolveIndex = (dom: DOMUtils, bookmark: IndexBookmark): Option<Range> => Option.from(dom.select(bookmark.name)[bookmark.index]).map((elm) => {
+  const rng = dom.createRng();
+  rng.selectNode(elm);
+  return rng;
+});
 
 const resolve = (selection: Selection, bookmark: Bookmark): Option<Range> => {
   const dom = selection.dom;
@@ -266,6 +266,6 @@ const resolve = (selection: Selection, bookmark: Bookmark): Option<Range> => {
   return Option.none();
 };
 
-export default {
+export {
   resolve
 };

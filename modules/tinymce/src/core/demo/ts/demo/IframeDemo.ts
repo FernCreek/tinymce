@@ -24,7 +24,7 @@ export default function () {
       },
       onHide: (_api) => {
         console.log('onHide ' + name);
-      },
+      }
     });
   };
 
@@ -32,7 +32,7 @@ export default function () {
     skin_url: '../../../../js/tinymce/skins/ui/oxide',
     content_css: '../../../../js/tinymce/skins/content/default/content.css',
     selector: 'textarea',
-    setup (ed) {
+    setup(ed) {
       makeSidebar(ed, 'sidebar1', 'green', 200);
     },
     plugins: [
@@ -40,7 +40,7 @@ export default function () {
     ],
     add_unload_trigger: false,
     autosave_ask_before_unload: false,
-    toolbar: 'undo redo | sidebar1 | print preview media',
+    toolbar: 'undo redo | sidebar1 | print preview media'
   };
 
   tinymce.init(settings);

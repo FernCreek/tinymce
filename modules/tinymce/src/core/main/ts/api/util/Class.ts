@@ -5,6 +5,7 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { Obj } from '@ephox/katamari';
 import Tools from './Tools';
 
 /**
@@ -53,7 +54,6 @@ const Class: Class = function () {
 Class.extend = extendClass = function (prop: Prop): ExtendedClass {
   const self = this;
   const _super = self.prototype;
-  let prototype, name, member;
 
   // The dummy class constructor
   const Class = function () {
@@ -92,10 +92,9 @@ Class.extend = extendClass = function (prop: Prop): ExtendedClass {
     return function () {
       const self = this;
       const tmp = self._super;
-      let ret;
 
       self._super = _super[name];
-      ret = fn.apply(self, arguments);
+      const ret = fn.apply(self, arguments);
       self._super = tmp;
 
       return ret;
@@ -106,8 +105,8 @@ Class.extend = extendClass = function (prop: Prop): ExtendedClass {
   // don't run the init constructor)
   initializing = true;
 
-  /*eslint new-cap:0 */
-  prototype = new self();
+  /* eslint new-cap:0 */
+  const prototype = new self();
   initializing = false;
 
   // Add mixins
@@ -166,15 +165,13 @@ Class.extend = extendClass = function (prop: Prop): ExtendedClass {
   }
 
   // Copy the properties over onto the new prototype
-  for (name in prop) {
-    member = prop[name];
-
+  Obj.each(prop, (member, name) => {
     if (typeof member === 'function' && _super[name]) {
       prototype[name] = createMethod(name, member);
     } else {
       prototype[name] = member;
     }
-  }
+  });
 
   // Populate our constructed prototype object
   Class.prototype = prototype;

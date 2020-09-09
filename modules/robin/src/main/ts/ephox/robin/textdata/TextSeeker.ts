@@ -1,7 +1,7 @@
 import { Universe } from '@ephox/boss';
 import { Adt, Option } from '@ephox/katamari';
 import { Descent, Direction, Gather, Seeker, Spot, SpotPoint, Transition } from '@ephox/phoenix';
-import Structure from '../api/general/Structure';
+import * as Structure from '../api/general/Structure';
 
 export interface TextSeekerPhase<E> {
   fold: <T> (
@@ -10,9 +10,9 @@ export interface TextSeekerPhase<E> {
     finish: (info: SpotPoint<E>) => T
   ) => T;
   match: <T> (branches: {
-    abort: () => T,
-    kontinue: () => T,
-    finish: (info: SpotPoint<E>) => T
+    abort: () => T;
+    kontinue: () => T;
+    finish: (info: SpotPoint<E>) => T;
   }) => T;
   log: (label: string) => void;
 }
@@ -24,9 +24,9 @@ export interface TextSeekerOutcome<E> {
     success: (info: SpotPoint<E>) => T
   ) => T;
   match: <T> (branches: {
-    aborted: () => T,
-    edge: (element: E) => T,
-    success: (info: SpotPoint<E>) => T
+    aborted: () => T;
+    edge: (element: E) => T;
+    success: (info: SpotPoint<E>) => T;
   }) => T;
   log: (label: string) => void;
 }
@@ -39,7 +39,7 @@ const phase: {
   kontinue: <E> () => TextSeekerPhase<E>;
   finish: <E> (info: SpotPoint<E>) => TextSeekerPhase<E>;
 } = Adt.generate([
-  { abort: [  ] },
+  { abort: [ ] },
   { kontinue: [ ] },
   { finish: [ 'info' ] }
 ]);

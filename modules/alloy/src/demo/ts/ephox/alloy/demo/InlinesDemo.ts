@@ -1,12 +1,13 @@
-import { document, console, setTimeout } from '@ephox/dom-globals';
+import { console, document, setTimeout } from '@ephox/dom-globals';
 import { Arr, Fun, Option, Result } from '@ephox/katamari';
-import { Class, Element, Value } from '@ephox/sugar';
+import { Class, Element, EventArgs, Value } from '@ephox/sugar';
 
 import * as AddEventsBehaviour from 'ephox/alloy/api/behaviour/AddEventsBehaviour';
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
 import { Keying } from 'ephox/alloy/api/behaviour/Keying';
 import { Positioning } from 'ephox/alloy/api/behaviour/Positioning';
 import { Tooltipping } from 'ephox/alloy/api/behaviour/Tooltipping';
+import { LazySink } from 'ephox/alloy/api/component/CommonTypes';
 import * as GuiFactory from 'ephox/alloy/api/component/GuiFactory';
 import * as AlloyEvents from 'ephox/alloy/api/events/AlloyEvents';
 import * as NativeEvents from 'ephox/alloy/api/events/NativeEvents';
@@ -19,9 +20,7 @@ import { Input } from 'ephox/alloy/api/ui/Input';
 import { tieredMenu as TieredMenu } from 'ephox/alloy/api/ui/TieredMenu';
 import * as DemoSink from 'ephox/alloy/demo/DemoSink';
 import * as HtmlDisplay from 'ephox/alloy/demo/HtmlDisplay';
-import { SugarEvent } from 'ephox/alloy/alien/TypeDefinitions';
 import { AnchorSpec, SelectionAnchorSpec, SubmenuAnchorSpec } from 'ephox/alloy/positioning/mode/Anchoring';
-import { LazySink } from 'ephox/alloy/api/component/CommonTypes';
 
 import * as DemoRenders from './forms/DemoRenders';
 
@@ -35,9 +34,7 @@ export default (): void => {
 
   const sink = DemoSink.make();
 
-  const lazySink: LazySink = (_) => {
-    return Result.value(sink);
-  };
+  const lazySink: LazySink = (_) => Result.value(sink);
 
   // Note, this should not in the GUI. It will be connected
   // when it opens.
@@ -51,74 +48,72 @@ export default (): void => {
     })
   );
 
-  const makeItem = (v, t, c) => {
-    return {
-      type: 'item',
-      data: {
-        value: v,
-        meta: {
-          'text': t,
-          'item-class': c
-        }
-      },
+  const makeItem = (v: string, t: string, c: string): DemoRenders.DemoItem => ({
+    type: 'item',
+    data: {
+      value: v,
+      meta: {
+        'text': t,
+        'item-class': c
+      }
+    },
 
-      itemBehaviours: Behaviour.derive([
-        Tooltipping.config({
-          lazySink,
-          tooltipDom: {
-            tag: 'div',
-            styles: {
-              background: '#cadbee',
-              padding: '3em'
-            }
-          },
-          tooltipComponents: [
-            GuiFactory.text(t)
-          ],
-          anchor: (comp) => ({
-            anchor: 'submenu',
-            item: comp
-          }),
-          onShow: (component, tooltip) => {
-            setTimeout(() => {
-              Tooltipping.setComponents(component, [
-                {
-                  dom: {
-                    tag: 'div',
-                    innerHtml: 'This lazy loaded'
-                  }
-                }
-              ]);
-            }, 2000);
-          },
-          onHide: (component, tooltip) => {
-
+    itemBehaviours: Behaviour.derive([
+      Tooltipping.config({
+        lazySink,
+        tooltipDom: {
+          tag: 'div',
+          styles: {
+            background: '#cadbee',
+            padding: '3em'
           }
-        })
-      ])
-    };
-  };
+        },
+        tooltipComponents: [
+          GuiFactory.text(t)
+        ],
+        anchor: (comp) => ({
+          anchor: 'submenu',
+          item: comp
+        }),
+        onShow: (component, _tooltip) => {
+          setTimeout(() => {
+            Tooltipping.setComponents(component, [
+              {
+                dom: {
+                  tag: 'div',
+                  innerHtml: 'This lazy loaded'
+                }
+              }
+            ]);
+          }, 2000);
+        },
+        onHide: (_component, _tooltip) => {
+
+        }
+      })
+    ])
+  });
 
   const inlineMenu = TieredMenu.sketch({
     dom: {
       tag: 'div'
     },
 
-    onEscape () {
+    onEscape() {
       console.log('inline.menu.escape');
-      return Option.some(true);
+      return Option.some<boolean>(true);
     },
 
-    onExecute () {
+    onExecute() {
       console.log('inline.menu.execute');
-      return Option.some(true);
+      return Option.some<boolean>(true);
     },
 
-    onOpenMenu (sandbox, menu) {
+    onOpenMenu(_sandbox, _menu) {
       // handled by inline view itself
     },
 
-    onOpenSubmenu (sandbox, item, submenu) {
+    onOpenSubmenu(sandbox, item, submenu) {
       const sink = lazySink(sandbox).getOrDie();
       Positioning.position(sink, {
         anchor: 'submenu',
@@ -170,7 +165,7 @@ export default (): void => {
         }
       },
       events: AlloyEvents.derive([
-        AlloyEvents.run<SugarEvent>(NativeEvents.contextmenu(), (component, simulatedEvent) => {
+        AlloyEvents.run<EventArgs>(NativeEvents.contextmenu(), (component, simulatedEvent) => {
           simulatedEvent.event().kill();
           InlineView.showAt(inlineComp, {
             anchor: 'makeshift',
@@ -228,21 +223,21 @@ export default (): void => {
                         tag: 'button',
                         innerHtml: 'B'
                       },
-                      action () { console.log('inline bold'); }
+                      action() { console.log('inline bold'); }
                     }),
                     Button.sketch({
                       dom: {
                         tag: 'button',
                         innerHtml: 'I'
                       },
-                      action () { console.log('inline italic'); }
+                      action() { console.log('inline italic'); }
                     }),
                     Button.sketch({
                       dom: {
                         tag: 'button',
                         innerHtml: 'U'
                       },
-                      action () { console.log('inline underline'); }
+                      action() { console.log('inline underline'); }
                     })
                   ]
 

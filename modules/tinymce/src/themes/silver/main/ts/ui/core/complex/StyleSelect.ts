@@ -18,24 +18,20 @@ import { findNearest, getCurrentSelectionParents } from './utils/FormatDetection
 import { onActionToggleFormat } from './utils/Utils';
 
 const getSpec = (editor: Editor, dataset: SelectDataset): SelectSpec => {
-  const isSelectedFor = (format: string) => {
-    return () => {
-      return editor.formatter.match(format);
-    };
-  };
+  const isSelectedFor = (format: string) => () => editor.formatter.match(format);
 
   const getPreviewFor = (format: string) => () => {
     const fmt = editor.formatter.get(format);
     return fmt !== undefined ? Option.some({
       tag: fmt.length > 0 ? fmt[0].inline || fmt[0].block || 'div' : 'div',
-      styleAttr: editor.formatter.getCssText(format)
+      styles: editor.dom.parseStyle(editor.formatter.getCssText(format))
     }) : Option.none();
   };
 
   const updateSelectMenuText = (parents: Element[], comp: AlloyComponent) => {
     const getFormatItems = (fmt) => {
       const subs = fmt.items;
-      return subs !== undefined && subs.length > 0 ? Arr.bind(subs, getFormatItems) : [ { title: fmt.title, format: fmt.format } ];
+      return subs !== undefined && subs.length > 0 ? Arr.bind(subs, getFormatItems) : [{ title: fmt.title, format: fmt.format }];
     };
     const flattenedItems = Arr.bind(getStyleFormats(editor), getFormatItems);
     const detectedFormat = findNearest(editor, () => flattenedItems, parents);
@@ -45,9 +41,7 @@ const getSpec = (editor: Editor, dataset: SelectDataset): SelectSpec => {
     });
   };
 
-  const nodeChangeHandler = Option.some((comp: AlloyComponent) => {
-    return (e) => updateSelectMenuText(e.parents, comp);
-  });
+  const nodeChangeHandler = Option.some((comp: AlloyComponent) => (e) => updateSelectMenuText(e.parents, comp));
 
   const setInitialValue = Option.some((comp: AlloyComponent) => {
     const parents = getCurrentSelectionParents(editor);

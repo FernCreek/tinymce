@@ -5,9 +5,9 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Receiving, AddEventsBehaviour, AlloyEvents, AlloyParts } from '@ephox/alloy';
+import { AddEventsBehaviour, AlloyEvents, AlloyParts, Receiving } from '@ephox/alloy';
 import { Types } from '@ephox/bridge';
-import { window, HTMLIFrameElement } from '@ephox/dom-globals';
+import { HTMLIFrameElement, MessageEvent, window } from '@ephox/dom-globals';
 import { Cell, Obj, Option, Type } from '@ephox/katamari';
 import { DomEvent, Element, EventUnbinder, SelectorFind } from '@ephox/sugar';
 
@@ -15,23 +15,19 @@ import Editor from 'tinymce/core/api/Editor';
 import URI from 'tinymce/core/api/util/URI';
 
 import { UiFactoryBackstage } from '../../backstage/Backstage';
+import { bodySendMessageChannel } from './DialogChannels';
 import { renderIframeBody } from './SilverDialogBody';
+import { DialogSpec, getEventExtras, getHeader, renderModalDialog, WindowExtra } from './SilverDialogCommon';
 import { SilverDialogEvents } from './SilverDialogEvents';
 import { renderModalFooter } from './SilverDialogFooter';
 import { getUrlDialogApi } from './SilverUrlDialogInstanceApi';
-import { DialogSpec, getEventExtras, getHeader, renderModalDialog, WindowExtra } from './SilverDialogCommon';
-import {  bodySendMessageChannel } from './DialogChannels';
 
 // A list of supported message actions
-const SUPPORTED_MESSAGE_ACTIONS = ['insertContent', 'setContent', 'execCommand', 'close', 'block', 'unblock'];
+const SUPPORTED_MESSAGE_ACTIONS = [ 'insertContent', 'setContent', 'execCommand', 'close', 'block', 'unblock' ];
 
-const isSupportedMessage = (data: any): boolean => {
-  return Type.isObject(data) && SUPPORTED_MESSAGE_ACTIONS.indexOf(data.mceAction) !== -1;
-};
+const isSupportedMessage = (data: any): boolean => Type.isObject(data) && SUPPORTED_MESSAGE_ACTIONS.indexOf(data.mceAction) !== -1;
 
-const isCustomMessage = (data: any): boolean => {
-  return !isSupportedMessage(data) && Type.isObject(data) && Obj.has(data, 'mceAction');
-};
+const isCustomMessage = (data: any): boolean => !isSupportedMessage(data) && Type.isObject(data) && Obj.has(data, 'mceAction');
 
 const handleMessage = (editor: Editor, api: Types.UrlDialog.UrlDialogInstanceApi, data: any) => {
   switch (data.mceAction) {
@@ -74,7 +70,7 @@ const renderUrlDialog = (internalDialog: Types.UrlDialog.UrlDialog, extra: Windo
   // Add the styles for the modal width/height
   const styles = {
     ...internalDialog.height.fold(() => ({}), (height) => ({ 'height': height + 'px', 'max-height': height + 'px' })),
-    ...internalDialog.width.fold(() => ({}), (width) => ({ 'width': width + 'px', 'max-width': width + 'px' })),
+    ...internalDialog.width.fold(() => ({}), (width) => ({ 'width': width + 'px', 'max-width': width + 'px' }))
   };
 
   // Default back to using a large sized dialog, if no dimensions are specified
@@ -90,7 +86,7 @@ const renderUrlDialog = (internalDialog: Types.UrlDialog.UrlDialog, extra: Windo
     AddEventsBehaviour.config('messages', [
       // When the dialog is opened, bind a window message listener for the spec url
       AlloyEvents.runOnAttached(() => {
-        const unbind = DomEvent.bind(Element.fromDom(window), 'message', (e) => {
+        const unbind = DomEvent.bind<MessageEvent>(Element.fromDom(window), 'message', (e) => {
           // Validate that the request came from the correct domain
           if (iframeUri.isSameOrigin(new URI(e.raw().origin))) {
             const data = e.raw().data;

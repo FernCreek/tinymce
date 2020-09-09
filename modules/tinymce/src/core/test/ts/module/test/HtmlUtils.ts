@@ -23,7 +23,7 @@ const normalizeHtml = function (html) {
     pi: writer.pi,
     doctype: writer.doctype,
 
-    start (name, attrs, empty) {
+    start(name, attrs, empty) {
       attrs.sort(function (a, b) {
         if (a.name === b.name) {
           return 0;
@@ -39,7 +39,7 @@ const normalizeHtml = function (html) {
   return writer.getContent();
 };
 
-export default {
+export {
   cleanHtml,
   normalizeHtml
 };

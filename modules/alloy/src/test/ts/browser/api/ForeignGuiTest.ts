@@ -1,7 +1,8 @@
-import { ApproxStructure, Assertions, Mouse, Pipeline, Step, Logger } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { ApproxStructure, Assertions, Logger, Mouse, Pipeline, Step } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
+import { document } from '@ephox/dom-globals';
 import { Option } from '@ephox/katamari';
-import { Body, Element, Html, Insert, Node, Remove, Traverse } from '@ephox/sugar';
+import { Body, Element, EventArgs, Html, Insert, Node, Remove, Traverse } from '@ephox/sugar';
 
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
 import { Toggling } from 'ephox/alloy/api/behaviour/Toggling';
@@ -10,8 +11,6 @@ import * as NativeEvents from 'ephox/alloy/api/events/NativeEvents';
 import * as SystemEvents from 'ephox/alloy/api/events/SystemEvents';
 import * as ForeignGui from 'ephox/alloy/api/system/ForeignGui';
 import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
-import { SugarEvent } from 'ephox/alloy/alien/TypeDefinitions';
-import { document } from '@ephox/dom-globals';
 import * as Tagger from 'ephox/alloy/registry/Tagger';
 
 UnitTest.asynctest('Browser Test: api.ForeignGuiTest', (success, failure) => {
@@ -22,12 +21,12 @@ UnitTest.asynctest('Browser Test: api.ForeignGuiTest', (success, failure) => {
 
   const connection = ForeignGui.engage({
     root,
-    insertion (parent, system) {
+    insertion(parent, system) {
       Insert.append(parent, system.element());
     },
     dispatchers: [
       {
-        getTarget (elem) { return Node.name(elem) === 'span' ? Option.some(elem) : Option.none(); },
+        getTarget(elem) { return Node.name(elem) === 'span' ? Option.some(elem) : Option.none(); },
         alloyConfig: {
           behaviours: Behaviour.derive([
             Toggling.config({
@@ -35,7 +34,7 @@ UnitTest.asynctest('Browser Test: api.ForeignGuiTest', (success, failure) => {
             })
           ]),
           events: AlloyEvents.derive([
-            AlloyEvents.run<SugarEvent>(NativeEvents.click(), (component, simulatedEvent) => {
+            AlloyEvents.run<EventArgs>(NativeEvents.click(), (component, simulatedEvent) => {
               // We have to remove the proxy first, because we are during a proxied event (click)
               connection.unproxy(component);
               connection.dispatchTo(SystemEvents.execute(), simulatedEvent.event());
@@ -70,25 +69,23 @@ UnitTest.asynctest('Browser Test: api.ForeignGuiTest', (success, failure) => {
     ]),
     Assertions.sAssertStructure(
       'Checking initial structure ... nothing is selected',
-      ApproxStructure.build((s, str, arr) => {
-        return s.element('div', {
-          children: [
-            s.element('span', {
-              classes: [ arr.not('selected') ]
-            }),
-            s.text(str.is(' and ')),
-            s.element('span', {
-              classes: [ arr.not('selected') ]
-            }),
-            s.element('div', {
-              // TODO: Test that the field is set.
-              attrs: {
-                'data-alloy-id': str.none()
-              }
-            })
-          ]
-        });
-      }),
+      ApproxStructure.build((s, str, arr) => s.element('div', {
+        children: [
+          s.element('span', {
+            classes: [ arr.not('selected') ]
+          }),
+          s.text(str.is(' and ')),
+          s.element('span', {
+            classes: [ arr.not('selected') ]
+          }),
+          s.element('div', {
+            // TODO: Test that the field is set.
+            attrs: {
+              'data-alloy-id': str.none()
+            }
+          })
+        ]
+      })),
       root
     ),
 
@@ -99,27 +96,25 @@ UnitTest.asynctest('Browser Test: api.ForeignGuiTest', (success, failure) => {
 
     Assertions.sAssertStructure(
       'Checking structure after the first span is clicked',
-      ApproxStructure.build((s, str, arr) => {
-        return s.element('div', {
-          children: [
-            s.element('span', {
-              attrs: {
-                'data-alloy-id': str.none()
-              },
-              classes: [ arr.has('selected') ]
-            }),
-            s.text(str.is(' and ')),
-            s.element('span', {
-              classes: [ arr.not('selected') ]
-            }),
-            s.element('div', {
-              attrs: {
-                'data-alloy-id': str.none()
-              }
-            })
-          ]
-        });
-      }),
+      ApproxStructure.build((s, str, arr) => s.element('div', {
+        children: [
+          s.element('span', {
+            attrs: {
+              'data-alloy-id': str.none()
+            },
+            classes: [ arr.has('selected') ]
+          }),
+          s.text(str.is(' and ')),
+          s.element('span', {
+            classes: [ arr.not('selected') ]
+          }),
+          s.element('div', {
+            attrs: {
+              'data-alloy-id': str.none()
+            }
+          })
+        ]
+      })),
       root
     ),
 

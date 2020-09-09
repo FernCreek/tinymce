@@ -38,7 +38,7 @@ const sStartEditor = function (alloy) {
 
 const sClickComponent = function (realm, memento) {
   return Chain.asStep({ }, [
-    Chain.mapper(function () {
+    Chain.injectThunked(function () {
       return memento.get(realm.socket()).element();
     }),
     Mouse.cClick
@@ -61,7 +61,7 @@ const sWaitForToggledState = function (label, state, realm, memento) {
   );
 };
 
-const sBroadcastState = function (realm, channels, command, state) {
+const sBroadcastState = function (realm, channels: string[], command, state) {
   return Step.sync(function () {
     realm.system().broadcastOn(channels, {
       command,
@@ -70,7 +70,7 @@ const sBroadcastState = function (realm, channels, command, state) {
   });
 };
 
-export default {
+export {
   cGetFocused,
   cGetParent,
   sSetFieldValue,

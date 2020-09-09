@@ -5,7 +5,7 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { AlloyComponent, AlloyEvents, Replacing, SystemEvents, TabSection } from '@ephox/alloy';
+import { AlloyComponent, AlloyEvents, Replacing, SystemEvents, TabSection, TabbarTypes } from '@ephox/alloy';
 import { Element as DomElement, window } from '@ephox/dom-globals';
 import { Arr, Cell, Option } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
@@ -13,30 +13,26 @@ import { Css, Element, Focus, Height, SelectorFind, Traverse, Width } from '@eph
 import Delay from 'tinymce/core/api/util/Delay';
 import { formResizeEvent } from '../general/FormEvents';
 
-const measureHeights = (allTabs, tabview, tabviewComp): number[] => {
-  return Arr.map(allTabs, (tab, i) => {
-    Replacing.set(tabviewComp, allTabs[i].view());
-    const rect = tabview.dom().getBoundingClientRect();
-    Replacing.set(tabviewComp, [ ]);
-    return rect.height;
-  });
-};
+const measureHeights = (allTabs: Array<Partial<TabbarTypes.TabButtonWithViewSpec>>, tabview, tabviewComp): number[] => Arr.map(allTabs, (_tab, i) => {
+  Replacing.set(tabviewComp, allTabs[i].view());
+  const rect = tabview.dom().getBoundingClientRect();
+  Replacing.set(tabviewComp, [ ]);
+  return rect.height;
+});
 
-const getMaxHeight = (heights: number[]) => {
-  return Arr.head(Arr.sort(heights, (a, b) => {
-    if (a > b) {
-      return -1;
-    } else if (a < b) {
-      return +1;
-    } else {
-      return 0;
-    }
-  }));
-};
+const getMaxHeight = (heights: number[]) => Arr.head(Arr.sort(heights, (a, b) => {
+  if (a > b) {
+    return -1;
+  } else if (a < b) {
+    return +1;
+  } else {
+    return 0;
+  }
+}));
 
 const getMaxTabviewHeight = (dialog: Element, tabview: Element, tablist: Element) => {
   const documentElement = Traverse.documentElement(dialog).dom();
-  const rootElm = SelectorFind.ancestor(dialog, '.tox-dialog-wrap').getOr(dialog) as Element<DomElement>;
+  const rootElm = SelectorFind.ancestor(dialog, '.tox-dialog-wrap').getOr(dialog);
   const isFixed = Css.get(rootElm, 'position') === 'fixed';
 
   // Get the document or window/viewport height
@@ -61,7 +57,8 @@ const getMaxTabviewHeight = (dialog: Element, tabview: Element, tablist: Element
   return maxHeight - chromeHeight;
 };
 
-const showTab = (allTabs, comp: AlloyComponent) => {
+// TODO: add a stronger type for allTabs
+const showTab = (allTabs: Array<Partial<TabbarTypes.TabButtonWithViewSpec>>, comp: AlloyComponent) => {
   Arr.head(allTabs).each((tab) => TabSection.showTab(comp, tab.value));
 };
 
@@ -93,7 +90,7 @@ const updateTabviewHeight = (dialogBody: Element, tabview: Element, maxTabHeight
 
 const getTabview = (dialog: Element<DomElement>) => SelectorFind.descendant(dialog, '[role="tabpanel"]');
 
-const setMode = (allTabs) => {
+const setMode = (allTabs: Array<Partial<TabbarTypes.TabButtonWithViewSpec>>) => {
   const smartTabHeight = (() => {
     const maxTabHeight = Cell<Option<number>>(Option.none());
 
@@ -132,7 +129,7 @@ const setMode = (allTabs) => {
           updateTabviewHeight(dialog, tabview, maxTabHeight);
         });
       }),
-      AlloyEvents.run(formResizeEvent, (comp, se) => {
+      AlloyEvents.run(formResizeEvent, (comp, _se) => {
         const dialog = comp.element();
         getTabview(dialog).each((tabview) => {
           const oldFocus = Focus.active();

@@ -5,22 +5,24 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { GuiFactory, InlineView, Menu, Highlighting, ItemTypes, Behaviour, AddEventsBehaviour, AlloyEvents, SystemEvents } from '@ephox/alloy';
+import {
+  AddEventsBehaviour, AlloyEvents, Behaviour, GuiFactory, Highlighting, InlineView, ItemTypes, Menu, SystemEvents
+} from '@ephox/alloy';
 import { InlineContent, Types } from '@ephox/bridge';
 import { console } from '@ephox/dom-globals';
-import { Arr, Cell, Option, Options, Throttler, Thunk } from '@ephox/katamari';
+import { Arr, Cell, Option, Throttler, Thunk } from '@ephox/katamari';
 import { Element, Remove } from '@ephox/sugar';
 
 import Editor from 'tinymce/core/api/Editor';
 import { AutocompleteContext, getContext } from './autocomplete/AutocompleteContext';
 import { AutocompleterEditorEvents, AutocompleterUiApi } from './autocomplete/AutocompleteEditorEvents';
-import { AutocompleteLookupInfo, AutocompleteLookupData, lookup, lookupWithContext } from './autocomplete/AutocompleteLookup';
-import * as AutocompleteTag from './autocomplete/AutocompleteTag';
+import { AutocompleteLookupData, AutocompleteLookupInfo, lookup, lookupWithContext } from './autocomplete/AutocompleteLookup';
 import * as Autocompleters from './autocomplete/Autocompleters';
+import * as AutocompleteTag from './autocomplete/AutocompleteTag';
 import { UiFactoryBackstageShared } from './backstage/Backstage';
-import { createAutocompleteItems, createMenuFrom, FocusMode } from './ui/menus/menu/SingleMenu';
-import { createPartialMenuWithAlloyItems } from './ui/menus/menu/MenuUtils';
 import ItemResponse from './ui/menus/item/ItemResponse';
+import { createPartialMenuWithAlloyItems } from './ui/menus/menu/MenuUtils';
+import { createAutocompleteItems, createMenuFrom, FocusMode } from './ui/menus/menu/SingleMenu';
 
 interface ActiveAutocompleter {
   triggerChar: string;
@@ -75,12 +77,10 @@ const register = (editor: Editor, sharedBackstage: UiFactoryBackstageShared) => 
   // before `init` or other keydown / keypress listeners will fire first. Therefore,
   // this is a thunk so that its value is calculated just once when it is used for the
   // first time, and after that it's value is stored.
-  const getAutocompleters: () => Autocompleters.AutocompleterDatabase = Thunk.cached(() => {
-    return Autocompleters.register(editor);
-  });
+  const getAutocompleters: () => Autocompleters.AutocompleterDatabase = Thunk.cached(() => Autocompleters.register(editor));
 
   const getCombinedItems = (triggerChar: string, matches: AutocompleteLookupData[]): ItemTypes.ItemSpec[] => {
-    const columns = Options.findMap(matches, (m) => Option.from(m.columns)).getOr(1);
+    const columns = Arr.findMap(matches, (m) => Option.from(m.columns)).getOr(1);
 
     return Arr.bind(matches, (match) => {
       const choices = match.items;
@@ -137,7 +137,7 @@ const register = (editor: Editor, sharedBackstage: UiFactoryBackstageShared) => 
     ac.matchLength = context.text.length;
 
     // Display the autocompleter menu
-    const columns: Types.ColumnTypes = Options.findMap(lookupData, (ld) => Option.from(ld.columns)).getOr(1);
+    const columns: Types.ColumnTypes = Arr.findMap(lookupData, (ld) => Option.from(ld.columns)).getOr(1);
     InlineView.showAt(
       autocompleter,
       {
@@ -159,11 +159,11 @@ const register = (editor: Editor, sharedBackstage: UiFactoryBackstageShared) => 
     InlineView.getContent(autocompleter).each(Highlighting.highlightFirst);
   };
 
-  const doLookup = (fetchOptions?: Record<string, any>): Option<AutocompleteLookupInfo> => {
-    return activeAutocompleter.get().map((ac) => {
-      return getContext(editor.dom, editor.selection.getRng(), ac.triggerChar).bind((newContext) => lookupWithContext(editor, getAutocompleters, newContext, fetchOptions));
-    }).getOrThunk(() => lookup(editor, getAutocompleters));
-  };
+  const doLookup = (fetchOptions?: Record<string, any>): Option<AutocompleteLookupInfo> =>
+    activeAutocompleter.get().map(
+      (ac) => getContext(editor.dom, editor.selection.getRng(), ac.triggerChar).
+        bind((newContext) => lookupWithContext(editor, getAutocompleters, newContext, fetchOptions))
+    ).getOrThunk(() => lookup(editor, getAutocompleters));
 
   const load = (fetchOptions?: Record<string, any>) => {
     doLookup(fetchOptions).fold(
@@ -214,7 +214,7 @@ const register = (editor: Editor, sharedBackstage: UiFactoryBackstageShared) => 
     isMenuOpen,
     isActive,
     isProcessingAction: processingAction.get,
-    getView: () => InlineView.getContent(autocompleter),
+    getView: () => InlineView.getContent(autocompleter)
   };
 
   AutocompleterEditorEvents.setup(autocompleterUiApi, editor);

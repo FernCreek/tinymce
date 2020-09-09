@@ -10,10 +10,10 @@ import { Arr, Option } from '@ephox/katamari';
 import { Element, Remove, SelectorFilter } from '@ephox/sugar';
 import Editor from '../api/Editor';
 import CaretPosition from '../caret/CaretPosition';
-import NodeType from '../dom/NodeType';
+import * as NodeType from '../dom/NodeType';
 import * as CefDeleteAction from './CefDeleteAction';
-import DeleteElement from './DeleteElement';
-import DeleteUtils from './DeleteUtils';
+import * as DeleteElement from './DeleteElement';
+import * as DeleteUtils from './DeleteUtils';
 
 const deleteElement = function (editor: Editor, forward) {
   return function (element) {
@@ -38,9 +38,7 @@ const moveToPosition = function (editor: Editor) {
   };
 };
 
-const getAncestorCe = (editor, node: Node) => {
-  return Option.from(getContentEditableRoot(editor.getBody(), node));
-};
+const getAncestorCe = (editor, node: Node) => Option.from(getContentEditableRoot(editor.getBody(), node));
 
 const backspaceDeleteCaret = function (editor: Editor, forward: boolean) {
   const selectedNode = editor.selection.getNode(); // is the parent node if cursor before/after cef
@@ -128,7 +126,7 @@ const backspaceDelete = function (editor: Editor, forward) {
   }
 };
 
-export default {
+export {
   backspaceDelete,
   paddEmptyElement
 };

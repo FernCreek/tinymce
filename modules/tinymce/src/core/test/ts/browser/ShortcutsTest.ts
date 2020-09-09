@@ -1,19 +1,18 @@
 import { Pipeline } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
 import { LegacyUnit, TinyLoader } from '@ephox/mcagar';
+import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
 import Tools from 'tinymce/core/api/util/Tools';
 import Theme from 'tinymce/themes/silver/Theme';
-import { UnitTest } from '@ephox/bedrock';
 
-UnitTest.asynctest('browser.tinymce.core.ShortcutsTest', function () {
-  const success = arguments[arguments.length - 2];
-  const failure = arguments[arguments.length - 1];
-  const suite = LegacyUnit.createSuite();
+UnitTest.asynctest('browser.tinymce.core.ShortcutsTest', function (success, failure) {
+  const suite = LegacyUnit.createSuite<Editor>();
 
   Theme();
 
   suite.test('Shortcuts formats', function (editor) {
-    const assertShortcut = function (shortcut, args, assertState) {
+    const assertShortcut = function (shortcut: string, args, assertState: boolean) {
       let called = false;
 
       editor.shortcuts.add(shortcut, '', function () {
@@ -30,9 +29,9 @@ UnitTest.asynctest('browser.tinymce.core.ShortcutsTest', function () {
       editor.fire('keydown', args);
 
       if (assertState) {
-        LegacyUnit.equal(called, true, 'Shortcut wasn\'t called: ' + shortcut);
+        LegacyUnit.equal(called, true, `Shortcut wasn't called: ` + shortcut);
       } else {
-        LegacyUnit.equal(called, false, 'Shortcut was called when it shouldn\'t have been: ' + shortcut);
+        LegacyUnit.equal(called, false, `Shortcut was called when it shouldn't have been: ` + shortcut);
       }
     };
 
@@ -55,18 +54,18 @@ UnitTest.asynctest('browser.tinymce.core.ShortcutsTest', function () {
     assertShortcut('ctrl+shift+alt+d', { ctrlKey: true, shiftKey: true, altKey: true, keyCode: 68 }, true);
     assertShortcut('ctrl+221', { ctrlKey: true, keyCode: 221 }, true);
 
-    assertShortcut('f1', { keyCode: 112}, true);
-    assertShortcut('f2', { keyCode: 113}, true);
-    assertShortcut('f3', { keyCode: 114}, true);
-    assertShortcut('f4', { keyCode: 115}, true);
-    assertShortcut('f5', { keyCode: 116}, true);
-    assertShortcut('f6', { keyCode: 117}, true);
-    assertShortcut('f7', { keyCode: 118}, true);
-    assertShortcut('f8', { keyCode: 119}, true);
-    assertShortcut('f9', { keyCode: 120}, true);
-    assertShortcut('f10', { keyCode: 121}, true);
-    assertShortcut('f11', { keyCode: 122}, true);
-    assertShortcut('f12', { keyCode: 123}, true);
+    assertShortcut('f1', { keyCode: 112 }, true);
+    assertShortcut('f2', { keyCode: 113 }, true);
+    assertShortcut('f3', { keyCode: 114 }, true);
+    assertShortcut('f4', { keyCode: 115 }, true);
+    assertShortcut('f5', { keyCode: 116 }, true);
+    assertShortcut('f6', { keyCode: 117 }, true);
+    assertShortcut('f7', { keyCode: 118 }, true);
+    assertShortcut('f8', { keyCode: 119 }, true);
+    assertShortcut('f9', { keyCode: 120 }, true);
+    assertShortcut('f10', { keyCode: 121 }, true);
+    assertShortcut('f11', { keyCode: 122 }, true);
+    assertShortcut('f12', { keyCode: 123 }, true);
   });
 
   suite.test('Remove', function (editor) {
@@ -86,12 +85,12 @@ UnitTest.asynctest('browser.tinymce.core.ShortcutsTest', function () {
       });
 
       editor.fire('keydown', eventArgs());
-      LegacyUnit.equal(called, true, 'Shortcut wasn\'t called when it should have been.');
+      LegacyUnit.equal(called, true, `Shortcut wasn't called when it should have been.`);
 
       called = false;
       editor.shortcuts.remove(pattern);
       editor.fire('keydown', eventArgs());
-      LegacyUnit.equal(called, false, 'Shortcut was called when it shouldn\'t.');
+      LegacyUnit.equal(called, false, `Shortcut was called when it shouldn't.`);
     };
 
     testPattern('ctrl+d', 68, true);

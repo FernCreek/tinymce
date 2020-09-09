@@ -10,7 +10,7 @@ import { GuiSystem } from 'ephox/alloy/api/system/Gui';
 import { Container } from 'ephox/alloy/api/ui/Container';
 import * as Debugging from 'ephox/alloy/debugging/Debugging';
 
-const register = Thunk.cached((gui) => {
+const register = Thunk.cached((gui: GuiSystem) => {
   Debugging.registerInspector('htmldisplay', gui);
 });
 
@@ -63,7 +63,7 @@ const section = (gui: GuiSystem, instructions: string, spec: AlloySpec): AlloyCo
     });
   };
 
-  const observer = new MutationObserver((mutations) => {
+  const observer = new MutationObserver((_mutations) => {
     updateHtml();
   });
 
@@ -72,11 +72,11 @@ const section = (gui: GuiSystem, instructions: string, spec: AlloySpec): AlloyCo
   const all = GuiFactory.build(
     Container.sketch({
       components: [
-        Container.sketch({ dom: { tag: 'hr' } }),
+        Container.sketch({ dom: { tag: 'hr' }}),
         information,
         GuiFactory.premade(display),
         dump,
-        Container.sketch({ dom: { tag: 'hr' } })
+        Container.sketch({ dom: { tag: 'hr' }})
       ]
     })
   );

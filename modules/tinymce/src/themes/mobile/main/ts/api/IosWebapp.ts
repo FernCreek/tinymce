@@ -10,8 +10,8 @@ import { ValueSchema } from '@ephox/boulder';
 import { Fun } from '@ephox/katamari';
 import { Css } from '@ephox/sugar';
 import MobileSchema from './MobileSchema';
-import IosMode from '../ios/core/IosMode';
-import TapToEditMask from '../touch/view/TapToEditMask';
+import * as IosMode from '../ios/core/IosMode';
+import * as TapToEditMask from '../touch/view/TapToEditMask';
 
 export interface MobileWebApp {
   setReadOnly(): void;
@@ -43,10 +43,10 @@ const produce = function (raw: {any}): MobileWebApp {
 
   mobile.alloy.add(mask);
   const maskApi = {
-    show () {
+    show() {
       mobile.alloy.add(mask);
     },
-    hide () {
+    hide() {
       mobile.alloy.remove(mask);
     }
   };
@@ -62,6 +62,6 @@ const produce = function (raw: {any}): MobileWebApp {
   };
 };
 
-export default {
+export {
   produce
 };

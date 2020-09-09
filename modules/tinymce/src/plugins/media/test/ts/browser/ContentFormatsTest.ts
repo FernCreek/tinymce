@@ -1,12 +1,14 @@
-import { Pipeline, Log } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { Log, Pipeline } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
+import { HTMLImageElement } from '@ephox/dom-globals';
 import { LegacyUnit, TinyLoader } from '@ephox/mcagar';
 
+import Editor from 'tinymce/core/api/Editor';
 import Plugin from 'tinymce/plugins/media/Plugin';
 import Theme from 'tinymce/themes/silver/Theme';
 
 UnitTest.asynctest('browser.tinymce.plugins.media.ContentFormatsTest', function (success, failure) {
-  const suite = LegacyUnit.createSuite();
+  const suite = LegacyUnit.createSuite<Editor>();
 
   Plugin();
   Theme();
@@ -94,7 +96,7 @@ UnitTest.asynctest('browser.tinymce.plugins.media.ContentFormatsTest', function 
       '</video>'
     );
 
-    const placeholderElm = editor.getBody().firstChild.firstChild;
+    const placeholderElm = editor.getBody().firstChild.firstChild as HTMLImageElement;
     placeholderElm.width = 100;
     placeholderElm.height = 200;
     editor.fire('objectResized', { target: placeholderElm, width: placeholderElm.width, height: placeholderElm.height });
@@ -147,10 +149,10 @@ UnitTest.asynctest('browser.tinymce.plugins.media.ContentFormatsTest', function 
     }
 
     testXss('<video><a href="javascript:alert(1);">a</a></video>', '<p><video width="300" height="150"><a>a</a></video></p>');
-    testXss('<video><img src="x" onload="alert(1)"></video>', '<p><video width="300" height=\"150\"></video></p>');
+    testXss('<video><img src="x" onload="alert(1)"></video>', '<p><video width="300" height=\"150\"><img src="x" /></video></p>');
     testXss('<video><img src="x"></video>', '<p><video width="300" height="150"><img src="x" /></video></p>');
     testXss('<video><!--[if IE]><img src="x"><![endif]--></video>', '<p><video width="300" height="150"><!-- [if IE]><img src="x"><![endif]--></video></p>');
-    testXss('<p><p><audio><audio src=x onerror=alert(1)>', '<p><audio></audio></p>');
+    testXss('<p><p><audio src=x onerror=alert(1)></audio>', '<p><audio src="x"></audio></p>');
     testXss('<p><html><audio><br /><audio src=x onerror=alert(1)></p>', '');
     testXss('<p><audio><img src="javascript:alert(1)"></audio>', '<p><audio><img /></audio></p>');
     testXss('<p><audio><img src="x" style="behavior:url(x); width: 1px"></audio>', '<p><audio><img src="x" style="width: 1px;" /></audio></p>');
@@ -170,6 +172,7 @@ UnitTest.asynctest('browser.tinymce.plugins.media.ContentFormatsTest', function 
       '<p><audio><script><svg onload="javascript:alert(1)"></svg></s' + 'cript></audio>',
       '<p><audio></audio></p>'
     );
+    testXss('<p><audio><script><svg></svg></script></audio>', '<p><audio></audio></p>');
   });
 
   TinyLoader.setupLight(function (editor, onSuccess, onFailure) {

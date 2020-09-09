@@ -1,33 +1,56 @@
-import { assert, UnitTest } from '@ephox/bedrock';
-import { document } from '@ephox/dom-globals';
+import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Arr, Option } from '@ephox/katamari';
-import { Body, Css, Element, Html, Insert, InsertAll, Remove, SelectorFilter } from '@ephox/sugar';
+import { Body, Css, Element, Html, Insert, InsertAll, Remove } from '@ephox/sugar';
 import { ResizeDirection } from 'ephox/snooker/api/ResizeDirection';
-import Sizes from 'ephox/snooker/api/Sizes';
+import * as Sizes from 'ephox/snooker/api/Sizes';
+import { TableSize } from 'ephox/snooker/api/TableSize';
+import { addStyles, readHeight, readWidth } from '../module/ephox/snooker/test/SizeUtils';
 
 UnitTest.test('Table Sizes Test (fusebox)', function () {
-  const percentTable = '<table style="width: 100%;">' +
-                      '<tbody>' +
-                      '<tr><td style="width: 10%;">A0</td><td style="width: 30%;">B0</td><td style="width: 20%;">C0</td><td style="width: 25%;">D0</td><td style="width: 15%;">E0</td></tr>' +
-                      '<tr><td style="width: 60%;" colspan="3">A1</td><td style="width: 25%;">D1</td><td style="width: 15%;">E1</td></tr>' +
-                      '<tr><td style="width: 40%;" colspan="2">A2</td><td style="width: 60%;" colspan="3">C2</td></tr>' +
-                      '<tr><td style="width: 100%;" colspan="5">A0</td></tr>' +
-                      '</tbody>' +
-                      '</table>';
+  const percentTable =
+  '<table style="width: 100%;">' +
+  '<tbody>' +
+  '<tr><td style="width: 10%;">A0</td><td style="width: 30%;">B0</td>' +
+  '<td style="width: 20%;">C0</td><td style="width: 25%;">D0</td>' +
+  '<td style="width: 15%;">E0</td></tr>' +
+  '<tr><td style="width: 60%;" colspan="3">A1</td>' +
+  '<td style="width: 25%;">D1</td><td style="width: 15%;">E1</td></tr>' +
+  '<tr><td style="width: 40%;" colspan="2">A2</td>' +
+  '<td style="width: 60%;" colspan="3">C2</td></tr>' +
+  '<tr><td style="width: 100%;" colspan="5">A0</td></tr>' +
+  '</tbody>' +
+  '</table>';
 
-  const pixelTable = '<table style="width: 500px;">' +
-                    '<tbody>' +
-                    '<tr><td style="width: 50px;">A0</td><td style="width: 150px;">B0</td><td style="width: 100px;">C0</td><td style="width: 125px;">D0</td><td style="width: 75px;">E0</td></tr>' +
-                    '<tr><td style="width: 300px;" colspan="3">A1</td><td style="width: 125px;">D1</td><td style="width: 75px;">E1</td></tr>' +
-                    '<tr><td style="width: 200px;" colspan="2">A2</td><td style="width: 300px;" colspan="3">C2</td></tr>' +
-                    '<tr><td style="width: 500px;" colspan="5">A0</td></tr>' +
-                    '</tbody>' +
-                    '</table>';
+  const pixelTable =
+  '<table style="width: 500px;">' +
+  '<tbody>' +
+  '<tr><td style="width: 50px;">A0</td><td style="width: 150px;">B0</td>' +
+  '<td style="width: 100px;">C0</td><td style="width: 125px;">D0</td>' +
+  '<td style="width: 75px;">E0</td></tr>' +
+  '<tr><td style="width: 300px;" colspan="3">A1</td>' +
+  '<td style="width: 125px;">D1</td><td style="width: 75px;">E1</td></tr>' +
+  '<tr><td style="width: 200px;" colspan="2">A2</td>' +
+  '<td style="width: 300px;" colspan="3">C2</td></tr>' +
+  '<tr><td style="width: 500px;" colspan="5">A0</td></tr>' +
+  '</tbody>' +
+  '</table>';
 
-  const pixelTableHeight = '<table border="1" style="border-collapse: collapse; width: 100%;"> <tbody> <tr> <td style="width: 20%; height: 40px;" rowspan="2"></td> <td style="width: 20%; height: 40px;">  </td> <td style="width: 20%; height: 40px;" colspan="2"></td> <td style="width: 20%; height: 140px;" rowspan="2"></td> </tr> <tr> <td style="width: 20%; height: 250px;" rowspan="2"></td> <td style="width: 20%; height: 100px;">  </td> <td style="width: 20%; height: 100px;">  </td> </tr> <tr> <td style="width: 20%; height: 150px;">  </td> <td style="width: 20%; height: 150px;">  </td> <td style="width: 20%; height: 150px;">  </td> <td style="width: 20%; height: 150px;">  </td> </tr> </tbody> </table';
-
-  const style = Element.fromHtml('<style>table { border-collapse: collapse; } td { border: 1px solid #333; }</style>');
-  Insert.append(Element.fromDom(document.head), style);
+  const pixelTableHeight =
+  '<table border="1" style="border-collapse: collapse; width: 100%;"> ' +
+  '<tbody> ' +
+  '<tr> <td style="width: 20%; height: 40px;" rowspan="2"></td> ' +
+  '<td style="width: 20%; height: 40px;">  </td> ' +
+  '<td style="width: 20%; height: 40px;" colspan="2"></td> ' +
+  '<td style="width: 20%; height: 140px;" rowspan="2"></td> </tr> ' +
+  '<tr> <td style="width: 20%; height: 250px;" rowspan="2"></td> ' +
+  '<td style="width: 20%; height: 100px;">  </td> ' +
+  '<td style="width: 20%; height: 100px;">  </td> </tr> ' +
+  '<tr> <td style="width: 20%; height: 150px;">  </td> ' +
+  '<td style="width: 20%; height: 150px;">  </td> ' +
+  '<td style="width: 20%; height: 150px;">  </td> ' +
+  '<td style="width: 20%; height: 150px;">  </td> </tr> ' +
+  '</tbody> ' +
+  '</table';
 
   const generateW = function (info: string[][], totalWidth: string) {
     const table = Element.fromTag('table');
@@ -69,26 +92,6 @@ UnitTest.test('Table Sizes Test (fusebox)', function () {
     return table;
   };
 
-  const readWidth = function (element: Element) {
-    const rows = SelectorFilter.descendants(element, 'tr');
-    return Arr.map(rows, function (row) {
-      const cells = SelectorFilter.descendants(row, 'td,th');
-      return Arr.map(cells, function (cell) {
-        return Css.getRaw(cell, 'width').getOrDie('Did not contain width information.');
-      });
-    });
-  };
-
-  const readHeight = function (element: Element) {
-    const rows = SelectorFilter.descendants(element, 'tr');
-    return Arr.map(rows, function (row) {
-      const cells = SelectorFilter.descendants(row, 'td,th');
-      return Arr.map(cells, function (cell) {
-        return Css.getRaw(cell, 'height').getOrDie('Did not contain height information.');
-      });
-    });
-  };
-
   assert.eq(
     '<table style="width: 25px;"><tbody>' +
       '<tr><td style="width: 20px;">A0</td><td style="width: 30%;">B0</td></tr>' +
@@ -104,7 +107,7 @@ UnitTest.test('Table Sizes Test (fusebox)', function () {
 
   const checkWidth = function (expected: string[][], table: Element, newWidth: string) {
     Insert.append(Body.body(), table);
-    Sizes.redistribute(table, Option.some(newWidth), Option.none(), ResizeDirection.ltr);
+    Sizes.redistribute(table, Option.some(newWidth), Option.none(), ResizeDirection.ltr, TableSize.getTableSize(table));
     assert.eq(expected, readWidth(table));
     Remove.remove(table);
   };
@@ -116,7 +119,7 @@ UnitTest.test('Table Sizes Test (fusebox)', function () {
 
   const checkHeight = function (expected: string[][], table: Element, newHeight: string) {
     Insert.append(Body.body(), table);
-    Sizes.redistribute(table, Option.none(), Option.some(newHeight), ResizeDirection.ltr);
+    Sizes.redistribute(table, Option.none(), Option.some(newHeight), ResizeDirection.ltr, TableSize.getTableSize(table));
     assert.eq(expected, readHeight(table));
     Remove.remove(table);
   };
@@ -125,6 +128,8 @@ UnitTest.test('Table Sizes Test (fusebox)', function () {
     const table = generateH(input, initialHeight);
     checkHeight(expected, table, newHeight);
   };
+
+  const styles = addStyles();
 
   checkBasicHeight([[ '5px' ]], [[ '10px' ]], '100px', '50px');
   checkBasicHeight([[ '10%' ]], [[ '10px' ]], '100px', '100%');
@@ -140,84 +145,84 @@ UnitTest.test('Table Sizes Test (fusebox)', function () {
   checkBasicWidth([[ '2px' ]], [[ '10px' ]], '50px', '10px');
 
   checkHeight([
-    [ '140px', '40px',  '40px',           '140px' ],
-    [         '250px', '100px', '100px'          ],
-    [ '150px',         '150px', '150px', '150px' ]
+    [ '140px', '40px', '40px', '140px' ],
+    [ '250px', '100px', '100px' ],
+    [ '150px', '150px', '150px', '150px' ]
   ], Element.fromHtml(pixelTableHeight), '300px');
 
   checkHeight([
-    [ '70px', '20px',  '20px',        '70px' ],
-    [         '125px', '50px', '50px'        ],
-    [ '75px',          '75px', '75px', '75px' ]
+    [ '70px', '20px', '20px', '70px' ],
+    [ '125px', '50px', '50px' ],
+    [ '75px', '75px', '75px', '75px' ]
   ], Element.fromHtml(pixelTableHeight), '150px');
 
   checkHeight([
-    [ '46%', '13%',  '13%',        '46%' ],
-    [         '84%', '33%', '33%'        ],
-    [ '51%',          '51%', '51%', '51%' ]
+    [ '46.7%', '13.3%', '13.3%', '46.7%' ],
+    [ '83.3%', '33.3%', '33.3%' ],
+    [ '50%', '50%', '50%', '50%' ]
   ], Element.fromHtml(pixelTableHeight), '100%');
 
   checkHeight([
-    [ '46%', '13%',  '13%',        '46%' ],
-    [         '84%', '33%', '33%'        ],
-    [ '51%',          '51%', '51%', '51%' ]
+    [ '46.7%', '13.3%', '13.3%', '46.7%' ],
+    [ '83.3%', '33.3%', '33.3%' ],
+    [ '50%', '50%', '50%', '50%' ]
   ], Element.fromHtml(pixelTableHeight), '150%');
 
   checkWidth([
     [ '10px', '30px', '20px', '25px', '15px' ],
-    [ '60px',                 '25px', '15px' ],
-    [ '40px',         '60px'                 ],
-    [ '100px'                                ]
+    [ '60px', '25px', '15px' ],
+    [ '40px', '60px' ],
+    [ '100px' ]
   ], Element.fromHtml(pixelTable), '100px');
 
   checkWidth([
     [ '100px', '300px', '200px', '250px', '150px' ],
-    [ '600px',                   '250px', '150px' ],
-    [ '400px',          '600px'                   ],
-    [ '1000px'                                    ]
+    [ '600px', '250px', '150px' ],
+    [ '400px', '600px' ],
+    [ '1000px' ]
   ], Element.fromHtml(pixelTable), '1000px');
 
   checkWidth([
-    [ '10%',  '30%', '20%', '25%', '15%' ],
-    [ '60%',                '25%', '15%' ],
-    [ '40%',         '60%'               ],
-    [ '100%'                             ]
+    [ '10%', '30%', '20%', '25%', '15%' ],
+    [ '60%', '25%', '15%' ],
+    [ '40%', '60%' ],
+    [ '100%' ]
   ], Element.fromHtml(pixelTable), '50%');
 
   checkWidth([
-    [ '10%',  '30%', '20%', '25%', '15%' ],
-    [ '60%',                '25%', '15%' ],
-    [ '40%',         '60%'               ],
-    [ '100%'                             ]
+    [ '10%', '30%', '20%', '25%', '15%' ],
+    [ '60%', '25%', '15%' ],
+    [ '40%', '60%' ],
+    [ '100%' ]
   ], Element.fromHtml(pixelTable), '100%');
 
   checkWidth([
-    [ '10%',  '30%', '20%', '25%', '15%' ],
-    [ '60%',                '25%', '15%' ],
-    [ '40%',         '60%'               ],
-    [ '100%'                             ]
+    [ '10%', '30%', '20%', '25%', '15%' ],
+    [ '60%', '25%', '15%' ],
+    [ '40%', '60%' ],
+    [ '100%' ]
   ], Element.fromHtml(percentTable), '100%');
 
   checkWidth([
-    [ '10%',  '30%', '20%', '25%', '15%' ],
-    [ '60%',                '25%', '15%' ],
-    [ '40%',         '60%'               ],
-    [ '100%'                             ]
+    [ '10%', '30%', '20%', '25%', '15%' ],
+    [ '60%', '25%', '15%' ],
+    [ '40%', '60%' ],
+    [ '100%' ]
   ], Element.fromHtml(percentTable), '50%');
 
   checkWidth([
-    [ '10px',  '30px', '20px', '25px', '15px' ],
-    [ '60px',                  '25px', '15px' ],
-    [ '40px',          '60px'                 ],
-    [ '100px'                                 ]
+    [ '10px', '30px', '20px', '25px', '15px' ],
+    [ '60px', '25px', '15px' ],
+    [ '40px', '60px' ],
+    [ '100px' ]
   ], Element.fromHtml(percentTable), '100px');
 
   checkWidth([
-    [ '30px',   '90px', '60px', '75px', '45px' ],
-    [ '180px',                  '75px', '45px' ],
-    [ '120px',          '180px'                ],
-    [ '300px'                                  ]
+    [ '30px', '90px', '60px', '75px', '45px' ],
+    [ '180px', '75px', '45px' ],
+    [ '120px', '180px' ],
+    [ '300px' ]
   ], Element.fromHtml(percentTable), '300px');
 
-  Remove.remove(style);
+  styles.remove();
 });

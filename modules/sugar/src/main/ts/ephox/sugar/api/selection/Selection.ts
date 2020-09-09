@@ -1,4 +1,4 @@
-import { Range, Node as DomNode } from '@ephox/dom-globals';
+import { Node as DomNode, Range } from '@ephox/dom-globals';
 import { Adt } from '@ephox/katamari';
 import Element from '../node/Element';
 import * as Traverse from '../search/Traverse';
@@ -12,49 +12,38 @@ export interface Selection {
     exact: (start: Element<DomNode>, soffset: number, finish: Element<DomNode>, foffset: number) => U
   ) => U;
   match: <U> (branches: {
-    domRange: (rng: Range) => U,
-    relative: (startSitu: Situ, finishSitu: Situ) => U,
-    exact: (start: Element<DomNode>, soffset: number, finish: Element<DomNode>, foffset: number) => U
+    domRange: (rng: Range) => U;
+    relative: (startSitu: Situ, finishSitu: Situ) => U;
+    exact: (start: Element<DomNode>, soffset: number, finish: Element<DomNode>, foffset: number) => U;
   }) => U;
   log: (label: string) => void;
 }
 
 // Consider adding a type for "element"
 const adt: {
-  domRange: (rng: Range) => Selection,
-  relative: (startSitu: Situ, finishSitu: Situ) => Selection,
-  exact: (start: Element<DomNode>, soffset: number, finish: Element<DomNode>, foffset: number) => Selection
+  domRange: (rng: Range) => Selection;
+  relative: (startSitu: Situ, finishSitu: Situ) => Selection;
+  exact: (start: Element<DomNode>, soffset: number, finish: Element<DomNode>, foffset: number) => Selection;
 } = Adt.generate([
-  { domRange: ['rng'] },
-  { relative: ['startSitu', 'finishSitu'] },
-  { exact: ['start', 'soffset', 'finish', 'foffset'] }
+  { domRange: [ 'rng' ] },
+  { relative: [ 'startSitu', 'finishSitu' ] },
+  { exact: [ 'start', 'soffset', 'finish', 'foffset' ] }
 ]);
 
-const exactFromRange = function (simRange: SimRange) {
-  return adt.exact(simRange.start(), simRange.soffset(), simRange.finish(), simRange.foffset());
-};
+const exactFromRange = (simRange: SimRange) => adt.exact(simRange.start(), simRange.soffset(), simRange.finish(), simRange.foffset());
 
-const getStart = function (selection: Selection) {
-  return selection.match({
-    domRange(rng) {
-      return Element.fromDom(rng.startContainer);
-    },
-    relative(startSitu, finishSitu) {
-      return Situ.getStart(startSitu);
-    },
-    exact(start, soffset, finish, foffset) {
-      return start;
-    }
-  });
-};
+const getStart = (selection: Selection) => selection.match({
+  domRange: (rng) => Element.fromDom(rng.startContainer),
+  relative: (startSitu, _finishSitu) => Situ.getStart(startSitu),
+  exact: (start, _soffset, _finish, _foffset) => start
+});
 
 const domRange = adt.domRange;
 const relative = adt.relative;
 const exact = adt.exact;
 
-const getWin = function (selection: Selection) {
+const getWin = (selection: Selection) => {
   const start = getStart(selection);
-
   return Traverse.defaultView(start);
 };
 

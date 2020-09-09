@@ -1,16 +1,14 @@
 import { Assertions, Chain, Logger, Pipeline } from '@ephox/agar';
-import { Arr, Fun, Result, Option } from '@ephox/katamari';
-import { Hierarchy,  Element,  Html } from '@ephox/sugar';
-import * as TableDeleteAction from 'tinymce/core/delete/TableDeleteAction';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
+import { Arr, Fun, Option, Result } from '@ephox/katamari';
+import { Element, Hierarchy, Html } from '@ephox/sugar';
+import * as TableDeleteAction from 'tinymce/core/delete/TableDeleteAction';
 
-UnitTest.asynctest('browser.tinymce.core.delete.TableDeleteActionTest', function () {
-  const success = arguments[arguments.length - 2];
-  const failure = arguments[arguments.length - 1];
+UnitTest.asynctest('browser.tinymce.core.delete.TableDeleteActionTest', function (success, failure) {
 
   const cFromHtml = (html, startPath, startOffset, endPath, endOffset) =>
-    Chain.mapper(() => {
+    Chain.injectThunked(() => {
       const elm = Element.fromHtml(html);
       const sc = Hierarchy.follow(elm, startPath).getOrDie();
       const ec = Hierarchy.follow(elm, endPath).getOrDie();
@@ -30,19 +28,32 @@ UnitTest.asynctest('browser.tinymce.core.delete.TableDeleteActionTest', function
 
   const cExtractActionCells = Chain.binder(function (actionOpt: Option<any>) {
     return actionOpt
-        .fold(
-          fail('unexpected nothing'),
-          function (action) {
-            return action.fold(
-              fail('unexpected action'),
-              function (xs) {
-                const cellString = Arr.map(xs, Html.getOuter).join('');
+      .fold(
+        fail('unexpected nothing'),
+        function (action) {
+          return action.fold(
+            fail('unexpected action'),
+            function (xs) {
+              const cellString = Arr.map(xs, Html.getOuter).join('');
 
-                return Result.value(cellString);
-              }
-            );
-          }
-        );
+              return Result.value(cellString);
+            },
+            fail('unexpected action')
+          );
+        }
+      );
+  });
+
+  const cExtractDeleteSelectionCell = Chain.binder(function (actionOpt: Option<any>) {
+    return actionOpt
+      .fold(
+        fail('unexpected nothing'),
+        (action) => action.fold(
+          fail('unexpected action'),
+          fail('unexpected action'),
+          (rng, cell) => Result.value(Html.getOuter(cell))
+        )
+      );
   });
 
   const cExtractTableFromDeleteAction = Chain.binder(function (actionOpt: Option<any>) {
@@ -54,6 +65,7 @@ UnitTest.asynctest('browser.tinymce.core.delete.TableDeleteActionTest', function
             function (table) {
               return Result.value(Html.getOuter(table));
             },
+            fail('unexpected action'),
             fail('unexpected action')
           );
         }
@@ -62,24 +74,24 @@ UnitTest.asynctest('browser.tinymce.core.delete.TableDeleteActionTest', function
 
   Pipeline.async({}, [
     Logger.t('collapsed range should return none', Chain.asStep({}, [
-      cFromHtml('<table><tbody><tr><td>a</td><td>b</td><td>c</td></tr></tbody></table>', [0, 0, 0, 0], 0, [0, 0, 0, 0], 0),
+      cFromHtml('<table><tbody><tr><td>a</td><td>b</td><td>c</td></tr></tbody></table>', [ 0, 0, 0, 0 ], 0, [ 0, 0, 0, 0 ], 0),
       cAssertNone
     ])),
 
     Logger.t('select two out of three cells returns the emptycells action', Chain.asStep({}, [
-      cFromHtml('<table><tbody><tr><td>a</td><td>b</td><td>c</td></tr></tbody></table>', [0, 0, 0, 0], 0, [0, 0, 1, 0], 1),
+      cFromHtml('<table><tbody><tr><td>a</td><td>b</td><td>c</td></tr></tbody></table>', [ 0, 0, 0, 0 ], 0, [ 0, 0, 1, 0 ], 1),
       cExtractActionCells,
       Assertions.cAssertEq('Should be cells', '<td>a</td><td>b</td>')
     ])),
 
     Logger.t('select two out of three cells returns the emptycells action', Chain.asStep({}, [
-      cFromHtml('<table><tbody><tr><th>a</th><th>b</th><th>c</th></tr></tbody></table>', [0, 0, 0, 0], 0, [0, 0, 1, 0], 1),
+      cFromHtml('<table><tbody><tr><th>a</th><th>b</th><th>c</th></tr></tbody></table>', [ 0, 0, 0, 0 ], 0, [ 0, 0, 1, 0 ], 1),
       cExtractActionCells,
       Assertions.cAssertEq('Should be cells', '<th>a</th><th>b</th>')
     ])),
 
     Logger.t('select three out of three cells returns the removeTable action', Chain.asStep({}, [
-      cFromHtml('<table><tbody><tr><td>a</td><td>b</td><td>c</td></tr></tbody></table>', [0, 0, 0, 0], 0, [0, 0, 2, 0], 1),
+      cFromHtml('<table><tbody><tr><td>a</td><td>b</td><td>c</td></tr></tbody></table>', [ 0, 0, 0, 0 ], 0, [ 0, 0, 2, 0 ], 1),
       cExtractTableFromDeleteAction,
       Assertions.cAssertEq('should be table', '<table><tbody><tr><td>a</td><td>b</td><td>c</td></tr></tbody></table>')
     ])),
@@ -87,7 +99,7 @@ UnitTest.asynctest('browser.tinymce.core.delete.TableDeleteActionTest', function
     Logger.t('select between rows, not all cells', Chain.asStep({}, [
       cFromHtml(
         '<table><tbody><tr><th>a</th><th>b</th><th>c</th></tr><tr><td>d</td><td>e</td><td>f</td></tr></tbody></table>',
-        [0, 0, 1, 0], 0, [0, 1, 0, 0], 1
+        [ 0, 0, 1, 0 ], 0, [ 0, 1, 0, 0 ], 1
       ),
       cExtractActionCells,
       Assertions.cAssertEq('should be cells', '<th>b</th><th>c</th><td>d</td>')
@@ -96,7 +108,7 @@ UnitTest.asynctest('browser.tinymce.core.delete.TableDeleteActionTest', function
     Logger.t('select between rows, all cells', Chain.asStep({}, [
       cFromHtml(
         '<table><tbody><tr><th>a</th><th>b</th><th>c</th></tr><tr><td>d</td><td>e</td><td>f</td></tr></tbody></table>',
-        [0, 0, 0, 0], 0, [0, 1, 2, 0], 1
+        [ 0, 0, 0, 0 ], 0, [ 0, 1, 2, 0 ], 1
       ),
       cExtractTableFromDeleteAction,
       Assertions.cAssertEq('should be table', '<table><tbody><tr><th>a</th><th>b</th><th>c</th></tr><tr><td>d</td><td>e</td><td>f</td></tr></tbody></table>')
@@ -105,7 +117,7 @@ UnitTest.asynctest('browser.tinymce.core.delete.TableDeleteActionTest', function
     Logger.t('select between two tables', Chain.asStep({}, [
       cFromHtml(
         '<div><table><tbody><tr><td>a</td></tr></tbody></table><table><tbody><tr><td>b</td></tr></tbody></table></div>',
-        [0, 0, 0, 0, 0], 0, [1, 0, 0, 0, 0], 1,
+        [ 0, 0, 0, 0, 0 ], 0, [ 1, 0, 0, 0, 0 ], 1,
       ),
       cExtractTableFromDeleteAction,
       Assertions.cAssertEq('should be cell from first table only', '<table><tbody><tr><td>a</td></tr></tbody></table>')
@@ -114,7 +126,7 @@ UnitTest.asynctest('browser.tinymce.core.delete.TableDeleteActionTest', function
     Logger.t('select between two tables', Chain.asStep({}, [
       cFromHtml(
         '<div><table><tbody><tr><td>a</td></tr></tbody></table>b',
-        [0, 0, 0, 0, 0], 0, [1], 1,
+        [ 0, 0, 0, 0, 0 ], 0, [ 1 ], 1,
       ),
       cExtractTableFromDeleteAction,
       Assertions.cAssertEq('should cells from partially selected table', '<table><tbody><tr><td>a</td></tr></tbody></table>')
@@ -123,12 +135,19 @@ UnitTest.asynctest('browser.tinymce.core.delete.TableDeleteActionTest', function
     Logger.t('select between two tables', Chain.asStep({}, [
       cFromHtml(
         '<div>a<table><tbody><tr><td>b</td></tr></tbody></table>',
-        [0], 0, [1, 0, 0, 0, 0], 1,
+        [ 0 ], 0, [ 1, 0, 0, 0, 0 ], 1,
       ),
       cExtractTableFromDeleteAction,
       Assertions.cAssertEq('should cells from partially selected table', '<table><tbody><tr><td>b</td></tr></tbody></table>')
     ])),
-  ], function () {
-    success();
-  }, failure);
+
+    Logger.t('single cell table with all content selected', Chain.asStep({}, [
+      cFromHtml(
+        '<table><tbody><tr><td>test</td></tr></tbody></table>',
+        [ 0, 0, 0, 0 ], 0, [ 0, 0, 0, 0 ], 4,
+      ),
+      cExtractDeleteSelectionCell,
+      Assertions.cAssertEq('Should be cells', '<td>test</td>')
+    ]))
+  ], success, failure);
 });

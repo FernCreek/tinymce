@@ -14,12 +14,12 @@ import TreeWalker from 'tinymce/core/api/dom/TreeWalker';
 import Editor from 'tinymce/core/api/Editor';
 import VK from 'tinymce/core/api/util/VK';
 import { flattenListSelection, outdentListSelection } from '../actions/Indendation';
-import ToggleList from '../actions/ToggleList';
-import Bookmark from './Bookmark';
-import NodeType from './NodeType';
-import NormalizeLists from './NormalizeLists';
-import Range from './Range';
-import Selection from './Selection';
+import * as ToggleList from '../actions/ToggleList';
+import * as Bookmark from './Bookmark';
+import * as NodeType from './NodeType';
+import * as NormalizeLists from './NormalizeLists';
+import * as Range from './Range';
+import * as Selection from './Selection';
 
 const findNextCaretContainer = function (editor: Editor, rng: DomRange, isForward: Boolean, root: Node): Node {
   let node = rng.startContainer;
@@ -70,9 +70,9 @@ const unwrapSingleBlockChild = function (dom: DOMUtils, elm: Element) {
 };
 
 const moveChildren = function (dom: DOMUtils, fromElm: Element, toElm: Element) {
-  let node, targetElm;
+  let node;
 
-  targetElm = hasOnlyOneBlockChild(dom, toElm) ? toElm.firstChild : toElm;
+  const targetElm = hasOnlyOneBlockChild(dom, toElm) ? toElm.firstChild : toElm;
   unwrapSingleBlockChild(dom, fromElm);
 
   if (!NodeType.isEmpty(dom, fromElm, true)) {
@@ -83,7 +83,7 @@ const moveChildren = function (dom: DOMUtils, fromElm: Element, toElm: Element) 
 };
 
 const mergeLiElements = function (dom: DOMUtils, fromElm: Element, toElm: Element) {
-  let node, listNode;
+  let listNode;
   const ul = fromElm.parentNode;
 
   if (!NodeType.isChildOfBody(dom, fromElm) || !NodeType.isChildOfBody(dom, toElm)) {
@@ -100,7 +100,7 @@ const mergeLiElements = function (dom: DOMUtils, fromElm: Element, toElm: Elemen
     }
   }
 
-  node = toElm.lastChild;
+  const node = toElm.lastChild;
   if (node && NodeType.isBr(node) && fromElm.hasChildNodes()) {
     dom.remove(node);
   }
@@ -269,7 +269,7 @@ const setup = function (editor: Editor) {
   });
 };
 
-export default {
+export {
   setup,
   backspaceDelete
 };

@@ -6,18 +6,14 @@
  */
 
 import { Element } from '@ephox/dom-globals';
-import { Arr, Option, Options } from '@ephox/katamari';
+import { Arr, Option } from '@ephox/katamari';
 import Editor from 'tinymce/core/api/Editor';
 
 const findNearest = (editor: Editor, getStyles, parents: Element[]) => {
   const styles = getStyles();
 
-  return Options.findMap(parents, (parent) => {
-    return Arr.find(styles, (fmt) => {
-      return editor.formatter.matchNode(parent, fmt.format);
-    });
-  }).orThunk(() => {
-    if (editor.formatter.match('p')) { return Option.some({title: 'Paragraph', format: 'p' }); }
+  return Arr.findMap(parents, (parent) => Arr.find(styles, (fmt) => editor.formatter.matchNode(parent, fmt.format))).orThunk(() => {
+    if (editor.formatter.match('p')) { return Option.some({ title: 'Paragraph', format: 'p' }); }
     return Option.none();
   });
 };

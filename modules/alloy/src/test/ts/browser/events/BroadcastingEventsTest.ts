@@ -1,14 +1,13 @@
 import { Cleaner, Step, Waiter } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
-import { window, Event } from '@ephox/dom-globals';
-import { DomEvent, Element } from '@ephox/sugar';
+import { UnitTest } from '@ephox/bedrock-client';
+import { Event, window } from '@ephox/dom-globals';
+import { DomEvent, Element, EventArgs } from '@ephox/sugar';
 
 import * as GuiFactory from 'ephox/alloy/api/component/GuiFactory';
 import * as AlloyEvents from 'ephox/alloy/api/events/AlloyEvents';
 import * as SystemEvents from 'ephox/alloy/api/events/SystemEvents';
-import { Container } from 'ephox/alloy/api/ui/Container';
 import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
-import { SugarEvent } from 'ephox/alloy/alien/TypeDefinitions';
+import { Container } from 'ephox/alloy/api/ui/Container';
 
 UnitTest.asynctest('Browser Test: events.BroadcastingEventsTest', (success, failure) => {
 
@@ -18,29 +17,26 @@ UnitTest.asynctest('Browser Test: events.BroadcastingEventsTest', (success, fail
     'body { margin-top: 2000px; }'
   ];
 
-  GuiSetup.setup((store, doc, body) => {
-    return GuiFactory.build(
-      Container.sketch({
-        dom: {
-          styles: {
-            'overflow-x': 'hidden',
-            'background': 'blue',
-            'max-width': '300px',
-            'height': '20px'
-          }
-        },
-        events: AlloyEvents.derive([
-          AlloyEvents.run<SugarEvent>(SystemEvents.windowScroll(), (component, simulatedEvent) => {
-            store.adder(simulatedEvent.event().raw().type)();
-          }),
-          AlloyEvents.run<SugarEvent>(SystemEvents.windowResize(), (component, simulatedEvent) => {
-            store.adder(simulatedEvent.event().raw().type)();
-          })
-        ])
-      })
-    );
-
-  }, (doc, body, gui, component, store) => {
+  GuiSetup.setup((store, _doc, _body) => GuiFactory.build(
+    Container.sketch({
+      dom: {
+        styles: {
+          'overflow-x': 'hidden',
+          'background': 'blue',
+          'max-width': '300px',
+          'height': '20px'
+        }
+      },
+      events: AlloyEvents.derive([
+        AlloyEvents.run<EventArgs>(SystemEvents.windowScroll(), (_component, simulatedEvent) => {
+          store.adder(simulatedEvent.event().raw().type)();
+        }),
+        AlloyEvents.run<EventArgs>(SystemEvents.windowResize(), (_component, simulatedEvent) => {
+          store.adder(simulatedEvent.event().raw().type)();
+        })
+      ])
+    })
+  ), (doc, _body, gui, _component, store) => {
     cleanup.add(
       DomEvent.bind(Element.fromDom(window), 'scroll', (evt) => {
         gui.broadcastEvent(SystemEvents.windowScroll(), evt);

@@ -1,8 +1,8 @@
 import { GeneralSteps, Pipeline, UiFinder, Log } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { console, document } from '@ephox/dom-globals';
 import { Arr, Option } from '@ephox/katamari';
-import { TinyApis, TinyDom, TinyLoader } from '@ephox/mcagar';
+import { TinyApis, TinyDom, TinyLoader, TinyUi } from '@ephox/mcagar';
 import LinkPlugin from 'tinymce/plugins/link/Plugin';
 import SilverTheme from 'tinymce/themes/silver/Theme';
 
@@ -22,39 +22,36 @@ UnitTest.asynctest('browser.tinymce.plugins.link.DialogSectionsTest', (success, 
   };
 
   interface TestSection {
-    setting: { key: string, value: Option<any> };
+    setting: { key: string; value: Option<any> };
     selector: string;
     exists: boolean;
   }
 
   TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
     const tinyApis = TinyApis(editor);
+    const tinyUi = TinyUi(editor);
 
     // NOTE: This will open the dialog once. It is expected that you specify all the settings that you want
     // in the sections array. Then once it has opened the dialog, it will check whether each section is
     // there or not
-    const sCheckSections = (sections: TestSection[]) => {
-      return Log.stepsAsStep('TBA', 'Link: Settings: ' + getStr(sections), [
-        GeneralSteps.sequence(
-          Arr.map(sections, ({ setting }) => setting.value.map((v) => tinyApis.sSetSetting(setting.key, v)).getOrThunk(() => {
-            return tinyApis.sDeleteSetting(setting.key);
-          }))
-        ),
-        TestLinkUi.sOpenLinkDialog,
-        GeneralSteps.sequence(
-          Arr.map(
-            sections,
-            ({ selector, exists }) => {
-              // tslint:disable-next-line:no-console
-              console.log('selector', selector, 'exists', exists);
-              const sExistence = exists ? UiFinder.sExists : UiFinder.sNotExists;
-              return sExistence(TinyDom.fromDom(document.body), selector);
-            }
-          )
-        ),
-        TestLinkUi.sClickOnDialog('click on cancel', 'button:contains("Cancel")')
-      ]);
-    };
+    const sCheckSections = (sections: TestSection[]) => Log.stepsAsStep('TBA', 'Link: Settings: ' + getStr(sections), [
+      GeneralSteps.sequence(
+        Arr.map(sections, ({ setting }) => setting.value.map((v) => tinyApis.sSetSetting(setting.key, v)).getOrThunk(() => tinyApis.sDeleteSetting(setting.key)))
+      ),
+      TestLinkUi.sOpenLinkDialog(tinyUi),
+      GeneralSteps.sequence(
+        Arr.map(
+          sections,
+          ({ selector, exists }) => {
+            // tslint:disable-next-line:no-console
+            console.log('selector', selector, 'exists', exists);
+            const sExistence = exists ? UiFinder.sExists : UiFinder.sNotExists;
+            return sExistence(TinyDom.fromDom(document.body), selector);
+          }
+        )
+      ),
+      TestLinkUi.sClickOnDialog('click on cancel', 'button:contains("Cancel")')
+    ]);
 
     const sCheckTargetSection = (exists: boolean, value: Option<boolean>) => Log.step('TBA', 'Link: sCheckTargetSection',
       sCheckSections([
@@ -76,7 +73,7 @@ UnitTest.asynctest('browser.tinymce.plugins.link.DialogSectionsTest', (success, 
       ])
     );
 
-    const sCheckRelSection = (exists: boolean, value: Option<Array<{ value: string, title: string }>>) => Log.step('TBA', 'Link: sCheckRelSection',
+    const sCheckRelSection = (exists: boolean, value: Option<Array<{ value: string; title: string }>>) => Log.step('TBA', 'Link: sCheckRelSection',
       sCheckSections([
         {
           setting: { key: 'rel_list', value },
@@ -86,7 +83,7 @@ UnitTest.asynctest('browser.tinymce.plugins.link.DialogSectionsTest', (success, 
       ])
     );
 
-    const sCheckClassSection = (exists: boolean, value: Option<Array<{ value: string, title: string }>>) => Log.step('TBA', 'Link: sCheckClassSection',
+    const sCheckClassSection = (exists: boolean, value: Option<Array<{ value: string; title: string }>>) => Log.step('TBA', 'Link: sCheckClassSection',
       sCheckSections([
         {
           setting: { key: 'link_class_list', value },
@@ -96,7 +93,7 @@ UnitTest.asynctest('browser.tinymce.plugins.link.DialogSectionsTest', (success, 
       ])
     );
 
-    const sCheckLinkListSection = (exists: boolean, value: Option<Array<{ value: string, title: string }>>) => Log.step('TBA', 'Link: sCheckLinkListSection',
+    const sCheckLinkListSection = (exists: boolean, value: Option<Array<{ value: string; title: string }>>) => Log.step('TBA', 'Link: sCheckLinkListSection',
       sCheckSections([
         {
           setting: { key: 'link_list', value },

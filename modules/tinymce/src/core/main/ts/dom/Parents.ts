@@ -20,15 +20,11 @@ const parentsUntil = (start: Element, root: Element, predicate: (elm: Element) =
   }
 };
 
-const parents = (start: Element, root: Element): Element[] => {
-  return parentsUntil(start, root, Fun.constant(false));
-};
+const parents = (start: Element, root: Element): Element[] => parentsUntil(start, root, Fun.constant(false));
 
-const parentsAndSelf = (start: Element, root: Element): Element[] => {
-  return [start].concat(parents(start, root));
-};
+const parentsAndSelf = (start: Element, root: Element): Element[] => [ start ].concat(parents(start, root));
 
-export default {
+export {
   parentsUntil,
   parents,
   parentsAndSelf

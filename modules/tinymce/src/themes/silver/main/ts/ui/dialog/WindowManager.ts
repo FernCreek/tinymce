@@ -5,39 +5,22 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import {
-  AddEventsBehaviour,
-  AlloyComponent,
-  AlloyEvents,
-  AlloyTriggers,
-  Behaviour,
-  Boxes,
-  Docking,
-  GuiFactory,
-  HotspotAnchorSpec,
-  InlineView,
-  Keying,
-  MakeshiftAnchorSpec,
-  ModalDialog,
-  NodeAnchorSpec,
-  SelectionAnchorSpec,
-  SystemEvents,
-} from '@ephox/alloy';
+import { AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloyTriggers, Behaviour, Boxes, Docking, GuiFactory, HotspotAnchorSpec, InlineView, Keying, MakeshiftAnchorSpec, ModalDialog, NodeAnchorSpec, SelectionAnchorSpec, SystemEvents } from '@ephox/alloy';
 import { Processor, ValueSchema } from '@ephox/boulder';
 import { DialogManager, Types } from '@ephox/bridge';
 import { Option, Singleton } from '@ephox/katamari';
-import { Body, Element, SelectorFind } from '@ephox/sugar';
+import { Body, Element, SelectorExists } from '@ephox/sugar';
 
 import Editor from 'tinymce/core/api/Editor';
+import * as Settings from '../../api/Settings';
+import { UiFactoryBackstage } from '../../backstage/Backstage';
 
 import { formCancelEvent } from '../general/FormEvents';
 import { renderDialog } from '../window/SilverDialog';
-import { renderUrlDialog } from '../window/SilverUrlDialog';
 import { renderInlineDialog } from '../window/SilverInlineDialog';
+import { renderUrlDialog } from '../window/SilverUrlDialog';
 import * as AlertDialog from './AlertDialog';
 import * as ConfirmDialog from './ConfirmDialog';
-import * as Settings from '../../api/Settings';
-import { UiFactoryBackstage } from '../../backstage/Backstage';
 
 export interface WindowManagerSetup {
   backstage: UiFactoryBackstage;
@@ -46,14 +29,15 @@ export interface WindowManagerSetup {
 
 type InlineDialogAnchor = HotspotAnchorSpec | MakeshiftAnchorSpec | NodeAnchorSpec | SelectionAnchorSpec;
 
-const validateData = <T extends Types.Dialog.DialogData>(data: T, validator: Processor) => {
-  return ValueSchema.getOrDie(ValueSchema.asRaw('data', validator, data));
-};
+const validateData = <T extends Types.Dialog.DialogData>(data: T, validator: Processor) => ValueSchema.getOrDie(ValueSchema.asRaw('data', validator, data));
 
-const inlineAdditionalBehaviours = (editor: Editor, isStickyToolbar: boolean): Behaviour.NamedConfiguredBehaviour<any, any>[] => {
+const isAlertOrConfirmDialog = (target: Element): boolean => SelectorExists.closest(target, '.tox-alert-dialog') || SelectorExists.closest(target, '.tox-confirm-dialog');
+
+const inlineAdditionalBehaviours = (editor: Editor, isStickyToolbar: boolean, isToolbarLocationTop: boolean): Behaviour.NamedConfiguredBehaviour<any, any>[] => {
   // When using sticky toolbars it already handles the docking behaviours so applying docking would
   // do nothing except add additional processing when scrolling, so we don't want to include it here
-  if (isStickyToolbar) {
+  // (Except when the toolbar is located at the bottom since the anchor will be at the top)
+  if (isStickyToolbar && isToolbarLocationTop) {
     return [ ];
   } else {
     return [
@@ -64,17 +48,7 @@ const inlineAdditionalBehaviours = (editor: Editor, isStickyToolbar: boolean): B
           fadeOutClass: 'tox-dialog-dock-fadeout',
           transitionClass: 'tox-dialog-dock-transition'
         },
-        leftAttr: 'data-dock-left',
-        topAttr: 'data-dock-top',
-        positionAttr: 'data-dock-pos',
-        modes: [ 'top' ],
-        lazyViewport: () => {
-          const win = Boxes.win();
-          const headerEle = SelectorFind.descendant(Element.fromDom(editor.getContainer()), '.tox-editor-header').getOrDie();
-          const headerBounds = Boxes.absolute(headerEle);
-          const topBounds = Math.max(win.y(), headerBounds.bottom());
-          return Boxes.bounds(win.x(), topBounds, win.width(), win.bottom() - topBounds);
-        }
+        modes: [ 'top' ]
       })
     ];
   }
@@ -90,7 +64,7 @@ const setup = (extras: WindowManagerSetup) => {
 
   const open = <T extends Types.Dialog.DialogData>(config: Types.Dialog.DialogApi<T>, params, closeWindow: (dialogApi: Types.Dialog.DialogInstanceApi<T>) => void): Types.Dialog.DialogInstanceApi<T> => {
     if (params !== undefined && params.inline === 'toolbar') {
-      return openInlineDialog(config, backstage.shared.anchors.toolbar(), closeWindow, params.ariaAttrs);
+      return openInlineDialog(config, backstage.shared.anchors.inlineDialog(), closeWindow, params.ariaAttrs);
     } else if (params !== undefined && params.inline === 'cursor') {
       return openInlineDialog(config, backstage.shared.anchors.cursor(), closeWindow, params.ariaAttrs);
     } else {
@@ -98,9 +72,7 @@ const setup = (extras: WindowManagerSetup) => {
     }
   };
 
-  const openUrl = (config: Types.UrlDialog.UrlDialogApi, closeWindow: (dialogApi: Types.UrlDialog.UrlDialogInstanceApi) => void) => {
-    return openModalUrlDialog(config, closeWindow);
-  };
+  const openUrl = (config: Types.UrlDialog.UrlDialogApi, closeWindow: (dialogApi: Types.UrlDialog.UrlDialogInstanceApi) => void) => openModalUrlDialog(config, closeWindow);
 
   const openModalUrlDialog = (config: Types.UrlDialog.UrlDialogApi, closeWindow: (dialogApi: Types.UrlDialog.UrlDialogInstanceApi) => void) => {
     const factory = (contents: Types.UrlDialog.UrlDialog): Types.UrlDialog.UrlDialogInstanceApi => {
@@ -154,10 +126,11 @@ const setup = (extras: WindowManagerSetup) => {
     return DialogManager.DialogManager.open<T>(factory, config);
   };
 
-  const openInlineDialog = <T extends Types.Dialog.DialogData>(config/*: Types.Dialog.DialogApi<T>*/, anchor: InlineDialogAnchor, closeWindow: (dialogApi: Types.Dialog.DialogInstanceApi<T>) => void, ariaAttrs): Types.Dialog.DialogInstanceApi<T> => {
+  const openInlineDialog = <T extends Types.Dialog.DialogData>(config/* : Types.Dialog.DialogApi<T>*/, anchor: InlineDialogAnchor, closeWindow: (dialogApi: Types.Dialog.DialogInstanceApi<T>) => void, ariaAttrs): Types.Dialog.DialogInstanceApi<T> => {
     const factory = (contents: Types.Dialog.Dialog<T>, internalInitialData: T, dataValidator: Processor): Types.Dialog.DialogInstanceApi<T> => {
       const initialData = validateData<T>(internalInitialData, dataValidator);
       const inlineDialog = Singleton.value<AlloyComponent>();
+      const isToolbarLocationTop = backstage.shared.header.isPositionedAtTop();
 
       const dialogInit = {
         dataValidator,
@@ -166,6 +139,7 @@ const setup = (extras: WindowManagerSetup) => {
       };
 
       const refreshDocking = () => inlineDialog.on((dialog) => {
+        InlineView.reposition(dialog);
         Docking.refresh(dialog);
       });
 
@@ -191,15 +165,17 @@ const setup = (extras: WindowManagerSetup) => {
         },
         // Fires the default dismiss event.
         fireDismissalEventInstead: { },
+        ...isToolbarLocationTop ? { } : { fireRepositionEventInstead: { }},
         inlineBehaviours: Behaviour.derive([
           AddEventsBehaviour.config('window-manager-inline-events', [
-            // Can't just fireDismissalEvent formCloseEvent, because it is on the parent component of the dialog
-            AlloyEvents.run(SystemEvents.dismissRequested(), (comp, se) => {
+            AlloyEvents.run(SystemEvents.dismissRequested(), (_comp, _se) => {
               AlloyTriggers.emit(dialogUi.dialog, formCancelEvent);
-            }),
+            })
           ]),
-          ...inlineAdditionalBehaviours(editor, isStickyToolbar)
-        ])
+          ...inlineAdditionalBehaviours(editor, isStickyToolbar, isToolbarLocationTop)
+        ]),
+        // Treat alert or confirm dialogs as part of the inline dialog
+        isExtraPart: (_comp, target) => isAlertOrConfirmDialog(target)
       }));
       inlineDialog.set(inlineDialogComp);
 
@@ -212,7 +188,7 @@ const setup = (extras: WindowManagerSetup) => {
       );
 
       // Refresh the docking position if not using a sticky toolbar
-      if (!isStickyToolbar) {
+      if (!isStickyToolbar || !isToolbarLocationTop) {
         Docking.refresh(inlineDialogComp);
 
         // Bind to the editor resize event and update docking as needed. We don't need to worry about
@@ -255,6 +231,6 @@ const setup = (extras: WindowManagerSetup) => {
   };
 };
 
-export default {
+export {
   setup
 };

@@ -10,7 +10,7 @@ const assertCaretPosition = function (actual, expected, message?) {
   }
 
   if (actual === null) {
-    LegacyUnit.strictEqual(actual, expected, message || 'Didn\'t expect null.');
+    LegacyUnit.strictEqual(actual, expected, message || `Didn't expect null.`);
     return;
   }
 
@@ -37,7 +37,7 @@ const createRange = function (startContainer, startOffset, endContainer?, endOff
   return rng;
 };
 
-export default {
+export {
   createRange,
   assertCaretPosition,
   assertRange

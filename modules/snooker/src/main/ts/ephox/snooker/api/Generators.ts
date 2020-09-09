@@ -1,58 +1,59 @@
-import { Arr, Cell, Contracts, Fun, Option } from '@ephox/katamari';
-import { Attr, Css, Element } from '@ephox/sugar';
 import { HTMLElementTagNameMap } from '@ephox/dom-globals';
+import { Arr, Cell, Contracts, Fun, Option } from '@ephox/katamari';
+import { Css, Element } from '@ephox/sugar';
+import { getAttrValue } from '../util/CellUtils';
 
 export interface CellSpan {
-  element: () => Element;
-  colspan: () => number;
-  rowspan: () => number;
+  readonly element: () => Element;
+  readonly colspan: () => number;
+  readonly rowspan: () => number;
 }
 
 export interface Generators {
-  cell: (cellSpan: CellSpan) => Element;
-  row: () => Element;
-  replace: <K extends keyof HTMLElementTagNameMap>(cell: Element, tag: K, attrs: Record<string, string | number | boolean | null>) => Element;
-  gap: () => Element;
+  readonly cell: (cellSpan: CellSpan) => Element;
+  readonly row: () => Element;
+  readonly replace: <K extends keyof HTMLElementTagNameMap>(cell: Element, tag: K, attrs: Record<string, string | number | boolean | null>) => Element;
+  readonly gap: () => Element;
 }
 
 export interface SimpleGenerators extends Generators {
-  cell: () => Element;
-  row: () => Element;
-  replace: (cell: Element) => Element;
-  gap: () => Element;
+  readonly cell: () => Element;
+  readonly row: () => Element;
+  readonly replace: (cell: Element) => Element;
+  readonly gap: () => Element;
 }
 
 export interface GeneratorsWrapper {
-  cursor: () => Option<Element>;
+  readonly cursor: () => Option<Element>;
 }
 
 export interface GeneratorsModification extends GeneratorsWrapper {
-  getOrInit: (element: Element, comparator: (a: Element, b: Element) => boolean) => Element;
+  readonly getOrInit: (element: Element, comparator: (a: Element, b: Element) => boolean) => Element;
 }
 
 export interface GeneratorsTransform extends GeneratorsWrapper {
-  replaceOrInit: (element: Element, comparator: (a: Element, b: Element) => boolean) => Element;
+  readonly replaceOrInit: (element: Element, comparator: (a: Element, b: Element) => boolean) => Element;
 }
 
 export interface GeneratorsMerging extends GeneratorsWrapper {
-  combine: (cell: Element) => () => Element;
+  readonly combine: (cell: Element) => () => Element;
 }
 
 interface Recent {
-  item: Element;
-  replacement: Element;
+  readonly item: Element;
+  readonly replacement: Element;
 }
 
 interface Item {
-  item: Element;
-  sub: Element;
+  readonly item: Element;
+  readonly sub: Element;
 }
 
 const verifyGenerators: (gen: Generators) => Generators = Contracts.exactly([ 'cell', 'row', 'replace', 'gap' ]);
 
 const elementToData = function (element: Element): CellSpan {
-  const colspan = Attr.has(element, 'colspan') ? parseInt(Attr.get(element, 'colspan'), 10) : 1;
-  const rowspan = Attr.has(element, 'rowspan') ? parseInt(Attr.get(element, 'rowspan'), 10) : 1;
+  const colspan = getAttrValue(element, 'colspan', 1);
+  const rowspan = getAttrValue(element, 'rowspan', 1);
   return {
     element: Fun.constant(element),
     colspan: Fun.constant(colspan),
@@ -98,7 +99,7 @@ const modification = function (generators: Generators, toData = elementToData): 
   } ;
 };
 
-const transform = function <K extends keyof HTMLElementTagNameMap>(scope: string | null, tag: K) {
+const transform = function <K extends keyof HTMLElementTagNameMap> (scope: string | null, tag: K) {
   return function (generators: Generators): GeneratorsTransform {
     const position = Cell(Option.none<Element>());
     verifyGenerators(generators);

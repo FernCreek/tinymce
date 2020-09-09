@@ -6,13 +6,13 @@
  */
 
 import Editor from '../api/Editor';
-import Events from '../api/Events';
+import * as Events from '../api/Events';
 import { Obj, Arr, Cell } from '@ephox/katamari';
 import { console } from '@ephox/dom-globals';
 import { ModeApi } from '../api/Mode';
 import { toggleReadOnly } from './Readonly';
 
-const defaultModes = ['design', 'readonly'];
+const defaultModes = [ 'design', 'readonly' ];
 
 const switchToMode = (editor: Editor, activeMode: Cell<string>, availableModes: Record<string, ModeApi>, mode: string) => {
   const oldMode = availableModes[activeMode.get()];

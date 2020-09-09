@@ -5,15 +5,18 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Element, Range, HTMLElement, Node } from '@ephox/dom-globals';
+import { Element, HTMLElement, Node, Range } from '@ephox/dom-globals';
 import { Cell, Option } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
-import * as CaretContainer from './CaretContainer';
-import CaretContainerRemove from './CaretContainerRemove';
+import { Element as SugarElement, SelectorFilter } from '@ephox/sugar';
 import DomQuery from '../api/dom/DomQuery';
-import NodeType from '../dom/NodeType';
-import * as GeomClientRect from '../geom/ClientRect';
+import Editor from '../api/Editor';
+import * as Settings from '../api/Settings';
 import Delay from '../api/util/Delay';
+import * as NodeType from '../dom/NodeType';
+import * as GeomClientRect from '../geom/ClientRect';
+import * as CaretContainer from './CaretContainer';
+import * as CaretContainerRemove from './CaretContainerRemove';
 
 export interface FakeCaret {
   show: (before: boolean, element: Element) => Range;
@@ -68,12 +71,12 @@ const getAbsoluteClientRect = (root: HTMLElement, element: HTMLElement, before: 
   return clientRect;
 };
 
-const trimInlineCaretContainers = (root: Node): void => {
-  let contentEditableFalseNodes, node, sibling, i, data;
+const trimInlineCaretContainers = (root: HTMLElement): void => {
+  let node, sibling, i, data;
 
-  contentEditableFalseNodes = DomQuery('*[contentEditable=false]', root);
+  const contentEditableFalseNodes = SelectorFilter.descendants(SugarElement.fromDom(root), '*[contentEditable=false]');
   for (i = 0; i < contentEditableFalseNodes.length; i++) {
-    node = contentEditableFalseNodes[i];
+    node = contentEditableFalseNodes[i].dom();
 
     sibling = node.previousSibling;
     if (CaretContainer.endsWithCaretContainer(sibling)) {
@@ -99,9 +102,11 @@ const trimInlineCaretContainers = (root: Node): void => {
   }
 };
 
-export const FakeCaret = (root: HTMLElement, isBlock: (node: Node) => boolean, hasFocus: () => boolean): FakeCaret => {
+export const FakeCaret = (editor: Editor, root: HTMLElement, isBlock: (node: Node) => boolean, hasFocus: () => boolean): FakeCaret => {
   const lastVisualCaret = Cell<Option<CaretState>>(Option.none());
   let cursorInterval, caretContainerNode;
+  const rootBlock = Settings.getForcedRootBlock(editor);
+  const caretBlock = rootBlock.length > 0 ? rootBlock : 'p';
 
   const show = (before: boolean, element: HTMLElement): Range => {
     let clientRect, rng;
@@ -113,7 +118,7 @@ export const FakeCaret = (root: HTMLElement, isBlock: (node: Node) => boolean, h
     }
 
     if (isBlock(element)) {
-      caretContainerNode = CaretContainer.insertBlock('p', element, before);
+      caretContainerNode = CaretContainer.insertBlock(caretBlock, element, before);
       clientRect = getAbsoluteClientRect(root, element, before);
       DomQuery(caretContainerNode).css('top', clientRect.top);
 
@@ -162,7 +167,10 @@ export const FakeCaret = (root: HTMLElement, isBlock: (node: Node) => boolean, h
       lastVisualCaret.set(Option.none());
     });
 
-    Delay.clearInterval(cursorInterval);
+    if (cursorInterval) {
+      Delay.clearInterval(cursorInterval);
+      cursorInterval = null;
+    }
   };
 
   const startBlink = () => {
@@ -184,9 +192,8 @@ export const FakeCaret = (root: HTMLElement, isBlock: (node: Node) => boolean, h
 
   const destroy = () => Delay.clearInterval(cursorInterval);
 
-  const getCss = () => {
-    return (
-      '.mce-visual-caret {' +
+  const getCss = () => (
+    '.mce-visual-caret {' +
       'position: absolute;' +
       'background-color: black;' +
       'background-color: currentcolor;' +
@@ -203,8 +210,7 @@ export const FakeCaret = (root: HTMLElement, isBlock: (node: Node) => boolean, h
       'margin: 0;' +
       'padding: 0;' +
       '}'
-    );
-  };
+  );
 
   return {
     show,

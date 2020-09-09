@@ -1,12 +1,12 @@
-import { console, setTimeout } from '@ephox/dom-globals';
+import { console } from '@ephox/dom-globals';
 import { Arr, Type } from '@ephox/katamari';
 
 import { DieFn, NextFn } from '../pipe/Pipe';
 import { Step } from './Step';
 import { TestLogs } from './TestLogs';
 
-const assertSteps = function (steps: Step<any, any>[]) {
-  Arr.each(steps, function (s: Step<any, any>, i: number) {
+const assertSteps = (steps: Step<any, any>[]) => {
+  Arr.each(steps, (s: Step<any, any>, i: number) => {
     let msg: string;
     if (s === undefined) {
       msg = 'step ' + i + ' was undefined. All steps: ' + JSON.stringify(steps) + '\n';
@@ -22,15 +22,19 @@ const assertSteps = function (steps: Step<any, any>[]) {
   });
 };
 
-const callAsync = function (f) {
-  // tslint:disable-next-line:no-unimported-promise
-  typeof Promise !== 'undefined' ? Promise.resolve().then(f) : setTimeout(f, 0);
+/**
+ * Execute a Step, supplying default logs.
+ *
+ * If you need to run a sequence of steps, compose them using the functions in StepSequence
+ */
+const runStep = <T, U> (initial: T, step: Step<T, U>, onSuccess: NextFn<U>, onFailure: DieFn, initLogs?: TestLogs): void => {
+  step.runStep(initial, onSuccess, onFailure, TestLogs.getOrInit(initLogs));
 };
 
-const async = function (initial: any, steps: Step<any, any>[], onSuccess: NextFn<any>, onFailure: DieFn, initLogs?: TestLogs) {
+const async = (initial: any, steps: Step<any, any>[], onSuccess: NextFn<any>, onFailure: DieFn, initLogs?: TestLogs): void => {
   assertSteps(steps);
 
-  const chain = function (lastLink: any, logs: TestLogs, index: number) {
+  const chain = (lastLink: any, logs: TestLogs, index: number) => {
     if (index < steps.length) {
       const asyncOperation = steps[index];
       // FIX: Make this test elsewhere without creating a circular dependency on Chain
@@ -38,12 +42,12 @@ const async = function (initial: any, steps: Step<any, any>[], onSuccess: NextFn
         return onFailure('You cannot create a pipeline out of chains. Use Chain.asStep to turns chains into steps', logs);
       }
       try {
-        const nextStep = function (result, newLogs) {
+        const nextStep = (result, newLogs) => {
           chain(result, newLogs, index + 1);
         };
 
-        asyncOperation(lastLink, function (x, newLogs) {
-          callAsync(function () { nextStep(x, newLogs); });
+        asyncOperation.runStep(lastLink, (x, newLogs) => {
+          nextStep(x, newLogs);
         }, onFailure, logs);
       } catch (error) {
         onFailure(error, logs);
@@ -59,5 +63,6 @@ const async = function (initial: any, steps: Step<any, any>[], onSuccess: NextFn
 };
 
 export const Pipeline = {
-  async
+  async,
+  runStep
 };

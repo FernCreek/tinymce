@@ -1,5 +1,5 @@
 import { FocusTools, GeneralSteps, Keyboard, Keys, Log, Step } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { Body, Element, Focus, SelectorFind } from '@ephox/sugar';
 
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
@@ -13,43 +13,41 @@ import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
 
 UnitTest.asynctest('Focus Modes Test', (success, failure) => {
 
-  GuiSetup.setup((store, doc, body) => {
-    const makeContainer = (name: string, mode: FocusInsideModes): AlloySpec => {
-      return {
-        dom: {
-          tag: 'div',
-          classes: [ name ]
-        },
-        components: [
-          {
-            dom: {
-              tag: 'span',
-              classes: [ `${name}-button` ],
-              innerHtml: name
-            },
-            components: [ ],
-            behaviours: Behaviour.derive([
-              Focusing.config({ })
-            ])
-          }
-        ],
-        behaviours: Behaviour.derive([
-          Keying.config({
-            mode: 'flow',
-            selector: 'span',
-            focusInside: mode
-          }),
+  GuiSetup.setup((_store, _doc, _body) => {
+    const makeContainer = (name: string, mode: FocusInsideModes): AlloySpec => ({
+      dom: {
+        tag: 'div',
+        classes: [ name ]
+      },
+      components: [
+        {
+          dom: {
+            tag: 'span',
+            classes: [ `${name}-button` ],
+            innerHtml: name
+          },
+          components: [ ],
+          behaviours: Behaviour.derive([
+            Focusing.config({ })
+          ])
+        }
+      ],
+      behaviours: Behaviour.derive([
+        Keying.config({
+          mode: 'flow',
+          selector: 'span',
+          focusInside: mode
+        }),
 
-          Focusing.config({ })
-        ])
-      };
-    };
+        Focusing.config({ })
+      ])
+    });
 
     return GuiFactory.build(
       {
         dom: {
           tag: 'div',
-          classes: [ 'cyclic-keying-test'],
+          classes: [ 'cyclic-keying-test' ],
           styles: {
             background: 'blue',
             width: '200px',
@@ -64,18 +62,12 @@ UnitTest.asynctest('Focus Modes Test', (success, failure) => {
       }
     );
 
-  }, (doc, body, gui, component, store) => {
-    const onApiComp = SelectorFind.descendant(component.element(), '.onApi').bind((elem) => {
-      return component.getSystem().getByDom(elem).toOption();
-    }).getOrDie('Could not find "onApi" div');
+  }, (doc, _body, _gui, component, _store) => {
+    const onApiComp = SelectorFind.descendant(component.element(), '.onApi').bind((elem) => component.getSystem().getByDom(elem).toOption()).getOrDie('Could not find "onApi" div');
 
-    const onEnterOrSpaceComp = SelectorFind.descendant(component.element(), '.onKeyboard').bind((elem) => {
-      return component.getSystem().getByDom(elem).toOption();
-    }).getOrDie('Could not find "onKeyboard" div');
+    const onEnterOrSpaceComp = SelectorFind.descendant(component.element(), '.onKeyboard').bind((elem) => component.getSystem().getByDom(elem).toOption()).getOrDie('Could not find "onKeyboard" div');
 
-    const onFocusComp = SelectorFind.descendant(component.element(), '.onFocus').bind((elem) => {
-      return component.getSystem().getByDom(elem).toOption();
-    }).getOrDie('Could not find "onFocus" div');
+    const onFocusComp = SelectorFind.descendant(component.element(), '.onFocus').bind((elem) => component.getSystem().getByDom(elem).toOption()).getOrDie('Could not find "onFocus" div');
 
     const sResetFocus = Step.sync(() => {
       Focus.focus(Body.body());

@@ -1,11 +1,12 @@
 import { Pipeline, Step } from '@ephox/agar';
-import TinyApis from 'ephox/mcagar/api/TinyApis';
-import TinyLoader from 'ephox/mcagar/api/TinyLoader';
-import TinyUi from 'ephox/mcagar/api/TinyUi';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
+import { Editor } from 'ephox/mcagar/alien/EditorTypes';
+import { TinyApis } from 'ephox/mcagar/api/TinyApis';
+import * as TinyLoader from 'ephox/mcagar/api/TinyLoader';
+import { TinyUi } from 'ephox/mcagar/api/TinyUi';
 
 UnitTest.asynctest('McagarTutorialTest', (success, failure) => {
-  const handler = (ed) => () => {
+  const handler = (ed: Editor) => () => {
     const content = ed.getContent();
     ed.focus();
     if (content === '<p>tutorial content</p>') {
@@ -19,7 +20,7 @@ UnitTest.asynctest('McagarTutorialTest', (success, failure) => {
     }
   };
 
-  const silverSetup = (ed) => {
+  const silverSetup = (ed: Editor) => {
     ed.ui.registry.addButton('tutorial-button', {
       text: 'tutorial',
       onAction: handler(ed)
@@ -39,7 +40,7 @@ UnitTest.asynctest('McagarTutorialTest', (success, failure) => {
       ui.sClickOnToolbar('Clicking on button to change to alternate', 'button:contains("tutorial")'),
       apis.sAssertContent('<p>alternate content</p>'),
       Step.wait(400),
-      apis.sAssertSelection([0], 1, [0], 1),
+      apis.sAssertSelection([ 0 ], 1, [ 0 ], 1),
       ui.sClickOnToolbar('Clicking on button to change to tutorial again', 'button:contains("tutorial")'),
       apis.sAssertContent('<p>tutorial content</p>'),
       Step.wait(400),
@@ -47,9 +48,9 @@ UnitTest.asynctest('McagarTutorialTest', (success, failure) => {
     ], loadSuccess, loadFailure);
 
   }, {
-      setup: silverSetup,
-      menubar: false,
-      toolbar: 'tutorial-button',
-      base_url: '/project/tinymce/js/tinymce',
-    }, success, failure);
+    setup: silverSetup,
+    menubar: false,
+    toolbar: 'tutorial-button',
+    base_url: '/project/tinymce/js/tinymce'
+  }, success, failure);
 });

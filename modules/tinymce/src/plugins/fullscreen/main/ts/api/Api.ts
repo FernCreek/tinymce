@@ -7,12 +7,12 @@
 
 const get = function (fullscreenState) {
   return {
-    isFullscreen () {
+    isFullscreen() {
       return fullscreenState.get() !== null;
     }
   };
 };
 
-export default {
+export {
   get
 };

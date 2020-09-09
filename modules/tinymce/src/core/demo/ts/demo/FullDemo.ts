@@ -19,12 +19,12 @@ export default function () {
           api.element().removeChild(box.dom());
         };
       },
-      onShow: (api) => {
+      onShow: (_api) => {
         console.log('onShow ' + name);
       },
-      onHide: (api) => {
+      onHide: (_api) => {
         console.log('onHide ' + name);
-      },
+      }
     });
   };
 
@@ -48,30 +48,36 @@ export default function () {
     ],
     importcss_append: true,
     height: 400,
-    file_picker_callback (callback, value, meta) {
+    image_advtab: true,
+    file_picker_callback(callback, _value, meta) {
+      if (meta.fieldname === 'poster') {
+        callback('test.mp4', { altsource: 'blah.ogg', width: '400px', poster: 'testing.jpg', embed: '<p>test</p>' });
+        return;
+      }
       // Provide file and text for the link dialog
       if (meta.filetype === 'file') {
-        callback('https://www.google.com/logos/google.jpg', { text: 'My text' });
+        callback('https://www.google.com/logos/google.jpg', { text: 'My text', title: 'blah' });
       }
 
       // Provide image and alt text for the image dialog
       if (meta.filetype === 'image') {
-        callback('https://www.google.com/logos/google.jpg', { alt: 'My alt text' });
+        // tslint:disable-next-line: no-debugger
+        callback('https://www.google.com/logos/google.jpg', { alt: 'My alt text', style: 'border: 10px solid black;' });
       }
 
       // Provide alternative source and posted for the media dialog
       if (meta.filetype === 'media') {
-        callback('movie.mp4', { source2: 'alt.ogg', poster: 'https://www.google.com/logos/google.jpg' });
+        callback('movie.mp4', { embed: '<p>test</p>' });
       }
     },
-    spellchecker_callback (method, text, success, failure) {
+    spellchecker_callback(method, text, success, _failure) {
       const words = text.match(this.getWordCharPattern());
 
       if (method === 'spellcheck') {
         const suggestions = {};
 
         for (let i = 0; i < words.length; i++) {
-          suggestions[words[i]] = ['First', 'Second'];
+          suggestions[words[i]] = [ 'First', 'Second' ];
         }
 
         success(suggestions);
@@ -94,7 +100,7 @@ export default function () {
         'autosave lists'
       ]
     },
-    setup (ed) {
+    setup(ed) {
       makeSidebar(ed, 'sidebar1', 'green', 200);
     },
     plugins: [
@@ -106,8 +112,9 @@ export default function () {
     // rtl_ui: true,
     add_unload_trigger: false,
     autosave_ask_before_unload: false,
-    toolbar: 'undo redo sidebar1 align fontsizeselect fontselect formatselect styleselect insertfile | styleselect | bold italic | alignleft aligncenter alignright alignjustify | ' +
+    toolbar: 'undo redo sidebar1 | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | align fontsizeselect fontselect formatselect styleselect insertfile | styleselect | ' +
     'bullist numlist outdent indent | link image | print preview media fullpage | forecolor backcolor emoticons table codesample code | ltr rtl',
+    contextmenu: 'link linkchecker image imagetools table lists spellchecker configurepermanentpen',
 
     // Multiple toolbar array
     // toolbar: ['undo redo sidebar1 align fontsizeselect insertfile | fontselect formatselect styleselect insertfile | styleselect | bold italic',
@@ -143,8 +150,9 @@ export default function () {
     //     name: 'comments', items: [ 'addcomment' ]
     //   }
     // ],
-    toolbar_drawer: 'floating',
-    emoticons_database_url: '/src/plugins/emoticons/main/js/emojis.js'
+    toolbar_mode: 'floating',
+    emoticons_database_url: '/src/plugins/emoticons/main/js/emojis.js',
+    resize_img_proportional: true
   };
 
   tinymce.init(settings);

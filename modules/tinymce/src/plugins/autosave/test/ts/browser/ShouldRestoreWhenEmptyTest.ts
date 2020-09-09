@@ -1,7 +1,7 @@
-import { UnitTest } from '@ephox/bedrock';
+import { Assert, UnitTest } from '@ephox/bedrock-client';
 import Editor from 'tinymce/core/api/Editor';
-import { Editor as McEditor, ApiChains } from '@ephox/mcagar';
-import { Pipeline, Logger, Chain, RawAssertions } from '@ephox/agar';
+import { ApiChains, Editor as McEditor } from '@ephox/mcagar';
+import { Chain, Logger, Pipeline } from '@ephox/agar';
 import Theme from 'tinymce/themes/silver/Theme';
 import Plugin from 'tinymce/plugins/autosave/Plugin';
 
@@ -10,7 +10,7 @@ UnitTest.asynctest('browser.tinymce.plugins.autosave.ShouldRestoreWhenEmptyTest'
   Plugin();
 
   const cAssertHasDraft = (expected: boolean) => Chain.op((editor: Editor) => {
-    RawAssertions.assertEq(`should${!expected ? 'n\'t' : ''} have draft`, expected, editor.plugins.autosave.hasDraft());
+    Assert.eq(`should${!expected ? 'n\'t' : ''} have draft`, expected, editor.plugins.autosave.hasDraft());
   });
 
   const cStoreDraft = Chain.op((editor: Editor) => {
@@ -41,7 +41,7 @@ UnitTest.asynctest('browser.tinymce.plugins.autosave.ShouldRestoreWhenEmptyTest'
       cRemoveDraft,
       McEditor.cRemove
     ])),
-    Logger.t('shouldn\'t restore draft when empty without setting', Chain.asStep({}, [
+    Logger.t(`shouldn't restore draft when empty without setting`, Chain.asStep({}, [
       McEditor.cFromSettings({ base_url: '/project/tinymce/js/tinymce', plugins: 'autosave', autosave_prefix: testingPrefix }),
       cAssertHasDraft(false),
       ApiChains.cSetContent('<p>X</p>'),

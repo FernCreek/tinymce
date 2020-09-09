@@ -24,7 +24,7 @@
 
 @collection-list-item-active-background-color: @toolbar-button-hover-background-color;
 @collection-list-item-label-active-text-color: contrast(@collection-list-item-active-background-color, @color-black, @color-white);
-@collection-list-item-enabled-background-color: inherit;
+@collection-list-item-enabled-background-color: @menu-background-color;
 @collection-list-item-label-enabled-text-color: contrast(@collection-list-item-enabled-background-color, @color-black, @color-white);
 
 @collection-toolbar-item-active-background-color: @toolbar-button-hover-background-color;
@@ -139,9 +139,8 @@
     color: @collection-list-item-label-enabled-text-color;
   }
 
-  .tox-collection--list .tox-collection__item--active:not(.tox-collection__item--state-disabled) {
+  .tox-collection--list .tox-collection__item--active {
     background-color: @collection-list-item-active-background-color;
-    color: @collection-list-item-label-active-text-color;
   }
 
   .tox-collection--toolbar .tox-collection__item--enabled {
@@ -149,9 +148,8 @@
     color: @collection-toolbar-item-label-enabled-text-color;
   }
 
-  .tox-collection--toolbar .tox-collection__item--active:not(.tox-collection__item--state-disabled) {
+  .tox-collection--toolbar .tox-collection__item--active {
     background-color: @collection-toolbar-item-active-background-color;
-    color: @collection-toolbar-item-label-active-text-color;
   }
 
   .tox-collection--grid .tox-collection__item--enabled {
@@ -164,14 +162,23 @@
     color: @collection-grid-item-label-active-text-color;
   }
 
+  .tox-collection--list .tox-collection__item--active:not(.tox-collection__item--state-disabled) {
+    color: @collection-list-item-label-active-text-color;
+  }
+
+  .tox-collection--toolbar .tox-collection__item--active:not(.tox-collection__item--state-disabled) {
+    color: @collection-toolbar-item-label-active-text-color;
+  }
+
   // Disabled item
   .tox-collection__item--state-disabled {
     background-color: transparent;
     color: @collection-item-label-disabled-text-color;
-    cursor: default;
+    cursor: not-allowed;
   }
 
-  .tox-collection__item-icon {
+  .tox-collection__item-icon,
+  .tox-collection__item-checkmark {
     align-items: center;
     display: flex;
     height: @collection-item-list-icon-height;
@@ -207,7 +214,7 @@
     font-size: @font-size-sm;
     height: @collection-item-list-icon-height;
     line-height: @collection-item-list-icon-height;
-    text-transform: normal;
+    text-transform: none;
   }
 
   .tox-collection__item-caret {
@@ -228,7 +235,12 @@
   }
 
   // Tickable items that are not ticked hide the check mark SVG (not the entire icon so there is still a gap)
-  .tox-collection__item[role="menuitemcheckbox"]:not(.tox-collection__item--enabled) .tox-collection__item-checkmark svg {
+  .tox-collection--list .tox-collection__item:not(.tox-collection__item--enabled) .tox-collection__item-checkmark svg {
+    display: none;
+  }
+
+  // Tickable items that are not ticked and have an adjacent shortcut hide the check mark completely (gap is removed)
+  .tox-collection--list .tox-collection__item:not(.tox-collection__item--enabled) .tox-collection__item-accessory + .tox-collection__item-checkmark {
     display: none;
   }
 

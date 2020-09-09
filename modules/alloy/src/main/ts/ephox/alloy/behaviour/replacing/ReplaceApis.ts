@@ -1,7 +1,7 @@
 import { Arr, Option } from '@ephox/katamari';
 import { Compare, Insert, Element } from '@ephox/sugar';
 
-import * as AriaFocus from '../../alien/AriaFocus';
+import * as AriaFocus from '../../aria/AriaFocus';
 import { AlloyComponent } from '../../api/component/ComponentApi';
 import { AlloySpec } from '../../api/component/SpecTypes';
 import * as Attachment from '../../api/system/Attachment';
@@ -35,17 +35,13 @@ const prepend = (component: AlloyComponent, replaceConfig: ReplacingConfig, repl
 // NOTE: Removee is going to be a component, not a spec.
 const remove = (component: AlloyComponent, replaceConfig: ReplacingConfig, replaceState: Stateless, removee: AlloyComponent): void => {
   const children = contents(component, replaceConfig);
-  const foundChild = Arr.find(children, (child) => {
-    return Compare.eq(removee.element(), child.element());
-  });
+  const foundChild = Arr.find(children, (child) => Compare.eq(removee.element(), child.element()));
 
   foundChild.each(Attachment.detach);
 };
 
 // TODO: Rename
-const contents = (component: AlloyComponent, replaceConfig: ReplacingConfig/*, replaceState */): AlloyComponent[] => {
-  return component.components();
-};
+const contents = (component: AlloyComponent, _replaceConfig: ReplacingConfig): AlloyComponent[] => component.components();
 
 const replaceAt = (component: AlloyComponent, replaceConfig: ReplacingConfig, replaceState: Stateless, replaceeIndex: number, replacer: Option<AlloySpec>): Option<AlloyComponent> => {
   const children = contents(component, replaceConfig);

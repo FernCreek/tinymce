@@ -9,9 +9,11 @@ import { Menu, Toolbar } from '@ephox/bridge';
 import { Cell } from '@ephox/katamari';
 import Editor from 'tinymce/core/api/Editor';
 import Tools from 'tinymce/core/api/util/Tools';
-import Settings from '../api/Settings';
-import Actions, { LastSuggestion } from '../core/Actions';
+import * as Settings from '../api/Settings';
+import * as Actions from '../core/Actions';
 import { DomTextMatcher } from '../core/DomTextMatcher';
+
+type LastSuggestion = Actions.LastSuggestion;
 
 const spellcheckerEvents = 'SpellcheckStart SpellcheckEnd';
 
@@ -64,17 +66,13 @@ const register = function (editor: Editor, pluginUrl: string, startedState: Cell
   const splitButtonArgs: Toolbar.ToolbarSplitButtonApi = {
     ...buttonArgs,
     type : 'splitbutton',
-    select : (value) => {
-      return value === currentLanguageState.get();
-    },
+    select : (value) => value === currentLanguageState.get(),
     fetch : (callback) => {
-      const items = Tools.map(languageMenuItems, (languageItem): Menu.ChoiceMenuItemApi => {
-        return {
-          type: 'choiceitem',
-          value: languageItem.data,
-          text: languageItem.text
-        };
-      });
+      const items = Tools.map(languageMenuItems, (languageItem): Menu.ChoiceMenuItemApi => ({
+        type: 'choiceitem',
+        value: languageItem.data,
+        text: languageItem.text
+      }));
       callback(items);
     },
     onItemAction: (splitButtonApi, value) => {
@@ -90,6 +88,7 @@ const register = function (editor: Editor, pluginUrl: string, startedState: Cell
 
   editor.ui.registry.addToggleMenuItem('spellchecker', {
     text: 'Spellcheck',
+    icon: 'spell-check',
     onSetup: (menuApi) => {
       menuApi.setActive(startedState.get());
       const setMenuItemCheck = () => {
@@ -105,6 +104,6 @@ const register = function (editor: Editor, pluginUrl: string, startedState: Cell
 
 };
 
-export default {
+export {
   register
 };

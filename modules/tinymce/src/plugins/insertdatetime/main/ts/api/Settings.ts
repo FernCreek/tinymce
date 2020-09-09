@@ -14,7 +14,7 @@ const getTimeFormat = function (editor) {
 };
 
 const getFormats = function (editor) {
-  return editor.getParam('insertdatetime_formats', ['%H:%M:%S', '%Y-%m-%d', '%I:%M:%S %p', '%D']);
+  return editor.getParam('insertdatetime_formats', [ '%H:%M:%S', '%Y-%m-%d', '%I:%M:%S %p', '%D' ]);
 };
 
 const getDefaultDateTime = function (editor) {
@@ -26,7 +26,7 @@ const shouldInsertTimeElement = function (editor) {
   return editor.getParam('insertdatetime_element', false);
 };
 
-export default {
+export {
   getDateFormat,
   getTimeFormat,
   getFormats,

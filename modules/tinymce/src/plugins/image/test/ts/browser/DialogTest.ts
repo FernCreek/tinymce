@@ -1,11 +1,11 @@
-import { Keyboard, Keys, Pipeline, Log, FocusTools } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
-import { TinyApis, TinyLoader } from '@ephox/mcagar';
+import { FocusTools, Keyboard, Keys, Log, Pipeline } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
+import { TinyApis, TinyLoader } from '@ephox/mcagar';
+import { Element } from '@ephox/sugar';
 
 import Plugin from 'tinymce/plugins/image/Plugin';
 import SilverTheme from 'tinymce/themes/silver/Theme';
-import { Element } from '@ephox/sugar';
 
 UnitTest.asynctest('browser.tinymce.plugins.image.DialogTest', (success, failure) => {
 
@@ -20,9 +20,7 @@ UnitTest.asynctest('browser.tinymce.plugins.image.DialogTest', (success, failure
     const sPressEsc = Keyboard.sKeydown(doc, Keys.escape(), {});
     const sPressDown = Keyboard.sKeydown(doc, Keys.down(), {});
 
-    const sAssertFocused = (name, selector) => {
-      return FocusTools.sTryOnSelector(name, doc, selector);
-    };
+    const sAssertFocused = (name, selector) => FocusTools.sTryOnSelector(name, doc, selector);
 
     Pipeline.async({}, [
       Log.stepsAsStep('TBA', 'Insert Image Dialog basic cycle ', [
@@ -40,7 +38,7 @@ UnitTest.asynctest('browser.tinymce.plugins.image.DialogTest', (success, failure
         sAssertFocused('Cancel', 'button.tox-button:contains("Cancel")'),
         sPressTab,
         sAssertFocused('Save', 'button.tox-button:contains("Save")'),
-        sPressEsc,
+        sPressEsc
       ]),
 
       Log.stepsAsStep('TBA', 'Insert Image Dialog with filepicker cycle', [
@@ -61,13 +59,13 @@ UnitTest.asynctest('browser.tinymce.plugins.image.DialogTest', (success, failure
         sAssertFocused('Cancel', 'button.tox-button:contains("Cancel")'),
         sPressTab,
         sAssertFocused('Save', 'button.tox-button:contains("Save")'),
-        sPressEsc,
+        sPressEsc
       ]),
 
       Log.stepsAsStep('TBA', 'Insert Image Dialog with all options', [
         api.sSetSetting('file_picker_callback', () => {}),
-        api.sSetSetting('image_class_list', [{title: 'sample', value: 'sample'}]),
-        api.sSetSetting('image_list', [{title: 'sample', value: 'sample'}]),
+        api.sSetSetting('image_class_list', [{ title: 'sample', value: 'sample' }]),
+        api.sSetSetting('image_list', [{ title: 'sample', value: 'sample' }]),
         api.sSetSetting('image_caption', true),
         api.sExecCommand('mceImage'),
         sAssertFocused('Tab', '.tox-dialog__body-nav-item:contains("General")'),
@@ -93,7 +91,7 @@ UnitTest.asynctest('browser.tinymce.plugins.image.DialogTest', (success, failure
         sAssertFocused('Cancel', 'button.tox-button:contains("Cancel")'),
         sPressTab,
         sAssertFocused('Save', 'button.tox-button:contains("Save")'),
-        sPressEsc,
+        sPressEsc
       ]),
 
       Log.stepsAsStep('TBA', 'Insert Image Dialog with advanced tab', [
@@ -115,7 +113,7 @@ UnitTest.asynctest('browser.tinymce.plugins.image.DialogTest', (success, failure
         sAssertFocused('Cancel', 'button.tox-button:contains("Cancel")'),
         sPressTab,
         sAssertFocused('Save', 'button.tox-button:contains("Save")'),
-        sPressEsc,
+        sPressEsc
       ]),
 
       Log.stepsAsStep('TBA', 'Insert Image Dialog with upload tab', [
@@ -132,8 +130,8 @@ UnitTest.asynctest('browser.tinymce.plugins.image.DialogTest', (success, failure
         sAssertFocused('Cancel', 'button.tox-button:contains("Cancel")'),
         sPressTab,
         sAssertFocused('Save', 'button.tox-button:contains("Save")'),
-        sPressEsc,
-      ]),
+        sPressEsc
+      ])
     ], onSuccess, onFailure);
   }, {
     theme: 'silver',

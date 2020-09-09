@@ -1,15 +1,15 @@
+import { HTMLDocument } from '@ephox/dom-globals';
 import { Fun, Option } from '@ephox/katamari';
 import { Element } from '@ephox/sugar';
 
 import { Navigation } from './Navigation';
-import { SugarDocument } from '../alien/TypeDefinitions';
 
-const walkUp = (navigation: Navigation, doc: SugarDocument): Element[] => {
+const walkUp = (navigation: Navigation, doc: Element<HTMLDocument>): Element[] => {
   const frame = navigation.view(doc);
   return frame.fold(Fun.constant([]), (f) => {
     const parent = navigation.owner(f);
     const rest = walkUp(navigation, parent);
-    return [f].concat(rest);
+    return [ f ].concat(rest);
   });
 };
 

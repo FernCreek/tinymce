@@ -1,6 +1,6 @@
-import { Pipeline, Mouse, UiFinder, Chain, Assertions, ApproxStructure, FocusTools, Keyboard, Keys, Log } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
-import { TinyLoader } from '@ephox/mcagar';
+import { Assertions, ApproxStructure, Chain, FocusTools, Keyboard, Keys, Log, Pipeline, UiFinder } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
+import { TinyLoader, TinyUi } from '@ephox/mcagar';
 import { document } from '@ephox/dom-globals';
 
 import Theme from 'tinymce/themes/silver/Theme';
@@ -13,7 +13,7 @@ const tableCellsApprox = (s, arr, selectedRows, selectedCols) => {
     for (let j = 1; j <= 10; j++) {
       cells.push(s.element('div', {
         role: 'button',
-        classes: i <= selectedRows && j <= selectedCols ? [ arr.has('tox-insert-table-picker__selected') ] : [ arr.not('tox-insert-table-picker__selected')]
+        classes: i <= selectedRows && j <= selectedCols ? [ arr.has('tox-insert-table-picker__selected') ] : [ arr.not('tox-insert-table-picker__selected') ]
       }));
     }
   }
@@ -25,15 +25,15 @@ const insertTablePickerApprox = (s, str, arr, selectedRows, selectedCols) =>
     classes: [ arr.has('tox-menu'), arr.has('tox-collection'), arr.has('tox-collection--list') ],
     children: [
       s.element('div', {
-        classes: [ arr.has('tox-collection__group')],
+        classes: [ arr.has('tox-collection__group') ],
         children: [
           s.element('div', {
-            classes: [arr.has('tox-menu-nav__js'), arr.has('tox-fancymenuitem'), arr.not('tox-collection__item')],
+            classes: [ arr.has('tox-menu-nav__js'), arr.has('tox-fancymenuitem'), arr.not('tox-collection__item') ],
             children: [
               s.element('div', {
-                classes: [ arr.has('tox-insert-table-picker')],
+                classes: [ arr.has('tox-insert-table-picker') ],
                 children: tableCellsApprox(s, arr, selectedRows, selectedCols).concat(s.element('span', {
-                  classes: [arr.has('tox-insert-table-picker__label')],
+                  classes: [ arr.has('tox-insert-table-picker__label') ],
                   html: str.is(`${selectedCols}x${selectedRows}`)
                 }))
               })
@@ -49,13 +49,14 @@ UnitTest.asynctest('OxideTablePickerMenuTest', (success, failure) => {
 
   TinyLoader.setup(
     (editor, onSuccess, onFailure) => {
+      const tinyUi = TinyUi(editor);
       const doc = Element.fromDom(document);
 
       Pipeline.async({ }, Log.steps(
         'TBA',
         'Check structure of table picker',
         [
-          Mouse.sClickOn(Body.body(), '.tox-toolbar button'),
+          tinyUi.sClickOnToolbar('Click on toolbar button', 'button'),
           UiFinder.sWaitForVisible('Waiting for menu', Body.body(), '[role="menu"]'),
           Chain.asStep(Body.body(), [
             UiFinder.cFindIn('[role="menu"]'),

@@ -1,14 +1,12 @@
 import { GeneralSteps, Logger, Pipeline, Step } from '@ephox/agar';
 import { TinyApis, TinyLoader } from '@ephox/mcagar';
 import { Hierarchy, Element } from '@ephox/sugar';
-import TypeText from '../module/test/TypeText';
+import * as TypeText from '../module/test/TypeText';
 import Theme from 'tinymce/themes/silver/Theme';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { HTMLElement } from '@ephox/dom-globals';
 
-UnitTest.asynctest('browser.tinymce.core.ClickContentEditableFalseTest', function () {
-  const success = arguments[arguments.length - 2];
-  const failure = arguments[arguments.length - 1];
+UnitTest.asynctest('browser.tinymce.core.ClickContentEditableFalseTest', function (success, failure) {
 
   Theme();
 
@@ -28,36 +26,36 @@ UnitTest.asynctest('browser.tinymce.core.ClickContentEditableFalseTest', functio
     const tinyApis = TinyApis(editor);
 
     Pipeline.async({}, [
-      tinyApis.sFocus,
+      tinyApis.sFocus(),
       Logger.t('Click on content editable false', GeneralSteps.sequence([
         tinyApis.sSetContent('<p contenteditable="false">a</p>'),
-        sClickMiddleOf(editor, [1]),
+        sClickMiddleOf(editor, [ 1 ]),
         tinyApis.sAssertSelection([], 0, [], 1)
       ])),
       Logger.t('Click on content editable false inside content editable true', GeneralSteps.sequence([
         tinyApis.sSetContent('<div contenteditable="true"><p contenteditable="false">a</p></div>'),
-        sClickMiddleOf(editor, [0, 1]),
-        tinyApis.sAssertSelection([0], 0, [0], 1)
+        sClickMiddleOf(editor, [ 0, 1 ]),
+        tinyApis.sAssertSelection([ 0 ], 0, [ 0 ], 1)
       ])),
       Logger.t('Click on content editable true inside content editable false', GeneralSteps.sequence([
         tinyApis.sSetContent('<div contenteditable="false"><p contenteditable="true">a</p></div>'),
-        sClickMiddleOf(editor, [1, 0]),
-        tinyApis.sAssertSelection([0, 0, 0], 1, [0, 0, 0], 1)
+        sClickMiddleOf(editor, [ 1, 0 ]),
+        tinyApis.sAssertSelection([ 0, 0, 0 ], 1, [ 0, 0, 0 ], 1)
       ])),
       Logger.t('Click on content editable false inside content editable true and then on content editable true and type', GeneralSteps.sequence([
         tinyApis.sSetContent('<div contenteditable="true"><p contenteditable="false">a</p><p>b</p></div>'),
-        sClickMiddleOf(editor, [0, 1]),
-        sClickMiddleOf(editor, [0, 1]),
-        tinyApis.sAssertSelection([0, 1, 0], 1, [0, 1, 0], 1),
+        sClickMiddleOf(editor, [ 0, 1 ]),
+        sClickMiddleOf(editor, [ 0, 1 ]),
+        tinyApis.sAssertSelection([ 0, 1, 0 ], 1, [ 0, 1, 0 ], 1),
         TypeText.sTypeContentAtSelection(Element.fromDom(editor.getDoc()), 'c'),
         tinyApis.sAssertContent('<div contenteditable="true"><p contenteditable="false">a</p><p>bc</p></div>'),
-        tinyApis.sAssertSelection([0, 1, 0], 2, [0, 1, 0], 2)
+        tinyApis.sAssertSelection([ 0, 1, 0 ], 2, [ 0, 1, 0 ], 2)
       ])),
       Logger.t('Click on content editable false then outside on content editable inherit', GeneralSteps.sequence([
         tinyApis.sSetContent('<p contenteditable="false">a</p><p>a</p>'),
-        sClickMiddleOf(editor, [1]),
-        sClickMiddleOf(editor, [1]),
-        tinyApis.sAssertSelection([1, 0], 1, [1, 0], 1)
+        sClickMiddleOf(editor, [ 1 ]),
+        sClickMiddleOf(editor, [ 1 ]),
+        tinyApis.sAssertSelection([ 1, 0 ], 1, [ 1, 0 ], 1)
       ]))
     ], onSuccess, onFailure);
   }, {

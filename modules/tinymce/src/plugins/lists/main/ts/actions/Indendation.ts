@@ -6,13 +6,13 @@
  */
 
 import { Arr } from '@ephox/katamari';
-import { Element} from '@ephox/sugar';
+import { Element } from '@ephox/sugar';
 import Editor from 'tinymce/core/api/Editor';
 import { Indentation } from '../listModel/Indentation';
 import { listIndentation } from '../listModel/ListsIndendation';
 import { dlIndentation } from '../core/DlIndentation';
-import Range from '../core/Range';
-import Selection from '../core/Selection';
+import * as Range from '../core/Range';
+import * as Selection from '../core/Selection';
 
 const selectionIndentation = (editor: Editor, indentation: Indentation): boolean => {
   const lists = Arr.map(Selection.getSelectedListRoots(editor), Element.fromDom);
@@ -34,17 +34,11 @@ const selectionIndentation = (editor: Editor, indentation: Indentation): boolean
   return isHandled;
 };
 
-const indentListSelection = (editor: Editor): boolean => {
-  return selectionIndentation(editor, Indentation.Indent);
-};
+const indentListSelection = (editor: Editor): boolean => selectionIndentation(editor, Indentation.Indent);
 
-const outdentListSelection = (editor: Editor): boolean => {
-  return selectionIndentation(editor, Indentation.Outdent);
-};
+const outdentListSelection = (editor: Editor): boolean => selectionIndentation(editor, Indentation.Outdent);
 
-const flattenListSelection = (editor: Editor): boolean => {
-  return selectionIndentation(editor, Indentation.Flatten);
-};
+const flattenListSelection = (editor: Editor): boolean => selectionIndentation(editor, Indentation.Flatten);
 
 export {
   indentListSelection,

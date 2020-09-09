@@ -3,6 +3,7 @@ const runsInPhantom = [
   '@ephox/alloy',
   '@ephox/mcagar',
   '@ephox/katamari',
+  '@ephox/katamari-test',
   '@ephox/imagetools',
   '@ephox/jax'
 ];
@@ -76,7 +77,7 @@ const bedrockBrowser = (tests, browserName, osName, bucket, buckets, auto) => {
     return {
       browser: {
         ...bedrockDefaults,
-        overallTimeout: 900000,
+        overallTimeout: 1200000,
         name: `${browserName}-${osName}`,
         browser: browserName,
         testfiles: testFolders(tests, auto),
@@ -86,7 +87,7 @@ const bedrockBrowser = (tests, browserName, osName, bucket, buckets, auto) => {
         // we have a few tests that don't play nicely when combined together in the monorepo
         retries: 3
       }
-    }
+    };
   }
 };
 
@@ -97,7 +98,7 @@ const fetchLernaProjects = (log, runAllTests) => {
   // if JSON parse fails, well, grunt will just fail /shrug
   const parseLernaList = (cmd) => {
     try {
-      return JSON.parse(exec(`yarn -s lerna ${cmd} -a --no-ignore-changes --json --loglevel warn 2>&1`));
+      return JSON.parse(exec(`yarn -s lerna ${cmd} -a --json --loglevel warn 2>&1`));
     } catch (e) {
       // If no changes are found, then lerna returns an exit code of 1, so deal with that gracefully
       if (e.status === 1) {
@@ -108,7 +109,7 @@ const fetchLernaProjects = (log, runAllTests) => {
     }
   };
 
-  const changes = runAllTests ? [] : parseLernaList('changed');
+  const changes = runAllTests ? [] : parseLernaList('changed --no-ignore-changes');
 
   if (changes.length === 0) {
     log.writeln('No changes found, testing all projects');
@@ -198,6 +199,6 @@ Top-level grunt has been replaced by 'yarn build', and the output has moved from
   require('load-grunt-tasks')(grunt, {
     requireResolution: true,
     config: 'package.json',
-    pattern: ['@ephox/bedrock', 'grunt-shell']
+    pattern: ['@ephox/bedrock-server', 'grunt-shell']
   });
 };

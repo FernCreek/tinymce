@@ -1,10 +1,10 @@
 import { Assertions, Chain, Log, Mouse, Pipeline, UiFinder } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { TinyApis, TinyLoader, TinyUi, TinyDom } from '@ephox/mcagar';
 import MediaPlugin from 'tinymce/plugins/media/Plugin';
 import Theme from 'tinymce/themes/silver/Theme';
 
-import Utils from '../module/test/Utils';
+import * as Utils from '../module/test/Utils';
 import { document } from '@ephox/dom-globals';
 import { Html } from '@ephox/sugar';
 
@@ -13,7 +13,7 @@ UnitTest.asynctest('browser.tinymce.plugins.media.IsCachedResponseTest', functio
   Theme();
   MediaPlugin();
 
-  const sWaitForAndAssertNotification = function (expected) {
+  const sWaitForAndAssertNotification = function (expected: string) {
     return Chain.asStep(TinyDom.fromDom(document.body), [
       UiFinder.cWaitFor('Could not find notification', 'div.tox-notification__body'),
       Chain.mapper(Html.get),
@@ -26,7 +26,7 @@ UnitTest.asynctest('browser.tinymce.plugins.media.IsCachedResponseTest', functio
     const tinyApis = TinyApis(editor);
 
     Pipeline.async({}, [
-      tinyApis.sFocus,
+      tinyApis.sFocus(),
       Log.stepsAsStep('TBA', 'Media: test cached response', [
         tinyUi.sClickOnToolbar('click media button', 'button[aria-label="Insert/edit media"]'),
         Chain.asStep({}, [
@@ -58,7 +58,7 @@ UnitTest.asynctest('browser.tinymce.plugins.media.IsCachedResponseTest', functio
     toolbar: 'media',
     theme: 'silver',
     base_url: '/project/tinymce/js/tinymce',
-    media_url_resolver (data, resolve, reject) {
+    media_url_resolver(data, resolve, reject) {
       if (data.url === 'test') {
         resolve({
           html: '<div>x</div>' });

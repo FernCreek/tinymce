@@ -1,9 +1,8 @@
 import { document } from '@ephox/dom-globals';
 import { Option, Options } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
-import { Css, DomEvent, Element, Elements, Height, Insert, InsertAll, Node, SelectorFind, Width } from '@ephox/sugar';
+import { Css, DomEvent, Element, Elements, EventArgs, Height, Insert, InsertAll, Node, SelectorFind, Width } from '@ephox/sugar';
 
-import { SugarEvent } from 'ephox/alloy/alien/TypeDefinitions';
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
 import { Dragging } from 'ephox/alloy/api/behaviour/Dragging';
 import { Pinching } from 'ephox/alloy/api/behaviour/Pinching';
@@ -21,16 +20,8 @@ const resize = (element: Element, changeX: number, changeY: number): void => {
     throw new Error('heading not found');
   } else {
     heading.innerHTML = 'resizing';
-    const width = Css.getRaw(element, 'width').map((w) => {
-      return parseInt(w, 10);
-    }).getOrThunk(() => {
-      return Width.get(element);
-    });
-    const height = Css.getRaw(element, 'height').map((h) => {
-      return parseInt(h, 10);
-    }).getOrThunk(() => {
-      return Height.get(element);
-    });
+    const width = Css.getRaw(element, 'width').map((w) => parseInt(w, 10)).getOrThunk(() => Width.get(element));
+    const height = Css.getRaw(element, 'height').map((h) => parseInt(h, 10)).getOrThunk(() => Height.get(element));
     Css.set(element, 'width', (width + changeX) + 'px');
     Css.set(element, 'height', (height + changeY) + 'px');
   }
@@ -87,7 +78,7 @@ export default (): void => {
             ]),
 
             events: AlloyEvents.derive([
-              AlloyEvents.run<SugarEvent>(NativeEvents.click(), (component, simulatedEvent) => {
+              AlloyEvents.run<EventArgs>(NativeEvents.click(), (component, simulatedEvent) => {
                 // We have to remove the proxy first, because we are during a proxied event (click)
                 connection.unproxy(component);
                 connection.dispatchTo(SystemEvents.execute(), simulatedEvent.event());

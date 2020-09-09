@@ -1,29 +1,28 @@
 import { Keyboard, Pipeline } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
 import { Arr } from '@ephox/katamari';
 import { LegacyUnit, TinyDom, TinyLoader } from '@ephox/mcagar';
+import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
-import * as CaretContainer from 'tinymce/core/caret/CaretContainer';
-import KeyUtils from '../module/test/KeyUtils';
 import VK from 'tinymce/core/api/util/VK';
+import * as CaretContainer from 'tinymce/core/caret/CaretContainer';
+import * as Zwsp from 'tinymce/core/text/Zwsp';
 import Theme from 'tinymce/themes/silver/Theme';
-import Zwsp from 'tinymce/core/text/Zwsp';
+import * as KeyUtils from '../module/test/KeyUtils';
 
-UnitTest.asynctest('browser.tinymce.core.SelectionOverridesTest', function () {
-  const success = arguments[arguments.length - 2];
-  const failure = arguments[arguments.length - 1];
-  const suite = LegacyUnit.createSuite();
+UnitTest.asynctest('browser.tinymce.core.SelectionOverridesTest', function (success, failure) {
+  const suite = LegacyUnit.createSuite<Editor>();
 
   Theme();
 
-  const pressKey = function (key) {
-    return function (editor) {
+  const pressKey = function (key: number) {
+    return function (editor: Editor) {
       Keyboard.keystroke(key, {}, TinyDom.fromDom(editor.getBody()));
     };
   };
 
-  const exitPreTest = function (arrow, offset, expectedContent) {
+  const exitPreTest = function (arrow, offset: number, expectedContent: string) {
     return function (editor) {
       editor.setContent('<pre>abc</pre>');
 
@@ -39,7 +38,7 @@ UnitTest.asynctest('browser.tinymce.core.SelectionOverridesTest', function () {
     };
   };
 
-  const ok = function (a, label) {
+  const ok = function (a: boolean, label: string) {
     LegacyUnit.equal(a, true, label);
   };
 
@@ -167,8 +166,8 @@ UnitTest.asynctest('browser.tinymce.core.SelectionOverridesTest', function () {
       editor.selection.select(editor.dom.select('table')[0]);
       const offscreenSelection = editor.dom.select('.mce-offscreen-selection')[0];
 
-      ok(offscreenSelection.offsetLeft !== undefined, 'The offscreen selection\'s left border is undefined');
-      ok(offscreenSelection.offsetLeft < 0, 'The offscreen selection\'s left border is onscreen');
+      ok(offscreenSelection.offsetLeft !== undefined, `The offscreen selection's left border is undefined`);
+      ok(offscreenSelection.offsetLeft < 0, `The offscreen selection's left border is onscreen`);
       ok(offscreenSelection.offsetWidth + offscreenSelection.offsetLeft < 0,
         'The cE=false offscreen selection is visible on-screen. Right edge: ' +
         offscreenSelection.offsetLeft + '+' + offscreenSelection.offsetWidth + '=' +
@@ -194,7 +193,7 @@ UnitTest.asynctest('browser.tinymce.core.SelectionOverridesTest', function () {
   });
 
   suite.test('set range after ce=false element but lean backwards', function (editor) {
-    editor.setContent('<p><span contenteditable="false">Noneditable1</span><span contenteditable="false">Noneditable2</span></p>', {format: 'raw'});
+    editor.setContent('<p><span contenteditable="false">Noneditable1</span><span contenteditable="false">Noneditable2</span></p>', { format: 'raw' });
 
     const rng = document.createRange();
     const firstSpan = editor.dom.select('span[contenteditable=false]')[0];
@@ -228,18 +227,14 @@ UnitTest.asynctest('browser.tinymce.core.SelectionOverridesTest', function () {
   });
 
   suite.test('showCaret at TD', function (editor) {
-    let rng;
-
     editor.setContent('<table><tr><td contenteditable="false">x</td></tr></table>');
-    rng = editor._selectionOverrides.showCaret(1, editor.dom.select('td')[0], true);
+    const rng = editor._selectionOverrides.showCaret(1, editor.dom.select('td')[0], true);
     LegacyUnit.equal(true, rng === null, 'Should be null since TD is not a valid caret target');
   });
 
   suite.test('showCaret at TH', function (editor) {
-    let rng;
-
     editor.setContent('<table><tr><th contenteditable="false">x</th></tr></table>');
-    rng = editor._selectionOverrides.showCaret(1, editor.dom.select('th')[0], true);
+    const rng = editor._selectionOverrides.showCaret(1, editor.dom.select('th')[0], true);
     LegacyUnit.equal(true, rng === null, 'Should be null since TH is not a valid caret target');
   });
 
@@ -263,8 +258,44 @@ UnitTest.asynctest('browser.tinymce.core.SelectionOverridesTest', function () {
     editor._selectionOverrides.hideFakeCaret();
   });
 
+  suite.test('showBlockCaretContainer before ce=false element', function (editor) {
+    editor.setContent('<p contenteditable="false">a</p>');
+    const para = editor.dom.select('p[contenteditable=false]')[0];
+
+    // Place the selection at the end of the ce=false element
+    const rng = editor.dom.createRng();
+    rng.setStartBefore(para);
+    rng.setEndBefore(para);
+    editor.selection.setRng(rng);
+
+    const caretContainer = editor.dom.select('p[data-mce-caret=before]')[0];
+    editor._selectionOverrides.showBlockCaretContainer(caretContainer);
+
+    LegacyUnit.equal(caretContainer.hasAttribute('data-mce-bogus'), false, 'Bogus attribute should have been removed');
+    LegacyUnit.equal(caretContainer.hasAttribute('data-mce-caret'), false, 'Caret attribute should have been removed');
+    LegacyUnit.equal(editor.getContent(), '<p>\u00a0</p><p contenteditable="false">a</p>');
+  });
+
+  suite.test('showBlockCaretContainer after ce=false element', function (editor) {
+    editor.setContent('<p contenteditable="false">a</p>');
+    const para = editor.dom.select('p[contenteditable=false]')[0];
+
+    // Place the selection at the end of the ce=false element
+    const rng = editor.dom.createRng();
+    rng.setStartAfter(para);
+    rng.setEndAfter(para);
+    editor.selection.setRng(rng);
+
+    const caretContainer = editor.dom.select('p[data-mce-caret=after]')[0];
+    editor._selectionOverrides.showBlockCaretContainer(caretContainer);
+
+    LegacyUnit.equal(caretContainer.hasAttribute('data-mce-bogus'), false, 'Bogus attribute should have been removed');
+    LegacyUnit.equal(caretContainer.hasAttribute('data-mce-caret'), false, 'Caret attribute should have been removed');
+    LegacyUnit.equal(editor.getContent(), '<p contenteditable="false">a</p><p>\u00a0</p>');
+  });
+
   suite.test('set range in short ended element', function (editor) {
-    Arr.each(['br', 'img', 'input'], (elmName) => {
+    Arr.each([ 'br', 'img', 'input' ], (elmName) => {
       editor.setContent('<p><' + elmName + '/></p>');
       const paraElem = editor.dom.select('p')[0];
       const elem = editor.dom.select(elmName)[0];

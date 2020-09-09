@@ -1,7 +1,8 @@
-import { assert, UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { Gene, TestUniverse, Universe } from '@ephox/boss';
 import { Arr, Option } from '@ephox/katamari';
 import { oneAll } from 'ephox/robin/parent/Shared';
+import { KAssert } from '@ephox/katamari-assertions';
 
 UnitTest.test('SharedTest', function () {
   const data = TestUniverse(Gene('root', 'root', [
@@ -47,18 +48,18 @@ UnitTest.test('SharedTest', function () {
   const checkNone = function (target: string, ids: string[]) {
     checker(target, ids, function (look, items) {
       const actual = oneAll(data, look, items);
-      assert.eq(true, actual.isNone());
+      KAssert.eqNone('eq', actual);
     });
   };
 
   const check = function (expected: string, target: string, ids: string[]) {
     checker(target, ids, function (look, items) {
-      const actual = oneAll(data, look, items).getOrDie();
-      assert.eq(expected, actual.id);
+      const actual = oneAll(data, look, items).map((x) => x.id);
+      KAssert.eqSome('eq', expected, actual);
     });
   };
 
-  checkNone('li', ['1.3.1']);
-  checkNone('p', ['1.1.1', '1.3.1']);
-  check('1.2', 'ol', ['1.2.2.1', '1.2.1.2']);
+  checkNone('li', [ '1.3.1' ]);
+  checkNone('p', [ '1.1.1', '1.3.1' ]);
+  check('1.2', 'ol', [ '1.2.2.1', '1.2.1.2' ]);
 });

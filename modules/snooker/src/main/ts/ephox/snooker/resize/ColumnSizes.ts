@@ -1,12 +1,12 @@
 import { Arr, Fun, Option } from '@ephox/katamari';
 import { Css, Element } from '@ephox/sugar';
-import Blocks from '../lookup/Blocks';
-import CellUtils from '../util/CellUtils';
-import * as Util from '../util/Util';
-import Sizes from './Sizes';
+import { TableSize } from '../api/TableSize';
+import * as Blocks from '../lookup/Blocks';
 import { Warehouse } from '../model/Warehouse';
-import { TableSize } from './Types';
-import { BarPositions, RowInfo, ColInfo } from './BarPositions';
+import * as CellUtils from '../util/CellUtils';
+import * as Util from '../util/Util';
+import { BarPositions, ColInfo, RowInfo } from './BarPositions';
+import * as Sizes from './Sizes';
 
 const getRaw = function (cell: Element, property: string, getter: (e: Element) => number) {
   return Css.getRaw(cell, property).fold(function () {
@@ -24,7 +24,7 @@ const getRawH = function (cell: Element) {
   return getRaw(cell, 'height', Sizes.getHeight);
 };
 
-const getWidthFrom = function <T>(warehouse: Warehouse, direction: BarPositions<ColInfo>, getWidth: (cell: Element, tableSize: TableSize) => T, fallback: (deduced: Option<number>) => T, tableSize: TableSize) {
+const getWidthFrom = function <T> (warehouse: Warehouse, direction: BarPositions<ColInfo>, getWidth: (cell: Element, tableSize: TableSize) => T, fallback: (deduced: Option<number>) => T, tableSize: TableSize) {
   const columns = Blocks.columns(warehouse);
 
   const backups = Arr.map(columns, function (cellOption) {
@@ -98,7 +98,7 @@ const getRawHeights = function (warehouse: Warehouse, direction: BarPositions<Ro
   return getHeightFrom(warehouse, direction, getRawH, getDeduced);
 };
 
-export default {
+export {
   getRawWidths,
   getPixelWidths,
   getPercentageWidths,

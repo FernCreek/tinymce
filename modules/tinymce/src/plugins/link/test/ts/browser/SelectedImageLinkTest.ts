@@ -1,7 +1,7 @@
-import { FocusTools, Log, Pipeline, UiFinder, Waiter } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { Chain, FocusTools, Log, Pipeline, UiFinder, Waiter } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
-import { TinyApis, TinyDom, TinyLoader } from '@ephox/mcagar';
+import { TinyApis, TinyDom, TinyLoader, TinyUi } from '@ephox/mcagar';
 import { Body } from '@ephox/sugar';
 import LinkPlugin from 'tinymce/plugins/link/Plugin';
 import SilverTheme from 'tinymce/themes/silver/Theme';
@@ -14,6 +14,7 @@ UnitTest.asynctest('browser.tinymce.plugins.link.SelectedImageTest', (success, f
 
   TinyLoader.setupLight((editor, onSuccess, onFailure) => {
     const tinyApis = TinyApis(editor);
+    const tinyUi = TinyUi(editor);
     const doc = TinyDom.fromDom(document);
 
     Pipeline.async({}, [
@@ -21,7 +22,7 @@ UnitTest.asynctest('browser.tinymce.plugins.link.SelectedImageTest', (success, f
       Log.stepsAsStep('TBA', 'Link: images should be preserved when adding a link', [
         tinyApis.sSetContent('<p><img src="image.png"></p>'),
         tinyApis.sSelect('img', []),
-        TestLinkUi.sOpenLinkDialog,
+        TestLinkUi.sOpenLinkDialog(tinyUi),
         FocusTools.sSetActiveValue(doc, 'http://something'),
         UiFinder.sNotExists(Body.body(), '.tox-label:contains("Text to display")'),
         TestLinkUi.sClickSave,
@@ -37,7 +38,7 @@ UnitTest.asynctest('browser.tinymce.plugins.link.SelectedImageTest', (success, f
       Log.stepsAsStep('TBA', 'Link: images should be preserved when editing a link', [
         tinyApis.sSetContent('<p><a href="http://www.google.com/"><img src="image.png"></a></p>'),
         tinyApis.sSelect('a', []),
-        TestLinkUi.sOpenLinkDialog,
+        TestLinkUi.sOpenLinkDialog(tinyUi),
         FocusTools.sSetActiveValue(doc, 'http://something'),
         UiFinder.sNotExists(Body.body(), '.tox-label:contains("Text to display")'),
         TestLinkUi.sClickSave,
@@ -49,6 +50,21 @@ UnitTest.asynctest('browser.tinymce.plugins.link.SelectedImageTest', (success, f
             'p': 1
           })
         )
+      ]),
+      Log.stepsAsStep('TINY-4706', 'Link: images link urls should be able to be removed', [
+        tinyApis.sSetContent('<p><a href="http://www.google.com/" title="test"><img src="image.png"></a></p>'),
+        tinyApis.sSelect('a', []),
+        TestLinkUi.sOpenLinkDialog(tinyUi),
+        Chain.asStep(Body.body(), [
+          FocusTools.cSetActiveValue(''),
+          TestLinkUi.cFireEvent('input')
+        ]),
+        UiFinder.sNotExists(Body.body(), '.tox-label:contains("Text to display")'),
+        TestLinkUi.sAssertDialogContents({
+          url: '',
+          title: 'test'
+        }),
+        TestLinkUi.sClickCancel
       ]),
       TestLinkUi.sClearHistory
     ], onSuccess, onFailure);

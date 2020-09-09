@@ -5,11 +5,13 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Element } from '@ephox/dom-globals';
+import { Element, HTMLElement } from '@ephox/dom-globals';
 import { Arr, Option } from '@ephox/katamari';
-import EditorView from '../EditorView';
+import { Element as SugarElement, Focus } from '@ephox/sugar';
+import * as EditorView from '../EditorView';
 import { NotificationManagerImpl } from '../ui/NotificationManagerImpl';
 import Editor from './Editor';
+import * as Settings from './Settings';
 import Delay from './util/Delay';
 
 export interface NotificationManagerImpl {
@@ -20,11 +22,12 @@ export interface NotificationManagerImpl {
 }
 
 export interface NotificationSpec {
-  type: 'info' | 'warning' | 'error' | 'success';
+  type?: 'info' | 'warning' | 'error' | 'success';
   text: string;
   icon?: string;
   progressBar?: boolean;
   timeout?: number;
+  closeButton?: boolean;
 }
 
 export interface NotificationApi {
@@ -35,7 +38,7 @@ export interface NotificationApi {
   text: (text: string) => void;
   moveTo: (x: number, y: number) => void;
   moveRel: (element: Element, rel: 'tc-tc' | 'bc-bc' | 'bc-tc' | 'tc-bc' | 'banner') => void;
-  getEl: () => Element;
+  getEl: () => HTMLElement;
   settings: NotificationSpec;
 }
 
@@ -107,6 +110,12 @@ function NotificationManager(editor: Editor): NotificationManager {
       const notification = getImplementation().open(spec, function () {
         closeNotification(notification);
         reposition();
+        // Move focus back to editor when the last notification is closed,
+        // otherwise focus the top notification
+        getTopNotification().fold(
+          () => editor.focus(),
+          (top) => Focus.focus(SugarElement.fromDom(top.getEl()))
+        );
       });
 
       addNotification(notification);
@@ -129,13 +138,13 @@ function NotificationManager(editor: Editor): NotificationManager {
 
   const registerEvents = function (editor: Editor) {
     editor.on('SkinLoaded', function () {
-      const serviceMessage = editor.settings.service_message;
+      const serviceMessage = Settings.getServiceMessage(editor);
 
       if (serviceMessage) {
         open({
           text: serviceMessage,
           type: 'warning',
-          timeout: 0,
+          timeout: 0
         });
       }
     });
@@ -160,7 +169,9 @@ function NotificationManager(editor: Editor): NotificationManager {
      * Opens a new notification.
      *
      * @method open
-     * @param {Object} args Optional name/value settings collection contains things like timeout/color/message etc.
+     * @param {Object} args A <code>name: value</code> collection containing settings such as: <code>timeout</code>, <code>type</code>, and message (<code>text</code>).
+     * <br /><br />
+     * For information on the available settings, see: <a href="https://www.tiny.cloud/docs/advanced/creating-custom-notifications/">Create custom notifications</a>.
      */
     open,
 

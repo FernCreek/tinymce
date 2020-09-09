@@ -1,5 +1,5 @@
 import Theme from 'tinymce/themes/silver/Theme';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { Editor as McEditor, ApiChains } from '@ephox/mcagar';
 import { Pipeline, Logger, Chain, Step, UiFinder, Assertions, Guard } from '@ephox/agar';
 import { Cell, Fun } from '@ephox/katamari';
@@ -42,8 +42,7 @@ UnitTest.asynctest('Remove context menu on focusout', (success, failure) => {
       onAction: Fun.noop
     });
     ed.ui.registry.addContextToolbar('test-toolbar', {
-      predicate: (node) => {
-        return node.nodeName && node.nodeName.toLowerCase() === 'a'; },
+      predicate: (node) => node.nodeName && node.nodeName.toLowerCase() === 'a',
       items: 'alpha'
     });
   };

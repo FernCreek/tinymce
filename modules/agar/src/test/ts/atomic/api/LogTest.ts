@@ -1,6 +1,6 @@
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { Assertions, Pipeline, Step, Log, Chain } from 'ephox/agar/api/Main';
-import StepAssertions from 'ephox/agar/test/StepAssertions';
+import * as StepAssertions from 'ephox/agar/test/StepAssertions';
 import { Result } from '@ephox/katamari';
 
 UnitTest.asynctest('LogTest', (success, failure) => {
@@ -117,18 +117,19 @@ UnitTest.asynctest('LogTest', (success, failure) => {
   const logStepsPassTest = StepAssertions.testStepsPass(
     'TestCase-13: good-value',
     Log.steps('TestCase-13', 'Steps passing value', [
-      Step.stateful<any, any>((value, next, die) => {
+      Step.stateful<any, any>((value, next, _die) => {
         next('TestCase-13: good-value');
       })
     ])
   );
 
-  const logStepPassTestWithMessage = StepAssertions.testStepFail(
-    'right-value',
+  const logStepPassTestWithMessage = StepAssertions.testStepFailPprintError(
+    '"TestCase-13b: right-value"',
+    '"TestCase-13b: wrong-value"',
     StepAssertions.testStepsPass(
       'TestCase-13b: right-value',
       Log.steps('TestCase-13b', 'Steps passing value', [
-        Step.stateful<any, any>((value, next, die) => {
+        Step.stateful<any, any>((value, next, _die) => {
           next('TestCase-13b: wrong-value');
         })
       ])
@@ -138,7 +139,7 @@ UnitTest.asynctest('LogTest', (success, failure) => {
   const logChainsAsStepPassTest = StepAssertions.testStepsPass(
     'Value before chain',
     [
-      Step.stateful((value, next, die) => {
+      Step.stateful((value, next, _die) => {
         next('Value before chain');
       }),
       Log.chainsAsStep('TestCast-14', 'Chain failure', [

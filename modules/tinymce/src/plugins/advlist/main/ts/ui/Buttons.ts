@@ -8,9 +8,9 @@
 import { Menu } from '@ephox/bridge';
 import Editor from 'tinymce/core/api/Editor';
 import Tools from 'tinymce/core/api/util/Tools';
-import Settings from '../api/Settings';
-import Actions from '../core/Actions';
-import ListUtils from '../core/ListUtils';
+import * as Settings from '../api/Settings';
+import * as Actions from '../core/Actions';
+import * as ListUtils from '../core/ListUtils';
 
 const enum ListType {
   OrderedList = 'OL',
@@ -57,21 +57,19 @@ const addSplitButton = function (editor: Editor, id, tooltip, cmd, nodeName, sty
         return {
           type: 'choiceitem',
           value: itemValue,
-          icon: 'list-' +  iconStyle + '-' + iconName,
+          icon: 'list-' + iconStyle + '-' + iconName,
           text: displayText
         };
       });
       callback(items);
     },
     onAction: () => editor.execCommand(cmd),
-    onItemAction: (splitButtonApi, value) => {
+    onItemAction: (_splitButtonApi, value) => {
       Actions.applyListFormat(editor, nodeName, value);
     },
     select: (value) => {
       const listStyleType = ListUtils.getSelectedStyleType(editor);
-      return listStyleType.map((listStyle) => {
-        return value === listStyle;
-      }).getOr(false);
+      return listStyleType.map((listStyle) => value === listStyle).getOr(false);
     },
     onSetup: (api) => {
       const nodeChangeHandler = (e) => {
@@ -84,7 +82,7 @@ const addSplitButton = function (editor: Editor, id, tooltip, cmd, nodeName, sty
   });
 };
 
-const addButton = function (editor: Editor, id, tooltip, cmd, nodeName, styles) {
+const addButton = function (editor: Editor, id, tooltip, cmd, nodeName, _styles) {
   editor.ui.registry.addToggleButton(id, {
     active: false,
     tooltip,
@@ -102,7 +100,7 @@ const addButton = function (editor: Editor, id, tooltip, cmd, nodeName, styles) 
 };
 
 const addControl = function (editor, id, tooltip, cmd, nodeName, styles) {
-  if (styles.length > 0) {
+  if (styles.length > 1) {
     addSplitButton(editor, id, tooltip, cmd, nodeName, styles);
   } else {
     addButton(editor, id, tooltip, cmd, nodeName, styles);
@@ -114,6 +112,6 @@ const register = function (editor) {
   addControl(editor, 'bullist', 'Bullet list', 'InsertUnorderedList', ListType.UnorderedList, Settings.getBulletStyles(editor));
 };
 
-export default {
+export {
   register
 };

@@ -1,20 +1,25 @@
 import { Universe } from '@ephox/boss';
-import { Option, Struct } from '@ephox/katamari';
+import { Option } from '@ephox/katamari';
 
 export interface WordDecisionItem<E> {
-  item: () => E;
-  start: () => number;
-  finish: () => number;
-  text: () => string;
+  readonly item: E;
+  readonly start: number;
+  readonly finish: number;
+  readonly text: string;
 }
 
 export interface WordDecision<E> {
-  items: () => WordDecisionItem<E>[];
-  abort: () => boolean;
+  readonly items: WordDecisionItem<E>[];
+  readonly abort: boolean;
 }
 
-const make: <E> (item: E, start: number, finish: number, text: string) => WordDecisionItem<E> = Struct.immutable('item', 'start', 'finish', 'text');
-const decision: <E> (items: WordDecisionItem<E>[], abort: boolean) => WordDecision<E> = Struct.immutable('items', 'abort');
+const make = <E> (item: E, start: number, finish: number, text: string): WordDecisionItem<E> => ({
+  item, start, finish, text
+});
+
+const decision = <E> (items: WordDecisionItem<E>[], abort: boolean): WordDecision<E> => ({
+  items, abort
+});
 
 const detail = function <E, D> (universe: Universe<E, D>, item: E) {
   const text = universe.property().getText(item);
@@ -25,12 +30,12 @@ const fromItem = function <E, D> (universe: Universe<E, D>, item: E) {
   return universe.property().isText(item) ? detail(universe, item) : make(item, 0, 0, '');
 };
 
-const onEdge = function <E, D> (universe: Universe<E, D>, item: E, slicer: (text: string) => Option<[number, number]>) {
-  return decision([] as WordDecisionItem<E>[], true);
+const onEdge = function <E, D> (_universe: Universe<E, D>, _item: E, _slicer: (text: string) => Option<[number, number]>) {
+  return decision<E>([], true);
 };
 
-const onOther = function <E, D> (universe: Universe<E, D>, item: E, slicer: (text: string) => Option<[number, number]>) {
-  return decision([] as WordDecisionItem<E>[], false);
+const onOther = function <E, D> (_universe: Universe<E, D>, _item: E, _slicer: (text: string) => Option<[number, number]>) {
+  return decision<E>([], false);
 };
 
 // Returns: a 'decision' Struct with the items slot containing an empty array if None

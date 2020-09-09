@@ -1,4 +1,4 @@
-import { assert, UnitTest } from '@ephox/bedrock';
+import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Gene, TestUniverse } from '@ephox/boss';
 import { Fun, Option } from '@ephox/katamari';
 import { Direction, Traverse } from 'ephox/phoenix/api/data/Types';
@@ -35,7 +35,7 @@ UnitTest.test('WalkerPathTest', function () {
             Gene('3.2.1.1', 'node', []),
             Gene('3.2.1.2', 'node', [])
           ]),
-          Gene('3.2.2', 'node', []),
+          Gene('3.2.2', 'node', [])
         ]),
         Gene('3.3', 'node', [])
       ])

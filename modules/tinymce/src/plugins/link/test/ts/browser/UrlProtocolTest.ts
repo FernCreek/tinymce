@@ -1,13 +1,7 @@
-import {
-  Pipeline,
-  UiFinder,
-  FocusTools,
-  Log,
-  GeneralSteps,
-} from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { FocusTools, GeneralSteps, Log, Pipeline, UiFinder } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
-import { TinyApis, TinyDom, TinyLoader } from '@ephox/mcagar';
+import { TinyApis, TinyDom, TinyLoader, TinyUi } from '@ephox/mcagar';
 import LinkPlugin from 'tinymce/plugins/link/Plugin';
 import SilverTheme from 'tinymce/themes/silver/Theme';
 
@@ -20,6 +14,7 @@ UnitTest.asynctest('browser.tinymce.plugins.link.UrlProtocolTest', (success, fai
 
   TinyLoader.setupLight((editor, onSuccess, onFailure) => {
     const tinyApis = TinyApis(editor);
+    const tinyUi = TinyUi(editor);
     const doc = TinyDom.fromDom(document);
 
     const testProtocolConfirm = (url, expectedProtocol) => {
@@ -29,7 +24,7 @@ UnitTest.asynctest('browser.tinymce.plugins.link.UrlProtocolTest', (success, fai
       return GeneralSteps.sequence([
         tinyApis.sSetContent('<p>Something</p>'),
         tinyApis.sSetSelection([ 0, 0 ], ''.length, [ 0, 0 ], 'Something'.length),
-        TestLinkUi.sOpenLinkDialog,
+        TestLinkUi.sOpenLinkDialog(tinyUi),
 
         FocusTools.sSetActiveValue(doc, url),
         TestLinkUi.sAssertDialogContents({
@@ -52,7 +47,7 @@ UnitTest.asynctest('browser.tinymce.plugins.link.UrlProtocolTest', (success, fai
       return GeneralSteps.sequence([
         tinyApis.sSetContent('<p>Something</p>'),
         tinyApis.sSetSelection([ 0, 0 ], ''.length, [ 0, 0 ], 'Something'.length),
-        TestLinkUi.sOpenLinkDialog,
+        TestLinkUi.sOpenLinkDialog(tinyUi),
 
         FocusTools.sSetActiveValue(doc, url),
         TestLinkUi.sAssertDialogContents({
@@ -85,10 +80,13 @@ UnitTest.asynctest('browser.tinymce.plugins.link.UrlProtocolTest', (success, fai
         testNoProtocolConfirm('#test')
       ]),
       Log.stepsAsStep('TBA', 'Test regex for email link with mailto:', [
-        testNoProtocolConfirm('mailto:no-reply@example.com'),
+        testNoProtocolConfirm('mailto:no-reply@example.com')
       ]),
       Log.stepsAsStep('TBA', 'Test regex for email link', [
         testProtocolConfirm('no-reply@example.com', 'mailto:')
+      ]),
+      Log.stepsAsStep('TINY-5941', 'Test regex for path with @', [
+        testNoProtocolConfirm('imgs/test@2xdpi.jpg')
       ])
     ], onSuccess, onFailure);
   }, {

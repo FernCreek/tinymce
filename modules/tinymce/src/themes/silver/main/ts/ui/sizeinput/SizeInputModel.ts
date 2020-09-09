@@ -81,7 +81,7 @@ export const convertUnit = (size: Size, unit: SizeUnit): Option<number> => {
 
 export type SizeConversion = (input: Size) => Option<Size>;
 
-export const noSizeConversion: SizeConversion = (input: Size) => Option.none();
+export const noSizeConversion: SizeConversion = (_input: Size) => Option.none();
 
 export const ratioSizeConversion = (scale: number, unit: SizeUnit): SizeConversion =>
   (size: Size) => convertUnit(size, unit).map((value) => ({ value: value * scale, unit }));
@@ -89,9 +89,7 @@ export const ratioSizeConversion = (scale: number, unit: SizeUnit): SizeConversi
 export const makeRatioConverter = (currentFieldText: string, otherFieldText: string): SizeConversion => {
   const cValue = parseSize(currentFieldText).toOption();
   const oValue = parseSize(otherFieldText).toOption();
-  return Options.lift2(cValue, oValue, (cSize: Size, oSize: Size) => {
-    return convertUnit(cSize, oSize.unit).map((val) => oSize.value / val).map(
-      (r) => ratioSizeConversion(r, oSize.unit)
-    ).getOr(noSizeConversion);
-  }).getOr(noSizeConversion);
+  return Options.lift2(cValue, oValue, (cSize: Size, oSize: Size) => convertUnit(cSize, oSize.unit).map((val) => oSize.value / val).map(
+    (r) => ratioSizeConversion(r, oSize.unit)
+  ).getOr(noSizeConversion)).getOr(noSizeConversion);
 };

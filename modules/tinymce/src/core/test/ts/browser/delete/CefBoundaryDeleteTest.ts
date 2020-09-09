@@ -1,23 +1,25 @@
 import { ApproxStructure, GeneralSteps, Keys, Logger, Pipeline } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
+import { Unicode } from '@ephox/katamari';
 import { TinyActions, TinyApis, TinyLoader } from '@ephox/mcagar';
+import Editor from 'tinymce/core/api/Editor';
+import * as Zwsp from 'tinymce/core/text/Zwsp';
 import Theme from 'tinymce/themes/silver/Theme';
-import Zwsp from 'tinymce/core/text/Zwsp';
 
-UnitTest.asynctest('browser.tinymce.core.delete.CefBoundaryDeleteTest',  (success, failure) => {
+UnitTest.asynctest('browser.tinymce.core.delete.CefBoundaryDeleteTest', (success, failure) => {
   Theme();
 
-  const sTestDelete = function (editor, tinyApis, tinyActions) {
+  const sTestDelete = function (_editor: Editor, tinyApis: TinyApis, tinyActions: TinyActions) {
     return GeneralSteps.sequence([
-      tinyApis.sFocus,
+      tinyApis.sFocus(),
 
       Logger.t('Should delete single space between cef elements', GeneralSteps.sequence([
         tinyApis.sSetContent('<p><span contenteditable="false">a</span>&nbsp;<span contenteditable="false">b</span>&nbsp;</p>'),
-        tinyApis.sSetSelection([0, 2], 1, [0, 2], 1),
+        tinyApis.sSetSelection([ 0, 2 ], 1, [ 0, 2 ], 1),
         tinyActions.sContentKeystroke(Keys.backspace(), {}),
-        tinyApis.sAssertSelection([0, 1], 1, [0, 1], 1),
+        tinyApis.sAssertSelection([ 0, 1 ], 1, [ 0, 1 ], 1),
         tinyApis.sAssertContentStructure(
-          ApproxStructure.build(function (s, str, arr) {
+          ApproxStructure.build(function (s, str, _arr) {
             return s.element('body', {
               children: [
                 s.element('p', {
@@ -39,7 +41,7 @@ UnitTest.asynctest('browser.tinymce.core.delete.CefBoundaryDeleteTest',  (succes
                         s.text(str.is('b'))
                       ]
                     }),
-                    s.text(str.is('\u00a0'))
+                    s.text(str.is(Unicode.nbsp))
                   ]
                 })
               ]
@@ -50,11 +52,11 @@ UnitTest.asynctest('browser.tinymce.core.delete.CefBoundaryDeleteTest',  (succes
 
       Logger.t('Should add fake caret if we delete content beside cef elements', GeneralSteps.sequence([
         tinyApis.sSetContent('<p><span contenteditable="false">a</span>&nbsp;</p>'),
-        tinyApis.sSetSelection([0, 2], 1, [0, 2], 1),
+        tinyApis.sSetSelection([ 0, 2 ], 1, [ 0, 2 ], 1),
         tinyActions.sContentKeystroke(Keys.backspace(), {}),
-        tinyApis.sAssertSelection([0, 1], 1, [0, 1], 1),
+        tinyApis.sAssertSelection([ 0, 1 ], 1, [ 0, 1 ], 1),
         tinyApis.sAssertContentStructure(
-          ApproxStructure.build(function (s, str, arr) {
+          ApproxStructure.build(function (s, str, _arr) {
             return s.element('body', {
               children: [
                 s.element('p', {
@@ -78,11 +80,11 @@ UnitTest.asynctest('browser.tinymce.core.delete.CefBoundaryDeleteTest',  (succes
 
       Logger.t('Should add fake caret if we delete range beside cef', GeneralSteps.sequence([
         tinyApis.sSetContent('<p><span contenteditable="false">a</span>&nbsp;abc</p>'),
-        tinyApis.sSetSelection([0, 2], 0, [0, 2], 4),
+        tinyApis.sSetSelection([ 0, 2 ], 0, [ 0, 2 ], 4),
         tinyActions.sContentKeystroke(Keys.backspace(), {}),
-        tinyApis.sAssertSelection([0, 1], 1, [0, 1], 1),
+        tinyApis.sAssertSelection([ 0, 1 ], 1, [ 0, 1 ], 1),
         tinyApis.sAssertContentStructure(
-          ApproxStructure.build(function (s, str, arr) {
+          ApproxStructure.build(function (s, str, _arr) {
             return s.element('body', {
               children: [
                 s.element('p', {

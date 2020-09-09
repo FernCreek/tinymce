@@ -1,5 +1,5 @@
-import { Keyboard, Keys, Log, Pipeline, UiFinder, Step } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { Keyboard, Keys, Log, Pipeline, Step, UiFinder } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
 import { navigator } from '@ephox/dom-globals';
 import { TinyApis, TinyLoader } from '@ephox/mcagar';
 import { Body, Element } from '@ephox/sugar';
@@ -17,7 +17,7 @@ UnitTest.asynctest('browser.tinymce.plugins.charmap.AutocompletionTest', (succes
 
     Pipeline.async({},
       Log.steps('TBA', 'Charmap: Autocomplete, trigger an autocomplete and check it appears', [
-        tinyApis.sFocus,
+        tinyApis.sFocus(),
         tinyApis.sSetContent('<p>:co</p>'),
         tinyApis.sSetCursor([ 0, 0 ], 3),
         Keyboard.sKeypress(eDoc, 'o'.charCodeAt(0), { }),
@@ -28,11 +28,11 @@ UnitTest.asynctest('browser.tinymce.plugins.charmap.AutocompletionTest', (succes
         // is empty. Not sure if it's an encoding issue for entities.
         navigator.userAgent.indexOf('PhantomJS') > -1 ? Step.pass : tinyApis.sAssertContent('<p>₡</p>')
       ])
-    , onSuccess, onFailure);
+      , onSuccess, onFailure);
   }, {
     plugins: 'charmap',
     toolbar: 'charmap',
     theme: 'silver',
-    base_url: '/project/tinymce/js/tinymce',
+    base_url: '/project/tinymce/js/tinymce'
   }, success, failure);
 });

@@ -1,5 +1,5 @@
 import { GeneralSteps, Logger, Pipeline, Step } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { InlineContent } from '@ephox/bridge';
 import { Arr, Obj } from '@ephox/katamari';
 import { TinyActions, TinyApis, TinyLoader, TinyUi } from '@ephox/mcagar';
@@ -54,15 +54,13 @@ UnitTest.asynctest('Editor Autocompleter Reload test', (success, failure) => {
     const tinyUi = TinyUi(editor);
     const tinyApis = TinyApis(editor);
 
-    const sSetContentAndTrigger = (content: string, triggerCharCode: number) => {
-      return GeneralSteps.sequence([
-        tinyApis.sSetContent(`<p>${content}</p>`),
-        tinyApis.sSetCursor([ 0, 0 ], content.length),
-        tinyApis.sNodeChanged,
-        tinyActions.sContentKeypress(triggerCharCode, { }),
-        sWaitForAutocompleteToOpen
-      ]);
-    };
+    const sSetContentAndTrigger = (content: string, triggerCharCode: number) => GeneralSteps.sequence([
+      tinyApis.sSetContent(`<p>${content}</p>`),
+      tinyApis.sSetCursor([ 0, 0 ], content.length),
+      tinyApis.sNodeChanged(),
+      tinyActions.sContentKeypress(triggerCharCode, { }),
+      sWaitForAutocompleteToOpen
+    ]);
 
     const sTestAutocompleter = (scenario: Scenario) => GeneralSteps.sequence([
       sSetContentAndTrigger(':aa', ':'.charCodeAt(0)),
@@ -77,7 +75,7 @@ UnitTest.asynctest('Editor Autocompleter Reload test', (success, failure) => {
     Pipeline.async({ }, Logger.ts(
       'Trigger autocompleter and reload items',
       [
-        tinyApis.sFocus,
+        tinyApis.sFocus(),
         sTestAutocompleter({
           action: Step.pass,
           assertion: sAssertInitialMenu,

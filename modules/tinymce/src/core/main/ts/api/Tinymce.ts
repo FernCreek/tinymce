@@ -33,6 +33,7 @@ import ScriptLoader, { ScriptLoaderConstructor } from './dom/ScriptLoader';
 import Resource from './Resource';
 import Selection from './dom/Selection';
 import Sizzle from './dom/Sizzle';
+import TextSeeker from './dom/TextSeeker';
 import TreeWalker, { TreeWalkerConstructor } from './dom/TreeWalker';
 import Rect from './geom/Rect';
 import DomParser, { DomParserSettings } from './html/DomParser';
@@ -59,6 +60,7 @@ import URI, { URIConstructor } from './util/URI';
 import VK from './util/VK';
 import XHR from './util/XHR';
 import { UndoManager as UndoManagerType } from '../undo/UndoManagerTypes';
+import { StyleSheetLoader } from './dom/StyleSheetLoader';
 
 export interface TinyMCE extends EditorManager {
 
@@ -89,6 +91,7 @@ export interface TinyMCE extends EditorManager {
     Sizzle: any;
     DomQuery: DomQueryConstructor;
     TreeWalker: TreeWalkerConstructor;
+    TextSeeker: (dom: DOMUtils, isBlockBoundary?: (node: Node) => boolean) => TextSeeker;
     DOMUtils: DOMUtils;
     ScriptLoader: ScriptLoaderConstructor;
     RangeUtils: (dom: DOMUtils) => RangeUtils;
@@ -96,6 +99,7 @@ export interface TinyMCE extends EditorManager {
     ControlSelection: (selection: Selection, editor: Editor) => ControlSelection;
     BookmarkManager: (selection: Selection) => BookmarkManager;
     Selection: (dom: DOMUtils, win: Window, serializer, editor: Editor) => Selection;
+    StyleSheetLoader: StyleSheetLoader;
     Event: EventUtils;
   };
 
@@ -126,7 +130,7 @@ export interface TinyMCE extends EditorManager {
 
   // Global instances
   DOM: DOMUtils;
-  ScriptLoader: ScriptLoaderConstructor;
+  ScriptLoader: ScriptLoader;
   PluginManager: AddOnManager<void | Plugin>;
   ThemeManager: AddOnManager<Theme>;
   IconManager: IconManager;
@@ -218,10 +222,12 @@ const publicApi = {
     Sizzle,
     DomQuery,
     TreeWalker,
+    TextSeeker,
     DOMUtils,
     ScriptLoader,
     RangeUtils,
     Serializer: DomSerializer,
+    StyleSheetLoader,
     ControlSelection,
     BookmarkManager,
     Selection,

@@ -11,8 +11,8 @@ import Editor from 'tinymce/core/api/Editor';
 import Promise from 'tinymce/core/api/util/Promise';
 import Tools from 'tinymce/core/api/util/Tools';
 import XHR from 'tinymce/core/api/util/XHR';
-import Settings from '../api/Settings';
-import Templates from '../core/Templates';
+import * as Settings from '../api/Settings';
+import * as Templates from '../core/Templates';
 import * as Utils from '../core/Utils';
 
 interface UrlTemplate {
@@ -56,11 +56,7 @@ const getPreviewContent = (editor: Editor, html: string) => {
         '">';
     });
 
-    let bodyClass = editor.settings.body_class || '';
-    if (bodyClass.indexOf('=') !== -1) {
-      bodyClass = editor.getParam('body_class', '', 'hash');
-      bodyClass = bodyClass[editor.id] || '';
-    }
+    const bodyClass = Settings.getBodyClass(editor);
 
     const encode = editor.dom.encode;
 
@@ -105,34 +101,28 @@ const open = (editor: Editor, templateList: ExternalTemplate[]) => {
     }));
   };
 
-  const createSelectBoxItems = (templates: InternalTemplate[]) => {
-    return Arr.map(templates, (t) => {
-      return {
-        text: t.text,
-        value: t.text
-      };
-    });
+  const createSelectBoxItems = (templates: InternalTemplate[]) => Arr.map(templates, (t) => ({
+    text: t.text,
+    value: t.text
+  }));
+
+  const findTemplate = (templates: InternalTemplate[], templateTitle: string) => Arr.find(templates, (t) => t.text === templateTitle);
+
+  const loadFailedAlert = (api: Types.Dialog.DialogInstanceApi<DialogData>) => {
+    editor.windowManager.alert('Could not load the specified template.', () => api.focus('template'));
   };
 
-  const findTemplate = (templates: InternalTemplate[], templateTitle: string) => {
-    return Arr.find(templates, (t) => {
-      return t.text === templateTitle;
-    });
-  };
-
-  const getTemplateContent = (t: InternalTemplate) => {
-    return new Promise<string>((resolve, reject) => {
-      t.value.url.fold(() => resolve(t.value.content.getOr('')), (url) => XHR.send({
-        url,
-        success (html: string) {
-          resolve(html);
-        },
-        error: (e) => {
-          reject(e);
-        }
-      }));
-    });
-  };
+  const getTemplateContent = (t: InternalTemplate) => new Promise<string>((resolve, reject) => {
+    t.value.url.fold(() => resolve(t.value.content.getOr('')), (url) => XHR.send({
+      url,
+      success(html: string) {
+        resolve(html);
+      },
+      error: (e) => {
+        reject(e);
+      }
+    }));
+  });
 
   const onChange = (templates: InternalTemplate[], updateDialog: UpdateDialogCallback) => (api: Types.Dialog.DialogInstanceApi<DialogData>, change: { name: string }) => {
     if (change.name === 'template') {
@@ -141,7 +131,10 @@ const open = (editor: Editor, templateList: ExternalTemplate[]) => {
         api.block('Loading...');
         getTemplateContent(t).then((previewHtml) => {
           updateDialog(api, t, previewHtml);
-          api.unblock();
+        }).catch(() => {
+          updateDialog(api, t, '');
+          api.disable('save');
+          loadFailedAlert(api);
         });
       });
     }
@@ -153,6 +146,9 @@ const open = (editor: Editor, templateList: ExternalTemplate[]) => {
       getTemplateContent(t).then((previewHtml) => {
         Templates.insertTemplate(editor, false, previewHtml);
         api.close();
+      }).catch(() => {
+        api.disable('save');
+        loadFailedAlert(api);
       });
     });
   };
@@ -172,7 +168,7 @@ const open = (editor: Editor, templateList: ExternalTemplate[]) => {
         {
           type: 'cancel',
           name: 'cancel',
-          text: 'Cancel',
+          text: 'Cancel'
         },
         {
           type: 'submit',
@@ -221,6 +217,10 @@ const open = (editor: Editor, templateList: ExternalTemplate[]) => {
 
     getTemplateContent(templates[0]).then((previewHtml) => {
       updateDialog(dialogApi, templates[0], previewHtml);
+    }).catch(() => {
+      updateDialog(dialogApi, templates[0], '');
+      dialogApi.disable('save');
+      loadFailedAlert(dialogApi);
     });
   };
 
@@ -228,6 +228,6 @@ const open = (editor: Editor, templateList: ExternalTemplate[]) => {
   optTemplates.each(openDialog);
 };
 
-export default {
+export {
   open
 };

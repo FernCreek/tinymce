@@ -1,19 +1,14 @@
 import { Arr } from '@ephox/katamari';
-import Deltas from '../calc/Deltas';
-import DetailsList from '../model/DetailsList';
-import { Warehouse } from '../model/Warehouse';
-import ColumnSizes from './ColumnSizes';
-import Recalculations from './Recalculations';
-import Sizes from './Sizes';
-import TableSize from './TableSize';
-import CellUtils from '../util/CellUtils';
-import { RowData, Detail } from '../api/Structs';
 import { Element } from '@ephox/sugar';
+import { Detail, RowData } from '../api/Structs';
+import { TableSize } from '../api/TableSize';
+import * as Deltas from '../calc/Deltas';
+import { Warehouse } from '../model/Warehouse';
+import * as CellUtils from '../util/CellUtils';
 import { BarPositions, ColInfo, RowInfo } from './BarPositions';
-
-const getWarehouse = function <T extends Detail>(list: RowData<T>[]) {
-  return Warehouse.generate(list);
-};
+import * as ColumnSizes from './ColumnSizes';
+import * as Recalculations from './Recalculations';
+import * as Sizes from './Sizes';
 
 const sumUp = function (newSize: number[]) {
   return Arr.foldr(newSize, function (b, a) {
@@ -21,15 +16,9 @@ const sumUp = function (newSize: number[]) {
   }, 0);
 };
 
-const getTableWarehouse = function (table: Element) {
-  const list = DetailsList.fromTable(table);
-  return getWarehouse(list);
-};
-
-const adjustWidth = function (table: Element, delta: number, index: number, direction: BarPositions<ColInfo>) {
-  const tableSize = TableSize.getTableSize(table);
+const adjustWidth = function (table: Element, delta: number, index: number, direction: BarPositions<ColInfo>, tableSize: TableSize) {
   const step = tableSize.getCellDelta(delta);
-  const warehouse = getTableWarehouse(table);
+  const warehouse = Warehouse.fromTable(table);
   const widths = tableSize.getWidths(warehouse, direction, tableSize);
 
   // Calculate all of the new widths for columns
@@ -41,17 +30,17 @@ const adjustWidth = function (table: Element, delta: number, index: number, dire
   // Set the width of each cell based on the column widths
   const newSizes = Recalculations.recalculateWidth(warehouse, newWidths);
   Arr.each(newSizes, function (cell) {
-    tableSize.setElementWidth(cell.element(), cell.width());
+    tableSize.setElementWidth(cell.element, cell.width);
   });
 
   // Set the overall width of the table.
-  if (index === warehouse.grid().columns() - 1) {
-    tableSize.setTableWidth(table, newWidths, step);
+  if (index === warehouse.grid.columns() - 1) {
+    tableSize.adjustTableWidth(step);
   }
 };
 
 const adjustHeight = function (table: Element, delta: number, index: number, direction: BarPositions<RowInfo>) {
-  const warehouse = getTableWarehouse(table);
+  const warehouse = Warehouse.fromTable(table);
   const heights = ColumnSizes.getPixelHeights(warehouse, direction);
 
   const newHeights = Arr.map(heights, function (dy, i) {
@@ -74,26 +63,18 @@ const adjustHeight = function (table: Element, delta: number, index: number, dir
 };
 
 // Ensure that the width of table cells match the passed in table information.
-const adjustWidthTo = function <T extends Detail>(table: Element, list: RowData<T>[], direction: BarPositions<ColInfo>) {
-  const tableSize = TableSize.getTableSize(table);
-  const warehouse = getWarehouse(list);
+const adjustWidthTo = function <T extends Detail> (table: Element, list: RowData<T>[], direction: BarPositions<ColInfo>, tableSize: TableSize) {
+  const warehouse = Warehouse.generate(list);
   const widths = tableSize.getWidths(warehouse, direction, tableSize);
 
   // Set the width of each cell based on the column widths
   const newSizes = Recalculations.recalculateWidth(warehouse, widths);
   Arr.each(newSizes, function (cell) {
-    tableSize.setElementWidth(cell.element(), cell.width());
+    tableSize.setElementWidth(cell.element, cell.width);
   });
-
-  // const total = Arr.foldr(widths, function (b, a) { return a + b; }, 0);
-  if (newSizes.length > 0) {
-    // tableSize.setTableWidth(table, total);
-    // WARNING, this may be incorrect, the commented out code above was the original
-    tableSize.setTableWidth(table, widths, tableSize.getCellDelta(0));
-  }
 };
 
-export default {
+export {
   adjustWidth,
   adjustHeight,
   adjustWidthTo

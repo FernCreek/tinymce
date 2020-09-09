@@ -1,7 +1,7 @@
 import { ApproxStructure, Assertions, Chain, Logger, Mouse, Pipeline, Step, UiFinder, Waiter } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { Cell } from '@ephox/katamari';
-import { TinyLoader } from '@ephox/mcagar';
+import { TinyLoader, TinyUi } from '@ephox/mcagar';
 import { Body } from '@ephox/sugar';
 
 import Editor from 'tinymce/core/api/Editor';
@@ -14,10 +14,12 @@ UnitTest.asynctest('OxideBlockedDialogTest', (success, failure) => {
 
   TinyLoader.setup(
     (editor, onSuccess, onFailure) => {
+      const tinyUi = TinyUi(editor);
+
       Pipeline.async({ }, Logger.ts(
         'Check structure of font format',
         [
-          Mouse.sClickOn(Body.body(), '.tox-toolbar button'),
+          tinyUi.sClickOnToolbar('Click on toolbar button', 'button'),
           UiFinder.sWaitForVisible('Waiting for dialog', Body.body(), '[role="dialog"]'),
           Mouse.sClickOn(Body.body(), 'button:contains("Make Busy")'),
           Waiter.sTryUntil(
@@ -26,36 +28,34 @@ UnitTest.asynctest('OxideBlockedDialogTest', (success, failure) => {
               UiFinder.cFindIn('[role="dialog"]'),
               Assertions.cAssertStructure(
                 'Checking dialog structure to see where "busy" is',
-                ApproxStructure.build((s, str, arr) => {
-                  return s.element('div', {
-                    classes: [ arr.has('tox-dialog') ],
-                    children: [
-                      s.element('div', {
-                        classes: [ arr.has('tox-dialog__header') ]
-                      }),
-                      s.element('div', {
-                        classes: [ arr.has('tox-dialog__content-js') ]
-                      }),
-                      s.element('div', {
-                        classes: [ arr.has('tox-dialog__footer') ]
-                      }),
-                      s.element('div', {
-                        classes: [ arr.has('tox-dialog__busy-spinner') ],
-                        children: [
-                          s.element('div', {
-                            classes: [ arr.has('tox-spinner') ],
-                            children: [
-                              // The three loading dots
-                              s.element('div', { }),
-                              s.element('div', { }),
-                              s.element('div', { })
-                            ]
-                          })
-                        ]
-                      })
-                    ]
-                  });
-                })
+                ApproxStructure.build((s, str, arr) => s.element('div', {
+                  classes: [ arr.has('tox-dialog') ],
+                  children: [
+                    s.element('div', {
+                      classes: [ arr.has('tox-dialog__header') ]
+                    }),
+                    s.element('div', {
+                      classes: [ arr.has('tox-dialog__content-js') ]
+                    }),
+                    s.element('div', {
+                      classes: [ arr.has('tox-dialog__footer') ]
+                    }),
+                    s.element('div', {
+                      classes: [ arr.has('tox-dialog__busy-spinner') ],
+                      children: [
+                        s.element('div', {
+                          classes: [ arr.has('tox-spinner') ],
+                          children: [
+                            // The three loading dots
+                            s.element('div', { }),
+                            s.element('div', { }),
+                            s.element('div', { })
+                          ]
+                        })
+                      ]
+                    })
+                  ]
+                }))
               )
             ])
           ),
@@ -68,22 +68,20 @@ UnitTest.asynctest('OxideBlockedDialogTest', (success, failure) => {
               UiFinder.cFindIn('[role="dialog"]'),
               Assertions.cAssertStructure(
                 'Checking dialog structure to see where "busy" is',
-                ApproxStructure.build((s, str, arr) => {
-                  return s.element('div', {
-                    classes: [ arr.has('tox-dialog') ],
-                    children: [
-                      s.element('div', {
-                        classes: [ arr.has('tox-dialog__header') ]
-                      }),
-                      s.element('div', {
-                        classes: [ arr.has('tox-dialog__content-js') ]
-                      }),
-                      s.element('div', {
-                        classes: [ arr.has('tox-dialog__footer') ]
-                      })
-                    ]
-                  });
-                })
+                ApproxStructure.build((s, str, arr) => s.element('div', {
+                  classes: [ arr.has('tox-dialog') ],
+                  children: [
+                    s.element('div', {
+                      classes: [ arr.has('tox-dialog__header') ]
+                    }),
+                    s.element('div', {
+                      classes: [ arr.has('tox-dialog__content-js') ]
+                    }),
+                    s.element('div', {
+                      classes: [ arr.has('tox-dialog__footer') ]
+                    })
+                  ]
+                }))
               )
             ])
           )

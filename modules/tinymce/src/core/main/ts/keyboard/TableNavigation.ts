@@ -8,15 +8,15 @@
 import { HTMLElement, Range, Element } from '@ephox/dom-globals';
 import { Arr, Option, Fun } from '@ephox/katamari';
 import { Element as SugarElement, Attr, Insert } from '@ephox/sugar';
-import CaretFinder from '../caret/CaretFinder';
+import * as CaretFinder from '../caret/CaretFinder';
 import CaretPosition from '../caret/CaretPosition';
 import * as CefUtils from './CefUtils';
 import { getPositionsAbove, findClosestHorizontalPositionFromPoint, getPositionsBelow, getPositionsUntilPreviousLine, getPositionsUntilNextLine, BreakType, LineInfo } from '../caret/LineReader';
 import { findClosestPositionInAboveCell, findClosestPositionInBelowCell } from '../caret/TableCells';
-import ScrollIntoView from '../dom/ScrollIntoView';
+import * as ScrollIntoView from '../dom/ScrollIntoView';
 import Editor from '../api/Editor';
-import NodeType from '../dom/NodeType';
-import Settings from '../api/Settings';
+import * as NodeType from '../dom/NodeType';
+import * as Settings from '../api/Settings';
 import { isFakeCaretTableBrowser } from '../caret/FakeCaret';
 
 const moveToRange = (editor: Editor, rng: Range) => {
@@ -24,9 +24,7 @@ const moveToRange = (editor: Editor, rng: Range) => {
   ScrollIntoView.scrollRangeIntoView(editor, rng);
 };
 
-const hasNextBreak = (getPositionsUntil, scope: HTMLElement, lineInfo: LineInfo): boolean => {
-  return lineInfo.breakAt.map((breakPos) => getPositionsUntil(scope, breakPos).breakAt.isSome()).getOr(false);
-};
+const hasNextBreak = (getPositionsUntil, scope: HTMLElement, lineInfo: LineInfo): boolean => lineInfo.breakAt.map((breakPos) => getPositionsUntil(scope, breakPos).breakAt.isSome()).getOr(false);
 
 const startsWithWrapBreak = (lineInfo: LineInfo) => lineInfo.breakType === BreakType.Wrap && lineInfo.positions.length === 0;
 
@@ -53,7 +51,7 @@ const isCaretAtStartOrEndOfTable = (forward: boolean, rng: Range, table: Element
   return CaretFinder.positionIn(!forward, table).map((pos) => pos.isEqual(caretPos)).getOr(false);
 };
 
-const navigateHorizontally = (editor, forward: boolean, table: HTMLElement, td: HTMLElement): boolean => {
+const navigateHorizontally = (editor, forward: boolean, table: HTMLElement, _td: HTMLElement): boolean => {
   const rng = editor.selection.getRng();
   const direction = forward ? 1 : -1;
 
@@ -66,29 +64,17 @@ const navigateHorizontally = (editor, forward: boolean, table: HTMLElement, td: 
   return false;
 };
 
-const getClosestAbovePosition = (root: HTMLElement, table: HTMLElement, start: CaretPosition): CaretPosition => {
-  return findClosestPositionInAboveCell(table, start).orThunk(
-    () => {
-      return Arr.head(start.getClientRects()).bind((rect) => {
-        return findClosestHorizontalPositionFromPoint(getPositionsAbove(root, CaretPosition.before(table)), rect.left);
-      });
-    }
-  ).getOr(CaretPosition.before(table));
-};
+const getClosestAbovePosition = (root: HTMLElement, table: HTMLElement, start: CaretPosition): CaretPosition => findClosestPositionInAboveCell(table, start).orThunk(
+  () => Arr.head(start.getClientRects()).bind((rect) => findClosestHorizontalPositionFromPoint(getPositionsAbove(root, CaretPosition.before(table)), rect.left))
+).getOr(CaretPosition.before(table));
 
-const getClosestBelowPosition = (root: HTMLElement, table: HTMLElement, start: CaretPosition): CaretPosition => {
-  return findClosestPositionInBelowCell(table, start).orThunk(
-    () => {
-      return Arr.head(start.getClientRects()).bind((rect) => {
-        return findClosestHorizontalPositionFromPoint(getPositionsBelow(root, CaretPosition.after(table)), rect.left);
-      });
-    }
-  ).getOr(CaretPosition.after(table));
-};
+const getClosestBelowPosition = (root: HTMLElement, table: HTMLElement, start: CaretPosition): CaretPosition => findClosestPositionInBelowCell(table, start).orThunk(
+  () => Arr.head(start.getClientRects()).bind((rect) => findClosestHorizontalPositionFromPoint(getPositionsBelow(root, CaretPosition.after(table)), rect.left))
+).getOr(CaretPosition.after(table));
 
 const getTable = (previous: boolean, pos: CaretPosition): Option<HTMLElement> => {
   const node = pos.getNode(previous);
-  return NodeType.isElement(node) && node.nodeName === 'TABLE' ? Option.some(node as HTMLElement) : Option.none();
+  return NodeType.isElement(node) && node.nodeName === 'TABLE' ? Option.some(node) : Option.none();
 };
 
 const renderBlock = (down: boolean, editor: Editor, table: HTMLElement, pos: CaretPosition) => {
@@ -122,12 +108,10 @@ const moveCaret = (editor: Editor, down: boolean, pos: CaretPosition) => {
 
   table.fold(
     () => moveToRange(editor, pos.toRange()),
-    (table) => {
-      return CaretFinder.positionIn(last, editor.getBody()).filter((lastPos) => lastPos.isEqual(pos)).fold(
-        () => moveToRange(editor, pos.toRange()),
-        (_) => renderBlock(down, editor, table, pos)
-      );
-    }
+    (table) => CaretFinder.positionIn(last, editor.getBody()).filter((lastPos) => lastPos.isEqual(pos)).fold(
+      () => moveToRange(editor, pos.toRange()),
+      (_) => renderBlock(down, editor, table, pos)
+    )
   );
 };
 
@@ -149,21 +133,9 @@ const navigateVertically = (editor, down: boolean, table: HTMLElement, td: HTMLE
   }
 };
 
-const moveH = (editor, forward: boolean) => () => {
-  return Option.from(editor.dom.getParent(editor.selection.getNode(), 'td,th')).bind((td) => {
-    return Option.from(editor.dom.getParent(td, 'table')).map((table) => {
-      return navigateHorizontally(editor, forward, table, td);
-    });
-  }).getOr(false);
-};
+const moveH = (editor, forward: boolean) => () => Option.from(editor.dom.getParent(editor.selection.getNode(), 'td,th')).bind((td) => Option.from(editor.dom.getParent(td, 'table')).map((table) => navigateHorizontally(editor, forward, table, td))).getOr(false);
 
-const moveV = (editor, forward: boolean) => () => {
-  return Option.from(editor.dom.getParent(editor.selection.getNode(), 'td,th')).bind((td) => {
-    return Option.from(editor.dom.getParent(td, 'table')).map((table) => {
-      return navigateVertically(editor, forward, table, td);
-    });
-  }).getOr(false);
-};
+const moveV = (editor, forward: boolean) => () => Option.from(editor.dom.getParent(editor.selection.getNode(), 'td,th')).bind((td) => Option.from(editor.dom.getParent(td, 'table')).map((table) => navigateVertically(editor, forward, table, td))).getOr(false);
 
 export {
   isFakeCaretTableBrowser,

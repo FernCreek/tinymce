@@ -8,7 +8,7 @@ import { Highlighting } from '../behaviour/Highlighting';
 
 const reportFocusShifting = (component: AlloyComponent, prevFocus: Option<Element>, newFocus: Option<Element>) => {
   const noChange = prevFocus.exists((p) => newFocus.exists((n) => Compare.eq(n, p)));
-  if  (! noChange)  {
+  if (! noChange) {
     AlloyTriggers.emitWith(component, SystemEvents.focusShifted(), {
       prevFocus,
       newFocus
@@ -22,11 +22,9 @@ export interface FocusManager {
 }
 
 const dom = (): FocusManager => {
-  const get = (component) => {
-    return Focus.search(component.element());
-  };
+  const get = (component: AlloyComponent) => Focus.search(component.element());
 
-  const set = (component, focusee) => {
+  const set = (component: AlloyComponent, focusee: Element) => {
     const prevFocus = get(component);
     component.getSystem().triggerFocus(focusee, component.element());
     const newFocus = get(component);
@@ -40,13 +38,9 @@ const dom = (): FocusManager => {
 };
 
 const highlights = (): FocusManager => {
-  const get = (component) => {
-    return Highlighting.getHighlighted(component).map((item) => {
-      return item.element();
-    });
-  };
+  const get = (component: AlloyComponent) => Highlighting.getHighlighted(component).map((item) => item.element());
 
-  const set = (component, element) => {
+  const set = (component: AlloyComponent, element: Element) => {
     const prevFocus = get(component);
     component.getSystem().getByDom(element).fold(Fun.noop, (item) => {
       Highlighting.highlight(component, item);

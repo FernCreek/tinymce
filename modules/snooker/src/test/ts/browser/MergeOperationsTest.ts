@@ -1,5 +1,5 @@
-import Assertions from 'ephox/snooker/test/Assertions';
-import { UnitTest } from '@ephox/bedrock';
+import * as Assertions from 'ephox/snooker/test/Assertions';
+import { UnitTest } from '@ephox/bedrock-client';
 
 UnitTest.test('MergeOperationsTest', function () {
   Assertions.checkMerge(

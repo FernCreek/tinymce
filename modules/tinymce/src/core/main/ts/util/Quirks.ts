@@ -5,16 +5,16 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Range, document, Attr, Selection as DomSelection } from '@ephox/dom-globals';
+import { Attr, document, Range, Selection as DomSelection } from '@ephox/dom-globals';
+import Selection from '../api/dom/Selection';
+import Editor from '../api/Editor';
 import Env from '../api/Env';
-import * as CaretContainer from '../caret/CaretContainer';
-import CaretRangeFromPoint from '../selection/CaretRangeFromPoint';
+import * as Settings from '../api/Settings';
 import Delay from '../api/util/Delay';
 import Tools from '../api/util/Tools';
 import VK from '../api/util/VK';
-import Selection from '../api/dom/Selection';
-import Settings from '../api/Settings';
-import Editor from '../api/Editor';
+import * as CaretContainer from '../caret/CaretContainer';
+import * as CaretRangeFromPoint from '../selection/CaretRangeFromPoint';
 
 /**
  * This file includes fixes for various browser quirks it's made to make it easy to add/remove browser specific fixes.
@@ -30,8 +30,7 @@ interface Quirks {
 
 const Quirks = function (editor: Editor): Quirks {
   const each = Tools.each;
-  const BACKSPACE = VK.BACKSPACE, DELETE = VK.DELETE, dom = editor.dom, selection: Selection = editor.selection,
-    settings = editor.settings, parser = editor.parser;
+  const BACKSPACE = VK.BACKSPACE, DELETE = VK.DELETE, dom = editor.dom, selection: Selection = editor.selection, parser = editor.parser;
   const isGecko = Env.gecko, isIE = Env.ie, isWebKit = Env.webkit;
   const mceInternalUrlPrefix = 'data:text/mce-internal,';
   const mceInternalDataType = isIE ? 'Text' : 'URL';
@@ -217,7 +216,7 @@ const Quirks = function (editor: Editor): Quirks {
       // Case 1 IME doesn't initialize if you focus the document
       // Disabled since it was interferring with the cE=false logic
       // Also coultn't reproduce the issue on Safari 9
-      /*dom.bind(editor.getDoc(), 'focusin', function() {
+      /* dom.bind(editor.getDoc(), 'focusin', function() {
         selection.setRng(selection.getRng());
       });*/
 
@@ -418,16 +417,16 @@ const Quirks = function (editor: Editor): Quirks {
   const removeBlockQuoteOnBackSpace = function () {
     // Add block quote deletion handler
     editor.on('keydown', function (e) {
-      let rng, container, offset, root, parent;
+      let rng, parent;
 
       if (isDefaultPrevented(e) || e.keyCode !== VK.BACKSPACE) {
         return;
       }
 
       rng = selection.getRng();
-      container = rng.startContainer;
-      offset = rng.startOffset;
-      root = dom.getRoot();
+      const container = rng.startContainer;
+      const offset = rng.startOffset;
+      const root = dom.getRoot();
       parent = container;
 
       if (!rng.collapsed || offset !== 0) {
@@ -455,19 +454,19 @@ const Quirks = function (editor: Editor): Quirks {
   /**
    * Sets various Gecko editing options on mouse down and before a execCommand to disable inline table editing that is broken etc.
    */
-  const setGeckoEditingOptions = function () {
-    const setOpts = function () {
+  const setGeckoEditingOptions = () => {
+    const setOpts = () => {
       refreshContentEditable();
 
       setEditorCommandState('StyleWithCSS', false);
       setEditorCommandState('enableInlineTableEditing', false);
 
-      if (!settings.object_resizing) {
+      if (!Settings.getObjectResizing(editor)) {
         setEditorCommandState('enableObjectResizing', false);
       }
     };
 
-    if (!settings.readonly) {
+    if (!Settings.isReadOnly(editor)) {
       editor.on('BeforeExecCommand mousedown', setOpts);
     }
   };
@@ -513,9 +512,9 @@ const Quirks = function (editor: Editor): Quirks {
    * WebKit will produce DIV elements here and there by default. But since TinyMCE uses paragraphs by
    * default we want to change that behavior.
    */
-  const setDefaultBlockType = function () {
-    if (settings.forced_root_block) {
-      editor.on('init', function () {
+  const setDefaultBlockType = () => {
+    if (Settings.getForcedRootBlock(editor)) {
+      editor.on('init', () => {
         setEditorCommandState('DefaultParagraphSeparator', Settings.getForcedRootBlock(editor));
       });
     }
@@ -763,14 +762,12 @@ const Quirks = function (editor: Editor): Quirks {
   };
 
   const isHidden = function (): boolean {
-    let sel;
-
     if (!isGecko || editor.removed) {
       return false;
     }
 
     // Weird, wheres that cursor selection?
-    sel = editor.selection.getSel();
+    const sel = editor.selection.getSel();
     return (!sel || !sel.rangeCount || sel.rangeCount === 0);
   };
 

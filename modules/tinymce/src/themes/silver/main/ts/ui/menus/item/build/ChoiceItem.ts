@@ -15,17 +15,23 @@ import { renderCheckmark } from '../structure/ItemSlices';
 import { renderItemStructure } from '../structure/ItemStructure';
 import { buildData, renderCommonItem } from './CommonMenuItem';
 
-const renderChoiceItem = (spec: Menu.ChoiceMenuItem, useText: boolean, presets: Types.PresetItemTypes, onItemValueHandler: (itemValue: string) => void, isSelected: boolean, itemResponse: ItemResponse, providersBackstage: UiFactoryBackstageProviders) => {
-  const getApi = (component): Menu.ToggleMenuItemInstanceApi => {
-    return {
-      setActive: (state) => {
-        Toggling.set(component, state);
-      },
-      isActive: () => Toggling.isOn(component),
-      isDisabled: () => Disabling.isDisabled(component),
-      setDisabled: (state: boolean) => Disabling.set(component, state)
-    };
-  };
+const renderChoiceItem = (
+  spec: Menu.ChoiceMenuItem,
+  useText: boolean,
+  presets: Types.PresetItemTypes,
+  onItemValueHandler: (itemValue: string) => void,
+  isSelected: boolean, itemResponse: ItemResponse,
+  providersBackstage: UiFactoryBackstageProviders,
+  renderIcons: boolean = true
+) => {
+  const getApi = (component): Menu.ToggleMenuItemInstanceApi => ({
+    setActive: (state) => {
+      Toggling.set(component, state);
+    },
+    isActive: () => Toggling.isOn(component),
+    isDisabled: () => Disabling.isDisabled(component),
+    setDisabled: (state: boolean) => Disabling.set(component, state)
+  });
 
   const structure = renderItemStructure({
     presets,
@@ -41,7 +47,7 @@ const renderChoiceItem = (spec: Menu.ChoiceMenuItem, useText: boolean, presets: 
     checkMark: useText ? Option.some(renderCheckmark(providersBackstage.icons)) : Option.none(),
     caret: Option.none(),
     value: spec.value
-  }, providersBackstage, true);
+  }, providersBackstage, renderIcons);
 
   return Merger.deepMerge(
     renderCommonItem({
@@ -55,7 +61,7 @@ const renderChoiceItem = (spec: Menu.ChoiceMenuItem, useText: boolean, presets: 
       },
       triggersSubmenu: false,
       itemBehaviours: [ ]
-    }, structure, itemResponse),
+    }, structure, itemResponse, providersBackstage),
     {
       toggling: {
         toggleClass: ItemClasses.tickedClass,

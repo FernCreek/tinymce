@@ -6,16 +6,18 @@
  */
 
 import { InlineContent, Types } from '@ephox/bridge';
-import { Range, Text } from '@ephox/dom-globals';
-import { Arr, Option, Options, Fun } from '@ephox/katamari';
+import { Node, Range } from '@ephox/dom-globals';
+import { Arr, Option } from '@ephox/katamari';
+import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import Editor from 'tinymce/core/api/Editor';
 import Promise from 'tinymce/core/api/util/Promise';
-import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 
+import * as Spot from '../alien/Spot';
 import { toLeaf } from '../alien/TextDescent';
-import { Phase, repeatLeft } from '../alien/TextSearch';
+import { repeatLeft } from '../alien/TextSearch';
 import { AutocompleteContext, getContext } from './AutocompleteContext';
 import { AutocompleterDatabase } from './Autocompleters';
+import { isWhitespace } from './AutocompleteUtils';
 
 export interface AutocompleteLookupData {
   matchText: string;
@@ -29,24 +31,19 @@ export interface AutocompleteLookupInfo {
   lookupData: Promise<AutocompleteLookupData[]>;
 }
 
-const isStartOfWord = (dom: DOMUtils) => {
-  const process = (phase: Phase<boolean>, element: Text, text: string, optOffset: Option<number>) => {
-    const index = optOffset.getOr(text.length);
-    // If at the start of the range, then we need to look backwards one more place. Otherwise we just need to look at the current text
-    return (index === 0) ? phase.kontinue() : phase.finish(/\s/.test(text.charAt(index - 1)));
-  };
+const isPreviousCharContent = (dom: DOMUtils, leaf: Spot.SpotPoint<Node>) =>
+  // If at the start of the range, then we need to look backwards one more place. Otherwise we just need to look at the current text
+  repeatLeft(dom, leaf.container, leaf.offset, (element, offset) => offset === 0 ? -1 : offset, dom.getRoot()).filter((spot) => {
+    const char = spot.container.data.charAt(spot.offset - 1);
+    return !isWhitespace(char);
+  }).isSome();
 
-  return (rng: Range) => {
-    const leaf = toLeaf(rng.startContainer, rng.startOffset);
-    return repeatLeft(dom, leaf.element, leaf.offset, process).fold(Fun.constant(true), Fun.constant(true), Fun.identity);
-  };
+const isStartOfWord = (dom: DOMUtils) => (rng: Range) => {
+  const leaf = toLeaf(rng.startContainer, rng.startOffset);
+  return !isPreviousCharContent(dom, leaf);
 };
 
-const getTriggerContext = (dom: DOMUtils, initRange: Range, database: AutocompleterDatabase): Option<AutocompleteContext> => {
-  return Options.findMap(database.triggerChars, (ch) => {
-    return getContext(dom, initRange, ch);
-  });
-};
+const getTriggerContext = (dom: DOMUtils, initRange: Range, database: AutocompleterDatabase): Option<AutocompleteContext> => Arr.findMap(database.triggerChars, (ch) => getContext(dom, initRange, ch));
 
 const lookup = (editor: Editor, getDatabase: () => AutocompleterDatabase): Option<AutocompleteLookupInfo> => {
   const database = getDatabase();
@@ -60,9 +57,7 @@ const lookupWithContext = (editor: Editor, getDatabase: () => AutocompleterDatab
   const rng = editor.selection.getRng();
   const startText = rng.startContainer.nodeValue;
 
-  const autocompleters = Arr.filter(database.lookupByChar(context.triggerChar), (autocompleter) => {
-    return context.text.length >= autocompleter.minChars && autocompleter.matches.getOrThunk(() => isStartOfWord(editor.dom))(context.range, startText, context.text);
-  });
+  const autocompleters = Arr.filter(database.lookupByChar(context.triggerChar), (autocompleter) => context.text.length >= autocompleter.minChars && autocompleter.matches.getOrThunk(() => isStartOfWord(editor.dom))(context.range, startText, context.text));
 
   if (autocompleters.length === 0) {
     return Option.none();

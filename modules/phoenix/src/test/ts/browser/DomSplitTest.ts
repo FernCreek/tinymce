@@ -1,4 +1,4 @@
-import { assert, UnitTest } from '@ephox/bedrock';
+import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Arr } from '@ephox/katamari';
 import { Element, Text, Traverse } from '@ephox/sugar';
 import * as DomSplit from 'ephox/phoenix/api/dom/DomSplit';
@@ -33,17 +33,17 @@ UnitTest.test('DomSplitTest', function () {
     check(expected, element);
   };
 
-  checkSplit(['no', 'w'], Page().t9, 2);
-  checkSplit(['no', 'w'], Page().t9, 0);
-  checkSplit(['n', 'o', 'w'], Page().t9, 1);
-  checkSplit(['no', 'w'], Page().t10, 0);
-  checkSplit(['no', 'w'], Page().t10, 1);
+  checkSplit([ 'no', 'w' ], Page().t9, 2);
+  checkSplit([ 'no', 'w' ], Page().t9, 0);
+  checkSplit([ 'n', 'o', 'w' ], Page().t9, 1);
+  checkSplit([ 'no', 'w' ], Page().t10, 0);
+  checkSplit([ 'no', 'w' ], Page().t10, 1);
 
-  checkSplitByPair(['something'], Page().t5, 0, 9);
-  checkSplitByPair(['something'], Page().t5, 0, 0);
-  checkSplitByPair(['something'], Page().t5, 9, 9);
-  checkSplitByPair(['s', 'omething'], Page().t5, 0, 1);
-  checkSplitByPair(['some', 'thing'], Page().t5, 0, 4);
-  checkSplitByPair(['some', 'thing'], Page().t5, 4, 9);
-  checkSplitByPair(['s', 'omet', 'hing'], Page().t5, 1, 5);
+  checkSplitByPair([ 'something' ], Page().t5, 0, 9);
+  checkSplitByPair([ 'something' ], Page().t5, 0, 0);
+  checkSplitByPair([ 'something' ], Page().t5, 9, 9);
+  checkSplitByPair([ 's', 'omething' ], Page().t5, 0, 1);
+  checkSplitByPair([ 'some', 'thing' ], Page().t5, 0, 4);
+  checkSplitByPair([ 'some', 'thing' ], Page().t5, 4, 9);
+  checkSplitByPair([ 's', 'omet', 'hing' ], Page().t5, 1, 5);
 });

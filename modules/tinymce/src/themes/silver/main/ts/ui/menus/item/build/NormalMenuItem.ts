@@ -15,12 +15,10 @@ import { buildData, renderCommonItem } from './CommonMenuItem';
 
 // Note, this does not create a valid SketchSpec.
 const renderNormalItem = (spec: Menu.MenuItem, itemResponse: ItemResponse, providersBackstage: UiFactoryBackstageProviders, renderIcons: boolean = true): ItemTypes.ItemSpec => {
-  const getApi = (component: AlloyComponent): Menu.MenuItemInstanceApi => {
-    return {
-      isDisabled: () => Disabling.isDisabled(component),
-      setDisabled: (state: boolean) => Disabling.set(component, state)
-    };
-  };
+  const getApi = (component: AlloyComponent): Menu.MenuItemInstanceApi => ({
+    isDisabled: () => Disabling.isDisabled(component),
+    setDisabled: (state: boolean) => Disabling.set(component, state)
+  });
 
   const structure = renderItemStructure({
     presets: 'normal',
@@ -41,7 +39,7 @@ const renderNormalItem = (spec: Menu.MenuItem, itemResponse: ItemResponse, provi
     onSetup: spec.onSetup,
     triggersSubmenu: false,
     itemBehaviours: [ ]
-  }, structure, itemResponse);
+  }, structure, itemResponse, providersBackstage);
 };
 
 export { renderNormalItem };

@@ -9,24 +9,18 @@ import { ClipboardEvent, DataTransfer, Range } from '@ephox/dom-globals';
 import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
 import Delay from 'tinymce/core/api/util/Delay';
-import InternalHtml from './InternalHtml';
-import Utils from './Utils';
-
-const noop = function () {
-};
+import * as InternalHtml from './InternalHtml';
 
 interface SelectionContentData {
   html: string;
   text: string;
 }
 
-const hasWorkingClipboardApi = (clipboardData: DataTransfer) => {
+const hasWorkingClipboardApi = (clipboardData: DataTransfer | null): clipboardData is DataTransfer =>
   // iOS supports the clipboardData API but it doesn't do anything for cut operations
-  // Edge 15 has a broken HTML Clipboard API see https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/11780845/
-  return Env.iOS === false && clipboardData !== undefined && typeof clipboardData.setData === 'function' && Utils.isMsEdge() !== true;
-};
+  Env.iOS === false && typeof clipboardData?.setData === 'function';
 
-const setHtml5Clipboard = (clipboardData: DataTransfer, html: string, text: string) => {
+const setHtml5Clipboard = (clipboardData: DataTransfer | null, html: string, text: string) => {
   if (hasWorkingClipboardApi(clipboardData)) {
     try {
       clipboardData.clearData();
@@ -92,13 +86,9 @@ const getData = (editor: Editor): SelectionContentData => (
   }
 );
 
-const isTableSelection = (editor: Editor): boolean => {
-  return !!editor.dom.getParent(editor.selection.getStart(), 'td[data-mce-selected],th[data-mce-selected]', editor.getBody());
-};
+const isTableSelection = (editor: Editor): boolean => !!editor.dom.getParent(editor.selection.getStart(), 'td[data-mce-selected],th[data-mce-selected]', editor.getBody());
 
-const hasSelectedContent = (editor: Editor): boolean => {
-  return !editor.selection.isCollapsed() || isTableSelection(editor);
-};
+const hasSelectedContent = (editor: Editor): boolean => !editor.selection.isCollapsed() || isTableSelection(editor);
 
 const cut = (editor: Editor) => (evt: ClipboardEvent) => {
   if (hasSelectedContent(editor)) {
@@ -123,7 +113,7 @@ const cut = (editor: Editor) => (evt: ClipboardEvent) => {
 
 const copy = (editor: Editor) => (evt: ClipboardEvent) => {
   if (hasSelectedContent(editor)) {
-    setClipboardData(evt, getData(editor), fallback(editor), noop);
+    setClipboardData(evt, getData(editor), fallback(editor), () => {});
   }
 };
 
@@ -134,6 +124,6 @@ const register = (editor: Editor) => {
   }
 };
 
-export default {
+export {
   register
 };

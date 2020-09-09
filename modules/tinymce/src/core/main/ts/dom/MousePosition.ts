@@ -15,12 +15,10 @@ import Editor from '../api/Editor';
  */
 
 const getAbsolutePosition = function (elm) {
-  let doc, docElem, win, clientRect;
-
-  clientRect = elm.getBoundingClientRect();
-  doc = elm.ownerDocument;
-  docElem = doc.documentElement;
-  win = doc.defaultView;
+  const clientRect = elm.getBoundingClientRect();
+  const doc = elm.ownerDocument;
+  const docElem = doc.documentElement;
+  const win = doc.defaultView;
 
   return {
     top: clientRect.top + win.pageYOffset - docElem.clientTop,
@@ -73,6 +71,6 @@ const calc = function (editor: Editor, event) {
   return calculatePosition(getBodyPosition(editor), getScrollPosition(editor), getMousePosition(editor, event));
 };
 
-export default {
+export {
   calc
 };

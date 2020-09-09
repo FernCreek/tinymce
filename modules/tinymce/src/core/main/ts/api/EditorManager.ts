@@ -5,24 +5,24 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { document, Element, HTMLFormElement, Window, BeforeUnloadEvent } from '@ephox/dom-globals';
-import { Arr, Type } from '@ephox/katamari';
+import { BeforeUnloadEvent, document, HTMLElement, HTMLFormElement, Window } from '@ephox/dom-globals';
+import { Arr, Obj, Type } from '@ephox/katamari';
+import * as ErrorReporter from '../ErrorReporter';
+import * as FocusController from '../focus/FocusController';
 import AddOnManager from './AddOnManager';
-import Editor from './Editor';
-import { RawEditorSettings } from './SettingsTypes';
-import Env from './Env';
-import ErrorReporter from '../ErrorReporter';
+import DomQuery, { DomQueryConstructor } from './dom/DomQuery';
 import DOMUtils from './dom/DOMUtils';
-import DomQuery from './dom/DomQuery';
-import FocusController from '../focus/FocusController';
+import Editor from './Editor';
+import Env from './Env';
+import { EditorManagerEventMap } from './EventTypes';
+import { RawEditorSettings } from './SettingsTypes';
 import I18n from './util/I18n';
 import Observable from './util/Observable';
 import Promise from './util/Promise';
 import Tools from './util/Tools';
 import URI from './util/URI';
-import { EditorManagerEventMap } from './EventTypes';
 
-declare const window: Window & { tinymce: any; tinyMCEPreInit: any; };
+declare const window: Window & { tinymce: any; tinyMCEPreInit: any };
 
 /**
  * This class used as a factory for manager for tinymce.Editor instances.
@@ -116,8 +116,8 @@ const purgeDestroyedEditor = function (editor) {
 };
 
 interface EditorManager extends Observable<EditorManagerEventMap> {
-  $: any;
-  defaultSettings: Record<string, any>;
+  $: DomQueryConstructor;
+  defaultSettings: RawEditorSettings;
   majorVersion: string;
   minorVersion: string;
   releaseDate: string;
@@ -221,7 +221,7 @@ const EditorManager: EditorManager = {
 
   settings: {},
 
-  setup () {
+  setup() {
     const self: EditorManager = this;
     let baseURL, documentBaseURL, suffix = '';
 
@@ -322,15 +322,13 @@ const EditorManager: EditorManager = {
    * @method overrideDefaults
    * @param {Object} defaultSettings Defaults settings object.
    */
-  overrideDefaults (defaultSettings) {
-    let baseUrl, suffix;
-
-    baseUrl = defaultSettings.base_url;
+  overrideDefaults(defaultSettings) {
+    const baseUrl = defaultSettings.base_url;
     if (baseUrl) {
       this._setBaseUrl(baseUrl);
     }
 
-    suffix = defaultSettings.suffix;
+    const suffix = defaultSettings.suffix;
     if (defaultSettings.suffix) {
       this.suffix = suffix;
     }
@@ -338,13 +336,17 @@ const EditorManager: EditorManager = {
     this.defaultSettings = defaultSettings;
 
     const pluginBaseUrls = defaultSettings.plugin_base_urls;
-    for (const name in pluginBaseUrls) {
-      AddOnManager.PluginManager.urls[name] = pluginBaseUrls[name];
+    if (pluginBaseUrls !== undefined) {
+      Obj.each(pluginBaseUrls, (pluginBaseUrl, pluginName) => {
+        AddOnManager.PluginManager.urls[pluginName] = pluginBaseUrl;
+      });
     }
   },
 
   /**
    * Initializes a set of editors. This method will create editors based on various settings.
+   * <br /><br />
+   * For information on basic usage of <code>init</code>, see: <a href="https://www.tiny.cloud/docs/general-configuration-guide/basic-setup/">Basic setup</a>.
    *
    * @method init
    * @param {Object} settings Settings object to be passed to each editor instance.
@@ -362,37 +364,26 @@ const EditorManager: EditorManager = {
    *    ...
    * });
    */
-  init (settings) {
+  init(settings: RawEditorSettings) {
     const self: EditorManager = this;
-    let result, invalidInlineTargets;
+    let result;
 
-    invalidInlineTargets = Tools.makeMap(
+    const invalidInlineTargets = Tools.makeMap(
       'area base basefont br col frame hr img input isindex link meta param embed source wbr track ' +
       'colgroup option table tbody tfoot thead tr th td script noscript style textarea video audio iframe object menu',
       ' '
     );
 
-    const isInvalidInlineTarget = function (settings, elm) {
-      return settings.inline && elm.tagName.toLowerCase() in invalidInlineTargets;
-    };
+    const isInvalidInlineTarget = (settings: RawEditorSettings, elm: HTMLElement) =>
+      settings.inline && elm.tagName.toLowerCase() in invalidInlineTargets;
 
-    const createId = function (elm) {
+    const createId = (elm: HTMLElement & { name?: string }): string => {
       let id = elm.id;
 
-      // Use element id, or unique name or generate a unique id
       if (!id) {
-        id = elm.name;
-
-        if (id && !DOM.get(id)) {
-          id = elm.name;
-        } else {
-          // Generate unique name
-          id = DOM.uniqueId();
-        }
-
+        id = Obj.get(elm, 'name').filter((name) => !DOM.get(name)).getOrThunk(DOM.uniqueId);
         elm.setAttribute('id', id);
       }
-
       return id;
     };
 
@@ -410,8 +401,8 @@ const EditorManager: EditorManager = {
       return className.constructor === RegExp ? className.test(elm.className) : DOM.hasClass(elm, className);
     };
 
-    const findTargets = function (settings): Element[] {
-      let l, targets = [];
+    const findTargets = (settings: RawEditorSettings): HTMLElement[] => {
+      let targets: HTMLElement[] = [];
 
       if (Env.browser.isIE() && Env.browser.version.major < 11) {
         ErrorReporter.initError(
@@ -436,19 +427,19 @@ const EditorManager: EditorManager = {
       } else if (settings.selector) {
         return DOM.select(settings.selector);
       } else if (settings.target) {
-        return [settings.target];
+        return [ settings.target ];
       }
 
       // Fallback to old setting
       switch (settings.mode) {
         case 'exact':
-          l = settings.elements || '';
+          const l = settings.elements || '';
 
           if (l.length > 0) {
             each(explode(l), function (id) {
-              let elm;
+              const elm = DOM.get(id);
 
-              if ((elm = DOM.get(id))) {
+              if (elm) {
                 targets.push(elm);
               } else {
                 each(document.forms, function (f: HTMLFormElement) {
@@ -489,11 +480,10 @@ const EditorManager: EditorManager = {
     const initEditors = function () {
       let initCount = 0;
       const editors = [];
-      let targets: Element[];
+      let targets: HTMLElement[];
 
-      const createEditor = function (id, settings, targetElm) {
+      const createEditor = function (id: string, settings: RawEditorSettings, targetElm: HTMLElement) {
         const editor: Editor = new Editor(id, settings, self);
-
         editors.push(editor);
 
         editor.on('init', function () {
@@ -514,7 +504,7 @@ const EditorManager: EditorManager = {
       // TODO: Deprecate this one
       if (settings.types) {
         each(settings.types, function (type) {
-          Tools.each(targets, function (elm) {
+          Tools.each(targets, function (elm: HTMLElement) {
             if (DOM.is(elm, type.selector)) {
               createEditor(createId(elm), extend({}, settings, type), elm);
               return false;
@@ -584,7 +574,7 @@ const EditorManager: EditorManager = {
    *    ed.windowManager.alert('Hello world!');
    * });
    */
-  get (id?: number | string) {
+  get(id?: number | string) {
     if (arguments.length === 0) {
       return editors.slice(0);
     } else if (Type.isString(id)) {
@@ -605,13 +595,12 @@ const EditorManager: EditorManager = {
    * @param {tinymce.Editor} editor Editor instance to add to the collection.
    * @return {tinymce.Editor} The same instance that got passed in.
    */
-  add (editor) {
+  add(editor) {
     const self: EditorManager = this;
-    let existingEditor;
 
-    // Prevent existing editors from beeing added again this could happen
+    // Prevent existing editors from being added again this could happen
     // if a user calls createEditor then render or add multiple times.
-    existingEditor = legacyEditors[editor.id];
+    const existingEditor = legacyEditors[editor.id];
     if (existingEditor === editor) {
       return editor;
     }
@@ -661,7 +650,7 @@ const EditorManager: EditorManager = {
    * @param {Object} settings Editor instance settings.
    * @return {tinymce.Editor} Editor instance that got created.
    */
-  createEditor (id, settings) {
+  createEditor(id, settings) {
     return this.add(new Editor(id, settings, this));
   },
 
@@ -685,7 +674,7 @@ const EditorManager: EditorManager = {
    * @param {tinymce.Editor/String/Object} [selector] CSS selector or editor instance to remove.
    * @return {tinymce.Editor} The editor that got passed in will be return if it was found otherwise null.
    */
-  remove (selector?: string | Editor) {
+  remove(selector?: string | Editor) {
     const self = this;
     let i, editor;
 
@@ -743,7 +732,7 @@ const EditorManager: EditorManager = {
    * @param {String} value Optional value parameter like for example an URL to a link.
    * @return {Boolean} true/false if the command was executed or not.
    */
-  execCommand (cmd, ui, value) {
+  execCommand(cmd, ui, value) {
     const self = this, editor = self.get(value);
 
     // Manager commands
@@ -793,7 +782,7 @@ const EditorManager: EditorManager = {
    * // Saves all contents
    * tinyMCE.triggerSave();
    */
-  triggerSave () {
+  triggerSave() {
     each(editors, function (editor) {
       editor.save();
     });
@@ -806,7 +795,7 @@ const EditorManager: EditorManager = {
    * @param {String} code Optional language code.
    * @param {Object} items Name/value object with translations.
    */
-  addI18n (code, items) {
+  addI18n(code, items) {
     I18n.add(code, items);
   },
 
@@ -817,7 +806,7 @@ const EditorManager: EditorManager = {
    * @param {String/Array/Object} text String to translate
    * @return {String} Translated string.
    */
-  translate (text) {
+  translate(text) {
     return I18n.translate(text);
   },
 
@@ -827,7 +816,7 @@ const EditorManager: EditorManager = {
    * @method setActive
    * @param {tinymce.Editor} editor Editor instance to set as the active instance.
    */
-  setActive (editor) {
+  setActive(editor) {
     const activeEditor = this.activeEditor;
 
     if (this.activeEditor !== editor) {
@@ -841,7 +830,7 @@ const EditorManager: EditorManager = {
     this.activeEditor = editor;
   },
 
-  _setBaseUrl (baseUrl: string) {
+  _setBaseUrl(baseUrl: string) {
     this.baseURL = new URI(this.documentBaseURL).toAbsolute(baseUrl.replace(/\/+$/, ''));
     this.baseURI = new URI(this.baseURL);
   }

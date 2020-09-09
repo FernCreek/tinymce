@@ -1,5 +1,4 @@
-import { Objects } from '@ephox/boulder';
-import { Option } from '@ephox/katamari';
+import { Obj, Option } from '@ephox/katamari';
 import { Body, Element } from '@ephox/sugar';
 
 import { AlloyComponent } from '../api/component/ComponentApi';
@@ -15,12 +14,10 @@ export default () => {
 
   const readOrTag = (component: AlloyComponent): string => {
     const elem = component.element();
-    return Tagger.read(elem).fold(() => {
+    return Tagger.read(elem).fold(() =>
       // No existing tag, so add one.
-      return Tagger.write('uid-', component.element());
-    }, (uid) => {
-      return uid;
-    });
+      Tagger.write('uid-', component.element())
+    , (uid) => uid);
   };
 
   const failOnDuplicate = (component: AlloyComponent, tagId: string): void => {
@@ -34,7 +31,7 @@ export default () => {
 
   const register = (component: AlloyComponent): void => {
     const tagId = readOrTag(component);
-    if (Objects.hasKey(components, tagId)) { failOnDuplicate(component, tagId); }
+    if (Obj.hasNonNullableKey(components, tagId)) { failOnDuplicate(component, tagId); }
     // Component is passed through an an extra argument to all events
     const extraArgs = [ component ];
     events.registerId(extraArgs, tagId, component.events());
@@ -48,17 +45,11 @@ export default () => {
     });
   };
 
-  const filter = (type: string): UidAndHandler[] => {
-    return events.filterByType(type);
-  };
+  const filter = (type: string): UidAndHandler[] => events.filterByType(type);
 
-  const find = (isAboveRoot: (elem: Element) => boolean, type: string, target: Element): Option<ElementAndHandler> => {
-    return events.find(isAboveRoot, type, target);
-  };
+  const find = (isAboveRoot: (elem: Element) => boolean, type: string, target: Element): Option<ElementAndHandler> => events.find(isAboveRoot, type, target);
 
-  const getById = (id: string): Option<AlloyComponent> => {
-    return Objects.readOpt(id)(components) as Option<AlloyComponent>;
-  };
+  const getById = (id: string): Option<AlloyComponent> => Obj.get(components, id);
 
   return {
     find,

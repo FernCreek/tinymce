@@ -9,7 +9,7 @@ import { document } from '@ephox/dom-globals';
 import { Throttler } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
 import DOMUtils from '../api/dom/DOMUtils';
-import SelectionBookmark from './SelectionBookmark';
+import * as SelectionBookmark from './SelectionBookmark';
 import Editor from '../api/Editor';
 
 const isManualNodeChange = function (e) {
@@ -35,7 +35,7 @@ const registerFocusOut = function (editor: Editor) {
 };
 
 const registerMouseUp = function (editor: Editor, throttledStore) {
-  editor.on('mouseup touchend', function (e) {
+  editor.on('mouseup touchend', function (_e) {
     throttledStore.throttle();
   });
 };
@@ -74,6 +74,6 @@ const register = function (editor: Editor) {
   });
 };
 
-export default {
+export {
   register
 };

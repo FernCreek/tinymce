@@ -19,34 +19,22 @@ const schema = [
   FieldSchema.defaulted('moveOnTab', false)
 ];
 
-const execute: KeyRuleHandler<MenuConfig, Stateless> = (component, simulatedEvent, menuConfig) => {
-  return menuConfig.focusManager.get(component).bind((focused) => {
-    return menuConfig.execute(component, simulatedEvent, focused);
-  });
-};
+const execute: KeyRuleHandler<MenuConfig, Stateless> = (component, simulatedEvent, menuConfig) => menuConfig.focusManager.get(component).bind((focused) => menuConfig.execute(component, simulatedEvent, focused));
 
-const focusIn = (component: AlloyComponent, menuConfig: MenuConfig): void => {
+const focusIn = (component: AlloyComponent, menuConfig: MenuConfig, _state: Stateless): void => {
   // Maybe keep selection if it was there before
   SelectorFind.descendant(component.element(), menuConfig.selector).each((first) => {
     menuConfig.focusManager.set(component, first);
   });
 };
 
-const moveUp: DomMovement.ElementMover<MenuConfig, Stateless> = (element, focused, info) => {
-  return DomNavigation.horizontal(element, info.selector, focused, -1);
-};
+const moveUp: DomMovement.ElementMover<MenuConfig, Stateless> = (element, focused, info) => DomNavigation.horizontal(element, info.selector, focused, -1);
 
-const moveDown: DomMovement.ElementMover<MenuConfig, Stateless> = (element, focused, info) => {
-  return DomNavigation.horizontal(element, info.selector, focused, +1);
-};
+const moveDown: DomMovement.ElementMover<MenuConfig, Stateless> = (element, focused, info) => DomNavigation.horizontal(element, info.selector, focused, +1);
 
-const fireShiftTab: KeyRuleHandler<MenuConfig, Stateless> = (component, simulatedEvent, menuConfig) => {
-  return menuConfig.moveOnTab ? DomMovement.move(moveUp)(component, simulatedEvent, menuConfig) : Option.none();
-};
+const fireShiftTab: KeyRuleHandler<MenuConfig, Stateless> = (component, simulatedEvent, menuConfig, menuState) => menuConfig.moveOnTab ? DomMovement.move(moveUp)(component, simulatedEvent, menuConfig, menuState) : Option.none();
 
-const fireTab: KeyRuleHandler<MenuConfig, Stateless> = (component, simulatedEvent, menuConfig) => {
-  return menuConfig.moveOnTab ? DomMovement.move(moveDown)(component, simulatedEvent, menuConfig) : Option.none();
-};
+const fireTab: KeyRuleHandler<MenuConfig, Stateless> = (component, simulatedEvent, menuConfig, menuState) => menuConfig.moveOnTab ? DomMovement.move(moveDown)(component, simulatedEvent, menuConfig, menuState) : Option.none();
 
 const getKeydownRules = Fun.constant([
   KeyRules.rule(KeyMatch.inSet(Keys.UP()), DomMovement.move(moveUp)),

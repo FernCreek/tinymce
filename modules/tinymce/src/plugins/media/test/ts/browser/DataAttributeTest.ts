@@ -1,17 +1,18 @@
-import { GeneralSteps, Pipeline, Logger, Log } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { GeneralSteps, Log, Logger, Pipeline } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
 import { TinyApis, TinyLoader, TinyUi } from '@ephox/mcagar';
 
+import Editor from 'tinymce/core/api/Editor';
 import Plugin from 'tinymce/plugins/media/Plugin';
 import Theme from 'tinymce/themes/silver/Theme';
 
-import Utils from '../module/test/Utils';
+import * as Utils from '../module/test/Utils';
 
 UnitTest.asynctest('browser.plugins.media.DataAttributeTest', function (success, failure) {
   Plugin();
   Theme();
 
-  const sTestEmbedContentFromUrlWithAttribute = function (editor, api, ui, url, content) {
+  const sTestEmbedContentFromUrlWithAttribute = function (editor: Editor, api: TinyApis, ui: TinyUi, url: string, content: string) {
     return Logger.t(`Assert embeded ${content} from ${url} with attribute`, GeneralSteps.sequence([
       api.sSetContent(''),
       Utils.sOpenDialog(ui),
@@ -23,7 +24,7 @@ UnitTest.asynctest('browser.plugins.media.DataAttributeTest', function (success,
       Utils.sCloseDialog(ui)
     ]));
   };
-  const sTestEmbedContentFromUrl2 = function (editor, api, ui, url, url2, content, content2) {
+  const sTestEmbedContentFromUrl2 = function (editor: Editor, api: TinyApis, ui: TinyUi, url: string, url2: string, content: string, content2: string) {
     return Logger.t(`Assert embeded ${content} from ${url} and ${content2} from ${url2}`, GeneralSteps.sequence([
       api.sSetContent(''),
       Utils.sOpenDialog(ui),
@@ -59,14 +60,14 @@ UnitTest.asynctest('browser.plugins.media.DataAttributeTest', function (success,
         Utils.sAssertSizeRecalcUnconstrained(ui),
         Utils.sAssertSizeRecalcConstrainedReopen(ui)
       ])
-    , onSuccess, onFailure);
+      , onSuccess, onFailure);
   }, {
-    plugins: ['media'],
+    plugins: [ 'media' ],
     toolbar: 'media',
     theme: 'silver',
-    media_url_resolver (data, resolve) {
+    media_url_resolver(data, resolve) {
       resolve({ html: '<div data-ephox-embed-iri="' + data.url + '" style="max-width: 300px; max-height: 150px"></div>' });
     },
-    base_url: '/project/tinymce/js/tinymce',
+    base_url: '/project/tinymce/js/tinymce'
   }, success, failure);
 });

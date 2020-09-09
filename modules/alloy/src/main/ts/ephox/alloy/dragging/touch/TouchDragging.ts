@@ -1,37 +1,28 @@
-import { FieldSchema } from '@ephox/boulder';
-import { Cell, Fun, Option } from '@ephox/katamari';
+import { FieldProcessorAdt } from '@ephox/boulder';
+import { TouchEvent } from '@ephox/dom-globals';
+import { Cell, Option } from '@ephox/katamari';
+import { EventArgs } from '@ephox/sugar';
 
-import * as Boxes from '../../alien/Boxes';
-import { SugarEvent, SugarPosition } from '../../alien/TypeDefinitions';
 import { AlloyComponent } from '../../api/component/ComponentApi';
 import * as AlloyEvents from '../../api/events/AlloyEvents';
 import * as NativeEvents from '../../api/events/NativeEvents';
-import * as SystemEvents from '../../api/events/SystemEvents';
 import * as Fields from '../../data/Fields';
 import { BlockerDragApi } from '../common/BlockerTypes';
 import * as BlockerUtils from '../common/BlockerUtils';
+import * as DraggingSchema from '../common/DraggingSchema';
 import { DraggingState } from '../common/DraggingTypes';
 import * as DragUtils from '../common/DragUtils';
-import SnapSchema from '../common/SnapSchema';
 import * as TouchBlockerEvents from './TouchBlockerEvents';
 import * as TouchData from './TouchData';
 import { TouchDraggingConfig } from './TouchDraggingTypes';
 
-const handlers = (dragConfig: TouchDraggingConfig, dragState: DraggingState<SugarPosition>): AlloyEvents.AlloyEventRecord => {
+const events = <E>(dragConfig: TouchDraggingConfig<E>, dragState: DraggingState, updateStartState: (comp: AlloyComponent) => void) => {
   const blockerCell = Cell<Option<AlloyComponent>>(Option.none());
-
-  const updateStartState = (comp: AlloyComponent) => {
-    dragState.setStartData(DragUtils.calcStartData(dragConfig, comp));
-  };
 
   // Android fires events on the component at all times, while iOS initially fires on the component
   // but once moved off the component then fires on the element behind. As such we need to use
   // a blocker and then listen to both touchmove/touchend on both the component and blocker.
-  return AlloyEvents.derive([
-    AlloyEvents.run(SystemEvents.windowScroll(), (comp) => {
-      // Only update if we have some start data
-      dragState.getStartData().each(() => updateStartState(comp));
-    }),
+  return [
     AlloyEvents.run(NativeEvents.touchstart(), (component, simulatedEvent) => {
       simulatedEvent.stop();
 
@@ -40,12 +31,12 @@ const handlers = (dragConfig: TouchDraggingConfig, dragState: DraggingState<Suga
         blockerCell.set(Option.none());
       };
 
-      const dragApi: BlockerDragApi = {
+      const dragApi: BlockerDragApi<TouchEvent> = {
         drop: stop,
         // delayDrop is not used by touch
-        delayDrop () { },
+        delayDrop() { },
         forceDrop: stop,
-        move (event: SugarEvent) {
+        move(event) {
           DragUtils.move(component, dragConfig, dragState, TouchData, event);
         }
       };
@@ -60,11 +51,12 @@ const handlers = (dragConfig: TouchDraggingConfig, dragState: DraggingState<Suga
 
       start();
     }),
-    AlloyEvents.run<SugarEvent>(NativeEvents.touchmove(), (component, simulatedEvent) => {
+    AlloyEvents.run<EventArgs<TouchEvent>>(NativeEvents.touchmove(), (component, simulatedEvent) => {
       simulatedEvent.stop();
       DragUtils.move(component, dragConfig, dragState, TouchData, simulatedEvent.event());
     }),
-    AlloyEvents.run(NativeEvents.touchend(), (component) => {
+    AlloyEvents.run(NativeEvents.touchend(), (component, simulatedEvent) => {
+      simulatedEvent.stop();
       DragUtils.stop(component, blockerCell.get(), dragConfig, dragState);
       blockerCell.set(Option.none());
     }),
@@ -72,22 +64,17 @@ const handlers = (dragConfig: TouchDraggingConfig, dragState: DraggingState<Suga
       DragUtils.stop(component, blockerCell.get(), dragConfig, dragState);
       blockerCell.set(Option.none());
     })
-  ]);
+  ];
 };
 
-const schema = [
-  // Is this used?
-  FieldSchema.defaulted('useFixed', Fun.never),
-  FieldSchema.strict('blockerClass'),
-  FieldSchema.defaulted('getTarget', Fun.identity),
-  FieldSchema.defaulted('onDrag', Fun.noop),
-  FieldSchema.defaulted('repositionTarget', true),
-  FieldSchema.defaulted('onDrop', Fun.noop),
-  FieldSchema.defaultedFunction('getBounds', Boxes.win),
-  SnapSchema,
+const schema: FieldProcessorAdt[] = [
+  ...DraggingSchema.schema,
   Fields.output('dragger', {
-    handlers
+    handlers: DragUtils.handlers(events)
   })
 ];
 
-export default schema;
+export {
+  events,
+  schema
+};

@@ -20,12 +20,12 @@ export default function () {
           api.element().removeChild(box.dom());
         };
       },
-      onShow: (api) => {
+      onShow: (_api) => {
         console.log('onShow ' + name);
       },
-      onHide: (api) => {
+      onHide: (_api) => {
         console.log('onHide ' + name);
-      },
+      }
     });
   };
 
@@ -36,12 +36,12 @@ export default function () {
     plugins: [
       'lists', // Required for list functionality (commands),
       'autolink', // Required for turning pasted text into hyperlinks
-      'autosave', // Required to prevent users losing content when they press back
+      'autosave' // Required to prevent users losing content when they press back
     ],
     // statusbar: false,
     resize: 'both',
 
-    setup (ed: Editor) {
+    setup(ed: Editor) {
       makeSidebar(ed, 'sidebar1', 'green', 200);
       makeSidebar(ed, 'sidebar2', 'red', 300);
       makeSidebar(ed, 'sidebar3', 'blue', 150);

@@ -1,11 +1,11 @@
 import { Pipeline, UiFinder, Waiter, Log, Chain } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { TinyDom, TinyLoader, TinyUi } from '@ephox/mcagar';
 
 import Plugin from 'tinymce/plugins/media/Plugin';
 import Theme from 'tinymce/themes/silver/Theme';
 
-import Utils, { selectors } from '../module/test/Utils';
+import * as Utils from '../module/test/Utils';
 import { document } from '@ephox/dom-globals';
 
 UnitTest.asynctest('browser.tinymce.plugins.media.DimensionsControlTest', function (success, failure) {
@@ -21,9 +21,9 @@ UnitTest.asynctest('browser.tinymce.plugins.media.DimensionsControlTest', functi
         Chain.fromParent(
           ui.cWaitForPopup('wait for popup', 'div.tox-dialog'),
           [
-            Utils.cExists(selectors.source),
-            Utils.cNotExists(selectors.width),
-            Utils.cNotExists(selectors.height)
+            Utils.cExists(Utils.selectors.source),
+            Utils.cNotExists(Utils.selectors.width),
+            Utils.cNotExists(Utils.selectors.height)
           ]
         )
       ]),
@@ -36,7 +36,7 @@ UnitTest.asynctest('browser.tinymce.plugins.media.DimensionsControlTest', functi
     ])
     , onSuccess, onFailure);
   }, {
-    plugins: ['media'],
+    plugins: [ 'media' ],
     toolbar: 'media',
     theme: 'silver',
     media_dimensions: false,

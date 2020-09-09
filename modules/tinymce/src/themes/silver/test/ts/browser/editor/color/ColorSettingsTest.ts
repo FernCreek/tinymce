@@ -1,17 +1,17 @@
-import { Logger, Pipeline, RawAssertions, Step, Log } from '@ephox/agar';
-import { UnitTest, assert } from '@ephox/bedrock';
+import { Log, Logger, Pipeline, Step } from '@ephox/agar';
+import { assert, Assert, UnitTest } from '@ephox/bedrock-client';
 import { TinyLoader } from '@ephox/mcagar';
 
 import LocalStorage from 'tinymce/core/api/util/LocalStorage';
 import SilverTheme from 'tinymce/themes/silver/Theme';
-import ColorSwatch from 'tinymce/themes/silver/ui/core/color/ColorSwatch';
-import Settings from 'tinymce/themes/silver/ui/core/color/Settings';
+import * as ColorSwatch from 'tinymce/themes/silver/ui/core/color/ColorSwatch';
+import * as Settings from 'tinymce/themes/silver/ui/core/color/Settings';
 
 UnitTest.asynctest('ColorSettingsTest', (success, failure) => {
   SilverTheme();
 
   const sResetLocalStorage = function () {
-    return Logger.t(`Reset local storage`, Step.sync(function () {
+    return Logger.t('Reset local storage', Step.sync(function () {
       LocalStorage.removeItem('tinymce-custom-colors');
     }));
   };
@@ -19,7 +19,7 @@ UnitTest.asynctest('ColorSettingsTest', (success, failure) => {
   const sAssertColors = function (input, expected) {
     const extractColor = (color: string) => {
       const m = /^#([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})$/.exec(color);
-      return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
+      return [ parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16) ];
     };
     const assertColor = (expectedColor: string, actualColor: string, delta: number = 0) => {
       const expectedRgb = extractColor(expectedColor);
@@ -32,10 +32,10 @@ UnitTest.asynctest('ColorSettingsTest', (success, failure) => {
     };
     return Logger.t(`Assert colors: ${expected}`, Step.sync(function () {
       const colors = Settings.mapColors(input);
-      RawAssertions.assertEq('Colors length should match', expected.length, colors.length);
+      Assert.eq('Colors length should match', expected.length, colors.length);
       for (let i = 0; i < expected.length; i++) {
-        RawAssertions.assertEq('Color type should match', expected[i].type, colors[i].type);
-        RawAssertions.assertEq('Color text should match', expected[i].text, colors[i].text);
+        Assert.eq('Color type should match', expected[i].type, colors[i].type);
+        Assert.eq('Color text should match', expected[i].text, colors[i].text);
         assertColor(expected[i].value, colors[i].value, expected[i].delta);
       }
     }));
@@ -44,14 +44,14 @@ UnitTest.asynctest('ColorSettingsTest', (success, failure) => {
   const sAssertCols = function (editor, expected) {
     return Logger.t(`Assert color cols: ${expected}`, Step.sync(function () {
       const colors = ColorSwatch.getColorCols(editor);
-      RawAssertions.assertEq('should be same', expected, colors);
+      Assert.eq('should be same', expected, colors);
     }));
   };
 
   const sAssertCalcCols = function (editor, colors, expected) {
     return Logger.t(`Assert calced cols: ${expected}`, Step.sync(function () {
       const sqrt = ColorSwatch.calcCols(colors);
-      RawAssertions.assertEq('should be same', expected, sqrt);
+      Assert.eq('should be same', expected, sqrt);
     }));
   };
 
@@ -118,12 +118,12 @@ UnitTest.asynctest('ColorSettingsTest', (success, failure) => {
         sAssertCalcCols(editor, 37, 7),
         sResetLocalStorage()
       ])
-    , onSuccess, onFailure);
+      , onSuccess, onFailure);
   }, {
-      plugins: '',
-      toolbar: 'forecolor backcolor',
-      base_url: '/project/tinymce/js/tinymce',
-      color_map: colorSettings
-    }, success, failure);
+    plugins: '',
+    toolbar: 'forecolor backcolor',
+    base_url: '/project/tinymce/js/tinymce',
+    color_map: colorSettings
+  }, success, failure);
 }
 );

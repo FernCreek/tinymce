@@ -1,6 +1,6 @@
 import { Arr, Fun } from '@ephox/katamari';
+import { TableSize } from '../api/TableSize';
 import { ColumnContext } from './ColumnContext';
-import { TableSize } from '../resize/Types';
 
 /*
  * Based on the column index, identify the context
@@ -28,7 +28,7 @@ const neighbours = function (input: number[], index: number) {
  * Calculate the offsets to apply to each column width (not the absolute widths themselves)
  * based on a resize at column: column of step: step. The minimum column width allowed is min
  */
-const determine = function (input: number[], column: number, step: number, tableSize: TableSize) {
+const determine = function (input: number[], column: number, step: number, tableSize: TableSize): number[] {
   const result = input.slice(0);
   const context = neighbours(input, column);
 
@@ -70,6 +70,6 @@ const determine = function (input: number[], column: number, step: number, table
   return context.fold(onNone, onOnly, onLeft, onMiddle, onRight);
 };
 
-export default {
+export {
   determine
 };

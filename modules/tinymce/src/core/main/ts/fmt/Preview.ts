@@ -6,9 +6,11 @@
  */
 
 import DOMUtils from '../api/dom/DOMUtils';
-import Tools from '../api/util/Tools';
-import Schema from '../api/html/Schema';
 import Editor from '../api/Editor';
+import Schema from '../api/html/Schema';
+import Tools from '../api/util/Tools';
+import * as Settings from '../api/Settings';
+import { Obj } from '@ephox/katamari';
 
 /**
  * Internal class for generating previews styles for formats.
@@ -35,15 +37,13 @@ const parsedSelectorToHtml = function (ancestry, editor: Editor) {
   };
 
   const createElement = function (sItem) {
-    let elm;
-
     item = typeof sItem === 'string' ? {
       name: sItem,
       classes: [],
       attrs: {}
     } : sItem;
 
-    elm = dom.create(item.name);
+    const elm = dom.create(item.name);
     decorate(elm, item);
     return elm;
   };
@@ -61,11 +61,11 @@ const parsedSelectorToHtml = function (ancestry, editor: Editor) {
   };
 
   const wrapInHtml = function (elm, ancestry, siblings) {
-    let parent, parentCandidate, parentRequired;
+    let parent, parentCandidate;
     const ancestor = ancestry.length > 0 && ancestry[0];
     const ancestorName = ancestor && ancestor.name;
 
-    parentRequired = getRequiredParent(elm, ancestorName);
+    const parentRequired = getRequiredParent(elm, ancestorName);
 
     if (parentRequired) {
       if (ancestorName === parentRequired) {
@@ -113,7 +113,7 @@ const parsedSelectorToHtml = function (ancestry, editor: Editor) {
   }
 };
 
-const selectorToHtml = function (selector, editor?) {
+const selectorToHtml = function (selector: string, editor?: Editor) {
   return parsedSelectorToHtml(parseSelector(selector), editor);
 };
 
@@ -161,7 +161,7 @@ const parseSelectorItem = function (item) {
   return obj;
 };
 
-const parseSelector = function (selector) {
+const parseSelector = function (selector: string) {
   if (!selector || typeof selector !== 'string') {
     return [];
   }
@@ -186,20 +186,14 @@ const parseSelector = function (selector) {
 };
 
 const getCssText = function (editor: Editor, format) {
-  let name, previewFrag, previewElm, items;
-  let previewCss = '', parentFontSize, previewStyles;
+  let name, previewFrag;
+  let previewCss = '', parentFontSize;
 
-  previewStyles = editor.settings.preview_styles;
+  let previewStyles: string = Settings.getPreviewStyles(editor);
 
   // No preview forced
-  if (previewStyles === false) {
+  if (previewStyles === '') {
     return '';
-  }
-
-  // Default preview
-  if (typeof previewStyles !== 'string') {
-    previewStyles = 'font-family font-size font-weight font-style text-decoration ' +
-      'text-transform color background-color border border-radius outline text-shadow';
   }
 
   // Removes any variables since these can't be previewed
@@ -220,15 +214,17 @@ const getCssText = function (editor: Editor, format) {
   // Format specific preview override
   // TODO: This should probably be further reduced by the previewStyles option
   if ('preview' in format) {
-    previewStyles = format.preview;
-    if (previewStyles === false) {
+    const previewOpt = Obj.get(format, 'preview');
+    if (previewOpt.is(false)) {
       return '';
+    } else {
+      previewStyles = previewOpt.getOr(previewStyles);
     }
   }
 
   name = format.block || format.inline || 'span';
 
-  items = parseSelector(format.selector);
+  const items = parseSelector(format.selector);
   if (items.length) {
     if (!items[0].name) { // e.g. something like ul > .someClass was provided
       items[0].name = name;
@@ -236,10 +232,10 @@ const getCssText = function (editor: Editor, format) {
     name = format.selector;
     previewFrag = parsedSelectorToHtml(items, editor);
   } else {
-    previewFrag = parsedSelectorToHtml([name], editor);
+    previewFrag = parsedSelectorToHtml([ name ], editor);
   }
 
-  previewElm = dom.select(name, previewFrag)[0] || previewFrag.firstChild;
+  const previewElm = dom.select(name, previewFrag)[0] || previewFrag.firstChild;
 
   // Add format styles to preview element
   each(format.styles, function (value, name) {
@@ -278,7 +274,7 @@ const getCssText = function (editor: Editor, format) {
   parentFontSize = dom.getStyle(editor.getBody(), 'fontSize', true);
   parentFontSize = /px$/.test(parentFontSize) ? parseInt(parentFontSize, 10) : 0;
 
-  each(previewStyles.split(' '), function (name) {
+  each(previewStyles.split(' '), (name: string) => {
     let value = dom.getStyle(previewElm, name, true);
 
     // If background is transparent then check if the body has a background color we can use
@@ -329,7 +325,7 @@ const getCssText = function (editor: Editor, format) {
   return previewCss;
 };
 
-export default {
+export {
   getCssText,
   parseSelector,
   selectorToHtml

@@ -5,9 +5,9 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { HTMLBRElement, HTMLElement, HTMLHeadingElement, HTMLTableCellElement, HTMLTableElement } from '@ephox/dom-globals';
 import { Arr, Fun } from '@ephox/katamari';
-import { Node, Element } from '@ephox/sugar';
-import { HTMLHeadingElement, HTMLElement, HTMLTableElement, HTMLBRElement } from '@ephox/dom-globals';
+import { Element, Node } from '@ephox/sugar';
 
 const blocks = [
   'article', 'aside', 'details', 'div', 'dt', 'figcaption', 'footer',
@@ -23,8 +23,8 @@ const voids = [
   'isindex', 'link', 'meta', 'param', 'embed', 'source', 'wbr', 'track'
 ];
 
-const tableCells = ['td', 'th'];
-const tableSections = ['thead', 'tbody', 'tfoot'];
+const tableCells = [ 'td', 'th' ];
+const tableSections = [ 'thead', 'tbody', 'tfoot' ];
 
 const textBlocks = [
   'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'address', 'pre', 'form',
@@ -32,10 +32,10 @@ const textBlocks = [
   'section', 'hgroup', 'aside', 'nav', 'figure'
 ];
 
-const headings = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
-const listItems = ['li', 'dd', 'dt'];
-const lists = ['ul', 'ol', 'dl'];
-const wsElements = ['pre', 'script', 'textarea', 'style'];
+const headings = [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ];
+const listItems = [ 'li', 'dd', 'dt' ];
+const lists = [ 'ul', 'ol', 'dl' ];
+const wsElements = [ 'pre', 'script', 'textarea', 'style' ];
 
 const lazyLookup = function <T = HTMLElement> (items) {
   let lookup;
@@ -55,7 +55,7 @@ const isList = lazyLookup(lists);
 const isListItem = lazyLookup(listItems);
 const isVoid = lazyLookup(voids);
 const isTableSection = lazyLookup(tableSections);
-const isTableCell = lazyLookup(tableCells);
+const isTableCell = lazyLookup<HTMLTableCellElement>(tableCells);
 const isWsPreserveElement = lazyLookup(wsElements);
 
 export {

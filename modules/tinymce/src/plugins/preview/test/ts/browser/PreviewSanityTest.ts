@@ -1,7 +1,7 @@
-import { Pipeline, Log, Waiter, UiFinder, Keyboard, Keys, GeneralSteps, Logger } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { GeneralSteps, Keyboard, Keys, Log, Logger, Pipeline, UiFinder, Waiter } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
 import { document } from '@ephox/dom-globals';
-import { TinyApis, TinyLoader, TinyUi, TinyDom } from '@ephox/mcagar';
+import { TinyApis, TinyDom, TinyLoader, TinyUi } from '@ephox/mcagar';
 import { Element } from '@ephox/sugar';
 
 import PreviewPlugin from 'tinymce/plugins/preview/Plugin';
@@ -20,12 +20,10 @@ UnitTest.asynctest('browser.tinymce.plugins.preview.PreviewSanityTest', (success
     const tinyApis = TinyApis(editor);
     const tinyUi = TinyUi(editor);
 
-    const sOpenDialog = () => {
-      return GeneralSteps.sequence(Logger.ts('Open dialog and wait for it to be visible', [
-        tinyUi.sClickOnToolbar('click on preview toolbar', 'button'),
-        tinyUi.sWaitForPopup('wait for preview popup', '[role="dialog"] iframe')
-      ]));
-    };
+    const sOpenDialog = () => GeneralSteps.sequence(Logger.ts('Open dialog and wait for it to be visible', [
+      tinyUi.sClickOnToolbar('click on preview toolbar', 'button'),
+      tinyUi.sWaitForPopup('wait for preview popup', '[role="dialog"] iframe')
+    ]));
 
     Pipeline.async({},
       Log.steps('TBA', 'Preview: Set content, open dialog, click Close to close dialog. Open dialog, press escape and assert dialog closes', [
@@ -39,11 +37,11 @@ UnitTest.asynctest('browser.tinymce.plugins.preview.PreviewSanityTest', (success
         Keyboard.sKeydown(doc, Keys.escape(), { }),
         Waiter.sTryUntil('Dialog should close on esc', UiFinder.sNotExists(docBody, dialogSelector))
       ])
-    , onSuccess, onFailure);
+      , onSuccess, onFailure);
   }, {
     theme: 'silver',
     plugins: 'preview',
     toolbar: 'preview',
-    base_url: '/project/tinymce/js/tinymce',
+    base_url: '/project/tinymce/js/tinymce'
   }, success, failure);
 });

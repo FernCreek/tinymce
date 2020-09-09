@@ -1,24 +1,21 @@
 import { Assertions, GeneralSteps, Logger, Step, UiFinder, Waiter } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { Option, Result } from '@ephox/katamari';
 
 import * as AddEventsBehaviour from 'ephox/alloy/api/behaviour/AddEventsBehaviour';
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
 import * as GuiFactory from 'ephox/alloy/api/component/GuiFactory';
 import * as AlloyEvents from 'ephox/alloy/api/events/AlloyEvents';
+import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
 import { Button } from 'ephox/alloy/api/ui/Button';
 import { Container } from 'ephox/alloy/api/ui/Container';
 import { InlineView } from 'ephox/alloy/api/ui/InlineView';
-import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
 import * as Sinks from 'ephox/alloy/test/Sinks';
 import * as TestBroadcasts from 'ephox/alloy/test/TestBroadcasts';
 
 UnitTest.asynctest('InlineViewDismissTest', (success, failure) => {
 
-  GuiSetup.setup((store, doc, body) => {
-    return Sinks.relativeSink();
-
-  }, (doc, body, gui, component, store) => {
+  GuiSetup.setup((_store, _doc, _body) => Sinks.relativeSink(), (_doc, _body, gui, component, store) => {
     const inline = GuiFactory.build(
       InlineView.sketch({
         dom: {
@@ -26,11 +23,11 @@ UnitTest.asynctest('InlineViewDismissTest', (success, failure) => {
           classes: [ 'test-inline' ]
         },
 
-        lazySink () {
+        lazySink() {
           return Result.value(component);
         },
 
-        getRelated () {
+        getRelated() {
           return Option.some(related);
         },
 
@@ -60,35 +57,31 @@ UnitTest.asynctest('InlineViewDismissTest', (success, failure) => {
 
     gui.add(related);
 
-    const sCheckOpen = (label) => {
-      return Logger.t(
-        label,
-        GeneralSteps.sequence([
-          Waiter.sTryUntil(
-            'Test inline should not be DOM',
-            UiFinder.sExists(gui.element(), '.test-inline')
-          ),
-          Step.sync(() => {
-            Assertions.assertEq('Checking isOpen API', true, InlineView.isOpen(inline));
-          })
-        ])
-      );
-    };
+    const sCheckOpen = (label: string) => Logger.t(
+      label,
+      GeneralSteps.sequence([
+        Waiter.sTryUntil(
+          'Test inline should not be DOM',
+          UiFinder.sExists(gui.element(), '.test-inline')
+        ),
+        Step.sync(() => {
+          Assertions.assertEq('Checking isOpen API', true, InlineView.isOpen(inline));
+        })
+      ])
+    );
 
-    const sCheckClosed = (label) => {
-      return Logger.t(
-        label,
-        GeneralSteps.sequence([
-          Waiter.sTryUntil(
-            'Test inline should not be in DOM',
-            UiFinder.sNotExists(gui.element(), '.test-inline')
-          ),
-          Step.sync(() => {
-            Assertions.assertEq('Checking isOpen API', false, InlineView.isOpen(inline));
-          })
-        ])
-      );
-    };
+    const sCheckClosed = (label: string) => Logger.t(
+      label,
+      GeneralSteps.sequence([
+        Waiter.sTryUntil(
+          'Test inline should not be in DOM',
+          UiFinder.sNotExists(gui.element(), '.test-inline')
+        ),
+        Step.sync(() => {
+          Assertions.assertEq('Checking isOpen API', false, InlineView.isOpen(inline));
+        })
+      ])
+    );
 
     return [
       UiFinder.sNotExists(gui.element(), '.test-inline'),

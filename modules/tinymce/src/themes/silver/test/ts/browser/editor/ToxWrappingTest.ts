@@ -1,5 +1,5 @@
 import { Assertions, Pipeline, Chain, UiFinder } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { TinyLoader } from '@ephox/mcagar';
 import { Element, Body, Attr, Traverse, Class } from '@ephox/sugar';
 
@@ -19,7 +19,7 @@ UnitTest.asynctest('Editor (Silver) test', (success, failure) => {
           UiFinder.cFindIn(`#${Attr.get(replacedElem, 'id')}`),
           Chain.binder((elem) => Traverse.nextSibling(elem).fold(() => Result.error('Replaced element has no next sibling'), Result.value)),
           Chain.mapper((elem) => Class.has(elem, 'tox-tinymce')),
-          Assertions.cAssertEq('Replaced element\'s next sibling has "tox-tinymce" class', true)
+          Assertions.cAssertEq(`Replaced element's next sibling has "tox-tinymce" class`, true)
         ])
       ], onSuccess, onFailure);
     },

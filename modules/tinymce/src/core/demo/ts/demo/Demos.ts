@@ -7,10 +7,10 @@ import FullDemo from './FullDemo';
 import InlineDemo from './InlineDemo';
 import SourceDumpDemo from './SourceDumpDemo';
 import TinyMceDemo from './TinyMceDemo';
-import UiContainerDemo from './UiContainerDemo';
 import IframeDemo from './IframeDemo';
 import ResponsiveDemo from './ResponsiveDemo';
 import StickyToolbarDemo from './StickyToolbarDemo';
+import ShadowDomDemo from './ShadowDomDemo';
 
 declare const window: any;
 
@@ -23,9 +23,9 @@ window.demos = {
   FixedToolbarContainerDemo,
   FullDemo,
   TinyMceDemo,
-  UiContainerDemo,
   AnnotationsDemo,
   SourceDumpDemo,
   ResponsiveDemo,
-  StickyToolbarDemo
+  StickyToolbarDemo,
+  ShadowDomDemo
 };

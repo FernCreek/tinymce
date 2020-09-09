@@ -1,5 +1,5 @@
 import { ApproxStructure, Assertions, FocusTools, Keyboard, Keys, Logger, Mouse, UiFinder, Waiter, Chain, GeneralSteps, Step } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock';
+import { UnitTest } from '@ephox/bedrock-client';
 import { Arr, Fun, Future, Result, Option } from '@ephox/katamari';
 import { Compare, Focus } from '@ephox/sugar';
 
@@ -32,7 +32,7 @@ UnitTest.asynctest('Dropdown List', (success, failure) => {
     })
   );
 
-  GuiSetup.setup((store, doc, body) => {
+  GuiSetup.setup((store, _doc, _body) => {
     const c = GuiFactory.build(
       Dropdown.sketch({
         dom: {
@@ -55,7 +55,7 @@ UnitTest.asynctest('Dropdown List', (success, failure) => {
           ])
         ]),
 
-        lazySink (c) {
+        lazySink(c) {
           TestDropdownMenu.assertLazySinkArgs('button', 'test-dropdown', c);
           return Result.value(memSink.get(c));
         },
@@ -78,12 +78,12 @@ UnitTest.asynctest('Dropdown List', (success, failure) => {
           menu: TestDropdownMenu.part(store)
         },
 
-        fetch () {
+        fetch() {
           const future = Future.pure([
-            { type: 'item', data: { value: 'alpha', meta: { text: 'Alpha' } } },
-            { type: 'item', data: { value: 'beta', meta: { text: 'Beta' } } },
-            { type: 'item', data: { value: 'gamma', meta: { text: 'Gamma' } } },
-            { type: 'item', data: { value: 'delta', meta: { text: 'Delta' } } }
+            { type: 'item', data: { value: 'alpha', meta: { text: 'Alpha' }}},
+            { type: 'item', data: { value: 'beta', meta: { text: 'Beta' }}},
+            { type: 'item', data: { value: 'gamma', meta: { text: 'Gamma' }}},
+            { type: 'item', data: { value: 'delta', meta: { text: 'Delta' }}}
           ]);
 
           return future.map((f) => {
@@ -99,7 +99,7 @@ UnitTest.asynctest('Dropdown List', (success, failure) => {
 
     return c;
 
-  }, (doc, body, gui, component, store) => {
+  }, (doc, _body, gui, component, store) => {
     const sink = GuiFactory.build(memSink.asSpec());
 
     const inputForFocus = GuiFactory.build({
@@ -126,15 +126,13 @@ UnitTest.asynctest('Dropdown List', (success, failure) => {
       // Add more information to this.
       Assertions.sAssertStructure(
         'Initial structure of dropdown button',
-        ApproxStructure.build((s, str, arr) => {
-          return s.element('button', {
-            attrs: {
-              'aria-expanded': str.is('false'),
-              'aria-haspopup': str.is('true'),
-              'type': str.is('button')
-            }
-          });
-        }),
+        ApproxStructure.build((s, str, _arr) => s.element('button', {
+          attrs: {
+            'aria-expanded': str.is('false'),
+            'aria-haspopup': str.is('true'),
+            'type': str.is('button')
+          }
+        })),
         component.element()
       ),
 
@@ -270,7 +268,7 @@ UnitTest.asynctest('Dropdown List', (success, failure) => {
           Step.sync(() => AlloyTriggers.emit(component, 'test-listener')),
           store.sAssertEq(
             'test-listener should respect eventOrder',
-            ['test.listener.1', 'test.listener.3', 'test.listener.2' ]
+            [ 'test.listener.1', 'test.listener.3', 'test.listener.2' ]
           )
         ])
       ),
