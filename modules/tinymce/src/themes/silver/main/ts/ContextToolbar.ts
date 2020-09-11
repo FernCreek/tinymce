@@ -56,12 +56,12 @@ const anchorOverrides = {
   maxWidthFunction: MaxWidth.expandable()
 };
 
-// On desktop we prioritise north-then-south because it's cleaner, but on mobile we prioritise south to try to avoid overlapping with native context toolbars
+// KB: We prefer defaulting south and not north
 const desktopAnchorSpecLayouts = {
-  onLtr: () => [ Layout.north, Layout.south, Layout.northeast, Layout.southeast, Layout.northwest, Layout.southwest,
-    LayoutInside.north, LayoutInside.south, LayoutInside.northeast, LayoutInside.southeast, LayoutInside.northwest, LayoutInside.southwest ],
-  onRtl: () => [ Layout.north, Layout.south, Layout.northwest, Layout.southwest, Layout.northeast, Layout.southeast,
-    LayoutInside.north, LayoutInside.south, LayoutInside.northwest, LayoutInside.southwest, LayoutInside.northeast, LayoutInside.southeast ]
+  onLtr: () => [ Layout.south, Layout.north, Layout.southeast, Layout.northeast, Layout.southwest, Layout.northwest,
+    LayoutInside.south, LayoutInside.north, LayoutInside.southeast, LayoutInside.northeast, LayoutInside.southwest, LayoutInside.northwest ],
+  onRtl: () => [ Layout.south, Layout.north, Layout.southwest, Layout.northwest, Layout.southeast, Layout.northeast,
+    LayoutInside.south, LayoutInside.north, LayoutInside.southwest, LayoutInside.northwest, LayoutInside.southeast, LayoutInside.northeast ]
 };
 
 const mobileAnchorSpecLayouts = {
