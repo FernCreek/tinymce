@@ -257,8 +257,8 @@ export const insertHtmlAtCaret = function (editor: Editor, value: string, detail
   rng = selection.getRng();
   const caretElement = rng.startContainer || (rng.parentElement ? rng.parentElement() : null);
   const body = editor.getBody();
-  if (caretElement === body && selection.isCollapsed()) {
-    if (dom.isBlock(body.firstChild) && canHaveChildren(editor, body.firstChild) && dom.isEmpty(body.firstChild)) {
+  if ((caretElement === body || caretElement === body.parentElement) && selection.isCollapsed()) {
+    if (dom.isBlock(body.firstChild) && canHaveChildren(editor, body.firstChild) && (dom.isEmpty(body.firstChild) || caretElement === body.parentElement)) {
       rng = dom.createRng();
       rng.setStart(body.firstChild, 0);
       rng.setEnd(body.firstChild, 0);
@@ -326,7 +326,7 @@ export const insertHtmlAtCaret = function (editor: Editor, value: string, detail
     }
 
     // Find the ancestor just before the root element
-    while (node !== rootNode) {
+    while (node !== rootNode && !!node) {
       parentNode = node;
       node = node.parentNode;
     }
