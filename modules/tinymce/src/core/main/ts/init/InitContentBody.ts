@@ -231,7 +231,7 @@ const moveSelectionToFirstCaretPosition = (editor: Editor) => {
   // We don't do this on inline because then it selects the editor container
   // This must run AFTER editor.focus!
   const root = editor.dom.getRoot();
-  if (!editor.inline && (!hasAnyRanges(editor) || editor.selection.getStart(true) === root)) {
+  if (!editor.inline && (editor.selection && (!hasAnyRanges(editor) || editor.selection.getStart(true) === root))) {
     CaretFinder.firstPositionIn(root).each((pos: CaretPosition) => {
       const node = pos.getNode();
       // If a table is the first caret pos, then walk down one more level
