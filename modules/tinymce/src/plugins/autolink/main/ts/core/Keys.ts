@@ -59,7 +59,7 @@ const addProtocolIfNeeded = function (link) {
 };
 
 const parseCurrentLine = function (editor, endOffset, delimiter) {
-  let rng, end, start, endContainer, bookmark, text, matches, prev, len, rngText;
+  let end, endContainer, bookmark, text, prev, len, rngText;
   const autoLinkPattern = Settings.getAutoLinkPattern(editor);
   const defaultLinkTarget = Settings.getDefaultLinkTarget(editor);
 
@@ -70,7 +70,7 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
 
   // We need at least five characters to form a URL,
   // hence, at minimum, five characters from the beginning of the line.
-  rng = editor.selection.getRng().cloneRange();
+  const rng = editor.selection.getRng().cloneRange();
   if (rng.startOffset < 5) {
     // During testing, the caret is placed between two text nodes.
     // The previous text node contains the URL.
@@ -116,7 +116,7 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
     }
   }
 
-  start = end;
+  const start = end;
 
   do {
     // Move the selection one character backwards.
@@ -147,7 +147,7 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
   }
 
   text = rng.toString().trim();
-  matches = text.match(autoLinkPattern);
+  const matches = text.match(autoLinkPattern);
 
   if (matches) {
     // There is a url in the text
@@ -184,7 +184,7 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
 
     // If there isn't a protocol then assume http
     if (!Settings.hasProtocolPattern().test(linkText)) {
-      linkText =  'http://' + linkText;
+      linkText = 'http://' + linkText;
     }
 
     bookmark = editor.selection.getBookmark();
