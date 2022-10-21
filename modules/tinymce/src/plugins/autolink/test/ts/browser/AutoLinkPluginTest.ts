@@ -21,15 +21,6 @@ UnitTest.asynctest('browser.tinymce.plugins.autolink.AutoLinkPluginTest', (succe
     return editor.getContent();
   };
 
-  const typeAnEclipsedURL = (editor: Editor, url: string, expectedUrl?: string, withDotAtTheEnd?: boolean): void => {
-    const dot = withDotAtTheEnd ? '.' : '';
-    const modifiedurl = '(' + url + dot;
-    editor.setContent('<p>' + modifiedurl + '</p>');
-    LegacyUnit.setSelection(editor, 'p', modifiedurl.length);
-    KeyUtils.type(editor, ')');
-    Assert.eq('Create a link of an eclipsed url', `<p>(<a href="${expectedUrl || url}">${url + dot}</a>)</p>`, editor.getContent());
-  };
-
   const typeNewlineURL = (editor: Editor, url: string, expectedUrl?: string, withDotAtTheEnd?: boolean): void => {
     const dot = withDotAtTheEnd ? '.' : '';
     editor.setContent('<p>' + url + dot + '</p>');
@@ -57,19 +48,10 @@ UnitTest.asynctest('browser.tinymce.plugins.autolink.AutoLinkPluginTest', (succe
   test('TestCase-TBA: AutoLink: Correct urls ended with space', (editor) => {
     assertIsLink(editor, 'http://www.domain.com', 'http://www.domain.com');
     assertIsLink(editor, 'https://www.domain.com', 'https://www.domain.com');
-    assertIsLink(editor, 'ssh://www.domain.com', 'ssh://www.domain.com');
     assertIsLink(editor, 'ftp://www.domain.com', 'ftp://www.domain.com');
     assertIsLink(editor, 'www.domain.com', 'http://www.domain.com');
     assertIsLink(editor, 'www.domain.com', 'http://www.domain.com', true);
-    assertIsLink(editor, 'user@domain.com', 'mailto:user@domain.com');
     assertIsLink(editor, 'mailto:user@domain.com', 'mailto:user@domain.com');
-    assertIsLink(editor, 'first-last@domain.com', 'mailto:first-last@domain.com');
-  });
-
-  test('TINY-4773: AutoLink: Unexpected urls ended with space', (editor) => {
-    assertIsLink(editor, 'first-last@domain', 'mailto:first-last@domain'); // No .com or similar needed.
-    assertIsLink(editor, 'first-last@()', 'mailto:first-last@()'); // Anything goes after the @.
-    assertIsLink(editor, 'first-last@¶¶KJ', 'mailto:first-last@&para;&para;KJ', false, 'first-last@&para;&para;KJ'); // Anything goes after the @
   });
 
   test('TINY-4773: AutoLink: text which should not work', (editor) => {
@@ -90,19 +72,9 @@ UnitTest.asynctest('browser.tinymce.plugins.autolink.AutoLinkPluginTest', (succe
     }));
   });
 
-  test('TestCase-TBA: AutoLink: Urls ended with )', (editor) => {
-    typeAnEclipsedURL(editor, 'http://www.domain.com');
-    typeAnEclipsedURL(editor, 'https://www.domain.com');
-    typeAnEclipsedURL(editor, 'ssh://www.domain.com');
-    typeAnEclipsedURL(editor, 'ftp://www.domain.com');
-    typeAnEclipsedURL(editor, 'www.domain.com', 'http://www.domain.com');
-    typeAnEclipsedURL(editor, 'www.domain.com', 'http://www.domain.com');
-  });
-
   test('TestCase-TBA: AutoLink: Urls ended with new line', (editor) => {
     typeNewlineURL(editor, 'http://www.domain.com');
     typeNewlineURL(editor, 'https://www.domain.com');
-    typeNewlineURL(editor, 'ssh://www.domain.com');
     typeNewlineURL(editor, 'ftp://www.domain.com');
     typeNewlineURL(editor, 'www.domain.com', 'http://www.domain.com');
     typeNewlineURL(editor, 'www.domain.com', 'http://www.domain.com', true);
@@ -128,27 +100,6 @@ UnitTest.asynctest('browser.tinymce.plugins.autolink.AutoLinkPluginTest', (succe
       '<p><a href="http://www.domain.com" target="_self">http://www.domain.com</a>&nbsp;</p>'
     );
     delete editor.settings.default_link_target;
-  });
-
-  test('TestCase-TBA: AutoLink: link_default_protocol=https', (editor) => {
-    editor.settings.link_default_protocol = 'https';
-    assertIsLink(editor, 'http://www.domain.com', 'http://www.domain.com');
-    assertIsLink(editor, 'https://www.domain.com', 'https://www.domain.com');
-    assertIsLink(editor, 'ssh://www.domain.com', 'ssh://www.domain.com');
-    assertIsLink(editor, 'ftp://www.domain.com', 'ftp://www.domain.com');
-    assertIsLink(editor, 'www.domain.com', 'https://www.domain.com');
-    assertIsLink(editor, 'www.domain.com', 'https://www.domain.com', true);
-    assertIsLink(editor, 'user@domain.com', 'mailto:user@domain.com');
-    assertIsLink(editor, 'mailto:user@domain.com', 'mailto:user@domain.com');
-    assertIsLink(editor, 'first-last@domain.com', 'mailto:first-last@domain.com');
-    delete editor.settings.link_default_protocol;
-  });
-
-  test('TestCase-TBA: AutoLink: link_default_protocol=http', (editor) => {
-    editor.settings.link_default_protocol = 'http';
-    assertIsLink(editor, 'www.domain.com', 'http://www.domain.com');
-    assertIsLink(editor, 'www.domain.com', 'http://www.domain.com', true);
-    delete editor.settings.link_default_protocol;
   });
 
   TinyLoader.setupLight((editor, onSuccess, onFailure) => {
