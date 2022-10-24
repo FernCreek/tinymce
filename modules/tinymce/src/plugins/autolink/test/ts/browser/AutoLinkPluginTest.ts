@@ -146,6 +146,11 @@ UnitTest.asynctest('browser.tinymce.plugins.autolink.AutoLinkPluginTest', (succe
     Assert.eq('Should support url in { after text', `<p>This is an example: {<a href="http://www.domain.com/">http://www.domain.com</a>}&nbsp;</p>`, typeUrl(editor, 'This is an example: {http://www.domain.com}'));
   });
 
+  test('AutoLink: Url in grouping character with non-breaking space', (editor) => {
+    // Use a unicode escape sequence to type a non-breaking space in a way that lets us set the range correctly in typeUrl
+    Assert.eq('Should not include the quote', `<p>"<a href="http://www.domain.com/">http://www.domain.com</a>"&nbsp;&nbsp;</p>`, typeUrl(editor, '"http://www.domain.com"\u00A0'));
+  });
+
   suite.test(`TestCase-TBA: AutoLink: default_link_target='_self'`, (editor) => {
     editor.settings.default_link_target = '_self';
     LegacyUnit.equal(

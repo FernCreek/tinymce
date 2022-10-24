@@ -138,9 +138,30 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
     setStart(rng, endContainer, end);
     setEnd(rng, endContainer, start);
   }
+  // The while loop above ensures that the beginning of the range doesn't include whitespace. However, we could have
+  // trailing whitespace at the end of the range. Account for that now before excluding trailing characters.
+
+  const rawText = rng.toString();
+  text = rawText.trim();
+
+  if (rawText.length > text.length) {
+    let change = rawText.length - text.length;
+
+    // In normal usage I think trim would only have removed whitespace at the end due to how the above loop works.
+    // However, there is a unit test with a BOM character at the beginning of the text. I'm not sure if it was added
+    // on purpose, but I'm going to handle it just to be safe.
+    const startIndex = rawText.indexOf(text);
+    if (startIndex > 0) {
+      change -= startIndex;
+    }
+
+    if (change > 0) {
+      start -= change;
+      setEnd(rng, endContainer, start);
+    }
+  }
 
   // Now that we have the text, process it before trying to validate it
-  text = rng.toString().trim();
 
   // First, we want to ignore any trailing punctuation, for example: www.example.com.
   if (Settings.getEndingPunctuationIgnoreList().indexOf(text.charAt(text.length - 1)) !== -1) {
