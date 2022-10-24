@@ -46,11 +46,11 @@ UnitTest.asynctest('browser.tinymce.plugins.autolink.AutoLinkPluginTest', (succe
   };
 
   test('TestCase-TBA: AutoLink: Correct urls ended with space', (editor) => {
-    assertIsLink(editor, 'http://www.domain.com', 'http://www.domain.com');
-    assertIsLink(editor, 'https://www.domain.com', 'https://www.domain.com');
-    assertIsLink(editor, 'ftp://www.domain.com', 'ftp://www.domain.com');
-    assertIsLink(editor, 'www.domain.com', 'http://www.domain.com');
-    assertIsLink(editor, 'www.domain.com', 'http://www.domain.com', true);
+    assertIsLink(editor, 'http://www.domain.com', 'http://www.domain.com/');
+    assertIsLink(editor, 'https://www.domain.com', 'https://www.domain.com/');
+    assertIsLink(editor, 'ftp://www.domain.com', 'ftp://www.domain.com/');
+    assertIsLink(editor, 'www.domain.com', 'http://www.domain.com/');
+    assertIsLink(editor, 'www.domain.com', 'http://www.domain.com/', true);
     assertIsLink(editor, 'mailto:user@domain.com', 'mailto:user@domain.com');
   });
 
@@ -73,11 +73,11 @@ UnitTest.asynctest('browser.tinymce.plugins.autolink.AutoLinkPluginTest', (succe
   });
 
   test('TestCase-TBA: AutoLink: Urls ended with new line', (editor) => {
-    typeNewlineURL(editor, 'http://www.domain.com');
-    typeNewlineURL(editor, 'https://www.domain.com');
-    typeNewlineURL(editor, 'ftp://www.domain.com');
-    typeNewlineURL(editor, 'www.domain.com', 'http://www.domain.com');
-    typeNewlineURL(editor, 'www.domain.com', 'http://www.domain.com', true);
+    typeNewlineURL(editor, 'http://www.domain.com', 'http://www.domain.com/');
+    typeNewlineURL(editor, 'https://www.domain.com', 'https://www.domain.com/');
+    typeNewlineURL(editor, 'ftp://www.domain.com', 'ftp://www.domain.com/');
+    typeNewlineURL(editor, 'www.domain.com', 'http://www.domain.com/');
+    typeNewlineURL(editor, 'www.domain.com', 'http://www.domain.com/', true);
   });
 
   test('TestCase-TBA: AutoLink: Url inside blank formatting wrapper', (editor) => {
@@ -89,15 +89,68 @@ UnitTest.asynctest('browser.tinymce.plugins.autolink.AutoLinkPluginTest', (succe
     KeyUtils.typeString(editor, 'http://www.domain.com ');
     LegacyUnit.equal(
       editor.getContent(),
-      '<p><strong><a href="http://www.domain.com">http://www.domain.com</a>&nbsp;</strong></p>'
+      '<p><strong><a href="http://www.domain.com/">http://www.domain.com</a>&nbsp;</strong></p>'
     );
+  });
+
+  test('AutoLink: Ending punctuation', (editor) => {
+    Assert.eq('Should end with .', `<p><a href="http://www.domain.com/">http://www.domain.com</a>.&nbsp;</p>`, typeUrl(editor, 'http://www.domain.com.'));
+    Assert.eq('Should end with ?', `<p><a href="http://www.domain.com/">http://www.domain.com</a>?&nbsp;</p>`, typeUrl(editor, 'http://www.domain.com?'));
+    Assert.eq('Should end with !', `<p><a href="http://www.domain.com/">http://www.domain.com</a>!&nbsp;</p>`, typeUrl(editor, 'http://www.domain.com!'));
+    Assert.eq('Should end with ,', `<p><a href="http://www.domain.com/">http://www.domain.com</a>,&nbsp;</p>`, typeUrl(editor, 'http://www.domain.com,'));
+    Assert.eq('Should end with :', `<p><a href="http://www.domain.com/">http://www.domain.com</a>:&nbsp;</p>`, typeUrl(editor, 'http://www.domain.com:'));
+    Assert.eq('Should end with ;', `<p><a href="http://www.domain.com/">http://www.domain.com</a>;&nbsp;</p>`, typeUrl(editor, 'http://www.domain.com;'));
+  });
+
+  test('AutoLink: non-basic Urls', (editor) => {
+    // Path
+    assertIsLink(editor, 'http://domain.com/some/random/path', 'http://domain.com/some/random/path');
+    assertIsLink(editor, 'http://domain.com/slash/', 'http://domain.com/slash/'); // // TODO_JA - New bug?
+
+    // Hash
+    assertIsLink(editor, 'http://domain.com#withHash', 'http://domain.com/#withHash');
+    assertIsLink(editor, 'http://domain.com#!importantHash', 'http://domain.com/#!importantHash'); // TODO_JA - This fails, this is the Whitesource URL bug
+
+    // Query string
+    assertIsLink(editor, 'http://domain.com?q=a', 'http://domain.com/?q=a');
+    assertIsLink(editor, 'http://domain.com?q=1,2', 'http://domain.com/?q=1,2');
+    // Due to how we are verifying results, & characters are being escaped even in the href.
+    // In a real editing scenario the & is correctly not being escaped.
+    Assert.eq('Should support multiple query parameters.', `<p><a href="http://domain.com/?a=1&amp;b=2">http://domain.com?a=1&amp;b=2</a>&nbsp;</p>`, typeUrl(editor, 'http://domain.com?a=1&b=2'));
+
+    // All at once
+    assertIsLink(editor, 'http://domain.com/slash/#after', 'http://domain.com/slash/#after');
+    assertIsLink(editor, 'http://domain.com/slash/?q=a', 'http://domain.com/slash/?q=a');
+    assertIsLink(editor, 'http://domain.com?q=a#hash', 'http://domain.com/?q=a#hash');
+    assertIsLink(editor, 'http://domain.com/slash?q=a#hash', 'http://domain.com/slash?q=a#hash');
+  });
+
+  test('AutoLink: Url inside grouping characters', (editor) => {
+    Assert.eq('Should support url in \'', `<p>'<a href="http://www.domain.com/">http://www.domain.com</a>'&nbsp;</p>`, typeUrl(editor, '\'http://www.domain.com\''));
+    Assert.eq('Should support url in "', `<p>"<a href="http://www.domain.com/">http://www.domain.com</a>"&nbsp;</p>`, typeUrl(editor, '"http://www.domain.com"'));
+    Assert.eq('Should support url in (', `<p>(<a href="http://www.domain.com/">http://www.domain.com</a>)&nbsp;</p>`, typeUrl(editor, '(http://www.domain.com)'));
+    Assert.eq('Should support url in [', `<p>[<a href="http://www.domain.com/">http://www.domain.com</a>]&nbsp;</p>`, typeUrl(editor, '[http://www.domain.com]'));
+    Assert.eq('Should support url in {', `<p>{<a href="http://www.domain.com/">http://www.domain.com</a>}&nbsp;</p>`, typeUrl(editor, '{http://www.domain.com}'));
+  });
+
+  test('AutoLink: Url after other text', (editor) => {
+    Assert.eq('Should support text before the url', `<p>This is an example: <a href="http://www.domain.com/">http://www.domain.com</a>&nbsp;</p>`, typeUrl(editor, 'This is an example: http://www.domain.com'));
+  });
+
+  test('AutoLink: Url after other text inside grouping characters', (editor) => {
+    Assert.eq('Should support url in \' after text', `<p>This is an example: '<a href="http://www.domain.com/">http://www.domain.com</a>'&nbsp;</p>`, typeUrl(editor, 'This is an example: \'http://www.domain.com\''));
+    Assert.eq('Should support url in " after text', `<p>This is an example: "<a href="http://www.domain.com/">http://www.domain.com</a>"&nbsp;</p>`, typeUrl(editor, 'This is an example: "http://www.domain.com"'));
+    Assert.eq('Should support url in ` after text', `<p>This is an example: \`<a href="http://www.domain.com/">http://www.domain.com</a>\`&nbsp;</p>`, typeUrl(editor, 'This is an example: `http://www.domain.com`'));
+    Assert.eq('Should support url in ( after text', `<p>This is an example: (<a href="http://www.domain.com/">http://www.domain.com</a>)&nbsp;</p>`, typeUrl(editor, 'This is an example: (http://www.domain.com)'));
+    Assert.eq('Should support url in [ after text', `<p>This is an example: [<a href="http://www.domain.com/">http://www.domain.com</a>]&nbsp;</p>`, typeUrl(editor, 'This is an example: [http://www.domain.com]'));
+    Assert.eq('Should support url in { after text', `<p>This is an example: {<a href="http://www.domain.com/">http://www.domain.com</a>}&nbsp;</p>`, typeUrl(editor, 'This is an example: {http://www.domain.com}'));
   });
 
   suite.test(`TestCase-TBA: AutoLink: default_link_target='_self'`, (editor) => {
     editor.settings.default_link_target = '_self';
     LegacyUnit.equal(
       typeUrl(editor, 'http://www.domain.com'),
-      '<p><a href="http://www.domain.com" target="_self">http://www.domain.com</a>&nbsp;</p>'
+      '<p><a href="http://www.domain.com/" target="_self">http://www.domain.com</a>&nbsp;</p>'
     );
     delete editor.settings.default_link_target;
   });

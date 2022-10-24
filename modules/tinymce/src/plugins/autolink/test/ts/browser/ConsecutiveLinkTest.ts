@@ -16,20 +16,20 @@ UnitTest.asynctest('browser.tinymce.plugins.autolink.ConsecutiveLinkTest', (succ
     const steps = Env.browser.isIE() ? [] : [
       tinyApis.sFocus(),
       Log.stepsAsStep('TBA', 'AutoLink: Chrome adds a nbsp between link and text', [
-        tinyApis.sSetContent('<p><a href="http://www.domain.com">www.domain.com</a>&nbsp;www.domain.com</p>'),
+        tinyApis.sSetContent('<p><a href="http://www.domain.com/">www.domain.com</a>&nbsp;www.domain.com</p>'),
         tinyApis.sSetCursor([ 0, 1 ], 15),
         Step.sync(function () {
           KeyUtils.type(editor, ' ');
         }),
-        tinyApis.sAssertContent('<p><a href="http://www.domain.com">www.domain.com</a>&nbsp;<a href="http://www.domain.com">www.domain.com</a>&nbsp;</p>')
+        tinyApis.sAssertContent('<p><a href="http://www.domain.com/">www.domain.com</a>&nbsp;<a href="http://www.domain.com/">www.domain.com</a>&nbsp;</p>')
       ]),
       Log.stepsAsStep('TBA', 'AutoLink: FireFox does not seem to add a nbsp between link and text', [
-        tinyApis.sSetContent('<p><a href="http://www.domain.com">www.domain.com</a> www.domain.com</p>'),
+        tinyApis.sSetContent('<p><a href="http://www.domain.com/">www.domain.com</a> www.domain.com</p>'),
         tinyApis.sSetCursor([ 0, 1 ], 15),
         Step.sync(function () {
           KeyUtils.type(editor, ' ');
         }),
-        tinyApis.sAssertContent('<p><a href="http://www.domain.com">www.domain.com</a> <a href="http://www.domain.com">www.domain.com</a>&nbsp;</p>')
+        tinyApis.sAssertContent('<p><a href="http://www.domain.com/">www.domain.com</a> <a href="http://www.domain.com/">www.domain.com</a>&nbsp;</p>')
       ])
     ];
 

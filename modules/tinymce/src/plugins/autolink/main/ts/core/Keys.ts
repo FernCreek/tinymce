@@ -60,7 +60,6 @@ const addProtocolIfNeeded = function (link) {
 
 const parseCurrentLine = function (editor, endOffset, delimiter) {
   let end, endContainer, bookmark, text, prev, len, rngText;
-  const autoLinkPattern = Settings.getAutoLinkPattern(editor);
   const defaultLinkTarget = Settings.getDefaultLinkTarget(editor);
 
   // Never create a link when we are inside a link
@@ -116,7 +115,7 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
     }
   }
 
-  const start = end;
+  let start = end;
 
   do {
     // Move the selection one character backwards.
@@ -140,57 +139,44 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
     setEnd(rng, endContainer, start);
   }
 
-  // Exclude last . from word like "www.site.com."
-  text = rng.toString();
-  if (text.charAt(text.length - 1) === '.') {
-    setEnd(rng, endContainer, start - 1);
+  // Now that we have the text, process it before trying to validate it
+  text = rng.toString().trim();
+
+  // First, we want to ignore any trailing punctuation, for example: www.example.com.
+  if (Settings.getEndingPunctuationIgnoreList().indexOf(text.charAt(text.length - 1)) !== -1) {
+    setEnd(rng, endContainer, --start); // Modify the start index in case we also fall into the next block
+    text = rng.toString().trim();
   }
 
-  text = rng.toString().trim();
-  const matches = text.match(autoLinkPattern);
+  // Second, ignore any closing grouping type characters to allow for (www.example.com) or "www.example.com"
+  if (Settings.getGroupingCharactersIgnoreLIst().indexOf(text.charAt(text.length - 1)) !== -1) {
+    setEnd(rng, endContainer, start - 1);
+    text = rng.toString().trim();
+  }
 
-  if (matches) {
-    // There is a url in the text
-    const endsWithParen = /\b.*\)[,.!?'":;]?$/;
-    let linkText = matches[0];
-    // Check if our link ends with a closing parenthesis
-    // Remove unless there is an opening one in the link, this makes for a nicer user experience
-    if (endsWithParen.test(linkText)) {
-      // Handle paren being both the last & second last character to match native implementation
-      if (linkText.charAt(linkText.length - 2) === ')') {
-        if (linkText.indexOf('(') !== -1) {
-          linkText = linkText.substr(0, linkText.length - 1);
-        } else {
-          linkText = linkText.substr(0, linkText.length - 2);
-        }
-      } else if (linkText.charAt(linkText.length - 1) === ')') {
-        if (linkText.indexOf('(') === -1) {
-          linkText = linkText.substr(0, linkText.length - 1);
-        }
-      }
-    }
+  // Third, ignore any staring grouping type characters to allow for (www.example.com or "www.example.com"
+  if (Settings.getGroupingCharactersIgnoreLIst().indexOf(text.charAt(0)) !== -1) {
+    // If we "ended" at the end of the line or a whitespace character end is currently the index before that.
+    // So this will always remove a leading grouping character before the URL
+    setStart(rng, endContainer, end);
+    text = rng.toString().trim();
+  }
 
-    if (linkText.length !== text.length) {
-      // Not all of our text is a valid link, modify the range to only include the link text
-      const idx = text.indexOf(linkText);
-      if (idx > 0) {
-        setStart(rng, endContainer, idx);
-        text = rng.toString();
-      }
-      if (linkText.length !== text.length) {
-        setEnd(rng, endContainer, linkText.length + rng.startOffset);
-      }
-    }
+  // Last, if the text begins with www. prepend our default protocol
+  if (text.startsWith('www.')) {
+    text = `http://${text}`;
+  }
 
-    // If there isn't a protocol then assume http
-    if (!Settings.hasProtocolPattern().test(linkText)) {
-      linkText = 'http://' + linkText;
-    }
+  let validURL: URL | null = null;
+  try {
+    validURL = new URL(text);
+  } catch (e) { /* The URL constructor will throw when passed an invalid URL */ }
 
+  if (validURL && Settings.getAllowedProtocols().indexOf(validURL.protocol) !== -1) {
     bookmark = editor.selection.getBookmark();
 
     editor.selection.setRng(rng);
-    editor.execCommand('createlink', false, linkText);
+    editor.execCommand('createlink', false, validURL.href);
 
     if (defaultLinkTarget) {
       editor.dom.setAttrib(editor.selection.getNode(), 'target', defaultLinkTarget);
