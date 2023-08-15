@@ -5,9 +5,8 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { console, document } from '@ephox/dom-globals';
 import { Type } from '@ephox/katamari';
-import { ReferrerPolicy } from '../SettingsTypes';
+
 import Tools from '../util/Tools';
 import DOMUtils from './DOMUtils';
 
@@ -46,21 +45,10 @@ export interface ScriptLoaderSettings {
 
 export interface ScriptLoaderConstructor {
   readonly prototype: ScriptLoader;
-  ScriptLoader: ScriptLoader;
 
   new (): ScriptLoader;
-}
 
-interface ScriptLoader {
-  loadScript (url: string, success?: () => void, failure?: () => void): void;
-  loadScripts (url: string[], success?: () => void, failure?: (urls: string[]) => void): void;
-  isDone (url: string): boolean;
-  markDone (url: string): void;
-  add (url: string, success?: () => void, scope?: {}, failure?: () => void): void;
-  load (url: string, success?: () => void, scope?: {}, failure?: () => void): void;
-  remove (url: string);
-  loadQueue (success?: () => void, scope?: {}, failure?: (urls: string[]) => void): void;
-  _setReferrerPolicy (referrerPolicy: ReferrerPolicy): void;
+  ScriptLoader: ScriptLoader;
 }
 
 const QUEUED = 0;
@@ -71,14 +59,14 @@ const FAILED = 3;
 class ScriptLoader {
   public static ScriptLoader = new ScriptLoader();
 
-  private settings: Partial<ScriptLoaderSettings>;
+  private settings: ScriptLoaderSettings;
   private states: Record<string, number> = {};
   private queue: string[] = [];
   private scriptLoadedCallbacks: Record<string, Array<{success: () => void; failure: () => void; scope: any}>> = {};
   private queueLoadedCallbacks: Array<{success: () => void; failure: (urls: string[]) => void; scope: any}> = [];
   private loading = 0;
 
-  public constructor(settings: Partial<ScriptLoaderSettings> = {}) {
+  public constructor(settings: ScriptLoaderSettings = {}) {
     this.settings = settings;
   }
 
@@ -98,18 +86,21 @@ class ScriptLoader {
     const dom = DOM;
     let elm;
 
-    // Execute callback when script is loaded
-    const done = function () {
+    const cleanup = () => {
       dom.remove(id);
-
       if (elm) {
-        elm.onreadystatechange = elm.onload = elm = null;
+        elm.onerror = elm.onload = elm = null;
       }
+    };
 
+    // Execute callback when script is loaded
+    const done = () => {
+      cleanup();
       success();
     };
 
-    const error = function () {
+    const error = () => {
+      cleanup();
 
       // We can't mark it as done if there is a load error since
       // A) We don't want to produce 404 errors on the server and
@@ -120,9 +111,9 @@ class ScriptLoader {
         failure();
       } else {
         // Report the error so it's easier for people to spot loading errors
-        // tslint:disable-next-line:no-console
+        // eslint-disable-next-line no-console
         if (typeof console !== 'undefined' && console.log) {
-          // tslint:disable-next-line:no-console
+          // eslint-disable-next-line no-console
           console.log('Failed to load script: ' + url);
         }
       }
@@ -181,12 +172,12 @@ class ScriptLoader {
    * @param {Object} scope Optional scope to execute callback in.
    * @param {function} failure Optional failure callback function to execute when the script failed to load.
    */
-  public add(url: string, success?: () => void, scope?: {}, failure?: () => void) {
+  public add(url: string, success?: () => void, scope?: any, failure?: () => void) {
     const state = this.states[url];
+    this.queue.push(url);
 
     // Add url to load queue
     if (state === undefined) {
-      this.queue.push(url);
       this.states[url] = QUEUED;
     }
 
@@ -204,7 +195,7 @@ class ScriptLoader {
     }
   }
 
-  public load(url: string, success?: () => void, scope?: {}, failure?: () => void) {
+  public load(url: string, success?: () => void, scope?: any, failure?: () => void) {
     return this.add(url, success, scope, failure);
   }
 
@@ -221,7 +212,7 @@ class ScriptLoader {
    * @param {function} failure Optional callback to execute when queued items failed to load.
    * @param {Object} scope Optional scope to execute the callback in.
    */
-  public loadQueue(success?: () => void, scope?: {}, failure?: (urls: string[]) => void) {
+  public loadQueue(success?: () => void, scope?: any, failure?: (urls: string[]) => void) {
     this.loadScripts(this.queue, success, scope, failure);
   }
 
@@ -235,13 +226,13 @@ class ScriptLoader {
    * @param {Object} scope Optional scope to execute callback in.
    * @param {function} failure Optional callback to execute if scripts failed to load.
    */
-  public loadScripts(scripts: string[], success?: () => void, scope?: {}, failure?: (urls: string[]) => void) {
+  public loadScripts(scripts: string[], success?: () => void, scope?: any, failure?: (urls: string[]) => void) {
     const self = this;
     const failures = [];
 
-    const execCallbacks = function (name, url) {
+    const execCallbacks = (name, url) => {
       // Execute URL callback functions
-      each(self.scriptLoadedCallbacks[url], function (callback) {
+      each(self.scriptLoadedCallbacks[url], (callback) => {
         if (Type.isFunction(callback[name])) {
           callback[name].call(callback.scope);
         }
@@ -256,14 +247,14 @@ class ScriptLoader {
       scope: scope || this
     });
 
-    const loadScripts = function () {
+    const loadScripts = () => {
       const loadingScripts = grep(scripts);
 
       // Current scripts has been handled
       scripts.length = 0;
 
       // Load scripts that needs to be loaded
-      each(loadingScripts, function (url) {
+      each(loadingScripts, (url) => {
         // Script is already loaded then execute script callbacks directly
         if (self.states[url] === LOADED) {
           execCallbacks('success', url);
@@ -280,7 +271,7 @@ class ScriptLoader {
           self.states[url] = LOADING;
           self.loading++;
 
-          self.loadScript(url, function () {
+          self.loadScript(url, () => {
             self.states[url] = LOADED;
             self.loading--;
 
@@ -288,7 +279,7 @@ class ScriptLoader {
 
             // Load more scripts if they where added by the recently loaded script
             loadScripts();
-          }, function () {
+          }, () => {
             self.states[url] = FAILED;
             self.loading--;
 
@@ -307,7 +298,7 @@ class ScriptLoader {
         const notifyCallbacks = self.queueLoadedCallbacks.slice(0);
         self.queueLoadedCallbacks.length = 0;
 
-        each(notifyCallbacks, function (callback) {
+        each(notifyCallbacks, (callback) => {
           if (failures.length === 0) {
             if (Type.isFunction(callback.success)) {
               callback.success.call(callback.scope);

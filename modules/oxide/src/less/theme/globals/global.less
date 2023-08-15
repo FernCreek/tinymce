@@ -13,6 +13,7 @@
 @tinymce-border-radius: 0;
 @tinymce-border-width: 1px;
 @tinymce-box-shadow: none;
+@editor-header-inline-background-color: if((alpha(@toolbar-background-color) > 0), transparent, @background-color); // If @toolbar-background-color is set to transparent, then set the inline toolbar background color to be another color to not be transparent over content.
 
 .tox-tinymce {
   border: @tinymce-border-width solid @tinymce-border-color;
@@ -33,6 +34,7 @@
   box-shadow: none;
 
   .tox-editor-header {
+    background-color: @editor-header-inline-background-color;
     border: @tinymce-border-width solid @tinymce-border-color;
     border-radius: @tinymce-border-radius;
     box-shadow: @tinymce-box-shadow;
@@ -53,4 +55,12 @@
 // Reset firefox focus states
 button::-moz-focus-inner {
   border: 0;
+}
+
+// RTL
+.tox[dir=rtl] {
+  // Rotates configured icons 180 degrees when rendering in RTL
+  .tox-icon--flip svg {
+    transform: rotateY(180deg);
+  }
 }

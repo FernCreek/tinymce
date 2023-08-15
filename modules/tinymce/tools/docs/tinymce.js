@@ -3,15 +3,20 @@
  *
  * @static
  * @class tinymce
- * @borrow-members tinymce.EditorManager
  * @borrow-members tinymce.util.Tools
  */
 
 /**
  * @property {tinymce.dom.DOMUtils} DOM Global DOM instance.
  * @property {tinymce.dom.ScriptLoader} ScriptLoader Global ScriptLoader instance.
- * @property {tinymce.AddOnManager} PluginManager Global PluginManager instance.
- * @property {tinymce.AddOnManager} ThemeManager Global ThemeManager instance.
+ * @property {tinymce.AddOnManager} PluginManager Global PluginManager instance. Instance of AddOnManager.
+ * @property {tinymce.AddOnManager} ThemeManager Global ThemeManager instance. Instance of AddOnManager.
+ */
+
+/**
+ * Include EditorManager API docs.
+ *
+ * @include ../../src/core/main/ts/api/EditorManager.ts
  */
 
 /**
@@ -42,10 +47,4 @@
  * Contains various utility classes such as json parser, cookies etc.
  *
  * @namespace tinymce.util
- */
-
-/**
- * Contains modules to handle data binding.
- *
- * @namespace tinymce.data
  */

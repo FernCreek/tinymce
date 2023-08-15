@@ -1,23 +1,22 @@
-import { Chain, Pipeline, Logger } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { ApiChains, Editor } from '@ephox/mcagar';
+import { before, describe, it } from '@ephox/bedrock-client';
+import { McEditor, TinyAssertions } from '@ephox/wrap-mcagar';
+
+import Editor from 'tinymce/core/api/Editor';
 import Theme from 'tinymce/themes/silver/Theme';
 
-UnitTest.asynctest('browser.tinymce.core.content.EditorContentWsTest', (success, failure) => {
-  Theme();
+describe('browser.tinymce.core.content.EditorContentWsTest', () => {
+  before(() => {
+    Theme();
+  });
 
-  Pipeline.async({}, [
-    Logger.t('Editor initialized on pre element should retain whitespace on get/set content', Chain.asStep({}, [
-      Editor.cFromHtml('<pre>  a  </pre>', {
-        inline: true,
-        base_url: '/project/tinymce/js/tinymce'
-      }),
-      ApiChains.cAssertContent('  a  '),
-      ApiChains.cSetContent('  b  '),
-      ApiChains.cAssertContent('  b  '),
-      Editor.cRemove
-    ]))
-  ], function () {
-    success();
-  }, failure);
+  it('Editor initialized on pre element should retain whitespace on get/set content', async () => {
+    const editor = await McEditor.pFromHtml<Editor>('<pre>  a  </pre>', {
+      inline: true,
+      base_url: '/project/tinymce/js/tinymce'
+    });
+    TinyAssertions.assertContent(editor, '  a  ');
+    editor.setContent('  b  ');
+    TinyAssertions.assertContent(editor, '  b  ');
+    McEditor.remove(editor);
+  });
 });

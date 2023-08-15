@@ -5,8 +5,8 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { atob, Blob, FileReader, XMLHttpRequest } from '@ephox/dom-globals';
-import { Option } from '@ephox/katamari';
+import { Optional } from '@ephox/katamari';
+
 import Promise from '../api/util/Promise';
 
 /**
@@ -16,10 +16,10 @@ import Promise from '../api/util/Promise';
  * @class tinymce.file.Conversions
  */
 
-const blobUriToBlob = function (url: string): Promise<Blob> {
-  return new Promise(function (resolve, reject) {
+const blobUriToBlob = (url: string): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
 
-    const rejectWithError = function () {
+    const rejectWithError = () => {
       reject('Cannot convert ' + url + ' to Blob. Resource might not exist or is inaccessible.');
     };
 
@@ -29,9 +29,9 @@ const blobUriToBlob = function (url: string): Promise<Blob> {
       xhr.open('GET', url, true);
       xhr.responseType = 'blob';
 
-      xhr.onload = function () {
-        if (this.status === 200) {
-          resolve(this.response);
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          resolve(xhr.response);
         } else {
           // IE11 makes it into onload but responds with status 500
           rejectWithError();
@@ -49,7 +49,7 @@ const blobUriToBlob = function (url: string): Promise<Blob> {
   });
 };
 
-const parseDataUri = function (uri: string) {
+const parseDataUri = (uri: string) => {
   let type;
 
   const uriParts = decodeURIComponent(uri).split(',');
@@ -65,14 +65,14 @@ const parseDataUri = function (uri: string) {
   };
 };
 
-const buildBlob = (type: string, data: string): Option<Blob> => {
+const buildBlob = (type: string, data: string): Optional<Blob> => {
   let str: string;
 
   // Might throw error if data isn't proper base64
   try {
     str = atob(data);
   } catch (e) {
-    return Option.none();
+    return Optional.none();
   }
 
   const arr = new Uint8Array(str.length);
@@ -81,10 +81,10 @@ const buildBlob = (type: string, data: string): Option<Blob> => {
     arr[i] = str.charCodeAt(i);
   }
 
-  return Option.some(new Blob([ arr ], { type }));
+  return Optional.some(new Blob([ arr ], { type }));
 };
 
-const dataUriToBlob = function (uri: string): Promise<Blob> {
+const dataUriToBlob = (uri: string): Promise<Blob> => {
   return new Promise((resolve) => {
     const { type, data } = parseDataUri(uri);
 
@@ -95,7 +95,7 @@ const dataUriToBlob = function (uri: string): Promise<Blob> {
   });
 };
 
-const uriToBlob = function (url: string): Promise<Blob> {
+const uriToBlob = (url: string): Promise<Blob> => {
   if (url.indexOf('blob:') === 0) {
     return blobUriToBlob(url);
   }
@@ -107,12 +107,12 @@ const uriToBlob = function (url: string): Promise<Blob> {
   return null;
 };
 
-const blobToDataUri = function (blob: Blob): Promise<string> {
-  return new Promise(function (resolve) {
+const blobToDataUri = (blob: Blob): Promise<string> => {
+  return new Promise((resolve) => {
     const reader = new FileReader();
 
-    reader.onloadend = function () {
-      resolve(reader.result);
+    reader.onloadend = () => {
+      resolve(reader.result as string);
     };
 
     reader.readAsDataURL(blob);

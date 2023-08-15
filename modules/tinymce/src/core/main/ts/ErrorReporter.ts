@@ -5,10 +5,9 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { window, console } from '@ephox/dom-globals';
-import I18n from './api/util/I18n';
 import Editor from './api/Editor';
 import { fireError } from './api/Events';
+import I18n from './api/util/I18n';
 
 const displayNotification = (editor: Editor, message: string) => {
   editor.notificationManager.open({
@@ -33,7 +32,7 @@ const uploadError = (editor: Editor, message: string) => {
 
 const logError = (editor: Editor, errorType: string, msg: string) => {
   fireError(editor, errorType, { message: msg });
-  // tslint:disable-next-line:no-console
+  // eslint-disable-next-line no-console
   console.error(msg);
 };
 
@@ -55,11 +54,12 @@ const languageLoadError = (editor: Editor, url: string, name: string) => {
 
 const pluginInitError = (editor: Editor, name: string, err) => {
   const message = I18n.translate([ 'Failed to initialize plugin: {0}', name ]);
+  fireError(editor, 'PluginLoadError', { message });
   initError(message, err);
   displayError(editor, message);
 };
 
-const initError = function (message: string, ...x: any[]) {
+const initError = (message: string, ...x: any[]) => {
   const console = window.console;
   if (console) { // Skip test env
     if (console.error) {

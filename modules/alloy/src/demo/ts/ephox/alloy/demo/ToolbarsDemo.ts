@@ -1,9 +1,8 @@
-import { console, document, setTimeout, window } from '@ephox/dom-globals';
-import { Arr, Result } from '@ephox/katamari';
-import { Class, Element } from '@ephox/sugar';
+import { Arr, Fun, Result } from '@ephox/katamari';
+import { Class, SugarElement } from '@ephox/sugar';
+
 import { LazySink } from 'ephox/alloy/api/component/CommonTypes';
 import { AlloyComponent } from 'ephox/alloy/api/component/ComponentApi';
-
 import * as Attachment from 'ephox/alloy/api/system/Attachment';
 import * as Gui from 'ephox/alloy/api/system/Gui';
 import { Container } from 'ephox/alloy/api/ui/Container';
@@ -17,12 +16,12 @@ import * as HtmlDisplay from 'ephox/alloy/demo/HtmlDisplay';
 
 import * as DemoRenders from './forms/DemoRenders';
 
-// tslint:disable:no-console
+/* eslint-disable no-console */
 
 export default (): void => {
   const gui = Gui.create();
-  const body = Element.fromDom(document.body);
-  Class.add(gui.element(), 'gui-root-demo-container');
+  const body = SugarElement.fromDom(document.body);
+  Class.add(gui.element, 'gui-root-demo-container');
   Attachment.attachSystem(body, gui);
 
   const sink = DemoSink.make();
@@ -34,61 +33,61 @@ export default (): void => {
     {
       label: 'group-1',
       items: Arr.map([
-        { text: '1a', action() { } },
-        { text: '1b', action() { } },
-        { text: '1c', action() { } }
+        { text: '1a', action: Fun.noop },
+        { text: '1b', action: Fun.noop },
+        { text: '1c', action: Fun.noop }
 
       ], DemoRenders.toolbarItem)
     },
     {
       label: 'group-2',
       items: Arr.map([
-        { text: '2a', action() { } },
-        { text: '2b', action() { } },
-        { text: '2c', action() { } }
+        { text: '2a', action: Fun.noop },
+        { text: '2b', action: Fun.noop },
+        { text: '2c', action: Fun.noop }
 
       ], DemoRenders.toolbarItem)
     },
     {
       label: 'group-3',
       items: Arr.map([
-        { text: '3a', action() { } },
-        { text: '3b', action() { } },
-        { text: '3c', action() { } }
+        { text: '3a', action: Fun.noop },
+        { text: '3b', action: Fun.noop },
+        { text: '3c', action: Fun.noop }
 
       ], DemoRenders.toolbarItem)
     },
     {
       label: 'group-4',
       items: Arr.map([
-        { text: '4a', action() { } },
-        { text: '4b', action() { } },
-        { text: '4c', action() { } }
+        { text: '4a', action: Fun.noop },
+        { text: '4b', action: Fun.noop },
+        { text: '4c', action: Fun.noop }
 
       ], DemoRenders.toolbarItem)
     },
     {
       label: 'group-5',
       items: Arr.map([
-        { text: '5a', action() { } },
-        { text: '5b', action() { } },
-        { text: '5c', action() { } }
+        { text: '5a', action: Fun.noop },
+        { text: '5b', action: Fun.noop },
+        { text: '5c', action: Fun.noop }
 
       ], DemoRenders.toolbarItem)
     },
     {
       label: 'group-6',
       items: Arr.map([
-        { text: '6a', action() { } },
-        { text: '6b', action() { } }
+        { text: '6a', action: Fun.noop },
+        { text: '6b', action: Fun.noop }
 
       ], DemoRenders.toolbarItem)
     },
     {
       label: 'group-7',
       items: Arr.map([
-        { text: '7a', action() { } },
-        { text: '7b', action() { } }
+        { text: '7a', action: Fun.noop },
+        { text: '7b', action: Fun.noop }
 
       ], DemoRenders.toolbarItem)
     }
@@ -112,7 +111,7 @@ export default (): void => {
             }
           },
           components: [
-            Toolbar.parts().groups({ })
+            Toolbar.parts.groups({ })
           ]
         })
       ]
@@ -144,7 +143,7 @@ export default (): void => {
         }
       },
       components: [
-        SplitSlidingToolbar.parts().primary({
+        SplitSlidingToolbar.parts.primary({
           dom: {
             tag: 'div',
             styles: {
@@ -152,7 +151,7 @@ export default (): void => {
             }
           }
         }),
-        SplitSlidingToolbar.parts().overflow({
+        SplitSlidingToolbar.parts.overflow({
           dom: {
             tag: 'div',
             styles: {
@@ -208,7 +207,7 @@ export default (): void => {
         }
       },
       components: [
-        SplitFloatingToolbar.parts().primary({
+        SplitFloatingToolbar.parts.primary({
           dom: {
             tag: 'div',
             styles: {

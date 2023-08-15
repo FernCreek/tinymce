@@ -5,12 +5,12 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { HTMLElement } from '@ephox/dom-globals';
-import { Fun, Option } from '@ephox/katamari';
-import { Element } from '@ephox/sugar';
+import { Fun, Optional } from '@ephox/katamari';
+import { SugarElement } from '@ephox/sugar';
+
 import Editor from '../api/Editor';
-import Node from '../api/html/Node';
-import Serializer from '../api/html/Serializer';
+import AstNode from '../api/html/Node';
+import HtmlSerializer from '../api/html/Serializer';
 import * as Settings from '../api/Settings';
 import Tools from '../api/util/Tools';
 import * as CaretFinder from '../caret/CaretFinder';
@@ -22,9 +22,10 @@ import { Content, SetContentArgs } from './ContentTypes';
 
 const defaultFormat = 'html';
 
-const isTreeNode = (content: any): content is Node => content instanceof Node;
+const isTreeNode = (content: unknown): content is AstNode =>
+  content instanceof AstNode;
 
-const moveSelection = (editor: Editor) => {
+const moveSelection = (editor: Editor): void => {
   if (EditorFocus.hasFocus(editor)) {
     CaretFinder.firstPositionIn(editor.getBody()).each((pos) => {
       const node = pos.getNode();
@@ -34,18 +35,18 @@ const moveSelection = (editor: Editor) => {
   }
 };
 
-const setEditorHtml = (editor: Editor, html: string) => {
+const setEditorHtml = (editor: Editor, html: string, noSelection: boolean | undefined): void => {
   editor.dom.setHTML(editor.getBody(), html);
-  moveSelection(editor);
+  if (noSelection !== true) {
+    moveSelection(editor);
+  }
 };
 
 const setContentString = (editor: Editor, body: HTMLElement, content: string, args: SetContentArgs): string => {
-  let forcedRootBlockName, padd;
-
   // Padd empty content in Gecko and Safari. Commands will otherwise fail on the content
   // It will also be impossible to place the caret in the editor unless there is a BR element present
   if (content.length === 0 || /^\s+$/.test(content)) {
-    padd = '<br data-mce-bogus="1">';
+    const padd = '<br data-mce-bogus="1">';
 
     // Todo: There is a lot more root elements that need special padding
     // so separate this and add all of them at some point.
@@ -55,7 +56,7 @@ const setContentString = (editor: Editor, body: HTMLElement, content: string, ar
       content = '<li>' + padd + '</li>';
     }
 
-    forcedRootBlockName = Settings.getForcedRootBlock(editor);
+    const forcedRootBlockName = Settings.getForcedRootBlock(editor);
 
     // Check if forcedRootBlock is configured and that the block is a valid child of the body
     if (forcedRootBlockName && editor.schema.isValidChild(body.nodeName.toLowerCase(), forcedRootBlockName.toLowerCase())) {
@@ -66,20 +67,20 @@ const setContentString = (editor: Editor, body: HTMLElement, content: string, ar
       content = '<br data-mce-bogus="1">';
     }
 
-    setEditorHtml(editor, content);
+    setEditorHtml(editor, content, args.no_selection);
 
     editor.fire('SetContent', args);
   } else {
     if (args.format !== 'raw') {
-      content = Serializer({
+      content = HtmlSerializer({
         validate: editor.validate
       }, editor.schema).serialize(
         editor.parser.parse(content, { isRootContent: true, insert: true })
       );
     }
 
-    args.content = isWsPreserveElement(Element.fromDom(body)) ? content : Tools.trim(content);
-    setEditorHtml(editor, args.content);
+    args.content = isWsPreserveElement(SugarElement.fromDom(body)) ? content : Tools.trim(content);
+    setEditorHtml(editor, args.content, args.no_selection);
 
     if (!args.no_events) {
       editor.fire('SetContent', args);
@@ -89,13 +90,13 @@ const setContentString = (editor: Editor, body: HTMLElement, content: string, ar
   return args.content;
 };
 
-const setContentTree = (editor: Editor, body: HTMLElement, content: Node, args: SetContentArgs): Node => {
+const setContentTree = (editor: Editor, body: HTMLElement, content: AstNode, args: SetContentArgs): AstNode => {
   FilterNode.filter(editor.parser.getNodeFilters(), editor.parser.getAttributeFilters(), content);
 
-  const html = Serializer({ validate: editor.validate }, editor.schema).serialize(content);
+  const html = HtmlSerializer({ validate: editor.validate }, editor.schema).serialize(content);
 
-  args.content = isWsPreserveElement(Element.fromDom(body)) ? html : Tools.trim(html);
-  setEditorHtml(editor, args.content);
+  args.content = isWsPreserveElement(SugarElement.fromDom(body)) ? html : Tools.trim(html);
+  setEditorHtml(editor, args.content, args.no_selection);
 
   if (!args.no_events) {
     editor.fire('SetContent', args);
@@ -104,18 +105,23 @@ const setContentTree = (editor: Editor, body: HTMLElement, content: Node, args: 
   return content;
 };
 
-export const setContentInternal = (editor: Editor, content: Content, args: SetContentArgs): Content => {
-  args.format = args.format ? args.format : defaultFormat;
-  args.set = true;
-  args.content = isTreeNode(content) ? '' : content;
+const setupArgs = (args: Partial<SetContentArgs>, content: Content): SetContentArgs => ({
+  format: defaultFormat,
+  ...args,
+  set: true,
+  content: isTreeNode(content) ? '' : content
+});
 
-  if (!isTreeNode(content) && !args.no_events) {
-    editor.fire('BeforeSetContent', args);
-    content = args.content;
+export const setContentInternal = (editor: Editor, content: Content, args: SetContentArgs): Content => {
+  const defaultedArgs = setupArgs(args, content);
+  const updatedArgs = args.no_events ? defaultedArgs : editor.fire('BeforeSetContent', defaultedArgs);
+
+  if (!isTreeNode(content)) {
+    content = updatedArgs.content;
   }
 
-  return Option.from(editor.getBody()).fold(
+  return Optional.from(editor.getBody()).fold(
     Fun.constant(content),
-    (body) => isTreeNode(content) ? setContentTree(editor, body, content, args) : setContentString(editor, body, content, args)
+    (body) => isTreeNode(content) ? setContentTree(editor, body, content, updatedArgs) : setContentString(editor, body, content, updatedArgs)
   );
 };

@@ -5,7 +5,7 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Arr, Options } from '@ephox/katamari';
+import { Arr, Optionals } from '@ephox/katamari';
 
 /*
 
@@ -54,7 +54,7 @@ export interface Device {
   keyboard: Keyboard;
 }
 
-export const findDevice = function (deviceWidth, deviceHeight): Keyboard {
+export const findDevice = (deviceWidth, deviceHeight): Keyboard => {
   const devices: Device[] = [
     // iPhone 4 class
     { width: 320, height: 480, keyboard: { portrait: 300, landscape: 240 }},
@@ -71,6 +71,6 @@ export const findDevice = function (deviceWidth, deviceHeight): Keyboard {
   ];
 
   return Arr.findMap<Device, Keyboard>(devices, (device) =>
-    Options.someIf(deviceWidth <= device.width && deviceHeight <= device.height, device.keyboard)
+    Optionals.someIf(deviceWidth <= device.width && deviceHeight <= device.height, device.keyboard)
   ).getOr({ portrait: deviceHeight / 5, landscape: deviceWidth / 4 });
 };

@@ -5,35 +5,41 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Arr, Fun, Option } from '@ephox/katamari';
+import { Selections, SelectionTypes } from '@ephox/darwin';
+import { Arr, Fun, Optional } from '@ephox/katamari';
 import { CopySelected, TableFill, TableLookup } from '@ephox/snooker';
-import { Element, Elements, Node, Replication } from '@ephox/sugar';
+import { SugarElement, SugarElements, SugarNode } from '@ephox/sugar';
 
 import Editor from 'tinymce/core/api/Editor';
 
+import * as Util from '../core/Util';
 import * as TableTargets from '../queries/TableTargets';
 import * as Ephemera from '../selection/Ephemera';
-import { Selections } from '../selection/Selections';
-import * as SelectionTypes from '../selection/SelectionTypes';
+import * as TableSelection from '../selection/TableSelection';
 import { TableActions } from './TableActions';
-import { Node as DomNode, HTMLTableElement } from '@ephox/dom-globals';
 
-const extractSelected = function (cells) {
+const extractSelected = (cells: SugarElement<HTMLTableCellElement>[]): Optional<SugarElement<HTMLTableElement>[]> => {
   // Assume for now that we only have one table (also handles the case where we multi select outside a table)
-  return TableLookup.table(cells[0]).map(Replication.deep).map(function (replica) {
-    return [ CopySelected.extract(replica, Ephemera.attributeSelector) ];
-  });
+  return TableLookup.table(cells[0]).map(
+    (table) => {
+      const replica = CopySelected.extract(table, Ephemera.attributeSelector);
+      Util.removeDataStyle(replica);
+      return [ replica ];
+    }
+  );
 };
 
-const serializeElements = (editor: Editor, elements: Element[]): string => Arr.map(elements, (elm) => editor.selection.serializer.serialize(elm.dom(), {})).join('');
+const serializeElements = (editor: Editor, elements: SugarElement[]): string =>
+  Arr.map(elements, (elm) => editor.selection.serializer.serialize(elm.dom, {})).join('');
 
-const getTextContent = (elements: Element[]): string => Arr.map(elements, (element) => element.dom().innerText).join('');
+const getTextContent = (elements: SugarElement[]): string =>
+  Arr.map(elements, (element) => element.dom.innerText).join('');
 
-const registerEvents = function (editor: Editor, selections: Selections, actions: TableActions, cellSelection) {
-  editor.on('BeforeGetContent', function (e) {
-    const multiCellContext = function (cells) {
+const registerEvents = (editor: Editor, selections: Selections, actions: TableActions): void => {
+  editor.on('BeforeGetContent', (e) => {
+    const multiCellContext = (cells: SugarElement<HTMLTableCellElement>[]) => {
       e.preventDefault();
-      extractSelected(cells).each(function (elements) {
+      extractSelected(cells).each((elements) => {
         e.content = e.format === 'text' ? getTextContent(elements) : serializeElements(editor, elements);
       });
     };
@@ -43,28 +49,25 @@ const registerEvents = function (editor: Editor, selections: Selections, actions
     }
   });
 
-  editor.on('BeforeSetContent', function (e) {
+  editor.on('BeforeSetContent', (e) => {
     if (e.selection === true && e.paste === true) {
-      const cellOpt = Option.from(editor.dom.getParent(editor.selection.getStart(), 'th,td'));
-      cellOpt.each(function (domCell) {
-        const cell = Element.fromDom(domCell);
+      const selectedCells = TableSelection.getCellsFromSelection(selections);
+      Arr.head(selectedCells).each((cell) => {
         TableLookup.table(cell).each((table) => {
 
-          const elements = Arr.filter(Elements.fromHtml(e.content), function (content) {
-            return Node.name(content) !== 'meta';
+          const elements = Arr.filter(SugarElements.fromHtml(e.content), (content) => {
+            return SugarNode.name(content) !== 'meta';
           });
 
-          const isTable = (elm: Element<DomNode>): elm is Element<HTMLTableElement> => Node.name(elm) === 'table';
+          const isTable = SugarNode.isTag('table');
           if (elements.length === 1 && isTable(elements[0])) {
             e.preventDefault();
 
-            const doc = Element.fromDom(editor.getDoc());
+            const doc = SugarElement.fromDom(editor.getDoc());
             const generators = TableFill.paste(doc);
             const targets = TableTargets.paste(cell, elements[0], generators);
-            actions.pasteCells(table, targets).each(function (rng) {
-              editor.selection.setRng(rng);
+            actions.pasteCells(table, targets).each(() => {
               editor.focus();
-              cellSelection.clear(table);
             });
           }
         });
@@ -73,6 +76,5 @@ const registerEvents = function (editor: Editor, selections: Selections, actions
   });
 };
 
-export {
-  registerEvents
-};
+export { registerEvents };
+

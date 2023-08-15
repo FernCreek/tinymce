@@ -1,7 +1,8 @@
 import { AlloyComponent, AlloyTriggers, Behaviour, Composing, Focusing, Sketcher, SketchSpec, Slider, SliderTypes, UiSketcher } from '@ephox/alloy';
-import { HTMLCanvasElement } from '@ephox/dom-globals';
-import { Fun, Option } from '@ephox/katamari';
-import { Rgba } from '../../api/colour/ColourTypes';
+import { Fun, Optional } from '@ephox/katamari';
+
+import { Hex } from '../../api/colour/ColourTypes';
+import * as HsvColour from '../../api/colour/HsvColour';
 import * as RgbaColour from '../../api/colour/RgbaColour';
 import * as ColourEvents from '../ColourEvents';
 
@@ -14,11 +15,12 @@ export interface SaturationBrightnessPaletteSpec extends Sketcher.SingleSketchSp
 // tslint:enable:no-empty-interface
 
 export interface SaturationBrightnessPaletteSketcher extends Sketcher.SingleSketch<SaturationBrightnessPaletteSpec> {
-  setRgba: (slider: AlloyComponent, colour: Rgba) => void;
+  setHue: (slider: AlloyComponent, hue: number) => void;
+  setThumb: (slider: AlloyComponent, hex: Hex) => void;
 }
 
 const paletteFactory = (_translate: (key: string) => string, getClass: (key: string) => string): SaturationBrightnessPaletteSketcher => {
-  const spectrumPart = Slider.parts().spectrum({
+  const spectrumPart = Slider.parts.spectrum({
     dom: {
       tag: 'canvas',
       attributes: {
@@ -28,7 +30,7 @@ const paletteFactory = (_translate: (key: string) => string, getClass: (key: str
     }
   });
 
-  const thumbPart = Slider.parts().thumb({
+  const thumbPart = Slider.parts.thumb({
     dom: {
       tag: 'div',
       attributes: {
@@ -62,16 +64,22 @@ const paletteFactory = (_translate: (key: string) => string, getClass: (key: str
     ctx.fillRect(0, 0, width, height);
   };
 
-  const setSliderColour = (slider: AlloyComponent, rgba: Rgba): void => {
-    // Very open to a better way of doing this.
-    const canvas = slider.components()[0].element().dom();
+  const setPaletteHue = (slider: AlloyComponent, hue: number): void => {
+    const canvas = slider.components()[0].element.dom;
+    const hsv = HsvColour.hsvColour(hue, 100, 100);
+    const rgba = RgbaColour.fromHsv(hsv);
     setColour(canvas, RgbaColour.toString(rgba));
+  };
+
+  const setPaletteThumb = (slider: AlloyComponent, hex: Hex): void => {
+    const hsv = HsvColour.fromRgb(RgbaColour.fromHex(hex));
+    Slider.setValue(slider, { x: hsv.saturation, y: 100 - hsv.value });
   };
 
   const factory: UiSketcher.SingleSketchFactory<SaturationBrightnessPaletteDetail, SaturationBrightnessPaletteSpec> = (_detail): SketchSpec => {
     const getInitialValue = Fun.constant({
-      x: Fun.constant(0),
-      y: Fun.constant(0)
+      x: 0,
+      y: 0
     });
 
     const onChange = (slider: AlloyComponent, _thumb: AlloyComponent, value: number | SliderTypes.SliderValue) => {
@@ -82,12 +90,12 @@ const paletteFactory = (_translate: (key: string) => string, getClass: (key: str
 
     const onInit = (_slider: AlloyComponent, _thumb: AlloyComponent, spectrum: AlloyComponent, _value: number | SliderTypes.SliderValue) => {
       // Maybe make this initial value configurable?
-      setColour(spectrum.element().dom(), RgbaColour.toString(RgbaColour.red));
+      setColour(spectrum.element.dom, RgbaColour.toString(RgbaColour.red));
     };
 
     const sliderBehaviours = Behaviour.derive([
       Composing.config({
-        find: Option.some
+        find: Optional.some
       }),
       Focusing.config({})
     ]);
@@ -102,7 +110,7 @@ const paletteFactory = (_translate: (key: string) => string, getClass: (key: str
       },
       model: {
         mode: 'xy',
-        getInitialValue
+        getInitialValue,
       },
       rounded: false,
       components: [
@@ -120,8 +128,11 @@ const paletteFactory = (_translate: (key: string) => string, getClass: (key: str
     name: 'SaturationBrightnessPalette',
     configFields: [],
     apis: {
-      setRgba: (_apis: {}, slider: AlloyComponent, rgba: Rgba) => {
-        setSliderColour(slider, rgba);
+      setHue: (_apis: {}, slider: AlloyComponent, hue: number) => {
+        setPaletteHue(slider, hue);
+      },
+      setThumb: (_apis: {}, slider: AlloyComponent, hex: Hex) => {
+        setPaletteThumb(slider, hex);
       }
     },
     extraApis: {}

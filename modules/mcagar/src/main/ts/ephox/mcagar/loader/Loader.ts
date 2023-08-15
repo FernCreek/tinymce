@@ -1,8 +1,9 @@
 import { TestLogs } from '@ephox/agar';
-import { console, document, setTimeout } from '@ephox/dom-globals';
-import { Arr, Fun, Global, Id, Option } from '@ephox/katamari';
-import { Attr, Body, Element, Insert, Remove, SelectorFilter, ShadowDom } from '@ephox/sugar';
+import { Arr, Fun, FutureResult, Global, Id, Optional, Result } from '@ephox/katamari';
+import { Attribute, DomEvent, Insert, Remove, SelectorFilter, SugarBody, SugarElement, SugarShadowDom } from '@ephox/sugar';
+
 import { Editor } from '../alien/EditorTypes';
+import { detectTinymceBaseUrl } from './Urls';
 
 export type SuccessCallback = (v?: any, logs?: TestLogs) => void;
 export type FailureCallback = (err: Error | string, logs?: TestLogs) => void;
@@ -15,7 +16,7 @@ interface Callbacks {
   failure: FailureCallback;
 }
 
-const createTarget = (inline: boolean) => Element.fromTag(inline ? 'div' : 'textarea');
+const createTarget = (inline: boolean) => SugarElement.fromTag(inline ? 'div' : 'textarea');
 
 const removeTinymceElements = () => {
   // NOTE: Don't remove the link/scripts added, as those are part of the global tinymce which we don't clean up
@@ -23,23 +24,42 @@ const removeTinymceElements = () => {
     // Some older versions of tinymce leaves elements behind in the dom
     SelectorFilter.all('.mce-notification,.mce-window,#mce-modal-block'),
     // TinyMCE leaves inline editor content_styles in the dom
-    SelectorFilter.children(Element.fromDom(document.head), 'style')
+    SelectorFilter.children(SugarElement.fromDom(document.head), 'style')
   ]);
 
   Arr.each(elements, Remove.remove);
 };
 
-const setup = (callbacks: Callbacks, settings: Record<string, any>, elementOpt: Option<Element>) => {
+const loadScript = (url: string): FutureResult<string, Error> => FutureResult.nu((resolve) => {
+  const script = SugarElement.fromTag('script');
+
+  Attribute.set(script, 'referrerpolicy', 'origin');
+
+  Attribute.set(script, 'src', url);
+  const onLoad = DomEvent.bind(script, 'load', () => {
+    onLoad.unbind();
+    onError.unbind();
+    resolve(Result.value(url));
+  });
+  const onError = DomEvent.bind(script, 'error', () => {
+    onLoad.unbind();
+    onError.unbind();
+    resolve(Result.error(new Error('Failed to load script: ' + url)));
+  });
+  Insert.append(SugarBody.body(), script);
+});
+
+const setup = (callbacks: Callbacks, settings: Record<string, any>, elementOpt: Optional<SugarElement>): void => {
   const target = elementOpt.getOrThunk(() => createTarget(settings.inline));
   const randomId = Id.generate('tiny-loader');
-  Attr.set(target, 'id', randomId);
+  Attribute.set(target, 'id', randomId);
 
-  if (!Body.inBody(target)) {
-    Insert.append(Body.body(), target);
+  if (!SugarBody.inBody(target)) {
+    Insert.append(SugarBody.body(), target);
   }
 
   const teardown = () => {
-    tinymce.remove();
+    Global.tinymce.remove();
     Remove.remove(target);
     removeTinymceElements();
   };
@@ -54,7 +74,7 @@ const setup = (callbacks: Callbacks, settings: Record<string, any>, elementOpt: 
 
   // Agar v. ??? supports logging
   const onFailure = (err: Error | string, logs?: TestLogs) => {
-    // tslint:disable-next-line:no-console
+    // eslint-disable-next-line no-console
     console.log('Tiny Loader error: ', err);
     // Do no teardown so that the failed test still shows the editor. Important for selection
     callbacks.failure(err, logs);
@@ -62,39 +82,47 @@ const setup = (callbacks: Callbacks, settings: Record<string, any>, elementOpt: 
 
   const settingsSetup = settings.setup !== undefined ? settings.setup : Fun.noop;
 
-  const tinymce = Global.tinymce;
-  if (!tinymce) {
-    callbacks.failure('Failed to get global tinymce instance');
-  } else {
+  const run = () => {
+    const tinymce = Global.tinymce;
     callbacks.preInit(tinymce, settings);
 
-    const targetSettings = ShadowDom.isInShadowRoot(target) ? ({ target: target.dom() }) : ({ selector: '#' + randomId });
+    const targetSettings = SugarShadowDom.isInShadowRoot(target) ? ({ target: target.dom }) : ({ selector: '#' + randomId });
 
     tinymce.init({
       ...settings,
       ...targetSettings,
-      setup(editor: Editor) {
+      setup: (editor: Editor) => {
         // Execute the setup called by the test.
         settingsSetup(editor);
 
-        editor.on('SkinLoaded', () => {
-          setTimeout(function () {
+        editor.once('SkinLoaded', () => {
+          setTimeout(() => {
             try {
               callbacks.run(editor, onSuccess, onFailure);
-            } catch (e) {
+            } catch (e: any) {
               onFailure(e);
             }
           }, 0);
         });
 
-        editor.on('SkinLoadError', (e) => {
+        editor.once('SkinLoadError', (e) => {
           callbacks.failure(e.message);
         });
       }
     });
+  };
+
+  if (!Global.tinymce) {
+    // Attempt to load TinyMCE if it's not available
+    loadScript(detectTinymceBaseUrl(settings) + '/tinymce.js').get((result) => {
+      result.fold(() => callbacks.failure('Failed to find a global tinymce instance'), run);
+    });
+  } else {
+    run();
   }
 };
 
 export {
-  setup
+  setup,
+  loadScript
 };

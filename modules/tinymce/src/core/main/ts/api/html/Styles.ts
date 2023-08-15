@@ -25,13 +25,23 @@
  */
 
 import { Obj, Unicode } from '@ephox/katamari';
+
+import { URLConverter } from '../SettingsTypes';
 import Schema from './Schema';
 
 export interface StyleMap { [s: string]: string | number }
+
+export interface StylesSettings {
+  allow_script_urls?: boolean;
+  allow_svg_data_urls?: boolean;
+  url_converter?: URLConverter;
+  url_converter_scope?: any;
+}
+
 interface Styles {
-  toHex(color: string): string;
-  parse(css: string): Record<string, string>;
-  serialize(styles: StyleMap, elementName?: string): string;
+  toHex: (color: string) => string;
+  parse: (css: string) => Record<string, string>;
+  serialize: (styles: StyleMap, elementName?: string) => string;
 }
 
 const toHex = (match: string, r: string, g: string, b: string) => {
@@ -44,7 +54,7 @@ const toHex = (match: string, r: string, g: string, b: string) => {
   return '#' + hex(r) + hex(g) + hex(b);
 };
 
-const Styles = function (settings?, schema?: Schema): Styles {
+const Styles = function (settings?: StylesSettings, schema?: Schema): Styles {
   /* jshint maxlen:255 */
   /* eslint max-len:0 */
   const rgbRegExp = /rgb\s*\(\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)\s*\)/gi;
@@ -73,12 +83,15 @@ const Styles = function (settings?, schema?: Schema): Styles {
   return {
     /**
      * Parses the specified RGB color value and returns a hex version of that color.
+     * <br>
+     * <em>Deprecated in TinyMCE 5.10 and has been marked for removal in TinyMCE 6.0.</em>
      *
+     * @deprecated
      * @method toHex
      * @param {String} color RGB string value like rgb(1,2,3)
      * @return {String} Hex version of that RGB value like #FF00FF.
      */
-    toHex(color: string): string {
+    toHex: (color: string): string => {
       return color.replace(rgbRegExp, toHex);
     },
 
@@ -91,13 +104,13 @@ const Styles = function (settings?, schema?: Schema): Styles {
      * @param {String} css Style value to parse for example: border:1px solid red;.
      * @return {Object} Object representation of that style like {border: '1px solid red'}
      */
-    parse(css: string): Record<string, string> {
+    parse: (css: string): Record<string, string> => {
       const styles: any = {};
       let matches, name, value, isEncoded;
       const urlConverter = settings.url_converter;
       const urlConverterScope = settings.url_converter_scope || this;
 
-      const compress = function (prefix, suffix, noJoin?) {
+      const compress = (prefix, suffix, noJoin?) => {
         const top = styles[prefix + '-top' + suffix];
         if (!top) {
           return;
@@ -140,7 +153,7 @@ const Styles = function (settings?, schema?: Schema): Styles {
       /**
        * Checks if the specific style can be compressed in other words if all border-width are equal.
        */
-      const canCompress = function (key) {
+      const canCompress = (key) => {
         let value = styles[key], i;
 
         if (!value) {
@@ -163,7 +176,7 @@ const Styles = function (settings?, schema?: Schema): Styles {
       /**
        * Compresses multiple styles into one style.
        */
-      const compress2 = function (target, a, b, c) {
+      const compress2 = (target, a, b, c) => {
         if (!canCompress(a)) {
           return;
         }
@@ -184,7 +197,7 @@ const Styles = function (settings?, schema?: Schema): Styles {
       };
 
       // Encodes the specified string by replacing all \" \' ; : with _<num>
-      const encode = function (str) {
+      const encode = (str) => {
         isEncoded = true;
 
         return encodingLookup[str];
@@ -192,9 +205,9 @@ const Styles = function (settings?, schema?: Schema): Styles {
 
       // Decodes the specified string by replacing all _<num> with it's original value \" \' etc
       // It will also decode the \" \' if keepSlashes is set to false or omitted
-      const decode = function (str: string, keepSlashes?: boolean) {
+      const decode = (str: string, keepSlashes?: boolean) => {
         if (isEncoded) {
-          str = str.replace(/\uFEFF[0-9]/g, function (str) {
+          str = str.replace(/\uFEFF[0-9]/g, (str) => {
             return encodingLookup[str];
           });
         }
@@ -206,15 +219,15 @@ const Styles = function (settings?, schema?: Schema): Styles {
         return str;
       };
 
-      const decodeSingleHexSequence = function (escSeq) {
+      const decodeSingleHexSequence = (escSeq) => {
         return String.fromCharCode(parseInt(escSeq.slice(1), 16));
       };
 
-      const decodeHexSequences = function (value) {
+      const decodeHexSequences = (value) => {
         return value.replace(/\\[0-9a-f]+/gi, decodeSingleHexSequence);
       };
 
-      const processUrl = function (match, url, url2, url3, str, str2) {
+      const processUrl = (match, url, url2, url3, str, str2) => {
         str = str || str2;
 
         if (str) {
@@ -251,7 +264,7 @@ const Styles = function (settings?, schema?: Schema): Styles {
         css = css.replace(/[\u0000-\u001F]/g, '');
 
         // Encode \" \' % and ; and : inside strings so they don't interfere with the style parsing
-        css = css.replace(/\\[\"\';:\uFEFF]/g, encode).replace(/\"[^\"]+\"|\'[^\']+\'/g, function (str) {
+        css = css.replace(/\\[\"\';:\uFEFF]/g, encode).replace(/\"[^\"]+\"|\'[^\']+\'/g, (str) => {
           return str.replace(/[;:]/g, encode);
         });
 
@@ -329,7 +342,7 @@ const Styles = function (settings?, schema?: Schema): Styles {
      * @param {String} elementName Optional element name, if specified only the styles that matches the schema will be serialized.
      * @return {String} String representation of the style object for example: border: 1px solid red.
      */
-    serialize(styles: StyleMap, elementName?: string): string {
+    serialize: (styles: StyleMap, elementName?: string): string => {
       let css = '';
 
       const serializeStyles = (name: string) => {

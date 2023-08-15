@@ -1,10 +1,9 @@
 import { Fun } from '@ephox/katamari';
-import { UaString } from '../detect/UaString';
-import { Version } from '../detect/Version';
 
-export interface OperatingSystem {
-  readonly current: string | undefined;
-  readonly version: Version;
+import { Version } from '../detect/Version';
+import { UaInfo } from '../info/UaInfo';
+
+export interface OperatingSystem extends UaInfo {
   readonly isWindows: () => boolean;
   readonly isiOS: () => boolean;
   readonly isAndroid: () => boolean;
@@ -27,14 +26,14 @@ const chromeos = 'ChromeOS';
 // Though there is a bit of dupe with this and Browser, trying to
 // reuse code makes it much harder to follow and change.
 
-const unknown = function (): OperatingSystem {
+const unknown = (): OperatingSystem => {
   return nu({
     current: undefined,
     version: Version.unknown()
   });
 };
 
-const nu = function (info: UaString): OperatingSystem {
+const nu = (info: UaInfo): OperatingSystem => {
   const current = info.current;
   const version = info.version;
 

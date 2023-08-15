@@ -1,17 +1,23 @@
-import { ApproxStructure, Pipeline, Waiter, Log } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { TinyApis, TinyLoader, TinyUi } from '@ephox/mcagar';
+import { ApproxStructure, UiFinder, Waiter } from '@ephox/agar';
+import { describe, it } from '@ephox/bedrock-client';
+import { SugarBody } from '@ephox/sugar';
+import { TinyAssertions, TinyHooks, TinyUiActions } from '@ephox/wrap-mcagar';
 
+import Editor from 'tinymce/core/api/Editor';
 import Plugin from 'tinymce/plugins/media/Plugin';
 import Theme from 'tinymce/themes/silver/Theme';
 
 import * as Utils from '../module/test/Utils';
 
-UnitTest.asynctest('browser.tinymce.plugins.media.DimensionsFalseEmbedTest', function (success, failure) {
-  Plugin();
-  Theme();
+describe('browser.tinymce.plugins.media.DimensionsFalseEmbedTest', () => {
+  const hook = TinyHooks.bddSetupLight<Editor>({
+    plugins: [ 'media' ],
+    toolbar: 'media',
+    media_dimensions: false,
+    base_url: '/project/tinymce/js/tinymce'
+  }, [ Plugin, Theme ]);
 
-  const struct = ApproxStructure.build(function (s, str) {
+  const struct = ApproxStructure.build((s, str, arr) => {
     return s.element('body', {
       children: [
         s.element('p', {
@@ -27,40 +33,43 @@ UnitTest.asynctest('browser.tinymce.plugins.media.DimensionsFalseEmbedTest', fun
                     height: str.is('100')
                   }
                 }),
-                s.anything()
+                s.element('span', {
+                  classes: [ arr.has('mce-shim') ]
+                })
               ]
-            }),
-            s.anything()
+            })
           ]
-        })
+        }),
+        s.theRest()
       ]
     });
   });
 
-  TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
-    const tinyUi = TinyUi(editor);
-    const tinyApis = TinyApis(editor);
+  it('TBA: Open dialog, assert dimensions fields are not present while media_dimensions is false', async () => {
+    const editor = hook.editor();
+    const dialog = await Utils.pOpenDialog(editor);
+    UiFinder.exists(dialog, Utils.selectors.source);
+    UiFinder.notExists(dialog, Utils.selectors.width);
+    UiFinder.notExists(dialog, Utils.selectors.height);
+    TinyUiActions.submitDialog(editor);
+    await Waiter.pTryUntil(
+      'Wait for dialog to close',
+      () => UiFinder.notExists(SugarBody.body(), 'div[aria-label="Insert/edit media"][role="dialog"]')
+    );
+  });
 
-    Pipeline.async({},
-      Log.steps('TINY-950', 'Media: Open dialog, set text area content, close dialog and assert content structure', [
-        Utils.sOpenDialog(tinyUi),
-        Utils.sPasteTextareaValue(
-          tinyUi,
-          '<iframe width="200" height="100" src="a" ' +
-          ' frameborder="0" allowfullscreen></iframe>'
-        ),
-        Utils.sSubmitDialog(tinyUi),
-        Waiter.sTryUntil(
-          'content was not expected structure',
-          tinyApis.sAssertContentStructure(struct)
-        )
-      ])
-      , onSuccess, onFailure);
-  }, {
-    plugins: [ 'media' ],
-    toolbar: 'media',
-    theme: 'silver',
-    media_dimensions: false,
-    base_url: '/project/tinymce/js/tinymce'
-  }, success, failure);
+  it('TINY-950: Open dialog, set text area content, close dialog and assert content structure', async () => {
+    const editor = hook.editor();
+    await Utils.pOpenDialog(editor);
+    await Utils.pPasteTextareaValue(
+      editor,
+      '<iframe width="200" height="100" src="a" ' +
+      ' frameborder="0" allowfullscreen></iframe>'
+    );
+    TinyUiActions.submitDialog(editor);
+    await Waiter.pTryUntil(
+      'content was not expected structure',
+      () => TinyAssertions.assertContentStructure(editor, struct)
+    );
+  });
 });

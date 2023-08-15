@@ -7,8 +7,13 @@
 
 import Editor from 'tinymce/core/api/Editor';
 
-const getInline = (editor: Editor) => editor.getParam('inline');
+const getInline = (editor: Editor): boolean =>
+  editor.getParam('inline');
+
+const getFullscreenNative = (editor: Editor): boolean =>
+  editor.getParam('fullscreen_native', false, 'boolean');
 
 export {
-  getInline
+  getInline,
+  getFullscreenNative
 };

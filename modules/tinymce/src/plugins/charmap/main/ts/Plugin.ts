@@ -9,12 +9,12 @@ import PluginManager from 'tinymce/core/api/PluginManager';
 
 import * as Api from './api/Api';
 import * as Commands from './api/Commands';
+import * as CharMap from './core/CharMap';
 import * as Autocompletion from './ui/Autocompletion';
 import * as Buttons from './ui/Buttons';
-import * as CharMap from './core/CharMap';
 
-export default function () {
-  PluginManager.add('charmap', function (editor) {
+export default (): void => {
+  PluginManager.add('charmap', (editor) => {
     const charMap = CharMap.getCharMap(editor);
     Commands.register(editor, charMap);
     Buttons.register(editor);
@@ -23,4 +23,4 @@ export default function () {
 
     return Api.get(editor);
   });
-}
+};

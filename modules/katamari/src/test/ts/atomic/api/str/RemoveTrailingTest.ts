@@ -1,26 +1,30 @@
-import * as Strings from 'ephox/katamari/api/Strings';
-import { UnitTest, Assert } from '@ephox/bedrock-client';
+import { describe, it } from '@ephox/bedrock-client';
+import { assert } from 'chai';
 import fc from 'fast-check';
 
-UnitTest.test('removeTrailing: unit tests', () => {
-  function check(expected, str, trail) {
-    const actual = Strings.removeTrailing(str, trail);
-    Assert.eq('removeTrailing', expected, actual);
-  }
+import * as Strings from 'ephox/katamari/api/Strings';
 
-  check('', '', '');
-  check('cat', 'cat', '');
-  check('', '', '/');
-  check('cat', 'cat/', '/');
-  check('', 'cat/', 'cat/');
-});
+describe('atomic.katamari.api.str.RemoveTrailingTest', () => {
+  it('unit tests', () => {
+    const check = (expected: string, str: string, trail: string) => {
+      const actual = Strings.removeTrailing(str, trail);
+      assert.equal(actual, expected);
+    };
 
-UnitTest.test('removeTrailing property', () => {
-  fc.assert(fc.property(
-    fc.asciiString(),
-    fc.asciiString(),
-    (prefix, suffix) => {
-      Assert.eq('removeTrailing', prefix, Strings.removeTrailing(prefix + suffix, suffix));
-    }
-  ));
+    check('', '', '');
+    check('cat', 'cat', '');
+    check('', '', '/');
+    check('cat', 'cat/', '/');
+    check('', 'cat/', 'cat/');
+  });
+
+  it('removeTrailing property', () => {
+    fc.assert(fc.property(
+      fc.asciiString(),
+      fc.asciiString(),
+      (prefix, suffix) => {
+        assert.equal(Strings.removeTrailing(prefix + suffix, suffix), prefix);
+      }
+    ));
+  });
 });

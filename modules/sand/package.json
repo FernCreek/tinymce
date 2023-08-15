@@ -1,10 +1,11 @@
 {
   "name": "@ephox/sand",
-  "version": "3.1.11",
+  "version": "5.0.3",
   "description": "Platform detection library",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tinymce/tinymce"
+    "url": "https://github.com/tinymce/tinymce.git",
+    "directory": "modules/sand"
   },
   "files": [
     "lib/main",
@@ -12,7 +13,7 @@
     "lib/test",
     "src",
     "tsconfig.json",
-    "readme.md",
+    "README.md",
     "LEGAL.txt",
     "CHANGELOG.txt",
     "LICENSE.txt"
@@ -26,11 +27,11 @@
   "keywords": [
     "platform"
   ],
-  "author": "Ephox Corporation",
+  "author": "Tiny Technologies, Inc",
   "license": "Apache-2.0",
   "dependencies": {
-    "@ephox/dom-globals": "^1.1.2",
-    "@ephox/katamari": "^6.1.2"
+    "@ephox/katamari": "^8.1.1",
+    "tslib": "^2.0.0"
   },
   "main": "./lib/main/ts/ephox/sand/api/Main.js",
   "module": "./lib/main/ts/ephox/sand/api/Main.js",

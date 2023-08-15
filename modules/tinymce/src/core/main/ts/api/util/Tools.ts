@@ -5,33 +5,41 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { window } from '@ephox/dom-globals';
+import { Obj } from '@ephox/katamari';
+
 import * as ArrUtils from '../../util/ArrUtils';
 import Env from '../Env';
 
-type ArrayCallback<T, R> = (x: T, i: number, xs: ReadonlyArray<T>) => R;
-type ObjCallback<T, R> = (value: T[keyof T], key: string, obj: T) => R;
+type ArrayCallback<T, R> = ArrUtils.ArrayCallback<T, R>;
+type ObjCallback<T, R> = ArrUtils.ObjCallback<T, R>;
 
 interface Tools {
-  is (obj: any, type: string): boolean;
-  isArray <T>(T: any): T is ArrayLike<T>;
-  inArray <T>(arr: ArrayLike<T>, value: T): number;
-  grep <T>(arr: ArrayLike<T>, pred?: ArrayCallback<T, boolean>);
-  trim (str: string): string;
-  toArray <T>(obj: ArrayLike<T>): T[];
-  hasOwn (obj: any, name: string): boolean;
-  makeMap <T>(items: ArrayLike<T> | string, delim?: string | RegExp, map?: Record<string, T | string>): Record<string, T | string>;
-  each <T>(arr: ArrayLike<T>, cb: ArrayCallback<T, any>, scope?: any): void;
-  each <T>(obj: T, cb: ObjCallback<T, any>, scope?: any): void;
-  map <T, U>(arr: ArrayLike<T>, cb: ArrayCallback<T, U>, scope?: any): Array<U>;
-  map <T, U>(obj: T, cb: ObjCallback<T, U>, scope?: any): Array<U>;
-  extend (obj: {}, ext: {}, ...objs: {}[]): any;
-  create (name: string, p: {}, root?: {});
-  walk <T = {}>(obj: T, f: Function, n?: keyof T, scope?: any): void;
-  createNS (name: string, o?: {}): any;
-  resolve (path: string, o?: {}): any;
-  explode (s: string, d?: string | RegExp): string[];
-  _addCacheSuffix (url: string): string;
+  is: (obj: any, type: string) => boolean;
+  isArray: <T>(arr: any) => arr is Array<T>;
+  inArray: <T>(arr: ArrayLike<T>, value: T) => number;
+  grep: {
+    <T>(arr: ArrayLike<T> | null | undefined, pred?: ArrayCallback<T, boolean>): T[];
+    <T>(arr: Record<string, T> | null | undefined, pred?: ObjCallback<T, boolean>): T[];
+  };
+  trim: (str: string) => string;
+  toArray: <T>(obj: ArrayLike<T>) => T[];
+  hasOwn: (obj: any, name: string) => boolean;
+  makeMap: <T>(items: ArrayLike<T> | string, delim?: string | RegExp, map?: Record<string, T | string>) => Record<string, T | string>;
+  each: {
+    <T>(arr: ArrayLike<T> | null | undefined, cb: ArrayCallback<T, void | boolean>, scope?: any): boolean;
+    <T>(obj: Record<string, T> | null | undefined, cb: ObjCallback<T, void | boolean>, scope?: any): boolean;
+  };
+  map: {
+    <T, R>(arr: ArrayLike<T> | null | undefined, cb: ArrayCallback<T, R>): R[];
+    <T, R>(obj: Record<string, T> | null | undefined, cb: ObjCallback<T, R>): R[];
+  };
+  extend: (obj: Object, ext: Object, ...objs: Object[]) => any;
+  create: (name: string, p: Object, root?: Object) => void;
+  walk: <T = any>(obj: T, f: Function, n?: keyof T, scope?: any) => void;
+  createNS: (name: string, o?: Object) => any;
+  resolve: (path: string, o?: Object) => any;
+  explode: (s: string, d?: string | RegExp) => string[];
+  _addCacheSuffix: (url: string) => string;
 }
 
 /**
@@ -50,7 +58,7 @@ interface Tools {
  */
 const whiteSpaceRegExp = /^\s*|\s*$/g;
 
-const trim = function (str) {
+const trim = (str) => {
   return (str === null || str === undefined) ? '' : ('' + str).replace(whiteSpaceRegExp, '');
 };
 
@@ -62,7 +70,7 @@ const trim = function (str) {
  * @param {string} type Optional type to check for.
  * @return {Boolean} true/false if the object is of the specified type.
  */
-const is = function (obj: Record<string, any> | {}, type: string) {
+const is = (obj: any, type: string) => {
   if (!type) {
     return obj !== undefined;
   }
@@ -83,7 +91,7 @@ const is = function (obj: Record<string, any> | {}, type: string) {
  * @param {Object} map Optional map to add items to.
  * @return {Object} Name/value map of items.
  */
-const makeMap = function (items, delim?, map?) {
+const makeMap = (items, delim?, map?) => {
   let i;
 
   items = items || [];
@@ -105,19 +113,22 @@ const makeMap = function (items, delim?, map?) {
 
 /**
  * JavaScript does not protect hasOwnProperty method, so it is possible to overwrite it. This is
- * object independent version.
+ * an object independent version.
+ * Checks if the input object "<code>obj</code>" has the property "<code>prop</code>".
  *
- * @param {Object} obj
- * @param {String} prop
- * @returns {Boolean}
+ * @method hasOwnProperty
+ * @param {Object} obj Object to check if the property exists.
+ * @param {String} prop Name of a property on the object.
+ * @returns {Boolean} true if the object has the specified property.
  */
-const hasOwnProperty = function (obj, prop) {
-  return Object.prototype.hasOwnProperty.call(obj, prop);
-};
+const hasOwnProperty = Obj.has;
 
 /**
  * Creates a class, subclass or static singleton.
+ * <br>
+ * <em>Deprecated in TinyMCE 5.10 and has been marked for removal in TinyMCE 6.0.</em>
  *
+ * @deprecated
  * @method create
  * @param {String} s Class name, inheritance and prefix.
  * @param {Object} p Collection of methods to add to the class.
@@ -189,7 +200,8 @@ const create = function (s, p, root?) {
 
   // Create default constructor
   if (!p[cn]) {
-    p[cn] = function () { };
+    // eslint-disable-next-line @tinymce/prefer-fun,prefer-arrow/prefer-arrow-functions
+    p[cn] = function () {};
     de = 1;
   }
 
@@ -219,12 +231,12 @@ const create = function (s, p, root?) {
     ns[cn].prototype[cn] = ns[cn];
 
     // Add super methods
-    self.each(sp, function (f, n) {
+    self.each(sp, (f, n) => {
       ns[cn].prototype[n] = sp[n];
     });
 
     // Add overridden methods
-    self.each(p, function (f, n) {
+    self.each(p, (f, n) => {
       // Extend methods if needed
       if (sp[n]) {
         ns[cn].prototype[n] = function () {
@@ -242,16 +254,16 @@ const create = function (s, p, root?) {
   // Add static methods
   /* jshint sub:true*/
   /* eslint dot-notation:0*/
-  self.each(p.static, function (f, n) {
+  self.each(p.static, (f, n) => {
     ns[cn][n] = f;
   });
 };
 
-const extend = function (obj, ...exts: any[]) {
+const extend = (obj, ...exts: any[]) => {
   for (let i = 0; i < exts.length; i++) {
     const ext = exts[i];
     for (const name in ext) {
-      if (ext.hasOwnProperty(name)) {
+      if (Obj.has(ext, name)) {
         const value = ext[name];
         if (value !== undefined) {
           obj[name] = value;
@@ -279,7 +291,7 @@ const walk = function (o, f, n?, s?) {
       o = o[n];
     }
 
-    ArrUtils.each(o, function (o, i) {
+    ArrUtils.each(o, (o, i) => {
       if (f.call(s, o, i, n) === false) {
         return false;
       }
@@ -291,7 +303,10 @@ const walk = function (o, f, n?, s?) {
 
 /**
  * Creates a namespace on a specific object.
+ * <br>
+ * <em>Deprecated in TinyMCE 5.10 and has been marked for removal in TinyMCE 6.0.</em>
  *
+ * @deprecated
  * @method createNS
  * @param {String} n Namespace to create for example a.b.c.d.
  * @param {Object} o Optional object to add namespace to, defaults to window.
@@ -307,7 +322,7 @@ const walk = function (o, f, n?, s?) {
  *     }
  * };
  */
-const createNS = function (n, o?) {
+const createNS = (n, o?) => {
   let i, v;
 
   o = o || window;
@@ -337,7 +352,7 @@ const createNS = function (n, o?) {
  * // Resolve a path into an object reference
  * var obj = tinymce.resolve('a.b.c.d');
  */
-const resolve = function (n, o?) {
+const resolve = (n, o?) => {
   let i, l;
 
   o = o || window;
@@ -364,7 +379,7 @@ const resolve = function (n, o?) {
  * // Split a string into an array with a,b,c
  * var arr = tinymce.explode('a, b,   c');
  */
-const explode = function (s, d?) {
+const explode = (s, d?) => {
   if (!s || is(s, 'array')) {
     return s;
   }
@@ -372,7 +387,7 @@ const explode = function (s, d?) {
   return ArrUtils.map(s.split(d || ','), trim);
 };
 
-const _addCacheSuffix = function (url) {
+const _addCacheSuffix = (url) => {
   const cacheSuffix = Env.cacheSuffix;
 
   if (cacheSuffix) {

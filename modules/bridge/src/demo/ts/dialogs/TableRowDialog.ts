@@ -1,7 +1,6 @@
-import { console } from '@ephox/dom-globals';
 import { openDemoDialog } from './DemoDialogHelpers';
 
-export const createTableRowDialog = () => {
+export const createTableRowDialog = (): void => {
   openDemoDialog(
     {
       title: 'Row properties',
@@ -112,7 +111,7 @@ export const createTableRowDialog = () => {
       onSubmit: (api) => {
         const data = api.getData();
 
-        // tslint:disable-next-line:no-console
+        // eslint-disable-next-line no-console
         console.log({
           type: data.rowtype,
           align: data.align,

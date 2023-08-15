@@ -1,69 +1,78 @@
-import { Chain, FocusTools, Guard, Log, NamedChain, Pipeline, UiFinder } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { document } from '@ephox/dom-globals';
-import { Result } from '@ephox/katamari';
-import { TinyApis, TinyLoader, TinyUi } from '@ephox/mcagar';
-import { Body, Css, Element, Traverse } from '@ephox/sugar';
-import CharmapPlugin from 'tinymce/plugins/charmap/Plugin';
-import SilverTheme from 'tinymce/themes/silver/Theme';
+import { FocusTools, Keys, UiFinder } from '@ephox/agar';
+import { before, context, describe, it } from '@ephox/bedrock-client';
+import { Arr } from '@ephox/katamari';
+import { Attribute, Css, SugarElement, SugarShadowDom, Traverse, Value } from '@ephox/sugar';
+import { TinyDom, TinyHooks, TinyUiActions } from '@ephox/wrap-mcagar';
+import { assert } from 'chai';
 
-UnitTest.asynctest('browser.tinymce.plugins.charmap.DialogHeightTest', (success, failure) => {
-  CharmapPlugin();
-  SilverTheme();
+import Editor from 'tinymce/core/api/Editor';
+import Plugin from 'tinymce/plugins/charmap/Plugin';
+import Theme from 'tinymce/themes/silver/Theme';
 
-  // Move into shared library
-  const cFakeEvent = function (name) {
-    return Chain.control(
-      Chain.op(function (elm: Element) {
-        const evt = document.createEvent('HTMLEvents');
-        evt.initEvent(name, true, true);
-        elm.dom().dispatchEvent(evt);
-      }),
-      Guard.addLogging('Fake event')
-    );
-  };
+import { fakeEvent } from '../module/Helpers';
 
-  const cTabPanelHeight = Chain.binder<Element, string, string>((tabpanel) => Css.getRaw(tabpanel, 'height').fold(() => Result.error('tabpanel has no height'), Result.value));
+describe('browser.tinymce.plugins.charmap.DialogHeightTest', () => {
+  Arr.each([
+    { label: 'IFrame Editor', setup: TinyHooks.bddSetupLight },
+    { label: 'Shadow Dom Editor', setup: TinyHooks.bddSetupInShadowRoot },
+  ], (tester) => {
+    context(tester.label, () => {
+      const hook = tester.setup<Editor>({
+        plugins: 'charmap',
+        toolbar: 'charmap',
+        base_url: '/project/tinymce/js/tinymce'
+      }, [ Plugin, Theme ], true);
 
-  TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
-    const tinyApis = TinyApis(editor);
-    const tinyUi = TinyUi(editor);
-    const doc = Element.fromDom(document);
+      before(() => {
+        // Make the shadow host focusable
+        const target = TinyDom.targetElement(hook.editor());
+        SugarShadowDom.getShadowRoot(target).each((sr) => {
+          const host = SugarShadowDom.getShadowHost(sr);
+          Attribute.set(host, 'tabindex', 1);
+        });
+      });
 
-    Pipeline.async({},
-      Log.steps('TBA', 'Charmap: Search for items, dialog height should not change when fewer items returned', [
-        tinyApis.sFocus(),
-        tinyUi.sClickOnToolbar('click charmap', 'button[aria-label="Special character"]'),
-        Chain.asStep({}, [
-          tinyUi.cWaitForPopup('wait for popup', 'div[role="dialog"]')
-        ]),
-        FocusTools.sTryOnSelector('Focus should start on', doc, 'input'),
-        Chain.asStep(Body.body(), [
-          NamedChain.asChain([
-            NamedChain.direct(NamedChain.inputName(), Chain.identity, 'body'),
-            NamedChain.writeValue('doc', doc),
-            NamedChain.direct('body', UiFinder.cFindIn('[role="dialog"] [role="tabpanel"]'), 'tabpanel'),
-            NamedChain.direct('tabpanel', cTabPanelHeight, 'oldheight'),
-            NamedChain.direct('body', FocusTools.cSetActiveValue('.'), '_'),
-            NamedChain.direct('doc', FocusTools.cGetFocused, 'input'),
-            NamedChain.direct('input', cFakeEvent('input'), '_'),
-            // need to wait until '.tox-collection__group' has no children
-            NamedChain.direct('body', UiFinder.cWaitForState('wait until ', '[role="dialog"] .tox-collection__group', (e) => Traverse.childNodesCount(e) === 0), '_'),
-            NamedChain.direct('tabpanel', cTabPanelHeight, 'newheight'),
-            NamedChain.bundle((bindings) =>
-              // TODO: Use round pixel numbers in DialogTabHeight.ts
-              parseInt(bindings.oldheight, 10) !== parseInt(bindings.newheight, 10) ?
-                Result.error(`Old height and new height differ. Old height: '${bindings.oldheight}' new height '${bindings.newheight}'`) :
-                Result.value({})
-            )
-          ])
-        ])
-      ])
-      , onSuccess, onFailure);
-  }, {
-    plugins: 'charmap',
-    toolbar: 'charmap',
-    theme: 'silver',
-    base_url: '/project/tinymce/js/tinymce'
-  }, success, failure);
+      const tabPanelHeight = (tabpanel: SugarElement<Element>) => Css.getRaw(tabpanel, 'height').getOrDie('tabpanel has no height');
+
+      const type = (doc: SugarElement<Document | ShadowRoot>, text: string) => {
+        const input = FocusTools.getFocused(doc).getOrDie() as SugarElement<HTMLInputElement>;
+        Value.set(input, Value.get(input) + text);
+        fakeEvent(input, 'input');
+      };
+
+      it('TBA: Search for items, dialog height should not change when fewer items returned', async () => {
+        const editor = hook.editor();
+        const root = SugarShadowDom.getRootNode(TinyDom.targetElement(editor));
+        const body = SugarShadowDom.getContentContainer(root);
+
+        TinyUiActions.clickOnToolbar(editor, 'button[aria-label="Special character"]');
+        await TinyUiActions.pWaitForDialog(editor);
+        await FocusTools.pTryOnSelector('Focus should start on', root, 'input');
+
+        const tabPanel = UiFinder.findIn(body, '[role="dialog"] [role="tabpanel"]').getOrDie();
+        const oldHeight = tabPanelHeight(tabPanel);
+        type(root, '.');
+        // need to wait until '.tox-collection__group' has no children
+        await UiFinder.pWaitForState('Wait for search to finish', body, '[role="dialog"] .tox-collection__group', (e) => Traverse.childNodesCount(e) === 0);
+        const newHeight = tabPanelHeight(tabPanel);
+        assert.equal(parseInt(newHeight, 10), parseInt(oldHeight, 10), 'New height and old height differ');
+        TinyUiActions.keydown(editor, Keys.escape());
+      });
+
+      it('TINY-6904: Focus should remain while typing', async () => {
+        const editor = hook.editor();
+        const root = SugarShadowDom.getRootNode(TinyDom.targetElement(editor));
+
+        TinyUiActions.clickOnToolbar(editor, 'button[aria-label="Special character"]');
+        await TinyUiActions.pWaitForDialog(editor);
+        await FocusTools.pTryOnSelector('Focus should start on', root, 'input');
+
+        type(root, 'a');
+        await FocusTools.pTryOnSelector('Focus is still on input', root, 'input');
+        type(root, 'b');
+        await FocusTools.pTryOnSelector('Focus is still on input', root, 'input');
+        TinyUiActions.keydown(editor, Keys.escape());
+      });
+    });
+  });
 });

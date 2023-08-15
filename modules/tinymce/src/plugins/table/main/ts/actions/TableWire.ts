@@ -6,13 +6,14 @@
  */
 
 import { ResizeWire } from '@ephox/snooker';
-import { Body, Css, Element, Insert, Remove } from '@ephox/sugar';
+import { Css, Insert, Remove, SugarBody, SugarElement } from '@ephox/sugar';
+
 import Editor from 'tinymce/core/api/Editor';
 
 import * as Util from '../core/Util';
 
-const createContainer = function () {
-  const container = Element.fromTag('div');
+const createContainer = (): SugarElement<HTMLDivElement> => {
+  const container = SugarElement.fromTag('div');
 
   Css.setAll(container, {
     position: 'static',
@@ -23,16 +24,16 @@ const createContainer = function () {
     border: '0'
   });
 
-  Insert.append(Body.body(), container);
+  Insert.append(SugarBody.body(), container);
 
   return container;
 };
 
-const get = function (editor: Editor, _container?) {
-  return editor.inline ? ResizeWire.body(Util.getBody(editor), createContainer()) : ResizeWire.only(Element.fromDom(editor.getDoc()));
+const get = (editor: Editor, isResizable: (elm: SugarElement<Element>) => boolean): ResizeWire => {
+  return editor.inline ? ResizeWire.body(Util.getBody(editor), createContainer(), isResizable) : ResizeWire.only(SugarElement.fromDom(editor.getDoc()), isResizable);
 };
 
-const remove = function (editor: Editor, wire) {
+const remove = (editor: Editor, wire: ResizeWire): void => {
   if (editor.inline) {
     Remove.remove(wire.parent());
   }

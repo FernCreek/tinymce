@@ -5,31 +5,36 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Obj, Type } from '@ephox/katamari';
-import * as DefaultFormats from './DefaultFormats';
-import * as Settings from '../api/Settings';
-import { Format, Formats } from '../api/fmt/Format';
-import Tools from '../api/util/Tools';
+import { Arr, Obj, Type } from '@ephox/katamari';
+
 import Editor from '../api/Editor';
+import * as Settings from '../api/Settings';
+import * as DefaultFormats from './DefaultFormats';
+import { Format, Formats } from './FormatTypes';
+import { isInlineFormat, isSelectorFormat } from './FormatUtils';
 
 export interface FormatRegistry {
-  get (name?: string): Format[] | Record<string, Format[]>;
-  has (name: string): boolean;
-  register (name: string | Formats, format?: Format[] | Format): void;
-  unregister (name: string): Formats;
+  get: {
+    (name: string): Format[] | undefined;
+    (): Record<string, Format[]>;
+  };
+  has: (name: string) => boolean;
+  register: (name: string | Formats, format?: Format[] | Format) => void;
+  unregister: (name: string) => Formats;
 }
 
-export function FormatRegistry(editor: Editor): FormatRegistry {
+export const FormatRegistry = (editor: Editor): FormatRegistry => {
   const formats: Record<string, Format[]> = {};
 
-  const get = (name?: string) => name ? formats[name] : formats;
+  const get = (name?: string): Format[] | Record<string, Format[]> | undefined =>
+    Type.isNonNullable(name) ? formats[name] : formats;
 
   const has = (name: string): boolean => Obj.has(formats, name);
 
-  const register = function (name: string | Formats, format?: Format | Format[]) {
+  const register = (name: string | Formats, format?: Format | Format[]) => {
     if (name) {
-      if (typeof name !== 'string') {
-        Tools.each(name, function (format, name) {
+      if (!Type.isString(name)) {
+        Obj.each(name, (format, name) => {
           register(name, format);
         });
       } else {
@@ -38,31 +43,31 @@ export function FormatRegistry(editor: Editor): FormatRegistry {
           format = [ format ];
         }
 
-        Tools.each(format, function (format: any) {
+        Arr.each(format, (format) => {
           // Set deep to false by default on selector formats this to avoid removing
           // alignment on images inside paragraphs when alignment is changed on paragraphs
-          if (typeof format.deep === 'undefined') {
-            format.deep = !format.selector;
+          if (Type.isUndefined(format.deep)) {
+            format.deep = !isSelectorFormat(format);
           }
 
           // Default to true
-          if (typeof format.split === 'undefined') {
-            format.split = !format.selector || format.inline;
+          if (Type.isUndefined(format.split)) {
+            format.split = !isSelectorFormat(format) || isInlineFormat(format);
           }
 
           // Default to true
-          if (typeof format.remove === 'undefined' && format.selector && !format.inline) {
+          if (Type.isUndefined(format.remove) && isSelectorFormat(format) && !isInlineFormat(format)) {
             format.remove = 'none';
           }
 
           // Mark format as a mixed format inline + block level
-          if (format.selector && format.inline) {
+          if (isSelectorFormat(format) && isInlineFormat(format)) {
             format.mixed = true;
             format.block_expand = true;
           }
 
           // Split classes if needed
-          if (typeof format.classes === 'string') {
+          if (Type.isString(format.classes)) {
             format.classes = format.classes.split(/\s+/);
           }
         });
@@ -72,7 +77,7 @@ export function FormatRegistry(editor: Editor): FormatRegistry {
     }
   };
 
-  const unregister = function (name: string) {
+  const unregister = (name: string) => {
     if (name && formats[name]) {
       delete formats[name];
     }
@@ -84,9 +89,9 @@ export function FormatRegistry(editor: Editor): FormatRegistry {
   register(Settings.getFormats(editor));
 
   return {
-    get,
+    get: get as FormatRegistry['get'],
     has,
     register,
     unregister
   };
-}
+};

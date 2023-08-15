@@ -1,9 +1,17 @@
-import { Types } from '@ephox/bridge';
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ */
+
 import Editor from 'tinymce/core/api/Editor';
+import { Dialog } from 'tinymce/core/api/ui/Ui';
+
 import { hasAppearanceOptions } from '../api/Settings';
 
-const getItems = (editor: Editor, classes: Types.SelectBox.ExternalSelectBoxItem[], insertNewTable: boolean) => {
-  const rowColCountItems: Types.Dialog.BodyComponentApi[] = !insertNewTable ? [] : [
+const getItems = (editor: Editor, classes: Dialog.ListBoxItemSpec[], insertNewTable: boolean): Dialog.BodyComponentSpec[] => {
+  const rowColCountItems: Dialog.BodyComponentSpec[] = !insertNewTable ? [] : [
     {
       type: 'input',
       name: 'cols',
@@ -18,7 +26,7 @@ const getItems = (editor: Editor, classes: Types.SelectBox.ExternalSelectBoxItem
     }
   ];
 
-  const alwaysItems: Types.Dialog.BodyComponentApi[] = [
+  const alwaysItems: Dialog.BodyComponentSpec[] = [
     {
       type: 'input',
       name: 'width',
@@ -31,7 +39,7 @@ const getItems = (editor: Editor, classes: Types.SelectBox.ExternalSelectBoxItem
     }
   ];
 
-  const appearanceItems: Types.Dialog.BodyComponentApi[] = hasAppearanceOptions(editor) ? [
+  const appearanceItems: Dialog.BodyComponentSpec[] = hasAppearanceOptions(editor) ? [
     {
       type: 'input',
       name: 'cellspacing',
@@ -62,9 +70,9 @@ const getItems = (editor: Editor, classes: Types.SelectBox.ExternalSelectBoxItem
     }
   ] : [];
 
-  const alignmentItem: Types.Dialog.BodyComponentApi[] = [
+  const alignmentItem: Dialog.ListBoxSpec[] = [
     {
-      type: 'selectbox',
+      type: 'listbox',
       name: 'align',
       label: 'Alignment',
       items: [
@@ -76,9 +84,9 @@ const getItems = (editor: Editor, classes: Types.SelectBox.ExternalSelectBoxItem
     }
   ];
 
-  const classListItem: Types.Dialog.BodyComponentApi[] = classes.length > 0 ? [
+  const classListItem: Dialog.ListBoxSpec[] = classes.length > 0 ? [
     {
-      type: 'selectbox',
+      type: 'listbox',
       name: 'class',
       label: 'Class',
       items: classes

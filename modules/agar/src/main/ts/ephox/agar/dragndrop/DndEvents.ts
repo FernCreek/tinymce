@@ -1,7 +1,12 @@
-import { document, Window, DataTransfer, DragEvent } from '@ephox/dom-globals';
-import { Element } from '@ephox/sugar';
-import { setReadWriteMode, setReadOnlyMode, setProtectedMode } from '../datatransfer/Mode';
+import { Obj } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
+import { SugarElement } from '@ephox/sugar';
+
+import { setProtectedMode, setReadOnlyMode, setReadWriteMode } from '../datatransfer/Mode';
+
+interface IeDragEvent extends DragEvent {
+  readonly ieDefaultPrevented?: boolean;
+}
 
 const platform = PlatformDetection.detect();
 
@@ -41,9 +46,9 @@ const createDragenterEvent = createDndEvent('dragenter');
 const createDropEvent = createDndEvent('drop');
 const createDragEvent = createDndEvent('drag');
 
-const isDefaultPrevented = (evt: DragEvent): boolean => evt.defaultPrevented || evt.hasOwnProperty('ieDefaultPrevented');
+const isDefaultPrevented = (evt: DragEvent): boolean => evt.defaultPrevented || Obj.has(evt as IeDragEvent, 'ieDefaultPrevented');
 
-const dispatchDndEvent = (event: DragEvent, target: Element<any>): DragEvent => {
+const dispatchDndEvent = (event: DragEvent, target: SugarElement<Node>): DragEvent => {
   if (event.type === 'dragstart') {
     setReadWriteMode(event.dataTransfer);
   } else if (event.type === 'drop') {
@@ -52,12 +57,12 @@ const dispatchDndEvent = (event: DragEvent, target: Element<any>): DragEvent => 
     setProtectedMode(event.dataTransfer);
   }
 
-  target.dom().dispatchEvent(event);
+  target.dom.dispatchEvent(event);
 
   return event;
 };
 
-const getWindowFromElement = (element: Element<any>): Window => element.dom().ownerDocument.defaultView;
+const getWindowFromElement = (element: SugarElement<Element>): Window => element.dom.ownerDocument.defaultView;
 
 export {
   createDndEvent,

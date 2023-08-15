@@ -1,37 +1,38 @@
 import { Gene } from '@ephox/boss';
-import { Arr, Option } from '@ephox/katamari';
-import { TypedItem } from 'ephox/phoenix/api/Main';
+import { Arr, Optional } from '@ephox/katamari';
 
-const typeditem = function (a: TypedItem<Gene, undefined>) {
-  return a.fold(function (item) {
+import { TypedItem } from 'ephox/phoenix/api/data/TypedItem';
+
+const typeditem = (a: TypedItem<Gene, undefined>): string => {
+  return a.fold((item) => {
     return 'boundary(' + item.id + ')';
-  }, function (item) {
+  }, (item) => {
     return 'empty(' + item.id + ')';
-  }, function (item) {
+  }, (item) => {
     return 'text("' + item.text + '")';
-  }, function (item) {
+  }, (item) => {
     return 'text("' + item.text + '")';
   });
 };
 
-const typeditems = function (items: TypedItem<Gene, undefined>[]) {
+const typeditems = (items: TypedItem<Gene, undefined>[]): string[] => {
   return Arr.map(items, typeditem);
 };
 
-const ids = function (items: Gene[]) {
+const ids = (items: Gene[]): string[] => {
   return Arr.map(items, id);
 };
 
-const id = function (item: Gene) {
+const id = (item: Gene): string => {
   return item.id;
 };
 
-const texts = function (items: Gene[]) {
+const texts = (items: Gene[]): string[] => {
   return Arr.map(items, text);
 };
 
-const text = function (item: Gene) {
-  return Option.from(item.text).getOr('');
+const text = (item: Gene): string => {
+  return Optional.from(item.text).getOr('');
 };
 
 export {

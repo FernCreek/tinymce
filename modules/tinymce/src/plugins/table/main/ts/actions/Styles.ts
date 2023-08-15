@@ -5,16 +5,15 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Element } from '@ephox/dom-globals';
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import Editor from 'tinymce/core/api/Editor';
 import Tools from 'tinymce/core/api/util/Tools';
 
-const getTDTHOverallStyle = function (dom: DOMUtils, elm: Element, name: string): string {
+const getTDTHOverallStyle = (dom: DOMUtils, elm: Element, name: string): string => {
   const cells = dom.select('td,th', elm);
-  let firstChildStyle: string;
+  let firstChildStyle: string | undefined;
 
-  const checkChildren = function (firstChildStyle: string, elms: Element[]) {
+  const checkChildren = (firstChildStyle: string | undefined, elms: Element[]) => {
     for (let i = 0; i < elms.length; i++) {
       const currentStyle = dom.getStyle(elms[i], name);
       if (typeof firstChildStyle === 'undefined') {
@@ -30,26 +29,26 @@ const getTDTHOverallStyle = function (dom: DOMUtils, elm: Element, name: string)
   return checkChildren(firstChildStyle, cells);
 };
 
-const applyAlign = function (editor: Editor, elm: Element, name: string) {
+const applyAlign = (editor: Editor, elm: Element, name: string | undefined): void => {
   if (name) {
     editor.formatter.apply('align' + name, {}, elm);
   }
 };
 
-const applyVAlign = function (editor: Editor, elm: Element, name: string) {
+const applyVAlign = (editor: Editor, elm: Element, name: string | undefined): void => {
   if (name) {
     editor.formatter.apply('valign' + name, {}, elm);
   }
 };
 
-const unApplyAlign = function (editor: Editor, elm: Element) {
-  Tools.each('left center right'.split(' '), function (name) {
+const unApplyAlign = (editor: Editor, elm: Element): void => {
+  Tools.each('left center right'.split(' '), (name) => {
     editor.formatter.remove('align' + name, {}, elm);
   });
 };
 
-const unApplyVAlign = function (editor: Editor, elm: Element) {
-  Tools.each('top middle bottom'.split(' '), function (name) {
+const unApplyVAlign = (editor: Editor, elm: Element): void => {
+  Tools.each('top middle bottom'.split(' '), (name) => {
     editor.formatter.remove('valign' + name, {}, elm);
   });
 };

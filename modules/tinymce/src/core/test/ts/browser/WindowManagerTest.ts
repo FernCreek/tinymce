@@ -1,22 +1,28 @@
-import { Pipeline } from '@ephox/agar';
-import { LegacyUnit, TinyLoader } from '@ephox/mcagar';
-import Theme from 'tinymce/themes/silver/Theme';
+import { describe, it } from '@ephox/bedrock-client';
+import { TinyHooks } from '@ephox/wrap-mcagar';
+import { assert } from 'chai';
+
 import Editor from 'tinymce/core/api/Editor';
-import { UnitTest } from '@ephox/bedrock-client';
+import Theme from 'tinymce/themes/silver/Theme';
 
-UnitTest.asynctest('browser.tinymce.core.WindowManagerTest', function (success, failure) {
-  const suite = LegacyUnit.createSuite<Editor>();
+describe('browser.tinymce.core.WindowManagerTest', () => {
+  const hook = TinyHooks.bddSetupLight<Editor>({
+    add_unload_trigger: false,
+    disable_nodechange: true,
+    indent: false,
+    entities: 'raw',
+    base_url: '/project/tinymce/js/tinymce'
+  }, [ Theme ]);
 
-  Theme();
-
-  suite.test('OpenWindow/CloseWindow events', function (editor) {
+  it('OpenWindow/CloseWindow events', () => {
+    const editor = hook.editor();
     let openWindowArgs, closeWindowArgs;
 
-    editor.on('CloseWindow', function (e) {
+    editor.on('CloseWindow', (e) => {
       closeWindowArgs = e;
     });
 
-    editor.on('OpenWindow', function (e) {
+    editor.on('OpenWindow', (e) => {
       openWindowArgs = e;
       editor.windowManager.close();
     });
@@ -30,19 +36,9 @@ UnitTest.asynctest('browser.tinymce.core.WindowManagerTest', function (success, 
       buttons: []
     });
 
-    LegacyUnit.equal(openWindowArgs.type, 'openwindow');
-    LegacyUnit.equal(closeWindowArgs.type, 'closewindow');
+    assert.equal(openWindowArgs.type, 'openwindow');
+    assert.equal(closeWindowArgs.type, 'closewindow');
 
     editor.off('CloseWindow OpenWindow');
   });
-
-  TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
-    Pipeline.async({}, suite.toSteps(editor), onSuccess, onFailure);
-  }, {
-    add_unload_trigger: false,
-    disable_nodechange: true,
-    indent: false,
-    entities: 'raw',
-    base_url: '/project/tinymce/js/tinymce'
-  }, success, failure);
 });

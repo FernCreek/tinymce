@@ -1,18 +1,21 @@
-import { Assertions, ApproxStructure, Chain, FocusTools, Keyboard, Keys, Log, Pipeline, UiFinder } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { TinyLoader, TinyUi } from '@ephox/mcagar';
-import { document } from '@ephox/dom-globals';
+import { ApproxStructure, Assertions, FocusTools, Keys, Mouse, StructAssert, UiFinder, Waiter } from '@ephox/agar';
+import { describe, it } from '@ephox/bedrock-client';
+import { Fun } from '@ephox/katamari';
+import { SugarBody, SugarDocument } from '@ephox/sugar';
+import { TinyHooks, TinyUiActions } from '@ephox/wrap-mcagar';
 
+import Editor from 'tinymce/core/api/Editor';
+import { Menu } from 'tinymce/core/api/ui/Ui';
 import Theme from 'tinymce/themes/silver/Theme';
-import { Body, Element } from '@ephox/sugar';
-import { Menu } from '@ephox/bridge';
 
-const tableCellsApprox = (s, arr, selectedRows, selectedCols) => {
-  const cells = [];
+const tableCellsApprox = (s: ApproxStructure.StructApi, str: ApproxStructure.StringApi, arr: ApproxStructure.ArrayApi, selectedRows: number, selectedCols: number) => {
+  const cells: StructAssert[] = [];
   for (let i = 1; i <= 10; i++) {
     for (let j = 1; j <= 10; j++) {
       cells.push(s.element('div', {
-        role: 'button',
+        attrs: {
+          role: str.is('button')
+        },
         classes: i <= selectedRows && j <= selectedCols ? [ arr.has('tox-insert-table-picker__selected') ] : [ arr.not('tox-insert-table-picker__selected') ]
       }));
     }
@@ -20,7 +23,7 @@ const tableCellsApprox = (s, arr, selectedRows, selectedCols) => {
   return cells;
 };
 
-const insertTablePickerApprox = (s, str, arr, selectedRows, selectedCols) =>
+const insertTablePickerApprox = (s: ApproxStructure.StructApi, str: ApproxStructure.StringApi, arr: ApproxStructure.ArrayApi, selectedRows: number, selectedCols: number) =>
   s.element('div', {
     classes: [ arr.has('tox-menu'), arr.has('tox-collection'), arr.has('tox-collection--list') ],
     children: [
@@ -32,7 +35,7 @@ const insertTablePickerApprox = (s, str, arr, selectedRows, selectedCols) =>
             children: [
               s.element('div', {
                 classes: [ arr.has('tox-insert-table-picker') ],
-                children: tableCellsApprox(s, arr, selectedRows, selectedCols).concat(s.element('span', {
+                children: tableCellsApprox(s, str, arr, selectedRows, selectedCols).concat(s.element('span', {
                   classes: [ arr.has('tox-insert-table-picker__label') ],
                   html: str.is(`${selectedCols}x${selectedRows}`)
                 }))
@@ -44,61 +47,78 @@ const insertTablePickerApprox = (s, str, arr, selectedRows, selectedCols) =>
     ]
   });
 
-UnitTest.asynctest('OxideTablePickerMenuTest', (success, failure) => {
-  Theme();
-
-  TinyLoader.setup(
-    (editor, onSuccess, onFailure) => {
-      const tinyUi = TinyUi(editor);
-      const doc = Element.fromDom(document);
-
-      Pipeline.async({ }, Log.steps(
-        'TBA',
-        'Check structure of table picker',
-        [
-          tinyUi.sClickOnToolbar('Click on toolbar button', 'button'),
-          UiFinder.sWaitForVisible('Waiting for menu', Body.body(), '[role="menu"]'),
-          Chain.asStep(Body.body(), [
-            UiFinder.cFindIn('[role="menu"]'),
-            Assertions.cAssertStructure(
-              'Checking structure',
-              ApproxStructure.build((s, str, arr) => insertTablePickerApprox(s, str, arr, 1, 1))
-            )
-          ]),
-          FocusTools.sTryOnSelector('Focus should be on first table cell', doc, '.tox-insert-table-picker__selected:last'),
-          Keyboard.sKeydown(doc, Keys.down(), {}),
-          Keyboard.sKeydown(doc, Keys.right(), {}),
-          Chain.asStep(Body.body(), [
-            UiFinder.cFindIn('[role="menu"]'),
-            Assertions.cAssertStructure(
-              'Checking structure',
-              ApproxStructure.build((s, str, arr) => insertTablePickerApprox(s, str, arr, 2, 2))
-            )
-          ]),
-          FocusTools.sTryOnSelector('Focus should be on 2 down, 2 across table cell', doc, '.tox-insert-table-picker__selected:last')
-        ]
-      ), onSuccess, onFailure);
+describe('browser.tinymce.themes.silver.skin.OxideTablePickerMenuTest', () => {
+  const hook = TinyHooks.bddSetup<Editor>({
+    menubar: 'table',
+    menu: {
+      table: { title: 'Table', items: 'table-menuitem' }
     },
-    {
-      theme: 'silver',
-      menubar: true,
-      toolbar: 'table-button',
-      base_url: '/project/tinymce/js/tinymce',
-      setup: (ed) => {
-        ed.ui.registry.addMenuButton('table-button', {
-          type: 'menubutton',
-          fetch: (callback) => {
-            callback([
-              {
-                type: 'fancymenuitem',
-                fancytype: 'inserttable'
-              } as Menu.FancyMenuItemApi
-            ]);
-          }
-        });
-      }
-    },
-    success,
-    failure
-  );
+    toolbar: 'table-button',
+    base_url: '/project/tinymce/js/tinymce',
+    setup: (ed: Editor) => {
+      const tableMenuItem: Menu.FancyMenuItemSpec = {
+        type: 'fancymenuitem',
+        fancytype: 'inserttable',
+        onAction: Fun.noop
+      };
+
+      ed.ui.registry.addMenuButton('table-button', {
+        icon: 'table',
+        fetch: (callback) => callback([ tableMenuItem ])
+      });
+
+      ed.ui.registry.addNestedMenuItem('table-menuitem', {
+        text: 'Insert table',
+        getSubmenuItems: () => [ tableMenuItem ]
+      });
+    }
+  }, [ Theme ], true);
+
+  it('TBA: Check structure of table picker', async () => {
+    const editor = hook.editor();
+    const doc = SugarDocument.getDocument();
+    TinyUiActions.clickOnToolbar(editor, 'button');
+    const menu = await TinyUiActions.pWaitForPopup(editor, '[role="menu"]');
+    Assertions.assertStructure(
+      'Checking structure',
+      ApproxStructure.build((s, str, arr) => insertTablePickerApprox(s, str, arr, 1, 1)),
+      menu
+    );
+    await FocusTools.pTryOnSelector('Focus should be on first table cell', doc, '.tox-insert-table-picker__selected:last');
+    TinyUiActions.keydown(editor, Keys.down());
+    TinyUiActions.keydown(editor, Keys.right());
+    Assertions.assertStructure(
+      'Checking structure',
+      ApproxStructure.build((s, str, arr) => insertTablePickerApprox(s, str, arr, 2, 2)),
+      menu
+    );
+    await FocusTools.pTryOnSelector('Focus should be on 2 down, 2 across table cell', doc, '.tox-insert-table-picker__selected:last');
+    TinyUiActions.keydown(editor, Keys.escape());
+  });
+
+  it('TINY-6532: Re-opening the menu should reset the selected cells', async () => {
+    const editor = hook.editor();
+
+    const pOpenTablePicker = async () => {
+      const insertTableMenuItem = await TinyUiActions.pWaitForPopup(editor, '[role="menuitem"]:contains("Insert table")');
+      Mouse.mouseOver(insertTableMenuItem);
+      return await TinyUiActions.pWaitForPopup(editor, 'div.tox-fancymenuitem');
+    };
+
+    TinyUiActions.clickOnMenu(editor, 'button:contains("Table")');
+    const firstPicker = await pOpenTablePicker();
+    const item = UiFinder.findIn(firstPicker, 'div[role="button"]').getOrDie();
+    Mouse.mouseOver(item);
+    UiFinder.exists(firstPicker, 'div.tox-insert-table-picker__selected');
+    UiFinder.exists(firstPicker, 'span.tox-insert-table-picker__label:contains("1x1")');
+
+    TinyUiActions.keydown(editor, Keys.escape());
+    await Waiter.pTryUntil('Wait for menu to be hidden', () => UiFinder.notExists(SugarBody.body(), 'div.tox-fancymenuitem'));
+
+    const secondPicker = await pOpenTablePicker();
+    UiFinder.notExists(secondPicker, 'div.tox-insert-table-picker__selected');
+    UiFinder.exists(secondPicker, 'span.tox-insert-table-picker__label:contains("0x0")');
+    TinyUiActions.keydown(editor, Keys.escape());
+    TinyUiActions.keydown(editor, Keys.escape());
+  });
 });

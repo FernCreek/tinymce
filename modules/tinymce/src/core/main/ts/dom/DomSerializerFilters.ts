@@ -5,38 +5,39 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Arr, Option } from '@ephox/katamari';
+import { Arr, Optional } from '@ephox/katamari';
+
 import DOMUtils from '../api/dom/DOMUtils';
 import DomParser from '../api/html/DomParser';
 import Entities from '../api/html/Entities';
+import AstNode from '../api/html/Node';
 import * as Zwsp from '../text/Zwsp';
-import { DomSerializerSettings } from './DomSerializer';
+import { DomSerializerSettings } from './DomSerializerImpl';
 
 declare const unescape: any;
 
-const register = (htmlParser: DomParser, settings: DomSerializerSettings, dom: DOMUtils) => {
+const register = (htmlParser: DomParser, settings: DomSerializerSettings, dom: DOMUtils): void => {
   // Convert tabindex back to elements when serializing contents
-  htmlParser.addAttributeFilter('data-mce-tabindex', function (nodes, name) {
-    let i = nodes.length, node;
-
+  htmlParser.addAttributeFilter('data-mce-tabindex', (nodes, name) => {
+    let i = nodes.length;
     while (i--) {
-      node = nodes[i];
+      const node = nodes[i];
       node.attr('tabindex', node.attr('data-mce-tabindex'));
       node.attr(name, null);
     }
   });
 
   // Convert move data-mce-src, data-mce-href and data-mce-style into nodes or process them if needed
-  htmlParser.addAttributeFilter('src,href,style', function (nodes, name, args) {
-    let i = nodes.length, node, value;
+  htmlParser.addAttributeFilter('src,href,style', (nodes, name, args) => {
     const internalName = 'data-mce-' + name;
     const urlConverter = settings.url_converter;
     const urlConverterScope = settings.url_converter_scope;
 
+    let i = nodes.length;
     while (i--) {
-      node = nodes[i];
+      const node = nodes[i];
 
-      value = node.attr(internalName);
+      let value = node.attr(internalName);
       if (value !== undefined) {
         // Set external name to internal value and remove internal
         node.attr(name, value.length > 0 ? value : null);
@@ -59,12 +60,11 @@ const register = (htmlParser: DomParser, settings: DomSerializerSettings, dom: D
   });
 
   // Remove internal classes mceItem<..> or mceSelected
-  htmlParser.addAttributeFilter('class', function (nodes) {
-    let i = nodes.length, node, value;
-
+  htmlParser.addAttributeFilter('class', (nodes) => {
+    let i = nodes.length;
     while (i--) {
-      node = nodes[i];
-      value = node.attr('class');
+      const node = nodes[i];
+      let value = node.attr('class');
 
       if (value) {
         value = node.attr('class').replace(/(?:^|\s)mce-item-\w+(?!\S)/g, '');
@@ -74,15 +74,14 @@ const register = (htmlParser: DomParser, settings: DomSerializerSettings, dom: D
   });
 
   // Remove bookmark elements
-  htmlParser.addAttributeFilter('data-mce-type', function (nodes, name, args) {
-    let i = nodes.length, node;
-
+  htmlParser.addAttributeFilter('data-mce-type', (nodes, name, args) => {
+    let i = nodes.length;
     while (i--) {
-      node = nodes[i];
+      const node = nodes[i];
 
       if (node.attr('data-mce-type') === 'bookmark' && !args.cleanup) {
         // We maybe dealing with a "filled" bookmark. If so just remove the node, otherwise unwrap it
-        const hasChildren = Option.from(node.firstChild).exists((firstChild) => !Zwsp.isZwsp(firstChild.value));
+        const hasChildren = Optional.from(node.firstChild).exists((firstChild) => !Zwsp.isZwsp(firstChild.value));
         if (hasChildren) {
           node.unwrap();
         } else {
@@ -92,11 +91,10 @@ const register = (htmlParser: DomParser, settings: DomSerializerSettings, dom: D
     }
   });
 
-  htmlParser.addNodeFilter('noscript', function (nodes) {
-    let i = nodes.length, node;
-
+  htmlParser.addNodeFilter('noscript', (nodes) => {
+    let i = nodes.length;
     while (i--) {
-      node = nodes[i].firstChild;
+      const node = nodes[i].firstChild;
 
       if (node) {
         node.value = Entities.decode(node.value);
@@ -105,10 +103,8 @@ const register = (htmlParser: DomParser, settings: DomSerializerSettings, dom: D
   });
 
   // Force script into CDATA sections and remove the mce- prefix also add comments around styles
-  htmlParser.addNodeFilter('script,style', function (nodes, name) {
-    let i = nodes.length, node, value, type;
-
-    const trim = function (value) {
+  htmlParser.addNodeFilter('script,style', (nodes, name) => {
+    const trim = (value: string) => {
       /* jshint maxlen:255 */
       /* eslint max-len:0 */
       return value.replace(/(<!--\[CDATA\[|\]\]-->)/g, '\n')
@@ -117,14 +113,15 @@ const register = (htmlParser: DomParser, settings: DomSerializerSettings, dom: D
         .replace(/\s*(\/\*\s*\]\]>\s*\*\/(-->)?|\s*\/\/\s*\]\]>(-->)?|\/\/\s*(-->)?|\]\]>|\/\*\s*-->\s*\*\/|\s*-->\s*)\s*$/g, '');
     };
 
+    let i = nodes.length;
     while (i--) {
-      node = nodes[i];
-      value = node.firstChild ? node.firstChild.value : '';
+      const node = nodes[i];
+      const value = node.firstChild ? node.firstChild.value : '';
 
       if (name === 'script') {
         // Remove mce- prefix from script elements and remove default type since the user specified
         // a script element without type attribute
-        type = node.attr('type');
+        const type = node.attr('type');
         if (type) {
           node.attr('type', type === 'mce-no/type' ? null : type.replace(/^mce\-/, ''));
         }
@@ -141,11 +138,10 @@ const register = (htmlParser: DomParser, settings: DomSerializerSettings, dom: D
   });
 
   // Convert comments to cdata and handle protected comments
-  htmlParser.addNodeFilter('#comment', function (nodes) {
-    let i = nodes.length, node;
-
+  htmlParser.addNodeFilter('#comment', (nodes) => {
+    let i = nodes.length;
     while (i--) {
-      node = nodes[i];
+      const node = nodes[i];
 
       if (settings.preserve_cdata && node.value.indexOf('[CDATA[') === 0) {
         node.name = '#cdata';
@@ -160,11 +156,10 @@ const register = (htmlParser: DomParser, settings: DomSerializerSettings, dom: D
     }
   });
 
-  htmlParser.addNodeFilter('xml:namespace,input', function (nodes, name) {
-    let i = nodes.length, node;
-
+  htmlParser.addNodeFilter('xml:namespace,input', (nodes, name) => {
+    let i = nodes.length;
     while (i--) {
-      node = nodes[i];
+      const node = nodes[i];
       if (node.type === 7) {
         node.remove();
       } else if (node.type === 1) {
@@ -175,8 +170,8 @@ const register = (htmlParser: DomParser, settings: DomSerializerSettings, dom: D
     }
   });
 
-  htmlParser.addAttributeFilter('data-mce-type', function (nodes) {
-    Arr.each(nodes, function (node) {
+  htmlParser.addAttributeFilter('data-mce-type', (nodes) => {
+    Arr.each(nodes, (node) => {
       if (node.attr('data-mce-type') === 'format-caret') {
         if (node.isEmpty(htmlParser.schema.getNonEmptyElements())) {
           node.remove();
@@ -193,7 +188,7 @@ const register = (htmlParser: DomParser, settings: DomSerializerSettings, dom: D
     'data-mce-selected,data-mce-expando,' +
     'data-mce-type,data-mce-resize,data-mce-placeholder',
 
-    function (nodes, name, args) {
+    (nodes, name, args) => {
       let i = nodes.length;
 
       while (i--) {
@@ -214,8 +209,8 @@ const register = (htmlParser: DomParser, settings: DomSerializerSettings, dom: D
  *
  * Example of what happens: <body>text</body> becomes <body>text<br><br></body>
  */
-const trimTrailingBr = function (rootNode) {
-  const isBr = function (node) {
+const trimTrailingBr = (rootNode: AstNode): void => {
+  const isBr = (node: AstNode): boolean => {
     return node && node.name === 'br';
   };
 

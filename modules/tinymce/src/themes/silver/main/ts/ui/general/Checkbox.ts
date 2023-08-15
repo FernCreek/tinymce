@@ -6,43 +6,41 @@
  */
 
 import {
-  AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloyTriggers, Behaviour, Disabling, Focusing, FormField as AlloyFormField, Keying,
-  Memento, NativeEvents, Representing, SimpleSpec, Tabstopping, Unselecting
+  AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloyTriggers, Behaviour, Disabling, Focusing, FormField as AlloyFormField, Keying, Memento,
+  NativeEvents, Representing, SimpleSpec, Tabstopping, Unselecting
 } from '@ephox/alloy';
-import { Types } from '@ephox/bridge';
-import { HTMLInputElement } from '@ephox/dom-globals';
-import { Fun, Option } from '@ephox/katamari';
+import { Dialog } from '@ephox/bridge';
+import { Fun, Optional } from '@ephox/katamari';
+
 import { UiFactoryBackstageProviders } from '../../backstage/Backstage';
 import * as ReadOnly from '../../ReadOnly';
-
 import { ComposingConfigs } from '../alien/ComposingConfigs';
 import * as Icons from '../icons/Icons';
-import { Omit } from '../Omit';
 import { formChangeEvent } from './FormEvents';
 
-type CheckboxSpec = Omit<Types.Checkbox.Checkbox, 'type'>;
+type CheckboxSpec = Omit<Dialog.Checkbox, 'type'>;
 
 export const renderCheckbox = (spec: CheckboxSpec, providerBackstage: UiFactoryBackstageProviders): SimpleSpec => {
   const repBehaviour = Representing.config({
     store: {
       mode: 'manual',
       getValue: (comp: AlloyComponent): boolean => {
-        const el = comp.element().dom() as HTMLInputElement;
+        const el = comp.element.dom as HTMLInputElement;
         return el.checked;
       },
       setValue: (comp: AlloyComponent, value: boolean) => {
-        const el = comp.element().dom() as HTMLInputElement;
+        const el = comp.element.dom as HTMLInputElement;
         el.checked = value;
       }
     }
   });
 
   const toggleCheckboxHandler = (comp) => {
-    comp.element().dom().click();
-    return Option.some(true);
+    comp.element.dom.click();
+    return Optional.some(true);
   };
 
-  const pField = AlloyFormField.parts().field({
+  const pField = AlloyFormField.parts.field({
     factory: { sketch: Fun.identity },
     dom: {
       tag: 'input',
@@ -55,7 +53,7 @@ export const renderCheckbox = (spec: CheckboxSpec, providerBackstage: UiFactoryB
     behaviours: Behaviour.derive([
       ComposingConfigs.self(),
       Disabling.config({
-        disabled: () => spec.disabled || providerBackstage.isReadOnly()
+        disabled: () => spec.disabled || providerBackstage.isDisabled()
       }),
       Tabstopping.config({}),
       Focusing.config({ }),
@@ -74,7 +72,7 @@ export const renderCheckbox = (spec: CheckboxSpec, providerBackstage: UiFactoryB
     ])
   });
 
-  const pLabel = AlloyFormField.parts().label({
+  const pLabel = AlloyFormField.parts.label({
     dom: {
       tag: 'span',
       classes: [ 'tox-checkbox__label' ],
@@ -87,13 +85,7 @@ export const renderCheckbox = (spec: CheckboxSpec, providerBackstage: UiFactoryB
 
   const makeIcon = (className: string) => {
     const iconName = className === 'checked' ? 'selected' : 'unselected';
-    return {
-      dom: {
-        tag: 'span',
-        classes: [ 'tox-icon', 'tox-checkbox-icon__' + className ],
-        innerHtml: Icons.get(iconName, providerBackstage.icons)
-      }
-    };
+    return Icons.render(iconName, { tag: 'span', classes: [ 'tox-icon', 'tox-checkbox-icon__' + className ] }, providerBackstage.icons);
   };
 
   const memIcons = Memento.record(
@@ -121,7 +113,7 @@ export const renderCheckbox = (spec: CheckboxSpec, providerBackstage: UiFactoryB
     ],
     fieldBehaviours: Behaviour.derive([
       Disabling.config({
-        disabled: () => spec.disabled || providerBackstage.isReadOnly(),
+        disabled: () => spec.disabled || providerBackstage.isDisabled(),
         disableClass: 'tox-checkbox--disabled',
         onDisabled: (comp) => {
           AlloyFormField.getField(comp).each(Disabling.disable);

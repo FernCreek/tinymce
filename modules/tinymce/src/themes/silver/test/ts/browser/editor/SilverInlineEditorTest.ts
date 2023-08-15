@@ -1,23 +1,148 @@
-/* tslint:disable:no-console */
-import { ApproxStructure, Assertions, Chain, Keyboard, Keys, Log, Logger, Pipeline, Step, UiFinder } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { console, document } from '@ephox/dom-globals';
-import { Arr, Cell } from '@ephox/katamari';
-import { TinyApis, TinyLoader, TinyUi } from '@ephox/mcagar';
-import { Body, Css, Element } from '@ephox/sugar';
-import Editor from 'tinymce/core/api/Editor';
+/* eslint-disable no-console */
+import { ApproxStructure, Assertions, Keys, UiFinder } from '@ephox/agar';
+import { beforeEach, describe, it } from '@ephox/bedrock-client';
+import { Cell, Fun } from '@ephox/katamari';
+import { Css, SugarBody } from '@ephox/sugar';
+import { TinyDom, TinyHooks, TinyUiActions } from '@ephox/wrap-mcagar';
+import { assert } from 'chai';
 
+import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
 import Theme from 'tinymce/themes/silver/Theme';
 
-UnitTest.asynctest('Inline Editor (Silver) test', (success, failure) => {
-  Theme();
+import * as UiUtils from '../../module/UiUtils';
 
+describe('browser.tinymce.themes.silver.editor.SilverInlineEditorTest', () => {
   const store = Cell([ ]);
+  const hook = TinyHooks.bddSetup<Editor>({
+    inline: true,
+    toolbar: 'custom1 customtoggle1 dropdown1-with-text dropdown1-with-icon splitbutton1-with-text splitbutton2-with-icon',
+    menubar: 'menutest',
+    menu: {
+      menutest: { title: 'test', items: 'x1' }
+    },
+    base_url: '/project/tinymce/js/tinymce',
+    setup: (ed: Editor) => {
+      ed.ui.registry.addButton('custom1', {
+        type: 'button',
+        icon: 'cut',
+        onAction: () => {
+          store.set(store.get().concat([ 'button1' ]));
+        }
+      });
 
-  const sUiContainerTest = (editor: Editor, container: Element, tinyApis: TinyApis, tinyUi: TinyUi) => Logger.ts('Check basic container structure and actions', [
-    tinyApis.sFocus(),
-    Assertions.sAssertStructure(
+      ed.ui.registry.addToggleButton('customtoggle1', {
+        type: 'togglebutton',
+        text: 'ToggleMe',
+        onSetup: (toggleButtonApi) => {
+          const f = () => {
+            toggleButtonApi.setActive(!toggleButtonApi.isActive());
+          };
+          ed.on('customtoggle1-toggle', f);
+          return () => ed.off('customtoggle1-toggle', f);
+        },
+        onAction: () => {
+          store.set(store.get().concat([ 'button1' ]));
+        }
+      });
+
+      ed.ui.registry.addMenuButton('dropdown1-with-text', {
+        text: 'dropdown1',
+        fetch: (callback) => callback([
+          {
+            type: 'menuitem',
+            text: 'Fetch1',
+            onAction: () => {
+              console.log('fetching item1');
+            }
+          }
+        ])
+      });
+
+      ed.ui.registry.addMenuButton('dropdown1-with-icon', {
+        icon: 'bold',
+        fetch: (callback) => callback([
+          {
+            type: 'menuitem',
+            text: 'Fetch1',
+            onAction: () => {
+              console.log('fetching item1');
+            }
+          }
+        ])
+      });
+
+      ed.ui.registry.addSplitButton('splitbutton1-with-text', {
+        text: 'Delta',
+        onItemAction: Fun.noop,
+        fetch: (callback) => {
+          callback([
+            {
+              type: 'choiceitem',
+              text: 'Split1',
+              value: 'split1'
+            },
+            {
+              type: 'choiceitem',
+              text: 'Split2',
+              value: 'split2'
+            }
+          ]);
+        },
+        onSetup: (splitButtonApi) => {
+          const f = () => {
+            splitButtonApi.setActive(!splitButtonApi.isActive());
+          };
+          ed.on('splitbutton1-toggle', f);
+          return () => ed.off('splitbutton1-toggle', f);
+        },
+        onAction: () => {
+          console.log('triggering action instead');
+        }
+      });
+
+      ed.ui.registry.addSplitButton('splitbutton2-with-icon', {
+        icon: 'underline',
+        onItemAction: Fun.noop,
+        fetch: (callback) => {
+          callback([
+            {
+              type: 'choiceitem',
+              text: '2-Split1',
+              value: '2-split1'
+            },
+            {
+              type: 'choiceitem',
+              text: '2-Split2',
+              value: '2-split2'
+            }
+          ]);
+        },
+        onAction: () => {
+          console.log('triggering action instead');
+        }
+      });
+
+      ed.ui.registry.addMenuItem('x1', {
+        icon: 'italic',
+        text: 'Text with icon',
+        shortcut: 'Meta+M',
+        onAction: () => {
+          console.log('Just Text click');
+        }
+      });
+    }
+  }, [ Theme ]);
+
+  beforeEach(async () => {
+    hook.editor().focus();
+    await UiUtils.pWaitForEditorToRender();
+  });
+
+  it('Check basic container structure and actions', () => {
+    const editor = hook.editor();
+    const container = TinyDom.container(editor);
+    Assertions.assertStructure(
       'Container structure',
       ApproxStructure.build((s, str, arr) => s.element('div', {
         classes: [ arr.has('tox-tinymce'), arr.has('tox-tinymce-inline') ],
@@ -83,7 +208,7 @@ UnitTest.asynctest('Inline Editor (Silver) test', (success, failure) => {
                                   s.element('div', {
                                     classes: [ arr.has('tox-tbtn__select-chevron') ],
                                     children: [
-                                      s.element('svg', { })
+                                      s.element('svg', {})
                                     ]
                                   })
                                 ]
@@ -95,15 +220,15 @@ UnitTest.asynctest('Inline Editor (Silver) test', (success, failure) => {
                                 children: [
                                   s.element('span', {
                                     // NOTE: Not sure what this should be?
-                                    classes: [ ],
+                                    classes: [],
                                     children: [
-                                      s.element('svg', { })
+                                      s.element('svg', {})
                                     ]
                                   }),
                                   s.element('div', {
                                     classes: [ arr.has('tox-tbtn__select-chevron') ],
                                     children: [
-                                      s.element('svg', { })
+                                      s.element('svg', {})
                                     ]
                                   })
                                 ]
@@ -125,7 +250,7 @@ UnitTest.asynctest('Inline Editor (Silver) test', (success, failure) => {
                                   s.element('span', {
                                     classes: [ arr.has('tox-tbtn'), arr.has('tox-split-button__chevron') ],
                                     children: [
-                                      s.element('svg', { })
+                                      s.element('svg', {})
                                     ]
                                   }),
                                   s.element('span', {
@@ -149,7 +274,7 @@ UnitTest.asynctest('Inline Editor (Silver) test', (success, failure) => {
                                     children: [
                                       s.element('span', {
                                         children: [
-                                          s.element('svg', { })
+                                          s.element('svg', {})
                                         ]
                                       })
                                     ]
@@ -157,7 +282,7 @@ UnitTest.asynctest('Inline Editor (Silver) test', (success, failure) => {
                                   s.element('span', {
                                     classes: [ arr.has('tox-tbtn'), arr.has('tox-split-button__chevron') ],
                                     children: [
-                                      s.element('svg', { })
+                                      s.element('svg', {})
                                     ]
                                   }),
                                   s.element('span', {
@@ -190,104 +315,105 @@ UnitTest.asynctest('Inline Editor (Silver) test', (success, failure) => {
         ]
       })),
       container
-    ),
-    Step.sync(() => {
-      const top = Css.get(container, 'top');
-      const left = Css.get(container, 'left');
-      Assertions.assertEq(`Container top position (${top}) should be an integer`, true, top.indexOf('.') === -1);
-      Assertions.assertEq(`Container left position (${left}) should be an integer`, true, left.indexOf('.') === -1);
-    }),
+    );
 
-    tinyUi.sClickOnToolbar('Click on first toolbar button', 'button'),
-    Step.sync(() => {
-      Assertions.assertEq('Button should have been triggered', [ 'button1' ], store.get());
-    }),
+    const top = Css.get(container, 'top');
+    const left = Css.get(container, 'left');
+    assert.notInclude(top, '.', `Container top position (${top}) should be an integer`);
+    assert.notInclude(left, '.', `Container left position (${left}) should be an integer`);
 
-    Log.stepsAsStep('TBA', 'Menu appearing from menubar should have svg icons', [
-      tinyUi.sClickOnMenu('Click on test menu', 'button[role="menuitem"]:contains("test")'),
-      UiFinder.sWaitForVisible('Waiting for menu to appear', Body.body(), '[role="menu"]'),
-      Chain.asStep(Body.body(), [
-        UiFinder.cFindIn('[role="menu"] .tox-collection__item--active'),
-        Assertions.cAssertStructure(
-          'Checking item has svg icon and text',
-          ApproxStructure.build((s, str, arr) => s.element('div', {
-            classes: [ arr.has('tox-collection__item') ],
+    TinyUiActions.clickOnToolbar(editor, 'button');
+    assert.deepEqual(store.get(), [ 'button1' ], 'Button should have been triggered');
+  });
+
+  it('TBA: Menu appearing from menubar should have svg icons', async () => {
+    const editor = hook.editor();
+    TinyUiActions.clickOnMenu(editor, 'button[role="menuitem"]:contains("test")');
+    await UiFinder.pWaitForVisible('Waiting for menu to appear', SugarBody.body(), '[role="menu"]');
+    const activeItem = UiFinder.findIn(SugarBody.body(), '[role="menu"] .tox-collection__item--active').getOrDie();
+    Assertions.assertStructure(
+      'Checking item has svg icon and text',
+      ApproxStructure.build((s, str, arr) => s.element('div', {
+        classes: [ arr.has('tox-collection__item') ],
+        children: [
+          s.element('div', {
+            classes: [ arr.has('tox-collection__item-icon') ],
             children: [
-              s.element('div', {
-                classes: [ arr.has('tox-collection__item-icon') ],
-                children: [
-                  s.element('svg', { })
-                ]
-              }),
-              s.element('div', {
-                classes: [ arr.has('tox-collection__item-label') ],
-                html: str.is('Text with icon')
-              }),
-              s.element('div', {
-                classes: [ arr.has('tox-collection__item-accessory') ],
-                html: str.is(Env.mac ? '\u2318' + 'M' : 'Ctrl' + '+M')
-              })
+              s.element('svg', { })
             ]
-          }))
-        )
-      ]),
-      Keyboard.sKeydown(Element.fromDom(document), Keys.escape(), { }),
-      UiFinder.sNotExists(Body.body(), '[role="menu"]')
-    ]),
+          }),
+          s.element('div', {
+            classes: [ arr.has('tox-collection__item-label') ],
+            html: str.is('Text with icon')
+          }),
+          s.element('div', {
+            classes: [ arr.has('tox-collection__item-accessory') ],
+            html: str.is(Env.mac ? '\u2318' + 'M' : 'Ctrl' + '+M')
+          })
+        ]
+      })),
+      activeItem
+    );
+    TinyUiActions.keydown(editor, Keys.escape());
+    UiFinder.notExists(SugarBody.body(), '[role="menu"]');
+  });
 
-    Log.stepsAsStep('TBA', 'Clicking on a toggle button should not toggle. It is up to the setActive api to do that', [
-      tinyUi.sClickOnToolbar('Click on ToggleMe toolbar button', '.tox-tbtn:contains("ToggleMe")'),
-      Chain.asStep(container, [
-        UiFinder.cFindIn('.tox-tbtn:contains("ToggleMe")'),
-        Assertions.cAssertStructure('Should not be pressed', ApproxStructure.build((s, str, arr) => s.element('button', {
-          attrs: {
-            'aria-pressed': str.is('false')
-          },
-          classes: [ arr.not('tox-tbtn--enabled') ]
-        })))
-      ])
-    ]),
+  it('TBA: Clicking on a toggle button should not toggle. It is up to the setActive api to do that', () => {
+    const editor = hook.editor();
+    const button = TinyUiActions.clickOnToolbar(editor, '.tox-tbtn:contains("ToggleMe")');
+    Assertions.assertStructure('ToggleMe button should not be pressed',
+      ApproxStructure.build((s, str, arr) => s.element('button', {
+        attrs: {
+          'aria-pressed': str.is('false')
+        },
+        classes: [ arr.not('tox-tbtn--enabled') ]
+      })),
+      button
+    );
+  });
 
-    Log.stepsAsStep('TBA', 'Using the api should toggle a toggle button', [
-      Step.sync(() => {
-        editor.fire('customtoggle1-toggle');
-      }),
-      Chain.asStep(container, [
-        UiFinder.cFindIn('.tox-tbtn:contains("ToggleMe")'),
-        Assertions.cAssertStructure('Should be pressed', ApproxStructure.build((s, str, arr) => s.element('button', {
-          attrs: {
-            'aria-pressed': str.is('true')
-          },
-          classes: [ arr.has('tox-tbtn--enabled') ]
-        })))
-      ])
-    ]),
+  it('TBA: Using the api should toggle a toggle button', () => {
+    const editor = hook.editor();
+    editor.fire('customtoggle1-toggle');
+    const button = UiFinder.findIn(TinyDom.container(editor), '.tox-tbtn:contains("ToggleMe")').getOrDie();
+    Assertions.assertStructure('ToggleMe button should be pressed',
+      ApproxStructure.build((s, str, arr) => s.element('button', {
+        attrs: {
+          'aria-pressed': str.is('true')
+        },
+        classes: [ arr.has('tox-tbtn--enabled') ]
+      })),
+      button
+    );
+  });
 
-    Log.stepsAsStep('TBA', 'Clicking on a split button primary part should not toggle. It is up to the setActive api to do that', [
-      tinyUi.sClickOnToolbar('Click on Delta toolbar button', '.tox-split-button:contains("Delta")'),
-      Chain.asStep(container, [
-        UiFinder.cFindIn('.tox-split-button > .tox-tbtn:contains("Delta")'),
-        Assertions.cAssertStructure('Should not be pressed', ApproxStructure.build((s, str, arr) => s.element('span', {
-          classes: [ arr.not('tox-tbtn--enabled') ]
-        })))
-      ])
-    ]),
+  it('TBA: Clicking on a split button primary part should not toggle. It is up to the setActive api to do that', () => {
+    const editor = hook.editor();
+    TinyUiActions.clickOnToolbar(editor, '.tox-split-button:contains("Delta")');
+    const button = UiFinder.findIn(TinyDom.container(editor), '.tox-split-button > .tox-tbtn:contains("Delta")').getOrDie();
+    Assertions.assertStructure('Delta button should not be pressed',
+      ApproxStructure.build((s, str, arr) => s.element('span', {
+        classes: [ arr.not('tox-tbtn--enabled') ]
+      })),
+      button
+    );
+  });
 
-    Log.stepsAsStep('TBA', 'Using the api should toggle a split button', [
-      Step.sync(() => {
-        editor.fire('splitbutton1-toggle');
-      }),
-      Chain.asStep(container, [
-        UiFinder.cFindIn('.tox-split-button > .tox-tbtn:contains("Delta")'),
-        Assertions.cAssertStructure('Should be pressed', ApproxStructure.build((s, str, arr) => s.element('span', {
-          classes: [ arr.has('tox-tbtn--enabled') ]
-        })))
-      ])
-    ])
-  ]);
+  it('TBA: Using the api should toggle a split button', () => {
+    const editor = hook.editor();
+    editor.fire('splitbutton1-toggle');
+    const button = UiFinder.findIn(TinyDom.container(editor), '.tox-split-button > .tox-tbtn:contains("Delta")').getOrDie();
+    Assertions.assertStructure('Delta button should be pressed',
+      ApproxStructure.build((s, str, arr) => s.element('span', {
+        classes: [ arr.has('tox-tbtn--enabled') ]
+      })),
+      button
+    );
+  });
 
-  const sContentAreaContainerTest = (contentAreaContainer) => Logger.ts('Check basic content area container structure', [
-    Assertions.sAssertStructure(
+  it('Check basic content area container structure', () => {
+    const editor = hook.editor();
+    Assertions.assertStructure(
       'Content area container structure',
       ApproxStructure.build((s, str, arr) => s.element('div', {
         classes: [ arr.has('mce-content-body') ],
@@ -297,145 +423,7 @@ UnitTest.asynctest('Inline Editor (Silver) test', (success, failure) => {
           })
         ]
       })),
-      contentAreaContainer
-    )
-  ]);
-
-  TinyLoader.setup((editor: Editor, onSuccess, onFailure) => {
-    const uiContainer = Element.fromDom(editor.getContainer());
-    const contentAreaContainer = Element.fromDom(editor.getContentAreaContainer());
-
-    const tinyApis = TinyApis(editor);
-    const tinyUi = TinyUi(editor);
-
-    Pipeline.async({ }, Arr.flatten([
-      sUiContainerTest(editor, uiContainer, tinyApis, tinyUi),
-      sContentAreaContainerTest(contentAreaContainer)
-    ]), onSuccess, onFailure);
-  },
-  {
-    theme: 'silver',
-    inline: true,
-    toolbar: 'custom1 customtoggle1 dropdown1-with-text dropdown1-with-icon splitbutton1-with-text splitbutton2-with-icon',
-    menubar: 'menutest',
-    menu: {
-      menutest: { title: 'test', items: 'x1' }
-    },
-    base_url: '/project/tinymce/js/tinymce',
-    setup: (ed: Editor) => {
-      ed.ui.registry.addButton('custom1', {
-        type: 'button',
-        icon: 'cut',
-        onAction: () => {
-          store.set(store.get().concat([ 'button1' ]));
-        }
-      });
-
-      ed.ui.registry.addToggleButton('customtoggle1', {
-        type: 'togglebutton',
-        text: 'ToggleMe',
-        onSetup: (toggleButtonApi) => {
-          const f = () => {
-            toggleButtonApi.setActive(!toggleButtonApi.isActive());
-          };
-          ed.on('customtoggle1-toggle', f);
-          return () => ed.off('customtoggle1-toggle', f);
-        },
-        onAction: () => {
-          store.set(store.get().concat([ 'button1' ]));
-        }
-      });
-
-      ed.ui.registry.addMenuButton('dropdown1-with-text', {
-        text: 'dropdown1',
-        fetch: (callback) => callback([
-          {
-            type: 'menuitem',
-            text: 'Fetch1',
-            onAction: () => {
-              console.log('fetching item1');
-            }
-          }
-        ])
-      });
-
-      ed.ui.registry.addMenuButton('dropdown1-with-icon', {
-        icon: 'bold',
-        fetch: (callback) => callback([
-          {
-            type: 'menuitem',
-            text: 'Fetch1',
-            onAction: () => {
-              console.log('fetching item1');
-            }
-          }
-        ])
-      });
-
-      ed.ui.registry.addSplitButton('splitbutton1-with-text', {
-        text: 'Delta',
-        onItemAction: () => { },
-        fetch: (callback) => {
-          callback([
-            {
-              type: 'choiceitem',
-              text: 'Split1',
-              value: 'split1'
-            },
-            {
-              type: 'choiceitem',
-              text: 'Split2',
-              value: 'split2'
-            }
-          ]);
-        },
-        onSetup: (splitButtonApi) => {
-          const f = () => {
-            splitButtonApi.setActive(!splitButtonApi.isActive());
-          };
-          ed.on('splitbutton1-toggle', f);
-          return () => ed.off('splitbutton1-toggle', f);
-        },
-        onAction: () => {
-          console.log('triggering action instead');
-        }
-      });
-
-      ed.ui.registry.addSplitButton('splitbutton2-with-icon', {
-        icon: 'underline',
-        onItemAction: () => { },
-        fetch: (callback) => {
-          callback([
-            {
-              type: 'choiceitem',
-              text: '2-Split1',
-              value: '2-split1'
-            },
-            {
-              type: 'choiceitem',
-              text: '2-Split2',
-              value: '2-split2'
-            }
-          ]);
-        },
-        onAction: () => {
-          console.log('triggering action instead');
-        }
-      });
-
-      ed.ui.registry.addMenuItem('x1', {
-        icon: 'italic',
-        text: 'Text with icon',
-        shortcut: 'Meta+M',
-        onAction() {
-          console.log('Just Text click');
-        }
-      });
-    }
-  },
-  () => {
-    success();
-  },
-  failure
-  );
+      TinyDom.contentAreaContainer(editor)
+    );
+  });
 });

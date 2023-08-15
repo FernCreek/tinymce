@@ -5,17 +5,21 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { AlloyComponent, AlloySpec, Behaviour, Composite, CustomList, Keying, RawDomSchema, Sketcher, SketchSpec, Toolbar, UiSketcher } from '@ephox/alloy';
+import {
+  AlloyComponent, AlloySpec, Behaviour, Composite, CustomList, Keying, RawDomSchema, Sketcher, SketchSpec, Toolbar, UiSketcher
+} from '@ephox/alloy';
 import { FieldSchema } from '@ephox/boulder';
-import { Arr, Id, Option, Result } from '@ephox/katamari';
+import { Arr, Id, Optional, Optionals, Result } from '@ephox/katamari';
+
 import { ToolbarMode } from '../../api/Settings';
 import { UiFactoryBackstageProviders } from '../../backstage/Backstage';
-
 import { HeaderSpec, renderHeader } from '../header/CommonHeader';
 import SilverMenubar, { SilverMenubarSpec } from '../menus/menubar/SilverMenubar';
 import * as Sidebar from '../sidebar/Sidebar';
 import * as Throbber from '../throbber/Throbber';
-import { MoreDrawerData, MoreDrawerToolbarSpec, renderFloatingMoreToolbar, renderSlidingMoreToolbar, renderToolbar, renderToolbarGroup } from '../toolbar/CommonToolbar';
+import {
+  MoreDrawerData, MoreDrawerToolbarSpec, renderFloatingMoreToolbar, renderSlidingMoreToolbar, renderToolbar, renderToolbarGroup
+} from '../toolbar/CommonToolbar';
 
 export interface OuterContainerSketchSpec extends Sketcher.CompositeSketchSpec {
   dom: RawDomSchema;
@@ -50,17 +54,19 @@ interface ToolbarSketchSpec extends MoreDrawerData {
 }
 
 interface OuterContainerApis {
-  getHeader: (comp: AlloyComponent) => Option<AlloyComponent>;
-  getSocket: (comp: AlloyComponent) => Option<AlloyComponent>;
+  getHeader: (comp: AlloyComponent) => Optional<AlloyComponent>;
+  getSocket: (comp: AlloyComponent) => Optional<AlloyComponent>;
   setSidebar: (comp: AlloyComponent, panelConfigs: Sidebar.SidebarConfig) => void;
   toggleSidebar: (comp: AlloyComponent, name: string) => void;
   whichSidebar: (comp: AlloyComponent) => string | null;
   // Maybe just change to ToolbarAnchor.
-  getToolbar: (comp: AlloyComponent) => Option<AlloyComponent>;
+  getToolbar: (comp: AlloyComponent) => Optional<AlloyComponent>;
   setToolbar: (comp: AlloyComponent, groups) => void;
   setToolbars: (comp: AlloyComponent, toolbars) => void;
   refreshToolbar: (comp: AlloyComponent) => void;
-  getThrobber: (comp: AlloyComponent) => Option<AlloyComponent>;
+  toggleToolbarDrawer: (comp: AlloyComponent) => void;
+  isToolbarDrawerToggled: (comp: AlloyComponent) => boolean;
+  getThrobber: (comp: AlloyComponent) => Optional<AlloyComponent>;
   focusToolbar: (comp: AlloyComponent) => void;
   setMenubar: (comp: AlloyComponent, groups) => void;
   focusMenubar: (comp: AlloyComponent) => void;
@@ -69,65 +75,78 @@ interface OuterContainerApis {
 interface ToolbarApis {
   setGroups: (toolbar: AlloyComponent, groups: SketchSpec[]) => void;
   refresh: (toolbar: AlloyComponent) => void;
+  toggle?: (toolbar: AlloyComponent) => void;
+  isOpen?: (toolbar: AlloyComponent) => boolean;
 }
 
-const factory: UiSketcher.CompositeSketchFactory<OuterContainerSketchDetail, OuterContainerSketchSpec> = function (detail, components, _spec) {
+const factory: UiSketcher.CompositeSketchFactory<OuterContainerSketchDetail, OuterContainerSketchSpec> = (detail, components, _spec) => {
   const apis: OuterContainerApis = {
-    getSocket(comp) {
+    getSocket: (comp) => {
       return Composite.parts.getPart(comp, detail, 'socket');
     },
-    setSidebar(comp, panelConfigs) {
+    setSidebar: (comp, panelConfigs) => {
       Composite.parts.getPart(comp, detail, 'sidebar').each(
         (sidebar) => Sidebar.setSidebar(sidebar, panelConfigs)
       );
     },
-    toggleSidebar(comp, name) {
+    toggleSidebar: (comp, name) => {
       Composite.parts.getPart(comp, detail, 'sidebar').each(
         (sidebar) => Sidebar.toggleSidebar(sidebar, name)
       );
     },
-    whichSidebar(comp) {
+    whichSidebar: (comp) => {
       return Composite.parts.getPart(comp, detail, 'sidebar').bind(
         Sidebar.whichSidebar
       ).getOrNull();
     },
-    getHeader(comp) {
+    getHeader: (comp) => {
       return Composite.parts.getPart(comp, detail, 'header');
     },
-    getToolbar(comp) {
+    getToolbar: (comp) => {
       return Composite.parts.getPart(comp, detail, 'toolbar');
     },
-    setToolbar(comp, groups) {
+    setToolbar: (comp, groups) => {
       Composite.parts.getPart(comp, detail, 'toolbar').each((toolbar) => {
         toolbar.getApis<ToolbarApis>().setGroups(toolbar, groups);
       });
     },
-    setToolbars(comp, toolbars) {
+    setToolbars: (comp, toolbars) => {
       Composite.parts.getPart(comp, detail, 'multiple-toolbar').each((mToolbar) => {
         CustomList.setItems(mToolbar, toolbars);
       });
     },
-    refreshToolbar(comp) {
+    refreshToolbar: (comp) => {
       const toolbar = Composite.parts.getPart(comp, detail, 'toolbar');
       toolbar.each((toolbar) => toolbar.getApis<ToolbarApis>().refresh(toolbar));
     },
-    getThrobber(comp) {
+    toggleToolbarDrawer: (comp) => {
+      Composite.parts.getPart(comp, detail, 'toolbar').each((toolbar) => {
+        Optionals.mapFrom(toolbar.getApis<ToolbarApis>().toggle, (toggle) => toggle(toolbar));
+      });
+    },
+    isToolbarDrawerToggled: (comp) => {
+      // isOpen may not be defined on all toolbars e.g. 'scrolling' and 'wrap'
+      return Composite.parts.getPart(comp, detail, 'toolbar')
+        .bind((toolbar) => Optional.from(toolbar.getApis<ToolbarApis>().isOpen).map((isOpen) => isOpen(toolbar)))
+        .getOr(false);
+    },
+    getThrobber: (comp) => {
       return Composite.parts.getPart(comp, detail, 'throbber');
     },
-    focusToolbar(comp) {
+    focusToolbar: (comp) => {
       const optToolbar = Composite.parts.getPart(comp, detail, 'toolbar').orThunk(() => Composite.parts.getPart(comp, detail, 'multiple-toolbar'));
 
-      optToolbar.each(function (toolbar) {
+      optToolbar.each((toolbar) => {
         Keying.focusIn(toolbar);
       });
     },
-    setMenubar(comp, menus) {
-      Composite.parts.getPart(comp, detail, 'menubar').each(function (menubar) {
+    setMenubar: (comp, menus) => {
+      Composite.parts.getPart(comp, detail, 'menubar').each((menubar) => {
         SilverMenubar.setMenus(menubar, menus);
       });
     },
-    focusMenubar(comp) {
-      Composite.parts.getPart(comp, detail, 'menubar').each(function (menubar) {
+    focusMenubar: (comp) => {
+      Composite.parts.getPart(comp, detail, 'menubar').each((menubar) => {
         SilverMenubar.focus(menubar);
       });
     }
@@ -146,7 +165,7 @@ const partMenubar = Composite.partType.optional<OuterContainerSketchDetail, Silv
   factory: SilverMenubar,
   name: 'menubar',
   schema: [
-    FieldSchema.strict('backstage')
+    FieldSchema.required('backstage')
   ]
 });
 
@@ -179,7 +198,10 @@ const partMultipleToolbar = Composite.partType.optional<OuterContainerSketchDeta
         cyclicKeying: false,
         initGroups: [ ],
         providers: spec.providers,
-        onEscape: () => Option.none()
+        onEscape: () => {
+          spec.onEscape();
+          return Optional.some(true);
+        }
       }),
       setupItem: (_mToolbar, tc, data, _index) => {
         Toolbar.setGroups(tc, data);
@@ -189,8 +211,8 @@ const partMultipleToolbar = Composite.partType.optional<OuterContainerSketchDeta
   },
   name: 'multiple-toolbar',
   schema: [
-    FieldSchema.strict('dom'),
-    FieldSchema.strict('onEscape')
+    FieldSchema.required('dom'),
+    FieldSchema.required('onEscape')
   ]
 });
 
@@ -203,7 +225,7 @@ const partToolbar = Composite.partType.optional<OuterContainerSketchDetail, Tool
         uid: spec.uid,
         onEscape: () => {
           spec.onEscape();
-          return Option.some(true);
+          return Optional.some(true);
         },
         cyclicKeying: false,
         initGroups: [],
@@ -221,9 +243,9 @@ const partToolbar = Composite.partType.optional<OuterContainerSketchDetail, Tool
   },
   name: 'toolbar',
   schema: [
-    FieldSchema.strict('dom'),
-    FieldSchema.strict('onEscape'),
-    FieldSchema.strict('getSink')
+    FieldSchema.required('dom'),
+    FieldSchema.required('onEscape'),
+    FieldSchema.required('getSink')
   ]
 });
 
@@ -233,7 +255,7 @@ const partHeader = Composite.partType.optional<OuterContainerSketchDetail, Heade
   },
   name: 'header',
   schema: [
-    FieldSchema.strict('dom')
+    FieldSchema.required('dom')
   ]
 });
 
@@ -241,7 +263,7 @@ const partSocket = Composite.partType.optional({
   // factory: Fun.identity,
   name: 'socket',
   schema: [
-    FieldSchema.strict('dom')
+    FieldSchema.required('dom')
   ]
 });
 
@@ -251,7 +273,7 @@ const partSidebar = Composite.partType.optional({
   },
   name: 'sidebar',
   schema: [
-    FieldSchema.strict('dom')
+    FieldSchema.required('dom')
   ]
 });
 
@@ -261,7 +283,7 @@ const partThrobber = Composite.partType.optional({
   },
   name: 'throbber',
   schema: [
-    FieldSchema.strict('dom')
+    FieldSchema.required('dom')
   ]
 });
 
@@ -269,8 +291,8 @@ export default Sketcher.composite<OuterContainerSketchSpec, OuterContainerSketch
   name: 'OuterContainer',
   factory,
   configFields: [
-    FieldSchema.strict('dom'),
-    FieldSchema.strict('behaviours')
+    FieldSchema.required('dom'),
+    FieldSchema.required('behaviours')
   ],
   partFields: [
     partHeader,
@@ -283,50 +305,56 @@ export default Sketcher.composite<OuterContainerSketchSpec, OuterContainerSketch
   ],
 
   apis: {
-    getSocket(apis, comp) {
+    getSocket: (apis, comp) => {
       return apis.getSocket(comp);
     },
-    setSidebar(apis, comp, panelConfigs) {
+    setSidebar: (apis, comp, panelConfigs) => {
       apis.setSidebar(comp, panelConfigs);
     },
-    toggleSidebar(apis, comp, name) {
+    toggleSidebar: (apis, comp, name) => {
       apis.toggleSidebar(comp, name);
     },
-    whichSidebar(apis, comp) {
+    whichSidebar: (apis, comp) => {
       return apis.whichSidebar(comp);
     },
-    getHeader(apis, comp) {
+    getHeader: (apis, comp) => {
       return apis.getHeader(comp);
     },
-    getToolbar(apis, comp) {
+    getToolbar: (apis, comp) => {
       return apis.getToolbar(comp);
     },
-    setToolbar(apis, comp, grps) {
-      const groups = Arr.map(grps, function (grp) {
+    setToolbar: (apis, comp, grps) => {
+      const groups = Arr.map(grps, (grp) => {
         return renderToolbarGroup(grp);
       });
 
       apis.setToolbar(comp, groups);
     },
-    setToolbars(apis, comp, ts) {
+    setToolbars: (apis, comp, ts) => {
       const renderedToolbars = Arr.map(ts, (g) => Arr.map(g, renderToolbarGroup));
 
       apis.setToolbars(comp, renderedToolbars);
     },
-    refreshToolbar(apis, comp) {
+    refreshToolbar: (apis, comp) => {
       return apis.refreshToolbar(comp);
     },
-    getThrobber(apis, comp) {
+    toggleToolbarDrawer: (apis, comp) => {
+      apis.toggleToolbarDrawer(comp);
+    },
+    isToolbarDrawerToggled: (apis, comp) => {
+      return apis.isToolbarDrawerToggled(comp);
+    },
+    getThrobber: (apis, comp) => {
       return apis.getThrobber(comp);
     },
     // FIX: Dupe
-    setMenubar(apis, comp, menus) {
+    setMenubar: (apis, comp, menus) => {
       apis.setMenubar(comp, menus);
     },
-    focusMenubar(apis, comp) {
+    focusMenubar: (apis, comp) => {
       apis.focusMenubar(comp);
     },
-    focusToolbar(apis, comp) {
+    focusToolbar: (apis, comp) => {
       apis.focusToolbar(comp);
     }
   }

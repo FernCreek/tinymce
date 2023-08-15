@@ -1,13 +1,30 @@
-import { Assertions, Chain, DragnDrop, GeneralSteps, Log, Logger, Pipeline, Step, UiFinder } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { Blob, document, File } from '@ephox/dom-globals';
+import { Assertions, DragnDrop, Keyboard, Keys, Mouse, UiFinder, Waiter } from '@ephox/agar';
+import { before, beforeEach, describe, it } from '@ephox/bedrock-client';
 import { Cell } from '@ephox/katamari';
-import { ApiChains, TinyApis, TinyLoader } from '@ephox/mcagar';
-import { Body, Element, Hierarchy, Node } from '@ephox/sugar';
+import { SugarBody, SugarLocation } from '@ephox/sugar';
+import { TinyDom, TinyHooks } from '@ephox/wrap-mcagar';
+import { assert } from 'chai';
+
+import Editor from 'tinymce/core/api/Editor';
 import Theme from 'tinymce/themes/silver/Theme';
 
-UnitTest.asynctest('browser.tinymce.core.DragDropOverridesTest', (success, failure) => {
-  Theme();
+describe('browser.tinymce.core.DragDropOverridesTest', () => {
+  const fired = Cell(false);
+  const hook = TinyHooks.bddSetup<Editor>({
+    indent: false,
+    menubar: false,
+    base_url: '/project/tinymce/js/tinymce'
+  }, [ Theme ], true);
+
+  before(() => {
+    hook.editor().on('dragend', () => {
+      fired.set(true);
+    });
+  });
+
+  beforeEach(() => {
+    fired.set(false);
+  });
 
   const createFile = (name: string, lastModified: number, blob: Blob): File => {
     const newBlob: any = new Blob([ blob ], { type: blob.type });
@@ -18,51 +35,83 @@ UnitTest.asynctest('browser.tinymce.core.DragDropOverridesTest', (success, failu
     return Object.freeze(newBlob);
   };
 
-  TinyLoader.setup((editor, onSuccess, onFailure) => {
-    const tinyApis = TinyApis(editor);
-    const fired = Cell(false);
+  const assertNotification = (message: string, editor: Editor) => async () => {
+    const body = TinyDom.body(editor);
+    const notification = await UiFinder.pWaitForVisible('Wait for notification to appear', body, '.tox-notification');
+    Assertions.assertPresence('Verify message content', {
+      ['.tox-notification__body:contains(' + message + ')']: 1
+    }, notification);
+    Mouse.clickOn(notification, '.tox-notification__dismiss');
+  };
 
-    editor.on('dragend', () => {
-      fired.set(true);
-    });
+  it('drop draggable element outside of editor', () => {
+    const editor = hook.editor();
+    editor.setContent('<p contenteditable="false">a</p>');
+    const target = UiFinder.findIn(TinyDom.body(editor), 'p:contains("a")').getOrDie().dom;
+    const rect = target.getBoundingClientRect();
+    const button = 0;
+    const screenX = rect.left + rect.width / 2;
+    const screenY = rect.top + rect.height / 2;
 
-    Pipeline.async({}, [
-      Logger.t('drop draggable element outside of editor', GeneralSteps.sequence([
-        tinyApis.sSetContent('<p contenteditable="false">a</p>'),
-        Step.sync(() => {
-          const target = Hierarchy.follow(Element.fromDom(editor.getBody()), [ 0 ]).filter(Node.isElement).getOrDie().dom();
-          const rect = target.getBoundingClientRect();
-          const button = 0, screenX = (rect.left + rect.width / 2), screenY = (rect.top + rect.height / 2);
+    editor.fire('mousedown', { button, screenX, screenY, target } as unknown as MouseEvent);
+    editor.fire('mousemove', { button, screenX: screenX + 20, screenY: screenY + 20, clientX: 0, clientY: 0, target } as unknown as MouseEvent);
+    editor.dom.fire(document.body, 'mouseup');
 
-          editor.fire('mousedown', { button, screenX, screenY, target });
-          editor.fire('mousemove', { button, screenX: screenX + 20, screenY: screenY + 20, target });
-          editor.dom.fire(document.body, 'mouseup');
+    assert.isTrue(fired.get(), 'Should fire dragend event');
+  });
 
-          Assertions.assertEq('Should fire dragend event', true, fired.get());
-        })
-      ])),
-      Log.chainsAsStep('TINY-6027', 'Drag unsupported file into the editor/UI is prevented', [
-        Chain.inject(editor),
-        ApiChains.cSetContent('<p>Content</p>'),
-        Chain.fromIsolatedChainsWith(Element.fromDom(editor.getBody()), [
-          DragnDrop.cDropFiles([
-            createFile('test.txt', 123, new Blob([ 'content' ], { type: 'text/plain' }))
-          ]),
-          DragnDrop.cDropItems([
-            { data: 'Some content', type: 'text/plain' }
-          ], false)
-        ]),
-        Chain.fromIsolatedChainsWith(Body.body(), [
-          UiFinder.cFindIn('.tox-toolbar__primary'),
-          DragnDrop.cDropFiles([
-            createFile('test.js', 123, new Blob([ 'var a = "content";' ], { type: 'application/javascript' }))
-          ])
-        ])
-      ])
-    ], onSuccess, onFailure);
-  }, {
-    indent: false,
-    menubar: false,
-    base_url: '/project/tinymce/js/tinymce'
-  }, success, failure);
+  it('TINY-7917: Dropping draggable element inside editor fires dragend event', () => {
+    const editor = hook.editor();
+    editor.setContent('<p contenteditable="false">a</p><p>bc123</p>');
+    const target = UiFinder.findIn(TinyDom.body(editor), 'p:contains("a")').getOrDie();
+    const targetPosition = SugarLocation.viewport(target);
+
+    const dest = UiFinder.findIn(TinyDom.body(editor), 'p:contains("bc123")').getOrDie();
+    const destPosition = SugarLocation.viewport(dest);
+    const yDelta = destPosition.top - targetPosition.top;
+
+    Mouse.mouseDown(target);
+    // Drag CE=F paragraph roughly into other paragraph in order to trigger a valid drop on mouseup
+    Mouse.mouseMoveTo(target, 15, yDelta + 5);
+    Mouse.mouseUp(target);
+
+    assert.isTrue(fired.get(), 'Should fire dragend event');
+  });
+
+  it('TINY-7917: Pressing escape during drag fires dragend event', () => {
+    const editor = hook.editor();
+    editor.setContent('<p contenteditable="false">a</p><p>bc123</p>');
+    const target = UiFinder.findIn(TinyDom.body(editor), 'p:contains("a")').getOrDie();
+    const targetPosition = SugarLocation.viewport(target);
+
+    const dest = UiFinder.findIn(TinyDom.body(editor), 'p:contains("bc123")').getOrDie();
+    const destPosition = SugarLocation.viewport(dest);
+    const yDelta = destPosition.top - targetPosition.top;
+
+    Mouse.mouseDown(target);
+    // Where we drag to here is largely irrelevant
+    Mouse.mouseMoveTo(target, 15, yDelta + 5);
+    Keyboard.activeKeydown(TinyDom.document(editor), Keys.escape());
+
+    assert.isTrue(fired.get(), 'Should fire dragend event');
+  });
+
+  it('TINY-6027: Drag unsupported file into the editor/UI is prevented', async () => {
+    const editor = hook.editor();
+    await Waiter.pWait(100); // Wait a small amount of time to ensure the events have been bound
+    editor.setContent('<p>Content</p>');
+    await DragnDrop.pDropFiles(TinyDom.body(editor), [
+      createFile('test.txt', 123, new Blob([ 'content' ], { type: 'text/plain' }))
+    ]);
+    assertNotification('Dropped file type is not supported', editor);
+    await DragnDrop.pDropItems(TinyDom.body(editor), [
+      { data: 'Some content', type: 'text/plain' }
+    ], false);
+
+    const toolbar = UiFinder.findIn(SugarBody.body(), '.tox-toolbar__primary').getOrDie();
+    await DragnDrop.pDropFiles(toolbar, [
+      createFile('test.js', 123, new Blob([ 'var a = "content";' ], { type: 'application/javascript' }))
+    ]);
+    assertNotification('Dropped file type is not supported', editor);
+  });
 });

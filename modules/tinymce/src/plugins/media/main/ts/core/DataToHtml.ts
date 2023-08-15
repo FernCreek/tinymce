@@ -7,6 +7,7 @@
 
 import Editor from 'tinymce/core/api/Editor';
 import Tools from 'tinymce/core/api/util/Tools';
+
 import * as Settings from '../api/Settings';
 import * as HtmlToData from './HtmlToData';
 import * as Mime from './Mime';
@@ -17,12 +18,12 @@ import * as VideoScript from './VideoScript';
 
 export type DataToHtmlCallback = (data: MediaData) => string;
 
-const getIframeHtml = function (data: MediaData) {
-  const allowFullscreen = data.allowFullscreen ? ' allowFullscreen="1"' : '';
+const getIframeHtml = (data: MediaData): string => {
+  const allowFullscreen = data.allowfullscreen ? ' allowFullscreen="1"' : '';
   return '<iframe src="' + data.source + '" width="' + data.width + '" height="' + data.height + '"' + allowFullscreen + '></iframe>';
 };
 
-const getFlashHtml = function (data: MediaData) {
+const getFlashHtml = (data: MediaData): string => {
   let html = '<object data="' + data.source + '" width="' + data.width + '" height="' + data.height + '" type="application/x-shockwave-flash">';
 
   if (data.poster) {
@@ -34,7 +35,7 @@ const getFlashHtml = function (data: MediaData) {
   return html;
 };
 
-const getAudioHtml = function (data: MediaData, audioTemplateCallback: DataToHtmlCallback) {
+const getAudioHtml = (data: MediaData, audioTemplateCallback: DataToHtmlCallback): string => {
   if (audioTemplateCallback) {
     return audioTemplateCallback(data);
   } else {
@@ -50,7 +51,7 @@ const getAudioHtml = function (data: MediaData, audioTemplateCallback: DataToHtm
   }
 };
 
-const getVideoHtml = function (data: MediaData, videoTemplateCallback: DataToHtmlCallback) {
+const getVideoHtml = (data: MediaData, videoTemplateCallback: DataToHtmlCallback): string => {
   if (videoTemplateCallback) {
     return videoTemplateCallback(data);
   } else {
@@ -67,11 +68,11 @@ const getVideoHtml = function (data: MediaData, videoTemplateCallback: DataToHtm
   }
 };
 
-const getScriptHtml = function (data: MediaData) {
+const getScriptHtml = (data: MediaData): string => {
   return '<script src="' + data.source + '"></script>';
 };
 
-const dataToHtml = function (editor: Editor, dataIn: MediaData) {
+const dataToHtml = (editor: Editor, dataIn: MediaData): string => {
   const data: MediaData = Tools.extend({}, dataIn);
 
   if (!data.source) {
@@ -100,7 +101,7 @@ const dataToHtml = function (editor: Editor, dataIn: MediaData) {
   if (pattern) {
     data.source = pattern.url;
     data.type = pattern.type;
-    data.allowFullscreen = pattern.allowFullscreen;
+    data.allowfullscreen = pattern.allowFullscreen;
     data.width = data.width || String(pattern.w);
     data.height = data.height || String(pattern.h);
   }
@@ -121,7 +122,7 @@ const dataToHtml = function (editor: Editor, dataIn: MediaData) {
     data.width = data.width || '300';
     data.height = data.height || '150';
 
-    Tools.each(data, function (value, key) {
+    Tools.each(data, (value, key) => {
       data[key] = editor.dom.encode('' + value);
     });
 

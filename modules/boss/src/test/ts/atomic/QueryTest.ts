@@ -1,9 +1,10 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
+
 import { Gene } from 'ephox/boss/api/Gene';
 import { TestUniverse } from 'ephox/boss/api/TestUniverse';
 import * as Query from 'ephox/boss/mutant/Query';
 
-UnitTest.test('QueryTest', function () {
+UnitTest.test('QueryTest', () => {
   const universe = TestUniverse(Gene('1', 'root', [
     Gene('1.1', 'duck', [
       Gene('1.1.1', 'goose', []),
@@ -20,19 +21,19 @@ UnitTest.test('QueryTest', function () {
     ])
   ]));
 
-  const checkPrev = function (expected: string, id: string) {
+  const checkPrev = (expected: string, id: string) => {
     const first = universe.find(universe.get(), id).getOrDie();
     const actual = Query.prevSibling(first).map((e) => e.id).getOr('_nope_');
     assert.eq(expected, actual);
   };
 
-  const checkNext = function (expected: string, id: string) {
+  const checkNext = (expected: string, id: string) => {
     const first = universe.find(universe.get(), id).getOrDie();
     const actual = Query.nextSibling(first).map((e) => e.id).getOr('_nope_');
     assert.eq(expected, actual);
   };
 
-  const checkPosition = function (expected: number, one: string, other: string) {
+  const checkPosition = (expected: number, one: string, other: string) => {
     const first = universe.find(universe.get(), one).getOrDie();
     const last = universe.find(universe.get(), other).getOrDie();
 

@@ -1,6 +1,7 @@
-import { Log, Pipeline } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { LegacyUnit, TinyLoader } from '@ephox/mcagar';
+import { before, beforeEach, context, describe, it } from '@ephox/bedrock-client';
+import { Arr } from '@ephox/katamari';
+import { LegacyUnit, TinyAssertions, TinyHooks } from '@ephox/wrap-mcagar';
+import { assert } from 'chai';
 
 import Editor from 'tinymce/core/api/Editor';
 import * as SmartPaste from 'tinymce/plugins/paste/core/SmartPaste';
@@ -18,161 +19,226 @@ import Theme from 'tinymce/themes/silver/Theme';
 // |Paste as text turned off  | paste image URL -> image | paste image URL -> text |
 // |Paste as text turned on   | paste image URL -> text  | paste image URL -> text |
 
-UnitTest.asynctest('tinymce.plugins.paste.browser.SmartPasteTest', (success, failure) => {
-  const suite = LegacyUnit.createSuite<Editor>();
-
-  Plugin();
-  Theme();
-
-  suite.test('TestCase-TBA: Paste: isAbsoluteUrl', function () {
-    LegacyUnit.equal(SmartPaste.isAbsoluteUrl('http://www.site.com'), true);
-    LegacyUnit.equal(SmartPaste.isAbsoluteUrl('https://www.site.com'), true);
-    LegacyUnit.equal(SmartPaste.isAbsoluteUrl('http://www.site.com/dir-name/file.gif?query=%42'), true);
-    LegacyUnit.equal(SmartPaste.isAbsoluteUrl('https://www.site.com/dir-name/file.gif?query=%42'), true);
-    LegacyUnit.equal(SmartPaste.isAbsoluteUrl('https://www.site.com/dir-name/file.gif?query=%42#a'), true);
-    LegacyUnit.equal(SmartPaste.isAbsoluteUrl('https://www.site.com/~abc'), true);
-    LegacyUnit.equal(SmartPaste.isAbsoluteUrl('file.gif'), false);
-    LegacyUnit.equal(SmartPaste.isAbsoluteUrl(''), false);
-  });
-
-  suite.test('TestCase-TBA: Paste: isImageUrl', function () {
-    LegacyUnit.equal(SmartPaste.isImageUrl('http://www.site.com'), false);
-    LegacyUnit.equal(SmartPaste.isImageUrl('https://www.site.com'), false);
-    LegacyUnit.equal(SmartPaste.isImageUrl('http://www.site.com/dir-name/file.jpeg'), true);
-    LegacyUnit.equal(SmartPaste.isImageUrl('http://www.site.com/dir-name/file.jpg'), true);
-    LegacyUnit.equal(SmartPaste.isImageUrl('http://www.site.com/dir-name/file.png'), true);
-    LegacyUnit.equal(SmartPaste.isImageUrl('http://www.site.com/dir-name/file.gif'), true);
-    LegacyUnit.equal(SmartPaste.isImageUrl('https://www.site.com/dir-name/file.gif'), true);
-    LegacyUnit.equal(SmartPaste.isImageUrl('https://www.site.com/~dir-name/file.gif'), true);
-    LegacyUnit.equal(SmartPaste.isImageUrl('https://www.site.com/dir-name/file.gif?query=%42'), false);
-    LegacyUnit.equal(SmartPaste.isImageUrl('https://www.site.com/dir-name/file.html?query=%42'), false);
-    LegacyUnit.equal(SmartPaste.isImageUrl('file.gif'), false);
-    LegacyUnit.equal(SmartPaste.isImageUrl(''), false);
-  });
-
-  suite.test('TestCase-TBA: Paste: smart paste enabled, paste as content, paste url on selection', function (editor) {
-    editor.focus();
-    editor.undoManager.clear();
-    editor.setContent('<p>abc</p>');
-    LegacyUnit.setSelection(editor, 'p', 0, 'p', 3);
-    editor.undoManager.add();
-    editor.settings.smart_paste = true;
-
-    editor.execCommand('mceInsertClipboardContent', false, { content: 'http://www.site.com' });
-    LegacyUnit.equal(editor.getContent(), '<p><a href="http://www.site.com">abc</a></p>');
-    LegacyUnit.equal(editor.undoManager.data.length, 3);
-  });
-
-  suite.test('TestCase-TBA: Paste: smart paste enabled, paste as content, paste image url', function (editor) {
-    editor.focus();
-    editor.undoManager.clear();
-    editor.setContent('<p>abc</p>');
-    LegacyUnit.setSelection(editor, 'p', 1);
-    editor.undoManager.add();
-    editor.settings.smart_paste = true;
-
-    editor.execCommand('mceInsertClipboardContent', false, { content: 'http://www.site.com/my.jpg' });
-    LegacyUnit.equal(editor.getContent(), '<p>a<img src="http://www.site.com/my.jpg" />bc</p>');
-    LegacyUnit.equal(editor.undoManager.data.length, 3);
-  });
-
-  suite.test('TestCase-TBA: Paste: smart paste disabled, paste as content, paste image url', function (editor) {
-    editor.focus();
-    editor.undoManager.clear();
-    editor.setContent('<p>abc</p>');
-    LegacyUnit.setSelection(editor, 'p', 1);
-    editor.undoManager.add();
-    editor.settings.smart_paste = false;
-
-    editor.execCommand('mceInsertClipboardContent', false, { content: 'http://www.site.com/my.jpg' });
-    LegacyUnit.equal(editor.getContent(), '<p>ahttp://www.site.com/my.jpgbc</p>');
-    LegacyUnit.equal(editor.undoManager.data.length, 2);
-  });
-
-  suite.test('TINY-4523: Paste: smart paste enabled, paste as text, paste image url', function (editor) {
-    editor.focus();
-    editor.undoManager.clear();
-    editor.setContent('<p>abc</p>');
-    LegacyUnit.setSelection(editor, 'p', 1);
-    editor.undoManager.add();
-    editor.settings.smart_paste = true;
-
-    editor.execCommand('mceInsertClipboardContent', false, { text: 'http://www.site.com/my.jpg' });
-    LegacyUnit.equal(editor.getContent(), '<p>ahttp://www.site.com/my.jpgbc</p>');
-    LegacyUnit.equal(editor.undoManager.data.length, 2);
-  });
-
-  suite.test('TINY-4523: Paste: smart paste disabled, paste as text, paste image url', function (editor) {
-    editor.focus();
-    editor.undoManager.clear();
-    editor.setContent('<p>abc</p>');
-    LegacyUnit.setSelection(editor, 'p', 1);
-    editor.undoManager.add();
-    editor.settings.smart_paste = false;
-
-    editor.execCommand('mceInsertClipboardContent', false, { text: 'http://www.site.com/my.jpg' });
-    LegacyUnit.equal(editor.getContent(), '<p>ahttp://www.site.com/my.jpgbc</p>');
-    LegacyUnit.equal(editor.undoManager.data.length, 2);
-  });
-
-  suite.test('TINY-4523: Paste: smart paste enabled, paste as content, paste link html', function (editor) {
-    editor.focus();
-    editor.undoManager.clear();
-    editor.setContent('<p>abc</p>');
-    LegacyUnit.setSelection(editor, 'p', 1);
-    editor.undoManager.add();
-    editor.settings.smart_paste = true;
-
-    editor.execCommand('mceInsertClipboardContent', false, { content: '<img src="http://www.site.com/my.jpg" />' });
-    LegacyUnit.equal(editor.getContent(), '<p>a<img src="http://www.site.com/my.jpg" />bc</p>');
-    LegacyUnit.equal(editor.undoManager.data.length, 2);
-  });
-
-  suite.test('TINY-4523: Paste: smart paste disabled, paste as content, paste link html', function (editor) {
-    editor.focus();
-    editor.undoManager.clear();
-    editor.setContent('<p>abc</p>');
-    LegacyUnit.setSelection(editor, 'p', 1);
-    editor.undoManager.add();
-    editor.settings.smart_paste = false;
-
-    editor.execCommand('mceInsertClipboardContent', false, { content: '<img src="http://www.site.com/my.jpg" />' });
-    LegacyUnit.equal(editor.getContent(), '<p>a<img src="http://www.site.com/my.jpg" />bc</p>');
-    LegacyUnit.equal(editor.undoManager.data.length, 2);
-  });
-
-  suite.test('TINY-4523: Paste: smart paste enabled, paste as text, paste link html', function (editor) {
-    editor.focus();
-    editor.undoManager.clear();
-    editor.setContent('<p>abc</p>');
-    LegacyUnit.setSelection(editor, 'p', 1);
-    editor.undoManager.add();
-    editor.settings.smart_paste = true;
-
-    editor.execCommand('mceInsertClipboardContent', false, { text: '<img src="http://www.site.com/my.jpg" />' });
-    LegacyUnit.equal(editor.getContent(), '<p>a&lt;img src=\"http://www.site.com/my.jpg\" /&gt;bc</p>');
-    LegacyUnit.equal(editor.undoManager.data.length, 2);
-  });
-
-  suite.test('TINY-4523: Paste: smart paste disabled, paste as text, paste link html', function (editor) {
-    editor.focus();
-    editor.undoManager.clear();
-    editor.setContent('<p>abc</p>');
-    LegacyUnit.setSelection(editor, 'p', 1);
-    editor.undoManager.add();
-    editor.settings.smart_paste = false;
-
-    editor.execCommand('mceInsertClipboardContent', false, { text: '<img src="http://www.site.com/my.jpg" />' });
-    LegacyUnit.equal(editor.getContent(), '<p>a&lt;img src=\"http://www.site.com/my.jpg\" /&gt;bc</p>');
-    LegacyUnit.equal(editor.undoManager.data.length, 2);
-  });
-
-  TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
-    Pipeline.async({}, Log.steps('TBA', 'Paste: Test smart paste', suite.toSteps(editor)), onSuccess, onFailure);
-  }, {
+describe('browser.tinymce.plugins.paste.SmartPasteTest', () => {
+  const hook = TinyHooks.bddSetupLight<Editor>({
     add_unload_trigger: false,
     indent: false,
     plugins: 'paste',
     base_url: '/project/tinymce/js/tinymce'
-  }, success, failure);
+  }, [ Plugin, Theme ]);
+
+  beforeEach(() => {
+    const editor = hook.editor();
+    editor.focus();
+  });
+
+  it('TBA: isAbsoluteUrl', () => {
+    assert.isTrue(SmartPaste.isAbsoluteUrl('http://www.site.com'));
+    assert.isTrue(SmartPaste.isAbsoluteUrl('https://www.site.com'));
+    assert.isTrue(SmartPaste.isAbsoluteUrl('http://www.site.com/dir-name/file.gif?query=%42'));
+    assert.isTrue(SmartPaste.isAbsoluteUrl('https://www.site.com/dir-name/file.gif?query=%42'));
+    assert.isTrue(SmartPaste.isAbsoluteUrl('https://www.site.com/dir-name/file.gif?query=%42#a'));
+    assert.isTrue(SmartPaste.isAbsoluteUrl('https://www.site.com/~abc'));
+    assert.isTrue(SmartPaste.isAbsoluteUrl('https://www.site.com/refId,56511/refDownload.pml'));
+    assert.isTrue(SmartPaste.isAbsoluteUrl('https://www.site.com/:w:/s/b026324c6904b2a9cb4b88d6d61c81d1?q=abc123'));
+    assert.isTrue(SmartPaste.isAbsoluteUrl('https://site.com/test/!test'));
+    assert.isFalse(SmartPaste.isAbsoluteUrl('file.gif'));
+    assert.isFalse(SmartPaste.isAbsoluteUrl(''));
+  });
+
+  it('TBA: isImageUrl', () => {
+    const editor = hook.editor();
+    assert.isFalse(SmartPaste.isImageUrl(editor, 'http://www.site.com'));
+    assert.isFalse(SmartPaste.isImageUrl(editor, 'https://www.site.com'));
+    assert.isTrue(SmartPaste.isImageUrl(editor, 'http://www.site.com/dir-name/file.jpeg'));
+    assert.isTrue(SmartPaste.isImageUrl(editor, 'http://www.site.com/dir-name/file.jpg'));
+    assert.isTrue(SmartPaste.isImageUrl(editor, 'http://www.site.com/dir-name/file.png'));
+    assert.isTrue(SmartPaste.isImageUrl(editor, 'http://www.site.com/dir-name/file.gif'));
+    assert.isTrue(SmartPaste.isImageUrl(editor, 'https://www.site.com/dir-name/file.gif'));
+    assert.isTrue(SmartPaste.isImageUrl(editor, 'https://www.site.com/~dir-name/file.gif'));
+    assert.isFalse(SmartPaste.isImageUrl(editor, 'https://www.site.com/dir-name/file.gif?query=%42'));
+    assert.isFalse(SmartPaste.isImageUrl(editor, 'https://www.site.com/dir-name/file.html?query=%42'));
+    assert.isFalse(SmartPaste.isImageUrl(editor, 'file.gif'));
+    assert.isFalse(SmartPaste.isImageUrl(editor, ''));
+  });
+
+  it('TINY-6306: New images_file_types defaults', () => {
+    const editor = hook.editor();
+    Arr.map([
+      'jpeg',
+      'jpg',
+      'jpe',
+      'jfi',
+      'jfif',
+      'png',
+      'gif',
+      'bmp',
+      'webp',
+      'PNG',
+      'WEBP',
+    ], (image_file_type) => assert.isTrue(
+      SmartPaste.isImageUrl(editor, `https://www.site.com/file.${image_file_type}`),
+      `File type "${image_file_type}" is valid`
+    ));
+
+    assert.isFalse(
+      SmartPaste.isImageUrl(editor, 'https://www.site.com/file.svg'),
+      'File type "svg" is invalid by default'
+    );
+
+    assert.isFalse(
+      SmartPaste.isImageUrl(editor, 'https://www.site.com/filejpeg'),
+      'Missing "." but valid extension'
+    );
+  });
+
+  it('TINY-6306: New images_file_types settings', () => {
+    const editor = hook.editor();
+    editor.settings.images_file_types = 'svg';
+    assert.isTrue(
+      SmartPaste.isImageUrl(editor, 'https://www.site.com/file.svg'),
+      'File type "svg" is valid when set by settings'
+    );
+    assert.isTrue(
+      SmartPaste.isImageUrl(editor, 'https://www.site.com/file.SVG'),
+      'File type "SVG" (capitals) is valid when set by settings'
+    );
+    delete editor.settings.images_file_types;
+  });
+
+  context('Smart paste enabled', () => {
+    before(() => {
+      const editor = hook.editor();
+      editor.settings.smart_paste = true;
+    });
+
+    it('TINY-6306: with custom images_file_types settings', () => {
+      const editor = hook.editor();
+      editor.resetContent('<p></p>');
+      LegacyUnit.setSelection(editor, 'p', 0);
+      editor.undoManager.add();
+
+      // svg not detected as an image
+      editor.execCommand('mceInsertClipboardContent', false, { content: 'http://www.site.com/my.svg' });
+      TinyAssertions.assertContent(editor, '<p>http://www.site.com/my.svg</p>');
+
+      editor.resetContent('<p></p>');
+      LegacyUnit.setSelection(editor, 'p', 0);
+      editor.undoManager.add();
+
+      // svg detected as image
+      editor.settings.images_file_types = 'svg';
+      editor.execCommand('mceInsertClipboardContent', false, { content: 'http://www.site.com/my.svg' });
+      TinyAssertions.assertContent(editor, '<p><img src="http://www.site.com/my.svg" /></p>');
+
+      delete editor.settings.images_file_types;
+    });
+
+    it('TBA: paste as content, paste url on selection', () => {
+      const editor = hook.editor();
+      editor.resetContent('<p>abc</p>');
+      LegacyUnit.setSelection(editor, 'p', 0, 'p', 3);
+      editor.undoManager.add();
+
+      editor.execCommand('mceInsertClipboardContent', false, { content: 'http://www.site.com' });
+      TinyAssertions.assertContent(editor, '<p><a href="http://www.site.com">abc</a></p>');
+      assert.lengthOf(editor.undoManager.data, 3);
+    });
+
+    it('TBA: paste as content, paste image url', () => {
+      const editor = hook.editor();
+      editor.resetContent('<p>abc</p>');
+      LegacyUnit.setSelection(editor, 'p', 1);
+      editor.undoManager.add();
+
+      editor.execCommand('mceInsertClipboardContent', false, { content: 'http://www.site.com/my.jpg' });
+      TinyAssertions.assertContent(editor, '<p>a<img src="http://www.site.com/my.jpg" />bc</p>');
+      assert.lengthOf(editor.undoManager.data, 3);
+    });
+
+    it('TINY-4523: paste as text, paste image url', () => {
+      const editor = hook.editor();
+      editor.resetContent('<p>abc</p>');
+      LegacyUnit.setSelection(editor, 'p', 1);
+      editor.undoManager.add();
+
+      editor.execCommand('mceInsertClipboardContent', false, { text: 'http://www.site.com/my.jpg' });
+      TinyAssertions.assertContent(editor, '<p>ahttp://www.site.com/my.jpgbc</p>');
+      assert.lengthOf(editor.undoManager.data, 2);
+    });
+
+    it('TINY-4523: paste as content, paste link html', () => {
+      const editor = hook.editor();
+      editor.resetContent('<p>abc</p>');
+      LegacyUnit.setSelection(editor, 'p', 1);
+      editor.undoManager.add();
+
+      editor.execCommand('mceInsertClipboardContent', false, { content: '<img src="http://www.site.com/my.jpg" />' });
+      TinyAssertions.assertContent(editor, '<p>a<img src="http://www.site.com/my.jpg" />bc</p>');
+      assert.lengthOf(editor.undoManager.data, 2);
+    });
+
+    it('TINY-4523: paste as text, paste link html', () => {
+      const editor = hook.editor();
+      editor.resetContent('<p>abc</p>');
+      LegacyUnit.setSelection(editor, 'p', 1);
+      editor.undoManager.add();
+
+      editor.execCommand('mceInsertClipboardContent', false, { text: '<img src="http://www.site.com/my.jpg" />' });
+      TinyAssertions.assertContent(editor, '<p>a&lt;img src=\"http://www.site.com/my.jpg\" /&gt;bc</p>');
+      assert.lengthOf(editor.undoManager.data, 2);
+    });
+  });
+
+  context('Smart paste disabled', () => {
+    before(() => {
+      const editor = hook.editor();
+      editor.settings.smart_paste = false;
+    });
+
+    it('TBA: paste as content, paste image url', () => {
+      const editor = hook.editor();
+      editor.resetContent('<p>abc</p>');
+      LegacyUnit.setSelection(editor, 'p', 1);
+      editor.undoManager.add();
+
+      editor.execCommand('mceInsertClipboardContent', false, { content: 'http://www.site.com/my.jpg' });
+      TinyAssertions.assertContent(editor, '<p>ahttp://www.site.com/my.jpgbc</p>');
+      assert.lengthOf(editor.undoManager.data, 2);
+    });
+
+    it('TINY-4523: paste as text, paste image url', () => {
+      const editor = hook.editor();
+      editor.resetContent('<p>abc</p>');
+      LegacyUnit.setSelection(editor, 'p', 1);
+      editor.undoManager.add();
+
+      editor.execCommand('mceInsertClipboardContent', false, { text: 'http://www.site.com/my.jpg' });
+      TinyAssertions.assertContent(editor, '<p>ahttp://www.site.com/my.jpgbc</p>');
+      assert.lengthOf(editor.undoManager.data, 2);
+    });
+
+    it('TINY-4523: paste as content, paste link html', () => {
+      const editor = hook.editor();
+      editor.focus();
+      editor.resetContent('<p>abc</p>');
+      LegacyUnit.setSelection(editor, 'p', 1);
+      editor.undoManager.add();
+
+      editor.execCommand('mceInsertClipboardContent', false, { content: '<img src="http://www.site.com/my.jpg" />' });
+      TinyAssertions.assertContent(editor, '<p>a<img src="http://www.site.com/my.jpg" />bc</p>');
+      assert.lengthOf(editor.undoManager.data, 2);
+    });
+
+    it('TINY-4523: paste as text, paste link html', () => {
+      const editor = hook.editor();
+      editor.resetContent('<p>abc</p>');
+      LegacyUnit.setSelection(editor, 'p', 1);
+      editor.undoManager.add();
+
+      editor.execCommand('mceInsertClipboardContent', false, { text: '<img src="http://www.site.com/my.jpg" />' });
+      TinyAssertions.assertContent(editor, '<p>a&lt;img src=\"http://www.site.com/my.jpg\" /&gt;bc</p>');
+      assert.lengthOf(editor.undoManager.data, 2);
+    });
+  });
 });

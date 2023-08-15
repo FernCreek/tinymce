@@ -6,12 +6,13 @@
  */
 
 import PluginManager from 'tinymce/core/api/PluginManager';
+
 import * as Commands from './api/Commands';
 import * as Buttons from './ui/Buttons';
 
-export default function () {
-  PluginManager.add('preview', function (editor) {
+export default (): void => {
+  PluginManager.add('preview', (editor) => {
     Commands.register(editor);
     Buttons.register(editor);
   });
-}
+};

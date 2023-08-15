@@ -5,12 +5,15 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import Delay from 'tinymce/core/api/util/Delay';
-import * as VisualChars from './VisualChars';
-import * as Settings from '../api/Settings';
-import Editor from 'tinymce/core/api/Editor';
+import { Cell } from '@ephox/katamari';
 
-const setup = (editor: Editor, toggleState) => {
+import Editor from 'tinymce/core/api/Editor';
+import Delay from 'tinymce/core/api/util/Delay';
+
+import * as Settings from '../api/Settings';
+import * as VisualChars from './VisualChars';
+
+const setup = (editor: Editor, toggleState: Cell<boolean>): void => {
   const debouncedToggle = Delay.debounce(() => {
     VisualChars.toggle(editor);
   }, 300);
@@ -22,6 +25,8 @@ const setup = (editor: Editor, toggleState) => {
       }
     });
   }
+
+  editor.on('remove', debouncedToggle.stop);
 };
 
 export {

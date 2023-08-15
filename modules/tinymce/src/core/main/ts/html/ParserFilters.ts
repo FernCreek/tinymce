@@ -5,21 +5,24 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Image } from '@ephox/dom-globals';
-import { Arr, Obj, Option, Unicode } from '@ephox/katamari';
+import { Arr, Obj, Optional, Type, Unicode } from '@ephox/katamari';
+
 import Env from '../api/Env';
 import DomParser, { DomParserSettings } from '../api/html/DomParser';
-import Node from '../api/html/Node';
+import AstNode from '../api/html/Node';
 import Tools from '../api/util/Tools';
 import * as Conversions from '../file/Conversions';
 import { uniqueId } from '../file/ImageScanner';
 import { parseDataUri } from './Base64Uris';
 import { isEmpty, paddEmptyNode } from './ParserUtils';
 
-const isBogusImage = (img: Node) => img.attr('data-mce-bogus');
-const isInternalImageSource = (img: Node) => img.attr('src') === Env.transparentSrc || img.attr('data-mce-placeholder');
+const isBogusImage = (img: AstNode): boolean =>
+  Type.isNonNullable(img.attr('data-mce-bogus'));
 
-const isValidDataImg = (img: Node, settings: DomParserSettings) => {
+const isInternalImageSource = (img: AstNode): boolean =>
+  img.attr('src') === Env.transparentSrc || Type.isNonNullable(img.attr('data-mce-placeholder'));
+
+const isValidDataImg = (img: AstNode, settings: DomParserSettings): boolean => {
   if (settings.images_dataimg_filter) {
     // Construct an image element
     const imgElem = new Image();
@@ -35,9 +38,9 @@ const isValidDataImg = (img: Node, settings: DomParserSettings) => {
   }
 };
 
-const registerBase64ImageFilter = (parser: DomParser, settings: DomParserSettings) => {
+const registerBase64ImageFilter = (parser: DomParser, settings: DomParserSettings): void => {
   const { blob_cache: blobCache } = settings;
-  const processImage = (img: Node): void => {
+  const processImage = (img: AstNode): void => {
     const inputSrc = img.attr('src');
 
     if (isInternalImageSource(img) || isBogusImage(img)) {
@@ -45,7 +48,7 @@ const registerBase64ImageFilter = (parser: DomParser, settings: DomParserSetting
     }
 
     parseDataUri(inputSrc).filter(() => isValidDataImg(img, settings)).bind(({ type, data }) =>
-      Option.from(blobCache.getByData(data, type)).orThunk(() =>
+      Optional.from(blobCache.getByData(data, type)).orThunk(() =>
         Conversions.buildBlob(type, data).map((blob) => {
           const blobInfo = blobCache.create(uniqueId(), blob, data);
           blobCache.add(blobInfo);
@@ -96,16 +99,11 @@ const register = (parser: DomParser, settings: DomParserSettings): void => {
 
             // Ignore bookmarks
             if (prevName !== 'span' || prev.attr('data-mce-type') !== 'bookmark') {
-              // Found a non BR element
-              if (prevName !== 'br') {
-                break;
-              }
-
               // Found another br it's a <br><br> structure then don't remove anything
               if (prevName === 'br') {
                 node = null;
-                break;
               }
+              break;
             }
 
             prev = prev.prev;
@@ -143,7 +141,7 @@ const register = (parser: DomParser, settings: DomParserSettings): void => {
           }
 
           if (lastParent === parent && settings.padd_empty_with_br !== true) {
-            textNode = new Node('#text', 3);
+            textNode = new AstNode('#text', 3);
             textNode.value = Unicode.nbsp;
             node.replace(textNode);
           }
@@ -213,7 +211,7 @@ const register = (parser: DomParser, settings: DomParserSettings): void => {
           if (node.prev && node.prev.name === 'li') {
             node.prev.append(node);
           } else {
-            const li = new Node('li', 1);
+            const li = new AstNode('li', 1);
             li.attr('style', 'list-style-type: none');
             node.wrap(li);
           }
@@ -224,20 +222,19 @@ const register = (parser: DomParser, settings: DomParserSettings): void => {
 
   if (settings.validate && schema.getValidClasses()) {
     parser.addAttributeFilter('class', (nodes) => {
-      let i = nodes.length, node, classList, ci, className, classValue;
       const validClasses = schema.getValidClasses();
-      let validClassesMap, valid;
 
+      let i = nodes.length;
       while (i--) {
-        node = nodes[i];
-        classList = node.attr('class').split(' ');
-        classValue = '';
+        const node = nodes[i];
+        const classList = node.attr('class').split(' ');
+        let classValue = '';
 
-        for (ci = 0; ci < classList.length; ci++) {
-          className = classList[ci];
-          valid = false;
+        for (let ci = 0; ci < classList.length; ci++) {
+          const className = classList[ci];
+          let valid = false;
 
-          validClassesMap = validClasses['*'];
+          let validClassesMap = validClasses['*'];
           if (validClassesMap && validClassesMap[className]) {
             valid = true;
           }

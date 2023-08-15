@@ -1,3 +1,5 @@
+import { Fun } from '@ephox/katamari';
+
 import { getDemoRegistry } from '../buttons/DemoRegistry';
 
 /*
@@ -29,7 +31,7 @@ const editor = {
   on: (_s, _f) => { }
 };
 
-export const registerAdvListItems = () => {
+export const registerAdvListItems = (): void => {
   getDemoRegistry().addSplitButton('bullist', {
     type: 'splitbutton',
     tooltip: 'Unordered Lists',
@@ -44,7 +46,7 @@ export const registerAdvListItems = () => {
         // FIX: This is missing.
         buttonApi.setActive(state);
       });
-      return () => { };
+      return Fun.noop;
     },
     onAction: (_buttonApi) => {
       // apply basic list command

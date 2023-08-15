@@ -6,13 +6,13 @@
  */
 
 import { Fun } from '@ephox/katamari';
-import { Compare, Traverse, Element } from '@ephox/sugar';
+import { Compare, SugarElement, Traverse } from '@ephox/sugar';
 
 const dropLast = <T>(xs: T[]): T[] => xs.slice(0, -1);
 
-const parentsUntil = (start: Element, root: Element, predicate: (elm: Element) => boolean): Element[] => {
+const parentsUntil = (start: SugarElement<Node>, root: SugarElement<Node>, predicate: (elm: SugarElement<Node>) => boolean): SugarElement<Node>[] => {
   if (Compare.contains(root, start)) {
-    return dropLast(Traverse.parents(start, function (elm) {
+    return dropLast(Traverse.parents(start, (elm) => {
       return predicate(elm) || Compare.eq(elm, root);
     }));
   } else {
@@ -20,9 +20,9 @@ const parentsUntil = (start: Element, root: Element, predicate: (elm: Element) =
   }
 };
 
-const parents = (start: Element, root: Element): Element[] => parentsUntil(start, root, Fun.constant(false));
+const parents = (start: SugarElement<Node>, root: SugarElement<Node>): SugarElement<Node>[] => parentsUntil(start, root, Fun.never);
 
-const parentsAndSelf = (start: Element, root: Element): Element[] => [ start ].concat(parents(start, root));
+const parentsAndSelf = (start: SugarElement<Node>, root: SugarElement<Node>): SugarElement<Node>[] => [ start ].concat(parents(start, root));
 
 export {
   parentsUntil,

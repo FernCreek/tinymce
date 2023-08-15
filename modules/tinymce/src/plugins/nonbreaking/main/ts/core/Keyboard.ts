@@ -5,15 +5,17 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import Editor from 'tinymce/core/api/Editor';
 import VK from 'tinymce/core/api/util/VK';
+
 import * as Settings from '../api/Settings';
 import * as Actions from './Actions';
 
-const setup = function (editor) {
+const setup = (editor: Editor): void => {
   const spaces = Settings.getKeyboardSpaces(editor);
 
   if (spaces > 0) {
-    editor.on('keydown', function (e) {
+    editor.on('keydown', (e) => {
       if (e.keyCode === VK.TAB && !e.isDefaultPrevented()) {
         if (e.shiftKey) {
           return;

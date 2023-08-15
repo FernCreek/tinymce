@@ -7,21 +7,22 @@
 
 import { Singleton } from '@ephox/katamari';
 import { Class } from '@ephox/sugar';
-import * as AndroidEvents from './AndroidEvents';
-import * as AndroidSetup from './AndroidSetup';
+
 import * as PlatformEditor from '../../ios/core/PlatformEditor';
-import * as Thor from '../../util/Thor';
 import * as Styles from '../../style/Styles';
 import * as MetaViewport from '../../touch/view/MetaViewport';
+import * as Thor from '../../util/Thor';
+import * as AndroidEvents from './AndroidEvents';
+import * as AndroidSetup from './AndroidSetup';
 
-const create = function (platform, mask) {
+const create = (platform, mask) => {
 
   const meta = MetaViewport.tag();
   const androidApi = Singleton.api();
 
   const androidEvents = Singleton.api();
 
-  const enter = function () {
+  const enter = () => {
     mask.hide();
 
     Class.add(platform.container, Styles.resolve('fullscreen-maximized'));
@@ -35,15 +36,15 @@ const create = function (platform, mask) {
       AndroidSetup.setup(platform.win, PlatformEditor.getWin(platform.editor).getOrDie('no'))
     );
 
-    PlatformEditor.getActiveApi(platform.editor).each(function (editorApi) {
-      Thor.clobberStyles(platform.container, editorApi.body());
+    PlatformEditor.getActiveApi(platform.editor).each((editorApi) => {
+      Thor.clobberStyles(platform.container, editorApi.body);
       androidEvents.set(
         AndroidEvents.initEvents(editorApi, platform.toolstrip, platform.alloy)
       );
     });
   };
 
-  const exit = function () {
+  const exit = () => {
     meta.restore();
     mask.show();
     Class.remove(platform.container, Styles.resolve('fullscreen-maximized'));

@@ -5,19 +5,29 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { Type } from '@ephox/katamari';
+
+import Editor from 'tinymce/core/api/Editor';
+
 import { flattenListSelection, indentListSelection, outdentListSelection } from '../actions/Indendation';
 import * as ToggleList from '../actions/ToggleList';
+import { updateList } from '../actions/Update';
+import { getParentList } from '../core/Selection';
 import * as Dialog from '../ui/Dialog';
 
-const queryListCommandState = function (editor, listName) {
-  return function () {
-    const parentList = editor.dom.getParent(editor.selection.getStart(), 'UL,OL,DL');
-    return parentList && parentList.nodeName === listName;
-  };
+const queryListCommandState = (editor: Editor, listName: string) => (): boolean => {
+  const parentList = getParentList(editor);
+  return parentList && parentList.nodeName === listName;
 };
 
-const register = function (editor) {
-  editor.on('BeforeExecCommand', function (e) {
+const registerDialog = (editor: Editor): void => {
+  editor.addCommand('mceListProps', () => {
+    Dialog.open(editor);
+  });
+};
+
+const register = (editor: Editor): void => {
+  editor.on('BeforeExecCommand', (e) => {
     const cmd = e.command.toLowerCase();
 
     if (cmd === 'indent') {
@@ -27,15 +37,15 @@ const register = function (editor) {
     }
   });
 
-  editor.addCommand('InsertUnorderedList', function (ui, detail) {
+  editor.addCommand('InsertUnorderedList', (ui, detail) => {
     ToggleList.toggleList(editor, 'UL', detail);
   });
 
-  editor.addCommand('InsertOrderedList', function (ui, detail) {
+  editor.addCommand('InsertOrderedList', (ui, detail) => {
     ToggleList.toggleList(editor, 'OL', detail);
   });
 
-  editor.addCommand('InsertDefinitionList', function (ui, detail) {
+  editor.addCommand('InsertDefinitionList', (ui, detail) => {
     ToggleList.toggleList(editor, 'DL', detail);
   });
 
@@ -43,8 +53,12 @@ const register = function (editor) {
     flattenListSelection(editor);
   });
 
-  editor.addCommand('mceListProps', () => {
-    Dialog.open(editor);
+  registerDialog(editor);
+
+  editor.addCommand('mceListUpdate', (ui, detail) => {
+    if (Type.isObject(detail)) {
+      updateList(editor, detail);
+    }
   });
 
   editor.addQueryStateHandler('InsertUnorderedList', queryListCommandState(editor, 'UL'));
@@ -53,5 +67,6 @@ const register = function (editor) {
 };
 
 export {
+  registerDialog,
   register
 };

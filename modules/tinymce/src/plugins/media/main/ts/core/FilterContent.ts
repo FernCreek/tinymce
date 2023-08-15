@@ -6,18 +6,19 @@
  */
 
 import Editor from 'tinymce/core/api/Editor';
-import Node from 'tinymce/core/api/html/Node';
+import AstNode from 'tinymce/core/api/html/Node';
 import Tools from 'tinymce/core/api/util/Tools';
+
 import * as Nodes from './Nodes';
 import * as Sanitize from './Sanitize';
 
 declare let unescape: any;
 
-const setup = function (editor: Editor) {
-  editor.on('preInit', function () {
+const setup = (editor: Editor): void => {
+  editor.on('preInit', () => {
     // Make sure that any messy HTML is retained inside these
     const specialElements = editor.schema.getSpecialElements();
-    Tools.each('video audio iframe object'.split(' '), function (name) {
+    Tools.each('video audio iframe object'.split(' '), (name) => {
       specialElements[name] = new RegExp('<\/' + name + '[^>]*>', 'gi');
     });
 
@@ -28,7 +29,7 @@ const setup = function (editor: Editor) {
 
     // Set allowFullscreen attribs as boolean
     const boolAttrs = editor.schema.getBoolAttrs();
-    Tools.each('webkitallowfullscreen mozallowfullscreen allowfullscreen'.split(' '), function (name) {
+    Tools.each('webkitallowfullscreen mozallowfullscreen allowfullscreen'.split(' '), (name) => {
       boolAttrs[name] = {};
     });
 
@@ -37,7 +38,7 @@ const setup = function (editor: Editor) {
       Nodes.placeHolderConverter(editor));
 
     // Replaces placeholder images with real elements for video, object, iframe etc
-    editor.serializer.addAttributeFilter('data-mce-object', function (nodes, name) {
+    editor.serializer.addAttributeFilter('data-mce-object', (nodes, name) => {
       let i = nodes.length;
       let node;
       let realElm;
@@ -55,7 +56,7 @@ const setup = function (editor: Editor) {
         }
 
         realElmName = node.attr(name);
-        realElm = new Node(realElmName, 1);
+        realElm = new AstNode(realElmName, 1);
 
         // Add width/height to everything but audio
         if (realElmName !== 'audio' && realElmName !== 'script') {
@@ -95,7 +96,7 @@ const setup = function (editor: Editor) {
         // Inject innerhtml
         innerHtml = node.attr('data-mce-html');
         if (innerHtml) {
-          innerNode = new Node('#text', 3);
+          innerNode = new AstNode('#text', 3);
           innerNode.raw = true;
           innerNode.value = Sanitize.sanitize(editor, unescape(innerHtml));
           realElm.append(innerNode);
@@ -106,10 +107,10 @@ const setup = function (editor: Editor) {
     });
   });
 
-  editor.on('SetContent', function () {
+  editor.on('SetContent', () => {
     // TODO: This shouldn't be needed there should be a way to mark bogus
     // elements so they are never removed except external save
-    editor.$('span.mce-preview-object').each(function (index, elm) {
+    editor.$('span.mce-preview-object').each((index, elm) => {
       const $elm = editor.$(elm);
 
       if ($elm.find('span.mce-shim').length === 0) {

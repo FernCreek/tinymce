@@ -1,10 +1,10 @@
-import { Assertions } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { atob, Blob } from '@ephox/dom-globals';
+import { before, describe, it } from '@ephox/bedrock-client';
+import { assert } from 'chai';
+
 import { BlobCache, BlobInfoData } from 'tinymce/core/api/file/BlobCache';
 
-UnitTest.test('browser.tinymce.core.file.BlobCacheTest', function () {
-  const uriToBlob = function (base64, type) {
+describe('browser.tinymce.core.file.BlobCacheTest', () => {
+  const uriToBlob = (base64: string, type: string) => {
     let i;
     const str = atob(base64);
     const arr = new Uint8Array(str.length);
@@ -21,44 +21,79 @@ UnitTest.test('browser.tinymce.core.file.BlobCacheTest', function () {
   const blob = uriToBlob(base64, type);
   const name = 'blank';
   const filename = 'blank.png';
+  const specifiedFilename = 'blank.jfif';
   const uri = 'http://localhost/blank.png';
 
-  let blobInfo;
-  const blobCache = BlobCache();
+  let blobCache: BlobCache;
 
-  blobInfo = blobCache.create(id, blob, base64, name);
-  Assertions.assertEq('Testing original version of create() method',
-    [ id, base64, filename ],
-    [ blobInfo.id(), blobInfo.base64(), blobInfo.filename() ]
-  );
-
-  blobCache.add(blobInfo);
-
-  Assertions.assertEq('Testing get()', blobInfo, blobCache.get(id));
-  Assertions.assertEq('BlobInfo instance has blobUri() accessor', true, blobInfo.blobUri().indexOf('blob:') === 0);
-  Assertions.assertEq('Testing getByUri(), findFirst()', blobInfo, blobCache.getByUri(blobInfo.blobUri()));
-  Assertions.assertEq('Testing getByData()', blobInfo, blobCache.getByData(base64, type));
-
-  blobCache.removeByUri(blobInfo.blobUri());
-  Assertions.assertEq('Testing removeByUri()', undefined, blobCache.getByUri(blobInfo.blobUri()));
-
-  try {
-    blobInfo = blobCache.create({ blob } as BlobInfoData);
-    Assertions.assertEq('Exception should be thrown if BlobInfo is created without blob or base64 entries', false, true);
-  } catch (ex) {
-    Assertions.assertEq('Exception should be thrown if BlobInfo is created without blob or base64 entries', true, true);
-  }
-
-  blobInfo = blobCache.create({
-    id,
-    blob,
-    base64,
-    name,
-    uri
+  before(() => {
+    blobCache = BlobCache();
   });
 
-  Assertions.assertEq('Testing if create() method accepts object',
-    [ id, base64, filename, uri ],
-    [ blobInfo.id(), blobInfo.base64(), blobInfo.filename(), blobInfo.uri() ]
-  );
+  it('create original version', () => {
+    const blobInfo = blobCache.create(id, blob, base64, name);
+    assert.deepEqual(
+      [ blobInfo.id(), blobInfo.base64(), blobInfo.filename() ],
+      [ id, base64, filename ],
+      'Testing original version of create() method'
+    );
+
+    blobCache.add(blobInfo);
+
+    assert.deepEqual(blobCache.get(id), blobInfo, 'Testing get()');
+    assert.isTrue(blobInfo.blobUri().indexOf('blob:') === 0, 'BlobInfo instance has blobUri() accessor');
+    assert.deepEqual(blobCache.getByUri(blobInfo.blobUri()), blobInfo, 'Testing getByUri(), findFirst()');
+    assert.deepEqual(blobCache.getByData(base64, type), blobInfo, 'Testing getByData()');
+
+    blobCache.removeByUri(blobInfo.blobUri());
+    assert.isUndefined(blobCache.getByUri(blobInfo.blobUri()), 'Testing removeByUri()');
+
+    assert.throws(() => {
+      blobCache.create({ blob } as BlobInfoData);
+      assert.fail('Exception should be thrown if BlobInfo is created without blob or base64 entries');
+    }, /.*/, 'Exception should be thrown if BlobInfo is created without blob or base64 entries');
+  });
+
+  it('create with object', () => {
+    const blobInfo = blobCache.create({
+      id,
+      blob,
+      base64,
+      name,
+      uri
+    });
+
+    assert.deepEqual(
+      [ blobInfo.id(), blobInfo.base64(), blobInfo.filename(), blobInfo.uri() ],
+      [ id, base64, filename, uri ],
+      'Testing if create() method accepts object'
+    );
+  });
+
+  it('create original version with filename', () => {
+    const blobInfo = blobCache.create(id, blob, base64, name, specifiedFilename);
+
+    assert.deepEqual(
+      [ blobInfo.id(), blobInfo.base64(), blobInfo.name(), blobInfo.filename() ],
+      [ id, base64, name, specifiedFilename ],
+      'Testing original version of create() method with specified filename'
+    );
+  });
+
+  it('create with object containing filename', () => {
+    const blobInfo = blobCache.create({
+      id,
+      blob,
+      base64,
+      name,
+      uri,
+      filename: specifiedFilename
+    });
+
+    assert.deepEqual(
+      [ blobInfo.id(), blobInfo.base64(), blobInfo.filename(), blobInfo.uri() ],
+      [ id, base64, specifiedFilename, uri ],
+      'Testing create() method with specified filename'
+    );
+  });
 });

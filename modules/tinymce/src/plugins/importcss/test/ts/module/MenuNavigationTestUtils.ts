@@ -1,49 +1,58 @@
-import { Keyboard, Step, Keys, FocusTools } from '@ephox/agar';
-import { Arr } from '@ephox/katamari';
+import { FocusTools, Keyboard, Keys, Waiter } from '@ephox/agar';
+import { SugarElement } from '@ephox/sugar';
 
-const sAssertFocusOnItem = (doc, text) => FocusTools.sTryOnSelector(
-  'Focus should be on: ' + text,
-  doc,
-  `.tox-collection__item:contains(${text})`
-);
+export interface Navigation {
+  readonly item: string;
+  readonly subitems: string[];
+}
 
-const sDelay = Step.wait(0);
+const pAssertFocusOnItem = (doc: SugarElement<Document>, text: string): Promise<SugarElement<HTMLElement>> =>
+  FocusTools.pTryOnSelector(
+    'Focus should be on: ' + text,
+    doc,
+    `.tox-collection__item:contains(${text})`
+  );
 
-const generateNavigation = (doc, navigation) => {
-  if (navigation.length === 0) { return [ ]; }
+const pDelay = () => Waiter.pWait(0);
 
-  return Arr.bind(navigation.concat(navigation.slice(0, 1)), (nav, i) => {
-    const exploration = (nav.subitems.length > 0) ? [
-      Keyboard.sKeydown(doc, Keys.right(), { }),
-      sAssertFocusOnItem(doc, nav.subitems[0])
-    ].concat(
-      Arr.bind(
-        nav.subitems.slice(1).concat(nav.subitems.slice(0, 1)),
-        (si) => [
-          Keyboard.sKeydown(doc, Keys.down(), { }),
-          sDelay,
-          sAssertFocusOnItem(doc, si)
-        ]
-      )
-    ).concat([
-      Keyboard.sKeydown(doc, Keys.escape(), { })
-    ]) : [
+const pProcessNavigation = async (doc: SugarElement<Document>, navigation: Navigation[]): Promise<void> => {
+  if (navigation.length === 0) {
+    return;
+  }
+
+  // Note: Can't use Arr.foldl here as we need the index and also need to sequence promises
+  const navItems = navigation.concat(navigation.slice(0, 1));
+  for (let i = 0; i < navItems.length; i++) {
+    const nav = navItems[i];
+    await pAssertFocusOnItem(doc, nav.item);
+
+    if (nav.subitems.length > 0) {
+      Keyboard.activeKeydown(doc, Keys.right());
+      await pAssertFocusOnItem(doc, nav.subitems[0]);
+
+      for (const si of nav.subitems.slice(1).concat(nav.subitems.slice(0, 1))) {
+        Keyboard.activeKeydown(doc, Keys.down());
+        await pDelay();
+        await pAssertFocusOnItem(doc, si);
+      }
+
+      Keyboard.activeKeydown(doc, Keys.escape());
+    } else {
       // Should do nothing
-      Keyboard.sKeydown(doc, Keys.right(), { })
-    ];
+      Keyboard.activeKeydown(doc, Keys.right());
+    }
 
-    return Arr.flatten([
-      [ sAssertFocusOnItem(doc, nav.item) ],
-      exploration,
-      [ sAssertFocusOnItem(doc, nav.item) ],
-      [ sDelay ],
-      // Move to the next one
-      i < navigation.length ? [ Keyboard.sKeydown(doc, Keys.down(), { }) ] : [ ]
-    ]);
-  });
+    await pAssertFocusOnItem(doc, nav.item);
+    await pDelay();
+
+    // Move to the next one if not the last item
+    if (i < navigation.length) {
+      Keyboard.activeKeydown(doc, Keys.down());
+    }
+  }
 };
 
-export const MenuNavigationTestUtils = {
-  sAssertFocusOnItem,
-  generateNavigation
+export {
+  pAssertFocusOnItem,
+  pProcessNavigation
 };

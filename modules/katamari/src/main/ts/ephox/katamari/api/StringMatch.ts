@@ -1,4 +1,5 @@
 import { Adt } from './Adt';
+import * as Fun from './Fun';
 
 type StringMapper = (str: string) => string;
 
@@ -38,32 +39,25 @@ const adt = Adt.generate<{
       { not: [ 'stringMatch' ] }
     ]);
 
-const caseInsensitive = function (val: string) {
+const caseInsensitive = (val: string): string => {
   return val.toLowerCase();
 };
 
-const caseSensitive = function (val: string) {
-  return val;
-};
+const caseSensitive: (val: string) => string = Fun.identity;
 
 /** matches :: (StringMatch, String) -> Boolean */
-const matches = function (subject: StringMatch, str: string): boolean {
-  return subject.fold(function (value, f) {
-    return f(str).indexOf(f(value)) === 0;
-  }, function (regex, f) {
-    return regex.test(f(str));
-  }, function (value, f) {
-    return f(str).indexOf(f(value)) >= 0;
-  }, function (value, f) {
-    return f(str) === f(value);
-  }, function () {
-    return true;
-  }, function (other) {
-    return !matches(other, str);
-  });
+const matches = (subject: StringMatch, str: string): boolean => {
+  return subject.fold(
+    (value, f) => f(str).indexOf(f(value)) === 0,
+    (regex, f) => regex.test(f(str)),
+    (value, f) => f(str).indexOf(f(value)) >= 0,
+    (value, f) => f(str) === f(value),
+    Fun.always,
+    (other) => !matches(other, str)
+  );
 };
 
-const cata = function <T> (
+const cata = <T>(
   subject: StringMatch,
   s: (value: string, f: StringMapper) => T,
   p: (regex: RegExp, f: StringMapper) => T,
@@ -71,7 +65,7 @@ const cata = function <T> (
   e: (value: string, f: StringMapper) => T,
   a: () => T,
   n: (other: StringMatch) => T
-) {
+): T => {
   return subject.fold<T>(s, p, c, e, a, n);
 };
 

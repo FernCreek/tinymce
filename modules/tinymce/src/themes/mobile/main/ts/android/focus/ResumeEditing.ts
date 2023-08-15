@@ -6,7 +6,8 @@
  */
 
 import { Arr, Fun } from '@ephox/katamari';
-import { Element, Focus, Node } from '@ephox/sugar';
+import { Focus, SugarElement, SugarNode } from '@ephox/sugar';
+
 import Delay from 'tinymce/core/api/util/Delay';
 
 // There are numerous problems with Google Keyboard when we need to switch focus back from a toolbar item / dialog to
@@ -22,25 +23,25 @@ import Delay from 'tinymce/core/api/util/Delay';
 // Then we tried everyone's favourite setTimeout solution. This appears to work because it looks like the bug might
 // be caused by the fact that the autocomplete cache is maintained while in the same event queue. As soon as we
 // disconnect the stack, it looks like it is fixed. That makes some level of sense.
-const autocompleteHack = function (/* iBody */) {
-  return function (f) {
-    Delay.setTimeout(function () {
+const autocompleteHack = (/* iBody */) => {
+  return (f) => {
+    Delay.setTimeout(() => {
       f();
     }, 0);
   };
 };
 
-const resume = function (cWin) {
+const resume = (cWin) => {
   cWin.focus();
-  const iBody = Element.fromDom(cWin.document.body);
+  const iBody = SugarElement.fromDom(cWin.document.body);
 
-  const inInput = Focus.active().exists(function (elem) {
-    return Arr.contains([ 'input', 'textarea' ], Node.name(elem));
+  const inInput = Focus.active().exists((elem) => {
+    return Arr.contains([ 'input', 'textarea' ], SugarNode.name(elem));
   });
 
   const transaction = inInput ? autocompleteHack() : Fun.apply;
 
-  transaction(function () {
+  transaction(() => {
     // If we don't blur before focusing the content, a previous focus in something like a statebutton
     // which represents the chosen font colour can stop the keyboard from appearing. Therefore, we blur
     // first.

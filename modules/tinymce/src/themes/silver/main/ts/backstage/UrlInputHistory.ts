@@ -5,8 +5,8 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Arr, Type, Obj } from '@ephox/katamari';
-import { console } from '@ephox/dom-globals';
+import { Arr, Obj, Type } from '@ephox/katamari';
+
 import LocalStorage from 'tinymce/core/api/util/LocalStorage';
 
 const STORAGE_KEY = 'tinymce-url-history';
@@ -19,7 +19,7 @@ const isArrayOfUrl = (a: any): boolean => Type.isArray(a) && a.length <= HISTORY
 
 const isRecordOfUrlArray = (r: any): boolean => Type.isObject(r) && Obj.find(r, (value) => !isArrayOfUrl(value)).isNone();
 
-const getAllHistory = function (): Record<string, string[]> {
+const getAllHistory = (): Record<string, string[]> => {
   const unparsedHistory = LocalStorage.getItem(STORAGE_KEY);
   if (unparsedHistory === null) {
     return {};
@@ -30,7 +30,7 @@ const getAllHistory = function (): Record<string, string[]> {
     history = JSON.parse(unparsedHistory);
   } catch (e) {
     if (e instanceof SyntaxError) {
-      // tslint:disable-next-line:no-console
+      // eslint-disable-next-line no-console
       console.log('Local storage ' + STORAGE_KEY + ' was not valid JSON', e);
       return {};
     }
@@ -38,37 +38,37 @@ const getAllHistory = function (): Record<string, string[]> {
   }
   // validate the parsed value
   if (!isRecordOfUrlArray(history)) {
-    // tslint:disable-next-line:no-console
+    // eslint-disable-next-line no-console
     console.log('Local storage ' + STORAGE_KEY + ' was not valid format', history);
     return {};
   }
   return history;
 };
 
-const setAllHistory = function (history: Record<string, string[]>) {
+const setAllHistory = (history: Record<string, string[]>) => {
   if (!isRecordOfUrlArray(history)) {
     throw new Error('Bad format for history:\n' + JSON.stringify(history));
   }
   LocalStorage.setItem(STORAGE_KEY, JSON.stringify(history));
 };
 
-const getHistory = function (fileType: string): string[] {
+const getHistory = (fileType: string): string[] => {
   const history = getAllHistory();
-  return Object.prototype.hasOwnProperty.call(history, fileType) ? history[fileType] : [];
+  return Obj.get(history, fileType).getOr([]);
 };
 
-const addToHistory = function (url: string, fileType: string) {
+const addToHistory = (url: string, fileType: string) => {
   if (!isHttpUrl(url)) {
     return;
   }
   const history = getAllHistory();
-  const items = Object.prototype.hasOwnProperty.call(history, fileType) ? history[fileType] : [];
+  const items = Obj.get(history, fileType).getOr([]);
   const itemsWithoutUrl = Arr.filter(items, (item) => item !== url);
   history[fileType] = [ url ].concat(itemsWithoutUrl).slice(0, HISTORY_LENGTH);
   setAllHistory(history);
 };
 
-const clearHistory = function () {
+const clearHistory = () => {
   LocalStorage.removeItem(STORAGE_KEY);
 };
 

@@ -6,8 +6,8 @@
  */
 
 import { AlloyComponent, Composing, ModalDialog } from '@ephox/alloy';
-import { DialogManager } from '@ephox/bridge';
-import { Option } from '@ephox/katamari';
+import { Dialog, DialogManager } from '@ephox/bridge';
+import { Fun, Optional } from '@ephox/katamari';
 
 import { UiFactoryBackstage } from '../../backstage/Backstage';
 import { renderModalBody } from './SilverDialogBody';
@@ -15,6 +15,17 @@ import * as SilverDialogCommon from './SilverDialogCommon';
 import { SilverDialogEvents } from './SilverDialogEvents';
 import { renderModalFooter } from './SilverDialogFooter';
 import { getDialogApi } from './SilverDialogInstanceApi';
+
+const getDialogSizeClasses = (size: Dialog.DialogSize): string[] => {
+  switch (size) {
+    case 'large':
+      return [ 'tox-dialog--width-lg' ];
+    case 'medium':
+      return [ 'tox-dialog--width-md' ];
+    default:
+      return [];
+  }
+};
 
 const renderDialog = <T>(dialogInit: DialogManager.DialogInit<T>, extra: SilverDialogCommon.WindowExtra, backstage: UiFactoryBackstage) => {
   const header = SilverDialogCommon.getHeader(dialogInit.internalDialog.title, backstage);
@@ -33,20 +44,16 @@ const renderDialog = <T>(dialogInit: DialogManager.DialogInit<T>, extra: SilverD
 
   const dialogEvents = SilverDialogEvents.initDialog(
     () => instanceApi,
-    SilverDialogCommon.getEventExtras(() => dialog, extra),
+    SilverDialogCommon.getEventExtras(() => dialog, backstage.shared.providers, extra),
     backstage.shared.getSink
   );
 
-  const dialogSize = dialogInit.internalDialog.size !== 'normal'
-    ? dialogInit.internalDialog.size === 'large'
-      ? [ 'tox-dialog--width-lg' ]
-      : [ 'tox-dialog--width-md' ]
-    : [];
+  const dialogSize = getDialogSizeClasses(dialogInit.internalDialog.size);
 
   const spec = {
     header,
     body,
-    footer: Option.some(footer),
+    footer: Optional.some(footer),
     extraClasses: dialogSize,
     extraBehaviours: [],
     extraStyles: {}
@@ -61,7 +68,7 @@ const renderDialog = <T>(dialogInit: DialogManager.DialogInit<T>, extra: SilverD
     };
 
     return {
-      getRoot: () => dialog,
+      getRoot: Fun.constant(dialog),
       getBody: () => ModalDialog.getBody(dialog),
       getFooter: () => ModalDialog.getFooter(dialog),
       getFormWrapper: getForm

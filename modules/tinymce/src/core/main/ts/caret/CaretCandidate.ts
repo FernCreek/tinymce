@@ -5,10 +5,10 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { Arr } from '@ephox/katamari';
+
 import * as NodeType from '../dom/NodeType';
 import * as CaretContainer from './CaretContainer';
-import { Node, HTMLElement } from '@ephox/dom-globals';
-import { Arr } from '@ephox/katamari';
 
 /**
  * This module contains logic for handling caret candidates. A caret candidate is
@@ -23,32 +23,30 @@ const isContentEditableFalse = NodeType.isContentEditableFalse;
 const isBr = NodeType.isBr;
 const isText = NodeType.isText;
 const isInvalidTextElement = NodeType.matchNodeNames([ 'script', 'style', 'textarea' ]);
-const isAtomicInline = NodeType.matchNodeNames([ 'img', 'input', 'textarea', 'hr', 'iframe', 'video', 'audio', 'object' ]);
+const isAtomicInline = NodeType.matchNodeNames([ 'img', 'input', 'textarea', 'hr', 'iframe', 'video', 'audio', 'object', 'embed' ]);
 const isTable = NodeType.matchNodeNames([ 'table' ]);
 const isCaretContainer = CaretContainer.isCaretContainer;
 
-const isCaretCandidate = (node: Node): boolean => {
+const isCaretCandidate = (node: Node | null): boolean => {
   if (isCaretContainer(node)) {
     return false;
   }
 
   if (isText(node)) {
-    if (isInvalidTextElement(node.parentNode)) {
-      return false;
-    }
-
-    return true;
+    return !isInvalidTextElement(node.parentNode);
   }
 
   return isAtomicInline(node) || isBr(node) || isTable(node) || isNonUiContentEditableFalse(node);
 };
 
 // UI components on IE is marked with contenteditable=false and unselectable=true so lets not handle those as real content editables
-const isUnselectable = (node: Node) => NodeType.isElement(node) && node.getAttribute('unselectable') === 'true';
+const isUnselectable = (node: Node | null): boolean =>
+  NodeType.isElement(node) && node.getAttribute('unselectable') === 'true';
 
-const isNonUiContentEditableFalse = (node: Node): node is HTMLElement => isUnselectable(node) === false && isContentEditableFalse(node);
+const isNonUiContentEditableFalse = (node: Node | null): node is HTMLElement =>
+  isUnselectable(node) === false && isContentEditableFalse(node);
 
-const isInEditable = (node: Node, root: Node): boolean => {
+const isInEditable = (node: Node, root?: Node): boolean => {
   for (node = node.parentNode; node && node !== root; node = node.parentNode) {
     if (isNonUiContentEditableFalse(node)) {
       return false;
@@ -67,13 +65,16 @@ const isAtomicContentEditableFalse = (node: Node): boolean => {
     return false;
   }
 
-  return Arr.foldl(Arr.from(node.getElementsByTagName('*')), function (result, elm) {
+  return Arr.foldl(Arr.from(node.getElementsByTagName('*')), (result, elm) => {
     return result || isContentEditableTrue(elm);
   }, false) !== true;
 };
 
-const isAtomic = (node: Node): boolean => isAtomicInline(node) || isAtomicContentEditableFalse(node);
-const isEditableCaretCandidate = (node: Node, root?: Node) => isCaretCandidate(node) && isInEditable(node, root);
+const isAtomic = (node: Node): boolean =>
+  isAtomicInline(node) || isAtomicContentEditableFalse(node);
+
+const isEditableCaretCandidate = (node: Node, root?: Node): boolean =>
+  isCaretCandidate(node) && isInEditable(node, root);
 
 export {
   isCaretCandidate,

@@ -5,35 +5,64 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Fun, Option } from '@ephox/katamari';
-import { Compare, DomEvent, Element, WindowSelection, StructRect, RawRect } from '@ephox/sugar';
+import { Fun, Optional } from '@ephox/katamari';
+import { Compare, DomEvent, EventArgs, RawRect, SimRange, SugarElement, WindowSelection } from '@ephox/sugar';
 
-const getBodyFromFrame = function (frame) {
-  return Option.some(Element.fromDom(frame.dom().contentWindow.document.body));
+// TODO finish adding the full types
+export interface PlatformEditor {
+  readonly body: SugarElement<HTMLElement>;
+  readonly doc: SugarElement<Document>;
+  readonly win: Window;
+  readonly html: SugarElement<HTMLElement>;
+
+  readonly getSelection: () => Optional<SimRange>;
+  readonly setSelection: (start, soffset, finish, foffset) => void;
+  readonly clearSelection: () => void;
+  readonly frame: SugarElement<HTMLIFrameElement>;
+
+  readonly onKeyup: (handler: (event) => void) => { unbind: () => void };
+  readonly onNodeChanged: (handler: (event) => void) => { unbind: () => void };
+  readonly onDomChanged: (handler: (event) => void) => { unbind: () => void };
+
+  readonly onScrollToCursor: (handler: (event) => void) => { unbind: () => void };
+  readonly onScrollToElement: (handler: (event) => void) => { unbind: () => void };
+  readonly onToReading: (handler: (event) => void) => { unbind: () => void };
+  readonly onToEditing: (handler: (event) => void) => { unbind: () => void };
+
+  readonly onToolbarScrollStart: () => void;
+  readonly onTouchContent: () => void;
+  readonly onTapContent: (event: EventArgs<TouchEvent>) => void;
+  readonly onTouchToolstrip: () => void;
+
+  readonly getCursorBox: () => Optional<RawRect>;
+}
+
+const getBodyFromFrame = (frame) => {
+  return Optional.some(SugarElement.fromDom(frame.dom.contentWindow.document.body));
 };
 
-const getDocFromFrame = function (frame) {
-  return Option.some(Element.fromDom(frame.dom().contentWindow.document));
+const getDocFromFrame = (frame) => {
+  return Optional.some(SugarElement.fromDom(frame.dom.contentWindow.document));
 };
 
-const getWinFromFrame = function (frame) {
-  return Option.from(frame.dom().contentWindow);
+const getWinFromFrame = (frame) => {
+  return Optional.from(frame.dom.contentWindow);
 };
 
-const getSelectionFromFrame = function (frame) {
+const getSelectionFromFrame = (frame) => {
   const optWin = getWinFromFrame(frame);
   return optWin.bind(WindowSelection.getExact);
 };
 
-const getFrame = function (editor) {
+const getFrame = (editor) => {
   return editor.getFrame();
 };
 
-const getOrDerive = function (name, f) {
-  return function (editor) {
-    const g = editor[name].getOrThunk(function () {
+const getOrDerive = (name, f) => {
+  return (editor) => {
+    const g = editor[name].getOrThunk(() => {
       const frame = getFrame(editor);
-      return function () {
+      return () => {
         return f(frame);
       };
     });
@@ -42,81 +71,69 @@ const getOrDerive = function (name, f) {
   };
 };
 
-const getOrListen = function (editor, doc, name, type: string) {
-  return editor[name].getOrThunk(function () {
-    return function (handler) {
+const getOrListen = (editor, doc, name, type: string) => {
+  return editor[name].getOrThunk(() => {
+    return (handler) => {
       return DomEvent.bind(doc, type, handler);
     };
   });
 };
 
-// TODO: This function belongs in modules/sugar/src/main/ts/ephox/sugar/api/selection/Rect.ts
-const toRect = function (rect: RawRect): StructRect {
-  return {
-    left: Fun.constant(rect.left),
-    top: Fun.constant(rect.top),
-    right: Fun.constant(rect.right),
-    bottom: Fun.constant(rect.bottom),
-    width: Fun.constant(rect.width),
-    height: Fun.constant(rect.height)
-  };
-};
-
-const getActiveApi = function (editor) {
+const getActiveApi = (editor): Optional<PlatformEditor> => {
   const frame = getFrame(editor);
 
   // Empty paragraphs can have no rectangle size, so let's just use the start container
   // if it is collapsed;
-  const tryFallbackBox = function (win) {
-    const isCollapsed = function (sel) {
-      return Compare.eq(sel.start(), sel.finish()) && sel.soffset() === sel.foffset();
+  const tryFallbackBox = (win: Window) => {
+    const isCollapsed = (sel: SimRange) => {
+      return Compare.eq(sel.start, sel.finish) && sel.soffset === sel.foffset;
     };
 
-    const toStartRect = function (sel) {
-      const rect = sel.start().dom().getBoundingClientRect();
-      return rect.width > 0 || rect.height > 0 ? Option.some(rect).map(toRect) : Option.none<StructRect>();
+    const toStartRect = (sel): Optional<RawRect> => {
+      const rect = sel.start.dom.getBoundingClientRect();
+      return rect.width > 0 || rect.height > 0 ? Optional.some(rect) : Optional.none();
     };
 
     return WindowSelection.getExact(win).filter(isCollapsed).bind(toStartRect);
   };
 
-  return getBodyFromFrame(frame).bind(function (body) {
-    return getDocFromFrame(frame).bind(function (doc) {
-      return getWinFromFrame(frame).map(function (win) {
+  return getBodyFromFrame(frame).bind((body) => {
+    return getDocFromFrame(frame).bind((doc) => {
+      return getWinFromFrame(frame).map((win) => {
 
-        const html = Element.fromDom(doc.dom().documentElement);
+        const html = SugarElement.fromDom(doc.dom.documentElement);
 
-        const getCursorBox = editor.getCursorBox.getOrThunk(function () {
-          return function () {
-            return WindowSelection.get(win).bind(function (sel) {
-              return WindowSelection.getFirstRect(win, sel).orThunk(function () {
+        const getCursorBox: () => Optional<RawRect> = editor.getCursorBox.getOrThunk(() => {
+          return () => {
+            return WindowSelection.get(win).bind((sel) => {
+              return WindowSelection.getFirstRect(win, sel).orThunk(() => {
                 return tryFallbackBox(win);
               });
             });
           };
         });
 
-        const setSelection = editor.setSelection.getOrThunk(function () {
-          return function (start, soffset, finish, foffset) {
+        const setSelection = editor.setSelection.getOrThunk(() => {
+          return (start, soffset, finish, foffset) => {
             WindowSelection.setExact(win, start, soffset, finish, foffset);
           };
         });
 
-        const clearSelection = editor.clearSelection.getOrThunk(function () {
-          return function () {
+        const clearSelection = editor.clearSelection.getOrThunk(() => {
+          return () => {
             WindowSelection.clear(win);
           };
         });
 
         return {
-          body: Fun.constant(body),
-          doc: Fun.constant(doc),
-          win: Fun.constant(win),
-          html: Fun.constant(html),
+          body,
+          doc,
+          win,
+          html,
           getSelection: Fun.curry(getSelectionFromFrame, frame),
           setSelection,
           clearSelection,
-          frame: Fun.constant(frame),
+          frame,
 
           onKeyup: getOrListen(editor, doc, 'onKeyup', 'keyup'),
           onNodeChanged: getOrListen(editor, doc, 'onNodeChanged', 'SelectionChange'),

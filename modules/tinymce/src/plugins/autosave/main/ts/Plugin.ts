@@ -6,11 +6,12 @@
  */
 
 import PluginManager from 'tinymce/core/api/PluginManager';
+
 import * as Api from './api/Api';
-import * as BeforeUnload from './core/BeforeUnload';
-import * as Buttons from './ui/Buttons';
-import * as Storage from './core/Storage';
 import * as Settings from './api/Settings';
+import * as BeforeUnload from './core/BeforeUnload';
+import * as Storage from './core/Storage';
+import * as Buttons from './ui/Buttons';
 
 /**
  * This class contains all core logic for the autosave plugin.
@@ -19,12 +20,12 @@ import * as Settings from './api/Settings';
  * @private
  */
 
-export default function () {
-  PluginManager.add('autosave', function (editor) {
+export default (): void => {
+  PluginManager.add('autosave', (editor) => {
     BeforeUnload.setup(editor);
     Buttons.register(editor);
 
-    editor.on('init', function () {
+    editor.on('init', () => {
       if (Settings.shouldRestoreWhenEmpty(editor) && editor.dom.isEmpty(editor.getBody())) {
         Storage.restoreDraft(editor);
       }
@@ -32,4 +33,4 @@ export default function () {
 
     return Api.get(editor);
   });
-}
+};

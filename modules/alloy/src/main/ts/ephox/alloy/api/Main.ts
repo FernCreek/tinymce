@@ -15,9 +15,8 @@ import * as AlloyLogger from '../log/AlloyLogger';
 import * as AlloyParts from '../parts/AlloyParts';
 import * as PartType from '../parts/PartType';
 import * as Bubble from '../positioning/layout/Bubble';
-
 import * as Layout from '../positioning/layout/Layout';
-import * as LayoutInside from '../positioning/layout/LayoutInside';
+import * as LayoutInset from '../positioning/layout/LayoutInset';
 import * as LayoutTypes from '../positioning/layout/LayoutTypes';
 import * as MaxHeight from '../positioning/layout/MaxHeight';
 import * as MaxWidth from '../positioning/layout/MaxWidth';
@@ -35,6 +34,7 @@ import * as TieredMenuTypes from '../ui/types/TieredMenuTypes';
 import * as AddEventsBehaviour from './behaviour/AddEventsBehaviour';
 import { AllowBubbling } from './behaviour/AllowBubbling';
 import * as Behaviour from './behaviour/Behaviour';
+import { Blocking } from './behaviour/Blocking';
 import { Composing } from './behaviour/Composing';
 import { Coupling } from './behaviour/Coupling';
 import { Disabling } from './behaviour/Disabling';
@@ -130,6 +130,7 @@ export {
   AddEventsBehaviour,
   Behaviour,
   AllowBubbling,
+  Blocking,
   Composing,
   Coupling,
   Disabling,
@@ -245,7 +246,7 @@ export {
 
   // layout
   Layout,
-  LayoutInside,
+  LayoutInset,
   LayoutTypes,
   Bubble,
   MaxHeight,

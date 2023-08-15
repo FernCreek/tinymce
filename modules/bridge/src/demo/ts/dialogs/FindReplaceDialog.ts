@@ -1,7 +1,6 @@
-import { console } from '@ephox/dom-globals';
 import { openDemoDialog } from './DemoDialogHelpers';
 
-export const createFindReplaceDialog = () => {
+export const createFindReplaceDialog = (): void => {
   openDemoDialog(
     {
       title: 'Find and replace',
@@ -75,10 +74,10 @@ export const createFindReplaceDialog = () => {
       onAction: (api, details) => {
         const data = api.getData();
 
-        // tslint:disable-next-line:no-console
+        // eslint-disable-next-line no-console
         console.log(details.name); // Show action find/replace etc
 
-        // tslint:disable-next-line:no-console
+        // eslint-disable-next-line no-console
         console.log({
           find: data.find,
           replace: data.replace,

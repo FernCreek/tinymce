@@ -5,15 +5,17 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import * as Actions from '../core/Actions';
-import Editor from 'tinymce/core/api/Editor';
 import { Cell } from '@ephox/katamari';
+
+import Editor from 'tinymce/core/api/Editor';
+
+import * as Actions from '../core/Actions';
 import { DomTextMatcher } from '../core/DomTextMatcher';
 
 type LastSuggestion = Actions.LastSuggestion;
 
-const register = function (editor: Editor, pluginUrl: string, startedState: Cell<boolean>, textMatcherState: Cell<DomTextMatcher>, lastSuggestionsState: Cell<LastSuggestion>, currentLanguageState: Cell<string>) {
-  editor.addCommand('mceSpellCheck', function () {
+const register = (editor: Editor, pluginUrl: string, startedState: Cell<boolean>, textMatcherState: Cell<DomTextMatcher>, lastSuggestionsState: Cell<LastSuggestion>, currentLanguageState: Cell<string>): void => {
+  editor.addCommand('mceSpellCheck', () => {
     Actions.spellcheck(editor, pluginUrl, startedState, textMatcherState, lastSuggestionsState, currentLanguageState);
   });
 };

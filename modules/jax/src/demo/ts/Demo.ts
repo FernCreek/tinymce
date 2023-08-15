@@ -1,8 +1,11 @@
-import { console, Blob } from '@ephox/dom-globals';
-import { Http, DataType, HttpData, HttpJwt } from 'ephox/jax/api/Main';
 import { FutureResult } from '@ephox/katamari';
 
-/* tslint:disable:no-console */
+import { DataType } from 'ephox/jax/core/DataType';
+import * as Http from 'ephox/jax/core/Http';
+import * as HttpData from 'ephox/jax/core/HttpData';
+import * as HttpJwt from 'ephox/jax/core/HttpJwt';
+
+/* eslint-disable no-console */
 
 Http.get({
   url: 'https://httpbin.org/get',

@@ -6,13 +6,15 @@
  */
 
 import JSON from './JSON';
-import XHR, { XHRSettings } from './XHR';
 import Tools from './Tools';
+import XHR, { XHRSettings } from './XHR';
 
 /**
  * This class enables you to use JSON-RPC to call backend methods.
  *
+ * @deprecated
  * @class tinymce.util.JSONRequest
+ * @summary JSONRequest has been deprecated in TinyMCE 5.10 and has been marked for removal in TinyMCE 6.0.
  * @example
  * var json = new tinymce.util.JSONRequest({
  *     url: 'somebackend.php'
@@ -44,17 +46,16 @@ export interface JSONRequestSettings {
   requestheaders?: Record<string, { key: string; value: string}>;
   type?: string;
   url?: string;
-  error_scope?: {};
-  success_scope?: {};
-  success? (data: any): void;
-  error? (error: any): void;
+  error_scope?: any;
+  success_scope?: any;
+  success?: (data: any) => void;
+  error?: (error: any, xhr: XMLHttpRequest) => void;
 }
 
 export interface JSONRequestArgs extends JSONRequestSettings {
   id?: string;
   method?: string;
   params?: string;
-  url: string;
 }
 
 export interface JSONRequestConstructor {
@@ -62,7 +63,7 @@ export interface JSONRequestConstructor {
 
   new (settings?: JSONRequestSettings): JSONRequest;
 
-  sendRPC (o: JSONRequestArgs): void;
+  sendRPC: (o: JSONRequestArgs) => void;
 }
 
 class JSONRequest {
@@ -95,9 +96,9 @@ class JSONRequest {
   public send(args: JSONRequestArgs) {
     const ecb = args.error, scb = args.success;
 
-    const xhrArgs: XHRSettings = extend(this.settings, args);
+    const xhrArgs = extend(this.settings, args) as XHRSettings;
 
-    xhrArgs.success = function (c: any, x) {
+    xhrArgs.success = (c: any, x) => {
       c = JSON.parse(c);
 
       if (typeof c === 'undefined') {
@@ -113,7 +114,7 @@ class JSONRequest {
       }
     };
 
-    xhrArgs.error = function (ty, x) {
+    xhrArgs.error = (ty, x) => {
       if (ecb) {
         ecb.call(xhrArgs.error_scope || xhrArgs.scope, ty, x);
       }

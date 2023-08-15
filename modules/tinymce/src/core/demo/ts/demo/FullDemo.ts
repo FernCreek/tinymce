@@ -1,11 +1,12 @@
-/* tslint:disable:no-console */
-import { console } from '@ephox/dom-globals';
+/* eslint-disable no-console */
 import { Merger } from '@ephox/katamari';
-import { Element } from '@ephox/sugar';
+import { SugarElement } from '@ephox/sugar';
 
-declare let tinymce: any;
+import { RawEditorSettings, TinyMCE } from 'tinymce/core/api/PublicApi';
 
-export default function () {
+declare let tinymce: TinyMCE;
+
+export default () => {
 
   const makeSidebar = (ed, name: string, background: string, width: number) => {
     ed.ui.registry.addSidebar(name, {
@@ -13,10 +14,10 @@ export default function () {
       tooltip: 'Tooltip for ' + name,
       onSetup: (api) => {
         console.log('onSetup ' + name);
-        const box = Element.fromHtml('<div style="width: ' + width + 'px; background: ' + background + ';"></div>');
-        api.element().appendChild(box.dom());
+        const box = SugarElement.fromHtml('<div style="width: ' + width + 'px; background: ' + background + ';"></div>');
+        api.element().appendChild(box.dom);
         return () => {
-          api.element().removeChild(box.dom());
+          api.element().removeChild(box.dom);
         };
       },
       onShow: (_api) => {
@@ -28,9 +29,14 @@ export default function () {
     });
   };
 
-  const settings = {
+  const settings: RawEditorSettings = {
     skin_url: '../../../../js/tinymce/skins/ui/oxide',
     content_css: '../../../../js/tinymce/skins/content/default/content.css',
+    content_langs: [
+      { title: 'English (US)', code: 'en_us' },
+      { title: 'Spanish', code: 'es' },
+      { title: 'English (US Medical)', code: 'en_us', customCode: 'en_us_medical' }
+    ],
     images_upload_url: 'd',
     selector: 'textarea',
     // rtl_ui: true,
@@ -49,7 +55,7 @@ export default function () {
     importcss_append: true,
     height: 400,
     image_advtab: true,
-    file_picker_callback(callback, _value, meta) {
+    file_picker_callback: (callback, _value, meta) => {
       if (meta.fieldname === 'poster') {
         callback('test.mp4', { altsource: 'blah.ogg', width: '400px', poster: 'testing.jpg', embed: '<p>test</p>' });
         return;
@@ -100,7 +106,7 @@ export default function () {
         'autosave lists'
       ]
     },
-    setup(ed) {
+    setup: (ed) => {
       makeSidebar(ed, 'sidebar1', 'green', 200);
     },
     plugins: [
@@ -112,8 +118,8 @@ export default function () {
     // rtl_ui: true,
     add_unload_trigger: false,
     autosave_ask_before_unload: false,
-    toolbar: 'undo redo sidebar1 | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | align fontsizeselect fontselect formatselect styleselect insertfile | styleselect | ' +
-    'bullist numlist outdent indent | link image | print preview media fullpage | forecolor backcolor emoticons table codesample code | ltr rtl',
+    toolbar: 'undo redo sidebar1 | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | align lineheight fontsizeselect fontselect formatselect styleselect insertfile | styleselect | ' +
+    'bullist numlist outdent indent | link image | print preview media fullpage | forecolor backcolor emoticons table codesample code language | ltr rtl',
     contextmenu: 'link linkchecker image imagetools table lists spellchecker configurepermanentpen',
 
     // Multiple toolbar array
@@ -152,9 +158,10 @@ export default function () {
     // ],
     toolbar_mode: 'floating',
     emoticons_database_url: '/src/plugins/emoticons/main/js/emojis.js',
-    resize_img_proportional: true
+    resize_img_proportional: true,
+    format_empty_lines: true
   };
 
   tinymce.init(settings);
   tinymce.init(Merger.deepMerge(settings, { inline: true, selector: 'div.tinymce' }));
-}
+};

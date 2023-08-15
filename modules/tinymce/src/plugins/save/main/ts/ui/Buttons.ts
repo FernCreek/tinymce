@@ -5,21 +5,22 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import * as Settings from '../api/Settings';
 import Editor from 'tinymce/core/api/Editor';
+import { Toolbar } from 'tinymce/core/api/ui/Ui';
 
-const stateToggle = function (editor: Editor) {
-  return function (api) {
-    const handler = () => {
-      api.setDisabled(Settings.enableWhenDirty(editor) && !editor.isDirty());
-    };
+import * as Settings from '../api/Settings';
 
-    editor.on('NodeChange dirty', handler);
-    return () => editor.off('NodeChange dirty', handler);
+const stateToggle = (editor: Editor) => (api: Toolbar.ToolbarButtonInstanceApi) => {
+  const handler = () => {
+    api.setDisabled(Settings.enableWhenDirty(editor) && !editor.isDirty());
   };
+
+  handler();
+  editor.on('NodeChange dirty', handler);
+  return () => editor.off('NodeChange dirty', handler);
 };
 
-const register = function (editor: Editor) {
+const register = (editor: Editor): void => {
   editor.ui.registry.addButton('save', {
     icon: 'save',
     tooltip: 'Save',

@@ -1,23 +1,24 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
-import * as Redistribution from 'ephox/snooker/resize/Redistribution';
-import { Size } from '../../../../main/ts/ephox/snooker/resize/Size';
 
-UnitTest.test('RedistributeTest', function () {
-  const toStr = function (f: Size) {
-    return f.fold(function (raw) {
+import * as Redistribution from 'ephox/snooker/resize/Redistribution';
+import { Size } from 'ephox/snooker/resize/Size';
+
+UnitTest.test('RedistributeTest', () => {
+  const toStr = (f: Size) => {
+    return f.fold((raw) => {
       return 'invalid[' + raw + ']';
-    }, function (pixels) {
+    }, (pixels) => {
       return 'pixels[' + pixels + ']';
-    }, function (percent) {
+    }, (percent) => {
       return 'percent[' + percent + ']';
     });
   };
 
-  const check = function (expected: string[], input: string[], originalWidth: number, newWidth: string) {
+  const check = (expected: string[], input: string[], originalWidth: number, newWidth: string) => {
     assert.eq(expected, Redistribution.redistribute(input, originalWidth, newWidth));
   };
 
-  const checkValidate = function (expected: string, input: string) {
+  const checkValidate = (expected: string, input: string) => {
     const actual = toStr(Redistribution.validate(input));
     assert.eq(expected, actual);
   };

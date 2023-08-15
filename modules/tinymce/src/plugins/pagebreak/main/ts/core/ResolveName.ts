@@ -5,11 +5,13 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import Editor from 'tinymce/core/api/Editor';
+
 import * as FilterContent from './FilterContent';
 
-const setup = function (editor) {
-  editor.on('ResolveName', function (e) {
-    if (e.target.nodeName === 'IMG' && editor.dom.hasClass(e.target, FilterContent.getPageBreakClass())) {
+const setup = (editor: Editor): void => {
+  editor.on('ResolveName', (e) => {
+    if (e.target.nodeName === 'IMG' && editor.dom.hasClass(e.target, FilterContent.pageBreakClass)) {
       e.name = 'pagebreak';
     }
   });

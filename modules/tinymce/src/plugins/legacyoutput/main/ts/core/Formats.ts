@@ -7,9 +7,10 @@
 
 import Editor from 'tinymce/core/api/Editor';
 import Tools from 'tinymce/core/api/util/Tools';
+
 import * as Settings from '../api/Settings';
 
-const overrideFormats = (editor: Editor) => {
+const overrideFormats = (editor: Editor): void => {
   const alignElements = 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table',
     fontSizes = Tools.explode(Settings.getFontSizeStyleValues(editor)),
     schema = editor.schema;
@@ -48,7 +49,7 @@ const overrideFormats = (editor: Editor) => {
       inline: 'font',
       toggle: false,
       attributes: {
-        size(vars) {
+        size: (vars) => {
           return String(Tools.inArray(fontSizes, vars.value) + 1);
         }
       }
@@ -60,7 +61,7 @@ const overrideFormats = (editor: Editor) => {
   });
 
   // Check that deprecated elements are allowed if not add them
-  Tools.each('b,i,u,strike'.split(','), function (name) {
+  Tools.each('b,i,u,strike'.split(','), (name) => {
     schema.addValidElements(name + '[*]');
   });
 
@@ -70,7 +71,7 @@ const overrideFormats = (editor: Editor) => {
   }
 
   // Add the missing and deprecated align attribute for the serialization engine
-  Tools.each(alignElements.split(','), function (name) {
+  Tools.each(alignElements.split(','), (name) => {
     const rule = schema.getElementRule(name);
 
     if (rule) {
@@ -82,7 +83,7 @@ const overrideFormats = (editor: Editor) => {
   });
 };
 
-const overrideSettings = (editor: Editor) => {
+const overrideSettings = (editor: Editor): void => {
   const defaultFontsizeFormats = '8pt=1 10pt=2 12pt=3 14pt=4 18pt=5 24pt=6 36pt=7';
   const defaultFontsFormats =
     'Andale Mono=andale mono,monospace;' +
@@ -117,7 +118,7 @@ const overrideSettings = (editor: Editor) => {
   }
 };
 
-const setup = (editor: Editor) => {
+const setup = (editor: Editor): void => {
   overrideSettings(editor);
   editor.on('PreInit', () => overrideFormats(editor));
 };

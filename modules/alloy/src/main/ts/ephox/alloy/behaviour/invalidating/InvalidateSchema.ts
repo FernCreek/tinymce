@@ -1,17 +1,17 @@
 import { FieldSchema } from '@ephox/boulder';
-import { Option } from '@ephox/katamari';
+import { Optional } from '@ephox/katamari';
 
 import * as Fields from '../../data/Fields';
 
 export default [
-  FieldSchema.strict('invalidClass'),
-  FieldSchema.defaulted('getRoot', Option.none),
+  FieldSchema.required('invalidClass'),
+  FieldSchema.defaulted('getRoot', Optional.none),
 
   // TODO: Completely rework the notify API
   FieldSchema.optionObjOf('notify', [
     FieldSchema.defaulted('aria', 'alert'),
     // Maybe we should use something else.
-    FieldSchema.defaulted('getContainer', Option.none),
+    FieldSchema.defaulted('getContainer', Optional.none),
     FieldSchema.defaulted('validHtml', ''),
     Fields.onHandler('onValid'),
     Fields.onHandler('onInvalid'),
@@ -19,7 +19,7 @@ export default [
   ]),
 
   FieldSchema.optionObjOf('validator', [
-    FieldSchema.strict('validate'),
+    FieldSchema.required('validate'),
     FieldSchema.defaulted('onEvent', 'input'),
     FieldSchema.defaulted('validateOnLoad', true)
   ])

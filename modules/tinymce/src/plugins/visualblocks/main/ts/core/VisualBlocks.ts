@@ -5,11 +5,13 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import * as Events from '../api/Events';
-import Editor from 'tinymce/core/api/Editor';
 import { Cell } from '@ephox/katamari';
 
-const toggleVisualBlocks = function (editor: Editor, pluginUrl: string, enabledState: Cell<boolean>) {
+import Editor from 'tinymce/core/api/Editor';
+
+import * as Events from '../api/Events';
+
+const toggleVisualBlocks = (editor: Editor, pluginUrl: string, enabledState: Cell<boolean>): void => {
   const dom = editor.dom;
 
   dom.toggleClass(editor.getBody(), 'mce-visualblocks');

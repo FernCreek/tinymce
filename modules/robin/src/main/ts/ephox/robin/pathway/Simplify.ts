@@ -1,17 +1,17 @@
 import { Universe } from '@ephox/boss';
 import { Arr, Fun } from '@ephox/katamari';
 
-const eq = function <E, D> (universe: Universe<E, D>, e1: E) {
+const eq = <E, D>(universe: Universe<E, D>, e1: E): (e2: E) => boolean => {
   return Fun.curry(universe.eq, e1);
 };
 
-const isDuplicate = function <E, D> (universe: Universe<E, D>, rest: E[], item: E) {
+const isDuplicate = <E, D>(universe: Universe<E, D>, rest: E[], item: E): boolean => {
   return Arr.exists(rest, eq(universe, item));
 };
 
-const isChild = function <E, D> (universe: Universe<E, D>, rest: E[], item: E) {
+const isChild = <E, D>(universe: Universe<E, D>, rest: E[], item: E): boolean => {
   const parents = universe.up().all(item);
-  return Arr.exists(parents, function (p) {
+  return Arr.exists(parents, (p) => {
     return isDuplicate(universe, rest, p);
   });
 };
@@ -21,9 +21,9 @@ const isChild = function <E, D> (universe: Universe<E, D>, rest: E[], item: E) {
  *
  * In other words, removes duplicates and children.
  */
-const simplify = function <E, D> (universe: Universe<E, D>, items: E[]) {
+const simplify = <E, D>(universe: Universe<E, D>, items: E[]): E[] => {
 // FIX: Horribly inefficient.
-  return Arr.filter(items, function (x, i) {
+  return Arr.filter(items, (x, i) => {
     const left = items.slice(0, i);
     const right = items.slice(i + 1);
     const rest = left.concat(right);

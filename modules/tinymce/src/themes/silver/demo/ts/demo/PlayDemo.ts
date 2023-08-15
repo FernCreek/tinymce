@@ -1,11 +1,13 @@
-/* tslint:disable:no-console */
-import { console } from '@ephox/dom-globals';
+/* eslint-disable no-console */
+import { Fun } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
+
 import ButtonSetupDemo from './ButtonSetupDemo';
 
 declare let tinymce: any;
 
-export default function () {
+export default () => {
   tinymce.init({
     // TODO: Investigate. Should thisget the styles (e.g. margin) of the div/textarea?
     selector: 'div.tiny-text',
@@ -98,16 +100,8 @@ export default function () {
       // }
     ],
 
-    setup(ed: Editor) {
+    setup: (ed: Editor) => {
       ButtonSetupDemo.setup(ed);
-
-      ed.on('skinLoaded', function () {
-        // Notification fields for equality: type, text, progressBar, timeout
-        ed.notificationManager.open({
-          text: 'You will not see this because the mobile theme has no notifications',
-          type: 'info'
-        });
-      });
 
       ed.ui.registry.addButton('MagicButton', {
         text: 'yeah button text',
@@ -134,7 +128,7 @@ export default function () {
         },
         onSetup: (api) => {
           console.log(api.element());
-          return () => {};
+          return Fun.noop;
         }
       });
       ed.ui.registry.addContextToolbar('custom', {
@@ -147,4 +141,4 @@ export default function () {
 
     }
   });
-}
+};

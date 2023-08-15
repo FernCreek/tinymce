@@ -3,17 +3,15 @@ import { Fun, Future } from '@ephox/katamari';
 
 import * as SmoothAnimation from 'tinymce/themes/mobile/ios/smooth/SmoothAnimation';
 
-UnitTest.asynctest('SmoothAnimationTest', function () {
-  const success = arguments[arguments.length - 2];
-
+UnitTest.asynctest('SmoothAnimationTest', (success) => {
   const animator = SmoothAnimation.create();
 
-  const check = function (label, initial, destination, amount) {
-    return Future.nu(function (callback) {
+  const check = (label, initial, destination, amount) => {
+    return Future.nu((callback) => {
       let current = initial;
       let values = [ current ];
 
-      const add = function (val, abort) {
+      const add = (val, abort) => {
         if (val > 100) {
           abort('abort');
         } else {
@@ -22,9 +20,9 @@ UnitTest.asynctest('SmoothAnimationTest', function () {
         }
       };
 
-      animator.animate(function () {
+      animator.animate(() => {
         return current;
-      }, destination, amount, add, function (s) {
+      }, destination, amount, add, (s) => {
         add(s, Fun.identity);
         callback({
           label,
@@ -37,7 +35,7 @@ UnitTest.asynctest('SmoothAnimationTest', function () {
     });
   };
 
-  const assertInfo = function (label, expected, info) {
+  const assertInfo = (label, expected, info) => {
     assert.eq(
       expected.current,
       info.current,
@@ -50,13 +48,13 @@ UnitTest.asynctest('SmoothAnimationTest', function () {
     );
   };
 
-  check('Test 1', 2, 10, 3).get(function (data1) {
+  check('Test 1', 2, 10, 3).get((data1) => {
     assertInfo(data1.label, { current: 10, values: [ 2, 5, 8, 10 ] }, data1.info);
-    check('Test 2', 15, 9, 4).get(function (data2) {
+    check('Test 2', 15, 9, 4).get((data2) => {
       assertInfo(data2.label, { current: 9, values: [ 15, 11, 9 ] }, data2.info);
-      check('Test 3: jump to end', 15, 9, -4).get(function (data3) {
+      check('Test 3: jump to end', 15, 9, -4).get((data3) => {
         assertInfo(data3.label, { current: 9, values: [ 15, 19, /* jump to end*/9 ] }, data3.info);
-        check('Test 4: abort', 10, 1000, 50).get(function (data4) {
+        check('Test 4: abort', 10, 1000, 50).get((data4) => {
           assertInfo(data4.label, { current: 'abort', values: [ 10, 60, 'abort' ] }, data4.info);
           success();
         });

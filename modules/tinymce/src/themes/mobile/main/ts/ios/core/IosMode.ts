@@ -6,7 +6,7 @@
  */
 
 import { Singleton } from '@ephox/katamari';
-import { Class, Css, Element, Focus } from '@ephox/sugar';
+import { Class, Css, Focus, SugarElement } from '@ephox/sugar';
 
 import * as Styles from '../../style/Styles';
 import * as Scrollable from '../../touch/scroll/Scrollable';
@@ -17,11 +17,10 @@ import * as IosKeyboard from '../view/IosKeyboard';
 import * as IosEvents from './IosEvents';
 import * as IosSetup from './IosSetup';
 import * as PlatformEditor from './PlatformEditor';
-import { document } from '@ephox/dom-globals';
 
 type IosApi = IosSetup.IosApi;
 
-const create = function (platform, mask) {
+const create = (platform, mask) => {
   const meta = MetaViewport.tag();
 
   const priorState = Singleton.value();
@@ -30,16 +29,16 @@ const create = function (platform, mask) {
   const iosApi = Singleton.api<IosApi>();
   const iosEvents = Singleton.api();
 
-  const enter = function () {
+  const enter = () => {
     mask.hide();
-    const doc = Element.fromDom(document);
-    PlatformEditor.getActiveApi(platform.editor).each(function (editorApi) {
+    const doc = SugarElement.fromDom(document);
+    PlatformEditor.getActiveApi(platform.editor).each((editorApi) => {
       // TODO: Orientation changes.
       // orientation = Orientation.onChange();
 
       priorState.set({
         socketHeight: Css.getRaw(platform.socket, 'height'),
-        iframeHeight: Css.getRaw(editorApi.frame(), 'height'),
+        iframeHeight: Css.getRaw(editorApi.frame, 'height'),
         outerScroll: document.body.scrollTop
       });
 
@@ -50,7 +49,7 @@ const create = function (platform, mask) {
       });
 
       Class.add(platform.container, Styles.resolve('fullscreen-maximized'));
-      Thor.clobberStyles(platform.container, editorApi.body());
+      Thor.clobberStyles(platform.container, editorApi.body);
       meta.maximize();
 
       /* NOTE: Making the toolbar scrollable is now done when the middle group is created */
@@ -58,23 +57,23 @@ const create = function (platform, mask) {
       Css.set(platform.socket, 'overflow', 'scroll');
       Css.set(platform.socket, '-webkit-overflow-scrolling', 'touch');
 
-      Focus.focus(editorApi.body());
+      Focus.focus(editorApi.body);
 
       iosApi.set(
         IosSetup.setup({
-          cWin: editorApi.win(),
-          ceBody: editorApi.body(),
+          cWin: editorApi.win,
+          ceBody: editorApi.body,
           socket: platform.socket,
           toolstrip: platform.toolstrip,
-          dropup: platform.dropup.element(),
-          contentElement: editorApi.frame(),
+          dropup: platform.dropup.element,
+          contentElement: editorApi.frame,
           outerBody: platform.body,
           outerWindow: platform.win,
           keyboardType: IosKeyboard.stubborn
         })
       );
 
-      iosApi.run(function (api) {
+      iosApi.run((api) => {
         api.syncHeight();
       });
 
@@ -84,25 +83,25 @@ const create = function (platform, mask) {
     });
   };
 
-  const exit = function () {
+  const exit = () => {
     meta.restore();
     iosEvents.clear();
     iosApi.clear();
 
     mask.show();
 
-    priorState.on(function (s: any) {
-      s.socketHeight.each(function (h) {
+    priorState.on((s: any) => {
+      s.socketHeight.each((h) => {
         Css.set(platform.socket, 'height', h);
       });
-      s.iframeHeight.each(function (h) {
+      s.iframeHeight.each((h) => {
         Css.set(platform.editor.getFrame(), 'height', h);
       });
       document.body.scrollTop = s.scrollTop;
     });
     priorState.clear();
 
-    scrollEvents.on(function (s: any) {
+    scrollEvents.on((s: any) => {
       s.exclusives.unbind();
     });
     scrollEvents.clear();
@@ -118,14 +117,14 @@ const create = function (platform, mask) {
     // still even once exited.
     Focus.blur(platform.editor.getFrame());
 
-    PlatformEditor.getActiveApi(platform.editor).each(function (editorApi) {
+    PlatformEditor.getActiveApi(platform.editor).each((editorApi) => {
       editorApi.clearSelection();
     });
   };
 
   // dropup
-  const refreshStructure = function () {
-    iosApi.run(function (api) {
+  const refreshStructure = () => {
+    iosApi.run((api) => {
       api.refreshStructure();
     });
   };

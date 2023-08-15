@@ -1,10 +1,11 @@
 import { UnitTest } from '@ephox/bedrock-client';
 import { Gene, TestUniverse, Universe } from '@ephox/boss';
-import { Arr, Option } from '@ephox/katamari';
-import { oneAll } from 'ephox/robin/parent/Shared';
+import { Arr, Optional } from '@ephox/katamari';
 import { KAssert } from '@ephox/katamari-assertions';
 
-UnitTest.test('SharedTest', function () {
+import { oneAll } from 'ephox/robin/parent/Shared';
+
+UnitTest.test('SharedTest', () => {
   const data = TestUniverse(Gene('root', 'root', [
     Gene('1', 'div', [
       Gene('1.1', 'p', [
@@ -33,27 +34,27 @@ UnitTest.test('SharedTest', function () {
     ])
   ]));
 
-  const checker = function (target: string, ids: string[], f: (look: (universe: Universe<Gene, undefined>, item: Gene) => Option<Gene>, items: Gene[]) => void) {
-    const items = Arr.map(ids, function (id) {
+  const checker = (target: string, ids: string[], f: (look: (universe: Universe<Gene, undefined>, item: Gene) => Optional<Gene>, items: Gene[]) => void) => {
+    const items = Arr.map(ids, (id) => {
       return data.find(data.get(), id).getOrDie();
     });
 
-    const look = function (universe: Universe<Gene, undefined>, item: Gene) {
-      return item.name === target ? Option.some(item) : data.up().selector(item, target);
+    const look = (universe: Universe<Gene, undefined>, item: Gene) => {
+      return item.name === target ? Optional.some(item) : data.up().selector(item, target);
     };
 
     f(look, items);
   };
 
-  const checkNone = function (target: string, ids: string[]) {
-    checker(target, ids, function (look, items) {
+  const checkNone = (target: string, ids: string[]) => {
+    checker(target, ids, (look, items) => {
       const actual = oneAll(data, look, items);
       KAssert.eqNone('eq', actual);
     });
   };
 
-  const check = function (expected: string, target: string, ids: string[]) {
-    checker(target, ids, function (look, items) {
+  const check = (expected: string, target: string, ids: string[]) => {
+    checker(target, ids, (look, items) => {
       const actual = oneAll(data, look, items).map((x) => x.id);
       KAssert.eqSome('eq', expected, actual);
     });

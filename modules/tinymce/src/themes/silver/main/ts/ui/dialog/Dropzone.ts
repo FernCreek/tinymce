@@ -6,13 +6,15 @@
  */
 
 import {
-  AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloyTriggers, Behaviour, Button, Disabling, FormField as AlloyFormField, Memento,
-  NativeEvents, Representing, SimpleSpec, SimulatedEvent, SystemEvents, Tabstopping, Toggling
+  AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloyTriggers, Behaviour, Button, Disabling,
+  FormField as AlloyFormField, Memento, NativeEvents, Representing, SimpleSpec, SimulatedEvent,
+  SystemEvents, Tabstopping, Toggling
 } from '@ephox/alloy';
-import { Types } from '@ephox/bridge';
-import { DragEvent, FileList } from '@ephox/dom-globals';
-import { Arr } from '@ephox/katamari';
+import { Dialog } from '@ephox/bridge';
+import { Arr, Strings } from '@ephox/katamari';
 import { EventArgs } from '@ephox/sugar';
+
+import Tools from 'tinymce/core/api/util/Tools';
 
 import { UiFactoryBackstageProviders } from '../../backstage/Backstage';
 import * as ReadOnly from '../../ReadOnly';
@@ -21,16 +23,17 @@ import { DisablingConfigs } from '../alien/DisablingConfigs';
 import { renderFormFieldWith, renderLabel } from '../alien/FieldLabeller';
 import { RepresentingConfigs } from '../alien/RepresentingConfigs';
 import { formChangeEvent } from '../general/FormEvents';
-import { Omit } from '../Omit';
 
-const extensionsAccepted = '.jpg,.jpeg,.png,.gif';
+const defaultImageFileTypes = 'jpeg,jpg,jpe,jfi,jif,jfif,png,gif,bmp,webp';
 
-const filterByExtension = function (files: FileList) {
-  const re = new RegExp('(' + extensionsAccepted.split(/\s*,\s*/).join('|') + ')$', 'i');
-  return Arr.filter(Arr.from(files), (file) => re.test(file.name));
+const filterByExtension = (files: FileList, providersBackstage: UiFactoryBackstageProviders) => {
+  const allowedImageFileTypes = Tools.explode(providersBackstage.getSetting('images_file_types', defaultImageFileTypes, 'string'));
+  const isFileInAllowedTypes = (file: File) => Arr.exists(allowedImageFileTypes, (type) => Strings.endsWith(file.name.toLowerCase(), `.${type.toLowerCase()}`));
+
+  return Arr.filter(Arr.from(files), isFileInAllowedTypes);
 };
 
-type DropZoneSpec = Omit<Types.DropZone.DropZone, 'type'>;
+type DropZoneSpec = Omit<Dialog.DropZone, 'type'>;
 
 export const renderDropZone = (spec: DropZoneSpec, providersBackstage: UiFactoryBackstageProviders): SimpleSpec => {
 
@@ -47,19 +50,19 @@ export const renderDropZone = (spec: DropZoneSpec, providersBackstage: UiFactory
   };
 
   const onDrop: AlloyEvents.EventRunHandler<EventArgs> = (comp, se) => {
-    if (! Disabling.isDisabled(comp)) {
-      const transferEvent = se.event().raw() as DragEvent;
+    if (!Disabling.isDisabled(comp)) {
+      const transferEvent = se.event.raw as DragEvent;
       handleFiles(comp, transferEvent.dataTransfer.files);
     }
   };
 
-  const onSelect = (component, simulatedEvent) => {
-    const files = simulatedEvent.event().raw().target.files;
-    handleFiles(component, files);
+  const onSelect = (component: AlloyComponent, simulatedEvent: SimulatedEvent<EventArgs>) => {
+    const input = simulatedEvent.event.raw.target as HTMLInputElement;
+    handleFiles(component, input.files);
   };
 
   const handleFiles = (component, files: FileList) => {
-    Representing.setValue(component, filterByExtension(files));
+    Representing.setValue(component, filterByExtension(files, providersBackstage));
     AlloyTriggers.emitWith(component, formChangeEvent, { name: spec.name });
   };
 
@@ -134,11 +137,11 @@ export const renderDropZone = (spec: DropZoneSpec, providersBackstage: UiFactory
             ],
             action: (comp) => {
               const inputComp = memInput.get(comp);
-              inputComp.element().dom().click();
+              inputComp.element.dom.click();
             },
             buttonBehaviours: Behaviour.derive([
               Tabstopping.config({ }),
-              DisablingConfigs.button(providersBackstage.isReadOnly),
+              DisablingConfigs.button(providersBackstage.isDisabled),
               ReadOnly.receivingConfig()
             ])
           })
@@ -148,7 +151,7 @@ export const renderDropZone = (spec: DropZoneSpec, providersBackstage: UiFactory
   });
 
   const pLabel = spec.label.map((label) => renderLabel(label, providersBackstage));
-  const pField = AlloyFormField.parts().field({
+  const pField = AlloyFormField.parts.field({
     factory: { sketch: renderField }
   });
 

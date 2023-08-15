@@ -5,13 +5,13 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Node } from '@ephox/dom-globals';
 import { Arr } from '@ephox/katamari';
-import { Element, Node as SugarNode } from '@ephox/sugar';
+import { SugarElement, SugarNode } from '@ephox/sugar';
+
 import * as Data from './Data';
 import * as Html from './Html';
 
-const isMatch = (n: Element) => {
+const isMatch = (n: SugarElement<Node>): n is SugarElement<Text> => {
   const value = SugarNode.value(n);
   return SugarNode.isText(n) &&
     value !== undefined &&
@@ -19,10 +19,10 @@ const isMatch = (n: Element) => {
 };
 
 // inlined sugars PredicateFilter.descendants for file size
-const filterDescendants = (scope: Element, predicate: (x: Element) => boolean) => {
-  let result: Element[] = [];
-  const dom = scope.dom();
-  const children = Arr.map(dom.childNodes, Element.fromDom);
+const filterDescendants = <T extends Node>(scope: SugarElement<Node>, predicate: (x: SugarElement<Node>) => x is SugarElement<T>): SugarElement<T>[] => {
+  let result: SugarElement<T>[] = [];
+  const dom = scope.dom;
+  const children = Arr.map(dom.childNodes, SugarElement.fromDom);
 
   Arr.each(children, (x) => {
     if (predicate(x)) {
@@ -33,7 +33,7 @@ const filterDescendants = (scope: Element, predicate: (x: Element) => boolean) =
   return result;
 };
 
-const findParentElm = (elm: Node, rootElm: Node) => {
+const findParentElm = (elm: Node, rootElm: Node): Node | undefined => {
   while (elm.parentNode) {
     if (elm.parentNode === rootElm) {
       return elm;
@@ -42,7 +42,8 @@ const findParentElm = (elm: Node, rootElm: Node) => {
   }
 };
 
-const replaceWithSpans = (text: string) => text.replace(Data.regExpGlobal, Html.wrapCharWithSpan);
+const replaceWithSpans = (text: string): string =>
+  text.replace(Data.regExpGlobal, Html.wrapCharWithSpan);
 
 export {
   isMatch,

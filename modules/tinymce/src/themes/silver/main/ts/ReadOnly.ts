@@ -5,9 +5,11 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Channels, Disabling, Receiving, Behaviour } from '@ephox/alloy';
-import { FieldSchema, ValueSchema } from '@ephox/boulder';
+import { Behaviour, Channels, Disabling, Receiving } from '@ephox/alloy';
+import { FieldSchema, StructureSchema } from '@ephox/boulder';
+
 import Editor from 'tinymce/core/api/Editor';
+
 import * as Settings from './api/Settings';
 import { RenderUiComponents } from './Render';
 
@@ -17,13 +19,13 @@ export interface ReadOnlyData {
   readonly: boolean;
 }
 
-const ReadOnlyDataSchema = ValueSchema.objOf([
-  FieldSchema.strictBoolean('readonly')
+const ReadOnlyDataSchema = StructureSchema.objOf([
+  FieldSchema.requiredBoolean('readonly')
 ]);
 
 const broadcastReadonly = (uiComponents: RenderUiComponents, readonly: boolean) => {
   const outerContainer = uiComponents.outerContainer;
-  const target = outerContainer.element();
+  const target = outerContainer.element;
 
   if (readonly) {
     uiComponents.mothership.broadcastOn([ Channels.dismissPopups() ], { target });
@@ -53,7 +55,7 @@ const receivingConfig = (): Behaviour.NamedConfiguredBehaviour<any, any> => Rece
   channels: {
     [ReadOnlyChannel]: {
       schema: ReadOnlyDataSchema,
-      onReceive(comp, data: ReadOnlyData) {
+      onReceive: (comp, data: ReadOnlyData) => {
         Disabling.set(comp, data.readonly);
       }
     }
@@ -63,5 +65,6 @@ const receivingConfig = (): Behaviour.NamedConfiguredBehaviour<any, any> => Rece
 export {
   ReadOnlyDataSchema,
   setupReadonlyModeSwitch,
-  receivingConfig
+  receivingConfig,
+  broadcastReadonly
 };

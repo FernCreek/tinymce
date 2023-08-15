@@ -1,23 +1,24 @@
-import { Assertions, Chain, GeneralSteps, Logger, Mouse, Pipeline, Step, UiFinder, Waiter } from '@ephox/agar';
-
+import { Mouse, UiFinder, Waiter } from '@ephox/agar';
 import { TestHelpers } from '@ephox/alloy';
-import { UnitTest } from '@ephox/bedrock-client';
-import { Types } from '@ephox/bridge';
-import { console } from '@ephox/dom-globals';
-import { Cell } from '@ephox/katamari';
-import { Body, Value } from '@ephox/sugar';
+import { before, describe, it } from '@ephox/bedrock-client';
+import { SugarBody, Value } from '@ephox/sugar';
+import { assert } from 'chai';
+
+import { Dialog } from 'tinymce/core/api/ui/Ui';
+import { WindowManagerImpl } from 'tinymce/core/api/WindowManager';
 import * as WindowManager from 'tinymce/themes/silver/ui/dialog/WindowManager';
-import TestExtras from '../../module/TestExtras';
 
-UnitTest.asynctest('WindowManager:redial Test', (success, failure) => {
-  const helpers = TestExtras();
-  const windowManager = WindowManager.setup(helpers.extras);
+import * as TestExtras from '../../module/TestExtras';
 
-  const currentDialogApi = Cell<Types.Dialog.DialogInstanceApi<any>>({ } as any);
-
+describe('phantom.tinymce.themes.silver.window.WindowManagerRedialTest', () => {
   const store = TestHelpers.TestStore();
+  const helpers = TestExtras.bddSetup();
+  let windowManager: WindowManagerImpl;
+  before(() => {
+    windowManager = WindowManager.setup(helpers.extras());
+  });
 
-  const dialogA: Types.Dialog.DialogApi<any> = {
+  const dialogA: Dialog.DialogSpec<{}> = {
     title: 'DialogA',
     body: {
       type: 'panel',
@@ -61,7 +62,7 @@ UnitTest.asynctest('WindowManager:redial Test', (success, failure) => {
     }
   };
 
-  const dialogB: Types.Dialog.DialogApi<any> = {
+  const dialogB: Dialog.DialogSpec<{}> = {
     title: 'DialogB',
     body: {
       type: 'panel',
@@ -87,7 +88,7 @@ UnitTest.asynctest('WindowManager:redial Test', (success, failure) => {
     }
   };
 
-  const dialogC: Types.Dialog.DialogApi<any> = {
+  const dialogC: Dialog.DialogSpec<{ 'c.alpha': string }> = {
     title: 'DialogC',
     body: {
       type: 'tabpanel',
@@ -128,76 +129,55 @@ UnitTest.asynctest('WindowManager:redial Test', (success, failure) => {
     onClose: store.adder('onCloseC'),
     onAction: (dialogApi, actionData) => {
       if (actionData.name === 'tab.switch.two') {
-        // tslint:disable-next-line:no-console
+        // eslint-disable-next-line no-console
         console.log('going to tab');
         dialogApi.showTab('two');
       }
     }
   };
 
-  const sTestOpen = Chain.asStep({ }, [
-    Chain.injectThunked(() => windowManager.open(dialogA, {}, () => store.adder('closeWindow')() )),
-    Chain.op((dialogApi) => {
-      currentDialogApi.set(dialogApi);
-    })
-  ]);
+  const openDialog = () =>
+    windowManager.open(dialogA, {}, () => store.adder('closeWindow')());
 
-  const sTestClose = GeneralSteps.sequence([
-    Mouse.sClickOn(Body.body(), '[aria-label="Close"]'),
-    UiFinder.sNotExists(Body.body(), '[role="dialog"]')
-  ]);
+  const closeDialog = () => {
+    Mouse.clickOn(SugarBody.body(), '[aria-label="Close"]');
+    UiFinder.notExists(SugarBody.body(), '[role="dialog"]');
+  };
 
-  Pipeline.async({}, [
-    sTestOpen,
-    UiFinder.sExists(Body.body(), 'button:contains("Destination: DialogB"):not([disabled])'),
-    Mouse.sClickOn(Body.body(), 'button:contains("Disable other")'),
-    Logger.t(
-      'Button should be disabled',
-      UiFinder.sNotExists(Body.body(), 'button:contains("Destination: DialogB"):not([disabled])')
-    ),
+  it('Check redialing a dialog', async () => {
+    const dialogApi = openDialog();
+    UiFinder.exists(SugarBody.body(), 'button:contains("Destination: DialogB"):not([disabled])');
+    Mouse.clickOn(SugarBody.body(), 'button:contains("Disable other")');
+    // Button should be disabled
+    UiFinder.notExists(SugarBody.body(), 'button:contains("Destination: DialogB"):not([disabled])');
 
-    Mouse.sClickOn(Body.body(), 'button:contains("Disable other")'),
-    Mouse.sClickOn(Body.body(), 'button:contains("Destination: DialogB")'),
+    Mouse.clickOn(SugarBody.body(), 'button:contains("Disable other")');
+    Mouse.clickOn(SugarBody.body(), 'button:contains("Destination: DialogB")');
 
-    Mouse.sClickOn(Body.body(), 'button:contains("Enable other")'),
-    Logger.t(
-      'Button should be enabled',
-      UiFinder.sExists(Body.body(), 'button:contains("Destination: DialogB"):not([disabled])')
-    ),
-    Mouse.sClickOn(Body.body(), 'button:contains("Destination: DialogB")'),
+    Mouse.clickOn(SugarBody.body(), 'button:contains("Enable other")');
+    // Button should be enabled
+    UiFinder.exists(SugarBody.body(), 'button:contains("Destination: DialogB"):not([disabled])');
+    Mouse.clickOn(SugarBody.body(), 'button:contains("Destination: DialogB")');
 
-    Mouse.sClickOn(Body.body(), 'button:contains("Destination: DialogC")'),
-    Chain.asStep(Body.body(), [
-      UiFinder.cFindIn('input'),
-      Chain.op((input) => {
-        Assertions.assertEq('Checking input value', 'C.Alpha', Value.get(input));
-      })
-    ]),
+    Mouse.clickOn(SugarBody.body(), 'button:contains("Destination: DialogC")');
+    const input = UiFinder.findIn(SugarBody.body(), 'input').getOrDie();
+    assert.equal(Value.get(input), 'C.Alpha', 'Checking input value');
 
-    Step.sync(() => {
-      currentDialogApi.get().disable('tab.switch.two');
-    }),
-    UiFinder.sExists(Body.body(), 'button[disabled]:contains("Switch to Tab Two")'),
-    Step.sync(() => {
-      currentDialogApi.get().enable('tab.switch.two');
-    }),
+    dialogApi.disable('tab.switch.two');
+    UiFinder.exists(SugarBody.body(), 'button[disabled]:contains("Switch to Tab Two")');
+    dialogApi.enable('tab.switch.two');
 
-    Mouse.sClickOn(Body.body(), 'button:contains("Switch to Tab Two")'),
-    Logger.t(
-      'Tab "Two" should be selected',
-      UiFinder.sExists(Body.body(), '.tox-dialog__body-nav-item--active:contains("two")')
-    ),
+    Mouse.clickOn(SugarBody.body(), 'button:contains("Switch to Tab Two")');
+    // Tab "Two" should be selected
+    UiFinder.exists(SugarBody.body(), '.tox-dialog__body-nav-item--active:contains("two")');
 
-    sTestClose,
-    Waiter.sTryUntil(
+    closeDialog();
+    await Waiter.pTryUntil(
       'Waiting for all dialog events when closing',
-      store.sAssertEq('Checking stuff', [
+      () => store.assertEq('Checking stuff', [
         'closeWindow',
         'onCloseC'
       ])
-    )
-  ], () => {
-    helpers.destroy();
-    success();
-  }, failure);
+    );
+  });
 });

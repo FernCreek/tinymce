@@ -5,25 +5,27 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { Cell, Fun } from '@ephox/katamari';
+
+import Editor from 'tinymce/core/api/Editor';
+import { Dialog } from 'tinymce/core/api/ui/Ui';
+
 import * as Actions from '../core/Actions';
 import * as ImageSize from '../core/ImageSize';
 import * as ImageToolsEvents from './ImageToolsEvents';
-import Editor from 'tinymce/core/api/Editor';
-import { Types } from '@ephox/bridge';
-import { Blob, URL } from '@ephox/dom-globals';
 
-type ImageToolsState = {
-  blob: Blob;
-  url: string;
-};
+interface ImageToolsState {
+  readonly blob: Blob;
+  readonly url: string;
+}
 
 const createState = (blob: Blob): ImageToolsState => ({
   blob,
   url: URL.createObjectURL(blob)
 });
 
-const makeOpen = (editor: Editor, imageUploadTimerState) => () => {
-  const getLoadedSpec = (currentState: ImageToolsState): Types.Dialog.DialogApi<{ imagetools: ImageToolsState }> => ({
+const makeOpen = (editor: Editor, imageUploadTimerState: Cell<number>) => (): void => {
+  const getLoadedSpec = (currentState: ImageToolsState): Dialog.DialogSpec<{ imagetools: ImageToolsState }> => ({
     title: 'Edit Image',
     size: 'large',
     body: {
@@ -55,12 +57,12 @@ const makeOpen = (editor: Editor, imageUploadTimerState) => () => {
       const blob = api.getData().imagetools.blob;
       originalImgOpt.each((originalImg) => {
         originalSizeOpt.each((originalSize) => {
-          Actions.handleDialogBlob(editor, imageUploadTimerState, originalImg.dom(), originalSize, blob);
+          Actions.handleDialogBlob(editor, imageUploadTimerState, originalImg.dom, originalSize, blob);
         });
       });
       api.close();
     },
-    onCancel: () => { }, // TODO: reimplement me
+    onCancel: Fun.noop, // TODO: reimplement me
     onAction: (api, details) => {
       switch (details.name) {
         case ImageToolsEvents.saveState:
@@ -82,12 +84,11 @@ const makeOpen = (editor: Editor, imageUploadTimerState) => () => {
   });
 
   const originalImgOpt = Actions.getSelectedImage(editor);
-  const originalSizeOpt = originalImgOpt.map((origImg) => ImageSize.getNaturalImageSize(origImg.dom()));
+  const originalSizeOpt = originalImgOpt.map((origImg) => ImageSize.getNaturalImageSize(origImg.dom));
 
-  const imgOpt = Actions.getSelectedImage(editor);
-  imgOpt.each((img) => {
-    Actions.getEditableImage(editor, img.dom()).each((_) => {
-      Actions.findBlob(editor, img.dom()).then((blob) => {
+  originalImgOpt.each((img) => {
+    Actions.getEditableImage(editor, img.dom).each((_) => {
+      Actions.findBlob(editor, img.dom).then((blob) => {
         const state = createState(blob);
         editor.windowManager.open(getLoadedSpec(state));
       });

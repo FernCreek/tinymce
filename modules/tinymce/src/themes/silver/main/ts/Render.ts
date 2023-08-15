@@ -5,21 +5,24 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { AlloyComponent, AlloySpec, Behaviour, Gui, GuiFactory, Keying, Memento, Positioning, SimpleSpec, VerticalDir } from '@ephox/alloy';
-import { HTMLElement, HTMLIFrameElement } from '@ephox/dom-globals';
-import { Arr, Obj, Option, Result } from '@ephox/katamari';
+import { AlloyComponent, AlloyEvents, AlloySpec, Behaviour, Disabling, Gui, GuiFactory, Keying, Memento, Positioning, SimpleSpec, SystemEvents, VerticalDir } from '@ephox/alloy';
+import { Arr, Fun, Merger, Obj, Optional, Result } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
-import { Css } from '@ephox/sugar';
+import { Compare, Css, SugarBody } from '@ephox/sugar';
+
 import Editor from 'tinymce/core/api/Editor';
+import { EditorUiApi } from 'tinymce/core/api/ui/Ui';
 import I18n from 'tinymce/core/api/util/I18n';
+
 import * as Settings from './api/Settings';
 import * as Backstage from './backstage/Backstage';
-import * as ContextToolbar from './ContextToolbar';
 import * as Events from './Events';
 import * as Iframe from './modes/Iframe';
 import * as Inline from './modes/Inline';
+import * as ReadOnly from './ReadOnly';
+import * as ContextToolbar from './ui/context/ContextToolbar';
 import * as FormatControls from './ui/core/FormatControls';
-import OuterContainer, { OuterContainerSketchSpec } from './ui/general/OuterContainer';
+import OuterContainer from './ui/general/OuterContainer';
 import * as StaticHeader from './ui/header/StaticHeader';
 import * as StickyHeader from './ui/header/StickyHeader';
 import * as SilverContextMenu from './ui/menus/contextmenu/SilverContextMenu';
@@ -41,6 +44,7 @@ export interface RenderInfo {
 export interface ModeRenderInfo {
   iframeContainer?: HTMLIFrameElement;
   editorContainer: HTMLElement;
+  api?: Partial<EditorUiApi>;
 }
 
 export interface UiChannels {
@@ -79,7 +83,7 @@ const setup = (editor: Editor): RenderInfo => {
   const isInline = editor.inline;
   const mode = isInline ? Inline : Iframe;
   const header = Settings.isStickyToolbar(editor) ? StickyHeader : StaticHeader;
-  let lazyOuterContainer: Option<AlloyComponent> = Option.none();
+  let lazyOuterContainer: Optional<AlloyComponent> = Optional.none();
 
   const platform = PlatformDetection.detect();
   const isIE = platform.browser.isIE();
@@ -88,6 +92,7 @@ const setup = (editor: Editor): RenderInfo => {
   const touchPlatformClass = 'tox-platform-touch';
   const deviceClasses = isTouch ? [ touchPlatformClass ] : [];
   const isToolbarBottom = Settings.isToolbarLocationBottom(editor);
+  const uiContainer = Settings.getUiContainer(editor);
 
   const dirAttributes = I18n.isRtl() ? {
     attributes: {
@@ -107,18 +112,40 @@ const setup = (editor: Editor): RenderInfo => {
 
   const isHeaderDocked = () => header.isDocked(lazyHeader);
 
-  const sink = GuiFactory.build({
-    dom: {
-      tag: 'div',
-      classes: [ 'tox', 'tox-silver-sink', 'tox-tinymce-aux' ].concat(platformClasses).concat(deviceClasses),
-      ...dirAttributes
-    },
-    behaviours: Behaviour.derive([
-      Positioning.config({
-        useFixed: () => isHeaderDocked()
-      })
-    ])
-  });
+  const resizeUiMothership = () => {
+    Css.set(uiMothership.element, 'width', document.body.clientWidth + 'px');
+  };
+
+  const makeSinkDefinition = (): AlloySpec => {
+    // TINY-3321: When the body is using a grid layout, we need to ensure the sink width is manually set
+    const isGridUiContainer = Compare.eq(SugarBody.body(), uiContainer) && Css.get(uiContainer, 'display') === 'grid';
+
+    const sinkSpec = {
+      dom: {
+        tag: 'div',
+        classes: [ 'tox', 'tox-silver-sink', 'tox-tinymce-aux' ].concat(platformClasses).concat(deviceClasses),
+        ...dirAttributes
+      },
+      behaviours: Behaviour.derive([
+        Positioning.config({
+          useFixed: () => isHeaderDocked()
+        })
+      ])
+    };
+
+    const reactiveWidthSpec = {
+      dom: {
+        styles: { width: document.body.clientWidth + 'px' }
+      },
+      events: AlloyEvents.derive([
+        AlloyEvents.run(SystemEvents.windowResize(), resizeUiMothership)
+      ])
+    };
+
+    return Merger.deepMerge(sinkSpec, isGridUiContainer ? reactiveWidthSpec : {});
+  };
+
+  const sink = GuiFactory.build(makeSinkDefinition());
 
   const lazySink = () => Result.value<AlloyComponent, Error>(sink);
 
@@ -137,27 +164,27 @@ const setup = (editor: Editor): RenderInfo => {
 
   const backstage: Backstage.UiFactoryBackstage = Backstage.init(sink, editor, lazyAnchorBar);
 
-  const partMenubar: AlloySpec = OuterContainer.parts().menubar({
+  const partMenubar: AlloySpec = OuterContainer.parts.menubar({
     dom: {
       tag: 'div',
       classes: [ 'tox-menubar' ]
     },
     backstage,
-    onEscape() {
+    onEscape: () => {
       editor.focus();
     }
   });
 
   const toolbarMode = Settings.getToolbarMode(editor);
 
-  const partToolbar: AlloySpec = OuterContainer.parts().toolbar({
+  const partToolbar: AlloySpec = OuterContainer.parts.toolbar({
     dom: {
       tag: 'div',
       classes: [ 'tox-toolbar' ]
     },
     getSink: lazySink,
     providers: backstage.shared.providers,
-    onEscape() {
+    onEscape: () => {
       editor.focus();
     },
     type: toolbarMode,
@@ -166,31 +193,33 @@ const setup = (editor: Editor): RenderInfo => {
     ...verticalDirAttributes
   });
 
-  const partMultipleToolbar: AlloySpec = OuterContainer.parts()['multiple-toolbar']({
+  const partMultipleToolbar: AlloySpec = OuterContainer.parts['multiple-toolbar']({
     dom: {
       tag: 'div',
       classes: [ 'tox-toolbar-overlord' ]
     },
     providers: backstage.shared.providers,
-    onEscape: () => { },
+    onEscape: () => {
+      editor.focus();
+    },
     type: toolbarMode
   });
 
-  const partSocket: AlloySpec = OuterContainer.parts().socket({
+  const partSocket: AlloySpec = OuterContainer.parts.socket({
     dom: {
       tag: 'div',
       classes: [ 'tox-edit-area' ]
     }
   });
 
-  const partSidebar: AlloySpec = OuterContainer.parts().sidebar({
+  const partSidebar: AlloySpec = OuterContainer.parts.sidebar({
     dom: {
       tag: 'div',
       classes: [ 'tox-sidebar' ]
     }
   });
 
-  const partThrobber: AlloySpec = OuterContainer.parts().throbber({
+  const partThrobber: AlloySpec = OuterContainer.parts.throbber({
     dom: {
       tag: 'div',
       classes: [ 'tox-throbber' ]
@@ -200,8 +229,8 @@ const setup = (editor: Editor): RenderInfo => {
 
   const sb = editor.getParam('statusbar', true, 'boolean');
 
-  const statusbar: Option<AlloySpec> =
-    sb && !isInline ? Option.some(renderStatusbar(editor, backstage.shared.providers)) : Option.none<AlloySpec>();
+  const statusbar: Optional<AlloySpec> =
+    sb && !isInline ? Optional.some(renderStatusbar(editor, backstage.shared.providers)) : Optional.none<AlloySpec>();
 
   const socketSidebarContainer: SimpleSpec = {
     dom: {
@@ -229,7 +258,7 @@ const setup = (editor: Editor): RenderInfo => {
     }
   };
 
-  const partHeader = OuterContainer.parts().header({
+  const partHeader = OuterContainer.parts.header({
     dom: {
       tag: 'div',
       classes: [ 'tox-editor-header' ],
@@ -297,22 +326,33 @@ const setup = (editor: Editor): RenderInfo => {
       },
       components: containerComponents,
       behaviours: Behaviour.derive([
+        ReadOnly.receivingConfig(),
+        Disabling.config({
+          disableClass: 'tox-tinymce--disabled'
+        }),
         Keying.config({
           mode: 'cyclic',
-          selector: '.tox-menubar, .tox-toolbar, .tox-toolbar__primary, .tox-toolbar__overflow--open, .tox-sidebar__overflow--open, .tox-statusbar__path, .tox-statusbar__wordcount, .tox-statusbar__branding a'
+          selector: '.tox-menubar, .tox-toolbar, .tox-toolbar__primary, .tox-toolbar__overflow--open, .tox-sidebar__overflow--open, .tox-statusbar__path, .tox-statusbar__wordcount, .tox-statusbar__branding a, .tox-statusbar__resize-handle'
         })
       ])
-    } as OuterContainerSketchSpec)
+    })
   );
 
-  lazyOuterContainer = Option.some(outerContainer);
+  lazyOuterContainer = Optional.some(outerContainer);
 
-  editor.shortcuts.add('alt+F9', 'focus menubar', function () {
+  editor.shortcuts.add('alt+F9', 'focus menubar', () => {
     OuterContainer.focusMenubar(outerContainer);
   });
-  editor.shortcuts.add('alt+F10', 'focus toolbar', function () {
+  editor.shortcuts.add('alt+F10', 'focus toolbar', () => {
     OuterContainer.focusToolbar(outerContainer);
   });
+
+  editor.addCommand('ToggleToolbarDrawer', () => {
+    OuterContainer.toggleToolbarDrawer(outerContainer);
+    // TODO: Consider firing event - TINY-6371
+  });
+
+  editor.addQueryStateHandler('ToggleToolbarDrawer', () => OuterContainer.isToolbarDrawerToggled(outerContainer));
 
   const mothership = Gui.takeover(
     outerContainer
@@ -326,7 +366,7 @@ const setup = (editor: Editor): RenderInfo => {
     const channels = {
       broadcastAll: uiMothership.broadcast,
       broadcastOn: uiMothership.broadcastOn,
-      register: () => {}
+      register: Fun.noop
     };
 
     return { channels };
@@ -340,21 +380,21 @@ const setup = (editor: Editor): RenderInfo => {
     if (!editor.inline) {
       // Update the width
       if (Css.isValidValue('div', 'width', parsedWidth)) {
-        Css.set(outerContainer.element(), 'width', parsedWidth);
+        Css.set(outerContainer.element, 'width', parsedWidth);
       }
 
       // Update the height
       if (Css.isValidValue('div', 'height', parsedHeight)) {
-        Css.set(outerContainer.element(), 'height', parsedHeight);
+        Css.set(outerContainer.element, 'height', parsedHeight);
       } else {
-        Css.set(outerContainer.element(), 'height', '200px');
+        Css.set(outerContainer.element, 'height', '200px');
       }
     }
 
     return parsedHeight;
   };
 
-  const renderUI = function (): ModeRenderInfo {
+  const renderUI = (): ModeRenderInfo => {
     header.setup(editor, backstage.shared, lazyHeader);
     FormatControls.setup(editor, backstage);
     SilverContextMenu.setup(editor, lazySink, backstage);
@@ -367,7 +407,7 @@ const setup = (editor: Editor): RenderInfo => {
 
     // Apply Bridge types
     const { buttons, menuItems, contextToolbars, sidebars } = editor.ui.registry.getAll();
-    const toolbarOpt: Option<ToolbarConfig> = Settings.getMultipleToolbarsSetting(editor);
+    const toolbarOpt: Optional<ToolbarConfig> = Settings.getMultipleToolbarsSetting(editor);
     const rawUiConfig: RenderUiConfig = {
       menuItems,
 

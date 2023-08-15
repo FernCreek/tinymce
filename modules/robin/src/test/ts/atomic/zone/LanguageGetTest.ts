@@ -1,16 +1,17 @@
 import { Assert, UnitTest } from '@ephox/bedrock-client';
 import { Gene, TestUniverse, TextGene } from '@ephox/boss';
-import { Option } from '@ephox/katamari';
+import { Fun, Optional, Optionals } from '@ephox/katamari';
+
 import { LanguageZones } from 'ephox/robin/zone/LanguageZones';
 
-UnitTest.test('LanguageGetTest', function () {
-  const check = function (doc: TestUniverse, id: string, lang: Option<string>) {
+UnitTest.test('LanguageGetTest', () => {
+  const check = (doc: TestUniverse, id: string, lang: Optional<string>) => {
     const item = doc.find(doc.get(), id).getOrDie();
     const itemLang = LanguageZones.calculate(doc, item);
     Assert.eq(
       () => 'check lang(). Expected: ' + lang.getOr('none') + ', actual: ' + itemLang.getOr('none'),
       true,
-      lang.equals(itemLang)
+      Optionals.equals(lang, itemLang)
     );
   };
 
@@ -67,16 +68,38 @@ UnitTest.test('LanguageGetTest', function () {
     ]) // root
   );
 
-  check(doc, 'p1', Option.none());
-  check(doc, 'p1s1', Option.none());
-  check(doc, 'p1s2', Option.none());
-  check(doc, 'p1s3', Option.some('FR'));
-  check(doc, 'p2', Option.some('DE'));
-  check(doc, 'p2s1', Option.some('DE'));
-  check(doc, 'p2s2', Option.some('DE'));
-  check(doc, 'p2s3', Option.some('DE'));
-  check(doc, 'p3', Option.some('DE'));
-  check(doc, 'p3s1', Option.some('DE'));
-  check(doc, 'p3s2', Option.some('DE'));
-  check(doc, 'p3s3', Option.some('FR'));
+  check(doc, 'p1', Optional.none());
+  check(doc, 'p1s1', Optional.none());
+  check(doc, 'p1s2', Optional.none());
+  check(doc, 'p1s3', Optional.some('FR'));
+  check(doc, 'p2', Optional.some('DE'));
+  check(doc, 'p2s1', Optional.some('DE'));
+  check(doc, 'p2s2', Optional.some('DE'));
+  check(doc, 'p2s3', Optional.some('DE'));
+  check(doc, 'p3', Optional.some('DE'));
+  check(doc, 'p3s1', Optional.some('DE'));
+  check(doc, 'p3s2', Optional.some('DE'));
+  check(doc, 'p3s3', Optional.some('FR'));
+
+  // Make sure it's using getLanguage, and that getLanguage can be overridden
+  const fakeUniverse: TestUniverse = {
+    ...doc,
+    property: Fun.constant({
+      ...doc.property(),
+      getLanguage: (e) => doc.property().getLanguage(e).map((lang) => 'custom:' + lang)
+    })
+  };
+
+  check(fakeUniverse, 'p1', Optional.none());
+  check(fakeUniverse, 'p1s1', Optional.none());
+  check(fakeUniverse, 'p1s2', Optional.none());
+  check(fakeUniverse, 'p1s3', Optional.some('custom:FR'));
+  check(fakeUniverse, 'p2', Optional.some('custom:DE'));
+  check(fakeUniverse, 'p2s1', Optional.some('custom:DE'));
+  check(fakeUniverse, 'p2s2', Optional.some('custom:DE'));
+  check(fakeUniverse, 'p2s3', Optional.some('custom:DE'));
+  check(fakeUniverse, 'p3', Optional.some('custom:DE'));
+  check(fakeUniverse, 'p3s1', Optional.some('custom:DE'));
+  check(fakeUniverse, 'p3s2', Optional.some('custom:DE'));
+  check(fakeUniverse, 'p3s3', Optional.some('custom:FR'));
 });

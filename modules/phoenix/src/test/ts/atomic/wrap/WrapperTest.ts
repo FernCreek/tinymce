@@ -1,12 +1,13 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Gene, TestUniverse, TextGene } from '@ephox/boss';
+
 import * as Finder from 'ephox/phoenix/test/Finder';
 import * as TestRenders from 'ephox/phoenix/test/TestRenders';
 import * as Wrapper from 'ephox/phoenix/wrap/Wrapper';
 import { Wraps } from 'ephox/phoenix/wrap/Wraps';
 
-UnitTest.test('WrapperTest', function () {
-  const make = function () {
+UnitTest.test('WrapperTest', () => {
+  const make = () => {
     return TestUniverse(
       Gene('root', 'root', [
         Gene('1', 'span', [
@@ -27,24 +28,25 @@ UnitTest.test('WrapperTest', function () {
     );
   };
 
-  const check = function (postTest: string, expected: string[], startId: string, startOffset: number, finishId: string, finishOffset: number) {
+  const check = (postTest: string, expected: string[], startId: string, startOffset: number, finishId: string, finishOffset: number) => {
     const doc = make();
     const start = Finder.get(doc, startId);
     const finish = Finder.get(doc, finishId);
-    const predicate = function (item: Gene) {
+    const predicate = (item: Gene) => {
       return item.name === 'span';
     };
 
     let counter = 0;
-    const nu = function () {
+    const nu = () => {
       counter++;
       return Wraps(doc, Gene('new-span-' + counter, 'span', []));
     };
 
     const actual = Wrapper.reuse(doc, start, startOffset, finish, finishOffset, predicate, nu);
     assert.eq(expected, TestRenders.ids(actual));
-    assert.eq(postTest, doc.shortlog(function (item) {
-      return item.name === 'TEXT_GENE' ? 'text("' + item.text + '")' : item.id;
+    assert.eq(postTest, doc.shortlog((item) => {
+      const props = doc.property();
+      return props.isText(item) ? `text("${props.getText(item)}")` : item.id;
     }));
   };
 

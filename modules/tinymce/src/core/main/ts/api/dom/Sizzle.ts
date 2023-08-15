@@ -5,7 +5,6 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { window } from '@ephox/dom-globals';
 import { Arr } from '@ephox/katamari';
 
 /* jshint bitwise:false, expr:true, noempty:false, sub:true, eqnull:true, latedef:false, maxlen:255 */
@@ -21,13 +20,16 @@ import { Arr } from '@ephox/katamari';
  * http://jquery.org/license
  *
  * Date: @DATE
+ *
+ * @deprecated
+ * @private
+ * @class tinymce.dom.sizzle
+ * @summary Sizzle has been deprecated in TinyMCE 5.10 and has been marked for removal in TinyMCE 6.0.
  */
 
 /* eslint-enable */
 
-/* eslint-disable no-bitwise, prefer-const */
-
-/* tslint:disable */
+/* eslint-disable no-bitwise, prefer-const, no-nested-ternary, @typescript-eslint/consistent-type-assertions, prefer-arrow/prefer-arrow-functions, @tinymce/prefer-fun, @typescript-eslint/unbound-method */
 
 let support,
   Expr,
@@ -178,7 +180,7 @@ try {
   );
   // Support: Android<4.0
   // Detect silently failing push.apply
-  // tslint:disable-next-line:no-unused-expression
+  // eslint-disable-next-line no-unused-expressions
   arr[preferredDoc.childNodes.length].nodeType;
 } catch (e) {
   push = {
@@ -312,6 +314,7 @@ const Sizzle: any = function (selector, context, results, seed) {
 
 /**
  * Create key-value caches of limited size
+ * @private
  * @returns {Function(string, Object)} Returns the Object data after storing it on itself with
  * property name the (space-suffixed) string and (if the cache is larger than Expr.cacheLength)
  * deleting the oldest entry
@@ -332,6 +335,7 @@ function createCache() {
 
 /**
  * Mark a function for special use by Sizzle
+ * @private
  * @param {Function} fn The function to mark
  */
 function markFunction(fn) {
@@ -341,6 +345,7 @@ function markFunction(fn) {
 
 /**
  * Support testing using an element
+ * @private
  * @param {Function} fn Passed the created div and expects a boolean result
  */
 /* function assert(fn) {
@@ -376,6 +381,7 @@ function markFunction(fn) {
 
 /**
  * Checks document order of two siblings
+ * @private
  * @param {Element} a
  * @param {Element} b
  * @returns {Number} Returns less than 0 if a precedes b, greater than 0 if a follows b
@@ -405,6 +411,7 @@ function siblingCheck(a, b) {
 
 /**
  * Returns a function to use in pseudos for input types
+ * @private
  * @param {String} type
  */
 function createInputPseudo(type) {
@@ -416,6 +423,7 @@ function createInputPseudo(type) {
 
 /**
  * Returns a function to use in pseudos for buttons
+ * @private
  * @param {String} type
  */
 function createButtonPseudo(type) {
@@ -427,12 +435,13 @@ function createButtonPseudo(type) {
 
 /**
  * Returns a function to use in pseudos for positionals
+ * @private
  * @param {Function} fn
  */
 function createPositionalPseudo(fn) {
-  return markFunction(function (argument) {
+  return markFunction((argument) => {
     argument = +argument;
-    return markFunction(function (seed, matches) {
+    return markFunction((seed, matches) => {
       let j,
         matchIndexes = fn([], seed.length, argument),
         i = matchIndexes.length;
@@ -449,6 +458,7 @@ function createPositionalPseudo(fn) {
 
 /**
  * Checks a node for validity as a Sizzle context
+ * @private
  * @param {Element|Object=} context
  * @returns {Element|Object|Boolean} The input node if acceptable, otherwise a falsy value
  */
@@ -461,6 +471,7 @@ support = Sizzle.support = {};
 
 /**
  * Detects XML nodes
+ * @private
  * @param {Element|Object} elem An element or a document
  * @returns {Boolean} True iff elem is a non-HTML XML node
  */
@@ -473,6 +484,7 @@ isXML = Sizzle.isXML = function (elem) {
 
 /**
  * Sets document-related variables once based on the current document
+ * @private
  * @param {Element|Object} [doc] An element or document object to use to set the document
  * @returns {Object} Returns the current document
  */
@@ -511,11 +523,11 @@ setDocument = Sizzle.setDocument = function (node) {
   if (parent && parent !== getTop(parent)) {
     // IE11 does not have attachEvent, so all must suffer
     if (parent.addEventListener) {
-      parent.addEventListener('unload', function () {
+      parent.addEventListener('unload', () => {
         setDocument();
       }, false);
     } else if (parent.attachEvent) {
-      parent.attachEvent('onunload', function () {
+      parent.attachEvent('onunload', () => {
         setDocument();
       });
     }
@@ -905,6 +917,7 @@ Sizzle.error = function (msg) {
 
 /**
  * Document sorting and removing duplicates
+ * @private
  * @param {ArrayLike} results
  */
 Sizzle.uniqueSort = function (results) {
@@ -938,6 +951,7 @@ Sizzle.uniqueSort = function (results) {
 
 /**
  * Utility function for retrieving the text value of an array of DOM nodes
+ * @private
  * @param {Array|Element} elem
  */
 getText = Sizzle.getText = function (elem) {
@@ -1071,7 +1085,9 @@ Expr = Sizzle.selectors = {
     TAG(nodeNameSelector) {
       const nodeName = nodeNameSelector.replace(runescape, funescape).toLowerCase();
       return nodeNameSelector === '*' ?
-        function () { return true; } :
+        function () {
+          return true;
+        } :
         function (elem) {
           return elem.nodeName && elem.nodeName.toLowerCase() === nodeName;
         };
@@ -1082,7 +1098,7 @@ Expr = Sizzle.selectors = {
 
       return pattern ||
         (pattern = new RegExp('(^|' + whitespace + ')' + className + '(' + whitespace + '|$)')) &&
-        classCache(className, function (elem) {
+        classCache(className, (elem) => {
           return pattern.test(typeof elem.className === 'string' && elem.className || typeof elem.getAttribute !== strundefined && elem.getAttribute('class') || '');
         });
     },
@@ -1220,7 +1236,7 @@ Expr = Sizzle.selectors = {
       if (fn.length > 1) {
         args = [ pseudo, pseudo, '', argument ];
         return Expr.setFilters.hasOwnProperty(pseudo.toLowerCase()) ?
-          markFunction(function (seed, matches) {
+          markFunction((seed, matches) => {
             let idx,
               matched = fn(seed, argument),
               i = matched.length;
@@ -1240,7 +1256,7 @@ Expr = Sizzle.selectors = {
 
   pseudos: {
     // Potentially complex pseudos
-    not: markFunction(function (selector) {
+    not: markFunction((selector) => {
       // Trim the selector passed to compile
       // to avoid treating leading and trailing
       // spaces as combinators
@@ -1249,7 +1265,7 @@ Expr = Sizzle.selectors = {
         matcher = compile(selector.replace(rtrim, '$1'));
 
       return matcher[expando] ?
-        markFunction(function (seed, matches, context, xml) {
+        markFunction((seed, matches, context, xml) => {
           let elem,
             unmatched = matcher(seed, null, xml, []),
             i = seed.length;
@@ -1264,17 +1280,19 @@ Expr = Sizzle.selectors = {
         function (elem, context, xml) {
           input[0] = elem;
           matcher(input, null, xml, results);
+          // Don't keep the element (issue #299)
+          input[0] = null;
           return !results.pop();
         };
     }),
 
-    has: markFunction(function (selector) {
+    has: markFunction((selector) => {
       return function (elem) {
         return Sizzle(selector, elem).length > 0;
       };
     }),
 
-    contains: markFunction(function (text) {
+    contains: markFunction((text) => {
       text = text.replace(runescape, funescape);
       return function (elem) {
         return (elem.textContent || elem.innerText || getText(elem)).indexOf(text) > -1;
@@ -1288,7 +1306,7 @@ Expr = Sizzle.selectors = {
     // The matching of C against the element's language value is performed case-insensitively.
     // The identifier C does not have to be a valid language name."
     // http://www.w3.org/TR/selectors/#lang-pseudo
-    lang: markFunction(function (lang) {
+    lang: markFunction((lang) => {
       // lang value must be a valid identifier
       if (!ridentifier.test(lang || '')) {
         Sizzle.error('unsupported lang: ' + lang);
@@ -1343,7 +1361,7 @@ Expr = Sizzle.selectors = {
       // Accessing this property makes selected-by-default
       // options in Safari work properly
       if (elem.parentNode) {
-        // tslint:disable-next-line:no-unused-expression
+        // eslint-disable-next-line no-unused-expressions
         elem.parentNode.selectedIndex;
       }
 
@@ -1393,19 +1411,19 @@ Expr = Sizzle.selectors = {
     },
 
     // Position-in-collection
-    first: createPositionalPseudo(function () {
+    first: createPositionalPseudo(() => {
       return [ 0 ];
     }),
 
-    last: createPositionalPseudo(function (matchIndexes, length) {
+    last: createPositionalPseudo((matchIndexes, length) => {
       return [ length - 1 ];
     }),
 
-    eq: createPositionalPseudo(function (matchIndexes, length, argument) {
+    eq: createPositionalPseudo((matchIndexes, length, argument) => {
       return [ argument < 0 ? argument + length : argument ];
     }),
 
-    even: createPositionalPseudo(function (matchIndexes, length) {
+    even: createPositionalPseudo((matchIndexes, length) => {
       let i = 0;
       for (; i < length; i += 2) {
         matchIndexes.push(i);
@@ -1413,7 +1431,7 @@ Expr = Sizzle.selectors = {
       return matchIndexes;
     }),
 
-    odd: createPositionalPseudo(function (matchIndexes, length) {
+    odd: createPositionalPseudo((matchIndexes, length) => {
       let i = 1;
       for (; i < length; i += 2) {
         matchIndexes.push(i);
@@ -1421,7 +1439,7 @@ Expr = Sizzle.selectors = {
       return matchIndexes;
     }),
 
-    lt: createPositionalPseudo(function (matchIndexes, length, argument) {
+    lt: createPositionalPseudo((matchIndexes, length, argument) => {
       let i = argument < 0 ? argument + length : argument;
       for (; --i >= 0;) {
         matchIndexes.push(i);
@@ -1429,7 +1447,7 @@ Expr = Sizzle.selectors = {
       return matchIndexes;
     }),
 
-    gt: createPositionalPseudo(function (matchIndexes, length, argument) {
+    gt: createPositionalPseudo((matchIndexes, length, argument) => {
       let i = argument < 0 ? argument + length : argument;
       for (; ++i < length;) {
         matchIndexes.push(i);
@@ -1638,7 +1656,7 @@ function setMatcher(preFilter, selector?, matcher?, postFilter?, postFinder?, po
   if (postFinder && !postFinder[expando]) {
     postFinder = setMatcher(postFinder, postSelector);
   }
-  return markFunction(function (seed, results, context, xml) {
+  return markFunction((seed, results, context, xml) => {
     let temp, i, elem,
       preMap = [],
       postMap = [],
@@ -1732,17 +1750,20 @@ function matcherFromTokens(tokens) {
     i = leadingRelative ? 1 : 0,
 
     // The foundational matcher ensures that elements are reachable from top-level context(s)
-    matchContext = addCombinator(function (elem) {
+    matchContext = addCombinator((elem) => {
       return elem === checkContext;
     }, implicitRelative, true),
-    matchAnyContext = addCombinator(function (elem) {
+    matchAnyContext = addCombinator((elem) => {
       return indexOf.call(checkContext, elem) > -1;
     }, implicitRelative, true),
     matchers = [ function (elem, context, xml) {
-      return (!leadingRelative && (xml || context !== outermostContext)) || (
+      const ret = (!leadingRelative && (xml || context !== outermostContext)) || (
         (checkContext = context).nodeType ?
           matchContext(elem, context, xml) :
           matchAnyContext(elem, context, xml));
+      // Avoid hanging onto element (issue #299)
+      checkContext = null;
+      return ret;
     } ];
 
   for (; i < len; i++) {
@@ -1911,6 +1932,7 @@ compile = Sizzle.compile = function (selector, match /* Internal Use Only */) {
 /**
  * A low-level selection function that works with Sizzle's compiled
  *  selector functions
+ * @private
  * @param {String|Function} selector A selector or a pre-compiled
  *  selector function built with Sizzle.compile
  * @param {Element} context

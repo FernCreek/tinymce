@@ -1,7 +1,7 @@
-import { FieldPresence, FieldSchema, ValueSchema } from '@ephox/boulder';
-import { Id, Option, Result } from '@ephox/katamari';
+import { FieldPresence, FieldSchema, StructureSchema, ValueType } from '@ephox/boulder';
+import { Id, Optional, Result } from '@ephox/katamari';
 
-export interface ButtonApi {
+export interface ButtonSpec {
   type: 'button';
   text: string;
   disabled?: boolean;
@@ -17,25 +17,26 @@ export interface Button {
   disabled: boolean;
   primary: boolean;
   name: string;
-  icon: Option<string>;
+  icon: Optional<string>;
   borderless: boolean;
 }
 
 const buttonFields = [
-  FieldSchema.strictString('type'),
-  FieldSchema.strictString('text'),
+  FieldSchema.requiredString('type'),
+  FieldSchema.requiredString('text'),
   FieldSchema.defaultedBoolean('disabled', false),
   FieldSchema.defaultedBoolean('primary', false),
   FieldSchema.field(
     'name',
     'name',
     FieldPresence.defaultedThunk(() => Id.generate('button-name')),
-    ValueSchema.string
+    ValueType.string
   ),
   FieldSchema.optionString('icon'),
   FieldSchema.defaultedBoolean('borderless', false)
 ];
 
-export const buttonSchema = ValueSchema.objOf(buttonFields);
+export const buttonSchema = StructureSchema.objOf(buttonFields);
 
-export const createButton = (spec: ButtonApi): Result<Button, ValueSchema.SchemaError<any>> => ValueSchema.asRaw<Button>('button', buttonSchema, spec);
+export const createButton = (spec: ButtonSpec): Result<Button, StructureSchema.SchemaError<any>> =>
+  StructureSchema.asRaw<Button>('button', buttonSchema, spec);

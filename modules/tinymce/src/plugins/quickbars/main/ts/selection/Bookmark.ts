@@ -5,6 +5,15 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
+
+interface Bookmark {
+  startContainer: Node;
+  startOffset: number;
+  endContainer?: Node;
+  endOffset?: number;
+}
+
 /**
  * Returns a range bookmark. This will convert indexed bookmarks into temporary span elements with
  * index 0 so that they can be restored properly after the DOM has been modified. Text bookmarks will not have spans
@@ -16,17 +25,15 @@
  * @param  {DOMRange} rng DOM Range to get bookmark on.
  * @return {Object} Bookmark object.
  */
-const create = function (dom, rng) {
-  const bookmark = {};
+const create = (dom: DOMUtils, rng: Range): Bookmark => {
+  const bookmark: Partial<Bookmark> = {};
 
-  function setupEndPoint(start?) {
-    let offsetNode, container, offset;
-
-    container = rng[start ? 'startContainer' : 'endContainer'];
-    offset = rng[start ? 'startOffset' : 'endOffset'];
+  const setupEndPoint = (start?: boolean) => {
+    let container = rng[start ? 'startContainer' : 'endContainer'];
+    let offset = rng[start ? 'startOffset' : 'endOffset'];
 
     if (container.nodeType === 1) {
-      offsetNode = dom.create('span', { 'data-mce-type': 'bookmark' });
+      const offsetNode = dom.create('span', { 'data-mce-type': 'bookmark' });
 
       if (container.hasChildNodes()) {
         offset = Math.min(offset, container.childNodes.length - 1);
@@ -46,7 +53,7 @@ const create = function (dom, rng) {
 
     bookmark[start ? 'startContainer' : 'endContainer'] = container;
     bookmark[start ? 'startOffset' : 'endOffset'] = offset;
-  }
+  };
 
   setupEndPoint(true);
 
@@ -54,7 +61,7 @@ const create = function (dom, rng) {
     setupEndPoint();
   }
 
-  return bookmark;
+  return bookmark as Bookmark;
 };
 
 /**
@@ -62,11 +69,11 @@ const create = function (dom, rng) {
  *
  * @param {Object} bookmark Bookmark object to move selection to.
  */
-const resolve = function (dom, bookmark) {
-  function restoreEndPoint(start?) {
-    let container, offset, node;
+const resolve = (dom: DOMUtils, bookmark: Bookmark): Range => {
+  const restoreEndPoint = (start?: boolean) => {
+    let node: Node;
 
-    function nodeIndex(container) {
+    const nodeIndex = (container: Node) => {
       let node = container.parentNode.firstChild, idx = 0;
 
       while (node) {
@@ -75,7 +82,7 @@ const resolve = function (dom, bookmark) {
         }
 
         // Skip data-mce-type=bookmark nodes
-        if (node.nodeType !== 1 || node.getAttribute('data-mce-type') !== 'bookmark') {
+        if (node.nodeType !== 1 || (node as Element).getAttribute('data-mce-type') !== 'bookmark') {
           idx++;
         }
 
@@ -83,10 +90,10 @@ const resolve = function (dom, bookmark) {
       }
 
       return -1;
-    }
+    };
 
-    container = node = bookmark[start ? 'startContainer' : 'endContainer'];
-    offset = bookmark[start ? 'startOffset' : 'endOffset'];
+    let container = node = bookmark[start ? 'startContainer' : 'endContainer'];
+    let offset = bookmark[start ? 'startOffset' : 'endOffset'];
 
     if (!container) {
       return;
@@ -100,7 +107,7 @@ const resolve = function (dom, bookmark) {
 
     bookmark[start ? 'startContainer' : 'endContainer'] = container;
     bookmark[start ? 'startOffset' : 'endOffset'] = offset;
-  }
+  };
 
   restoreEndPoint(true);
   restoreEndPoint();

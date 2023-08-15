@@ -1,7 +1,6 @@
-import { console } from '@ephox/dom-globals';
 import { openDemoDialog } from './DemoDialogHelpers';
 
-export const createTableCellDialog = () => {
+export const createTableCellDialog = (): void => {
   openDemoDialog(
     {
       title: 'Cell properties',
@@ -54,7 +53,7 @@ export const createTableCellDialog = () => {
                   // {
                   //   name: 'halign',
                   //   type: 'selectbox',
-                  //   label: 'H Align',
+                  //   label: 'Horizontal align',
                   //   items: [
                   //     {
                   //       text: 'none',
@@ -69,7 +68,7 @@ export const createTableCellDialog = () => {
                   // {
                   //   name: 'valign',
                   //   type: 'selectbox',
-                  //   label: 'V Align',
+                  //   label: 'Vertical align',
                   //   items: [
                   //     {
                   //       text: 'none',
@@ -140,7 +139,7 @@ export const createTableCellDialog = () => {
       onSubmit: (api) => {
         const data = api.getData();
 
-        // tslint:disable-next-line:no-console
+        // eslint-disable-next-line no-console
         console.log({
           width: data.width,
           height: data.height,

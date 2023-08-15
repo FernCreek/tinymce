@@ -5,31 +5,33 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Obj, Option } from '@ephox/katamari';
+import { Selections } from '@ephox/darwin';
+import { Obj } from '@ephox/katamari';
 import { TableLookup } from '@ephox/snooker';
-import { Element } from '@ephox/sugar';
+
 import Editor from 'tinymce/core/api/Editor';
-import { TableActions } from '../actions/TableActions';
+
+import { LookupAction, TableActions } from '../actions/TableActions';
 import * as Util from '../core/Util';
 import * as TableTargets from '../queries/TableTargets';
-import { Selections } from '../selection/Selections';
 import * as TableSelection from '../selection/TableSelection';
 
-const registerQueryCommands = (editor: Editor, actions: TableActions, selections: Selections) => {
+const registerQueryCommands = (editor: Editor, actions: TableActions, selections: Selections): void => {
   const isRoot = Util.getIsRoot(editor);
-  const getTableFromCell = (cell: Element): Option<Element> => TableLookup.table(cell, isRoot);
+
+  const lookupOnSelection = (action: LookupAction): string =>
+    TableSelection.getSelectionCell(Util.getSelectionStart(editor)).bind((cell) =>
+      TableLookup.table(cell, isRoot).map((table) => {
+        const targets = TableTargets.forMenu(selections, table, cell);
+        return action(table, targets);
+      })
+    ).getOr('');
 
   Obj.each({
-    mceTableRowType: () => actions.getTableRowType(editor),
-    mceTableCellType: () => actions.getTableCellType(editor),
-    mceTableColType: () => TableSelection.getSelectionStartCell(editor).bind((cell) =>
-      getTableFromCell(cell).map((table): string => {
-        const targets = TableTargets.forMenu(selections, table, cell);
-        return actions.getTableColType(table, targets);
-      })
-    ).getOr('')
+    mceTableRowType: () => lookupOnSelection(actions.getTableRowType),
+    mceTableCellType: () => lookupOnSelection(actions.getTableCellType),
+    mceTableColType: () => lookupOnSelection(actions.getTableColType)
   }, (func, name) => editor.addQueryValueHandler(name, func));
-
 };
 
 export { registerQueryCommands };

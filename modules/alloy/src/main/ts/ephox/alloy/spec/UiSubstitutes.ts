@@ -1,14 +1,14 @@
-import { Adt, Arr, Fun, Obj, Option } from '@ephox/katamari';
+import { Adt, Arr, Fun, Obj, Optional } from '@ephox/katamari';
 
 import { AlloySpec } from '../api/component/SpecTypes';
 import { CompositeSketchDetail } from '../api/ui/Sketcher';
 import { ConfiguredPart } from '../parts/AlloyParts';
 
 interface Replacement {
-  name: () => string;
-  required: () => boolean;
-  used: () => boolean;
-  replace: () => UiSubstitutesAdt;
+  readonly name: () => string;
+  readonly required: () => boolean;
+  readonly used: () => boolean;
+  readonly replace: () => UiSubstitutesAdt;
 }
 
 type ValueThunkFn<R> = <D extends CompositeSketchDetail>(detail: D, spec?: Record<string, any>, partValidated?: Record<string, any>) => R;
@@ -39,8 +39,10 @@ const adt: {
 
 const isSubstituted = (spec: any): spec is ConfiguredPart => Obj.has(spec, 'uiType');
 
-const subPlaceholder = <D extends CompositeSketchDetail>(owner: Option<string>, detail: D, compSpec: ConfiguredPart, placeholders: Record<string, Replacement>): UiSubstitutesAdt => {
-  if (owner.exists((o) => o !== compSpec.owner)) { return adt.single(true, Fun.constant(compSpec)); }
+const subPlaceholder = <D extends CompositeSketchDetail>(owner: Optional<string>, detail: D, compSpec: ConfiguredPart, placeholders: Record<string, Replacement>): UiSubstitutesAdt => {
+  if (owner.exists((o) => o !== compSpec.owner)) {
+    return adt.single(true, Fun.constant(compSpec));
+  }
   // Ignore having to find something for the time being.
   return Obj.get(placeholders as any, compSpec.name).fold(() => {
     throw new Error('Unknown placeholder component: ' + compSpec.name + '\nKnown: [' +
@@ -52,7 +54,7 @@ const subPlaceholder = <D extends CompositeSketchDetail>(owner: Option<string>, 
   );
 };
 
-const scan = <D extends CompositeSketchDetail>(owner: Option<string>, detail: D, compSpec: AlloySpec, placeholders: Record<string, Replacement>): UiSubstitutesAdt => {
+const scan = <D extends CompositeSketchDetail>(owner: Optional<string>, detail: D, compSpec: AlloySpec, placeholders: Record<string, Replacement>): UiSubstitutesAdt => {
   if (isSubstituted(compSpec) && compSpec.uiType === _placeholder) {
     return subPlaceholder(owner, detail, compSpec, placeholders);
   } else {
@@ -60,7 +62,7 @@ const scan = <D extends CompositeSketchDetail>(owner: Option<string>, detail: D,
   }
 };
 
-const substitute = <D extends CompositeSketchDetail>(owner: Option<string>, detail: D, compSpec: AlloySpec, placeholders: Record<string, Replacement>): AlloySpec[] => {
+const substitute = <D extends CompositeSketchDetail>(owner: Optional<string>, detail: D, compSpec: AlloySpec, placeholders: Record<string, Replacement>): AlloySpec[] => {
   const base = scan(owner, detail, compSpec, placeholders);
 
   return base.fold(
@@ -88,7 +90,7 @@ const substitute = <D extends CompositeSketchDetail>(owner: Option<string>, deta
   );
 };
 
-const substituteAll = <D extends CompositeSketchDetail>(owner: Option<string>, detail: D, components: AlloySpec[], placeholders: Record<string, Replacement>): AlloySpec[] => Arr.bind(components, (c) => substitute(owner, detail, c, placeholders));
+const substituteAll = <D extends CompositeSketchDetail>(owner: Optional<string>, detail: D, components: AlloySpec[], placeholders: Record<string, Replacement>): AlloySpec[] => Arr.bind(components, (c) => substitute(owner, detail, c, placeholders));
 
 const oneReplace = (label: string, replacements: UiSubstitutesAdt): Replacement => {
   let called = false;
@@ -113,7 +115,7 @@ const oneReplace = (label: string, replacements: UiSubstitutesAdt): Replacement 
   };
 };
 
-const substitutePlaces = <D extends CompositeSketchDetail>(owner: Option<string>, detail: D, components: AlloySpec[], placeholders: Record<string, UiSubstitutesAdt>) => {
+const substitutePlaces = <D extends CompositeSketchDetail>(owner: Optional<string>, detail: D, components: AlloySpec[], placeholders: Record<string, UiSubstitutesAdt>): AlloySpec[] => {
   const ps = Obj.map(placeholders, (ph, name) => oneReplace(name, ph));
 
   const outcome = substituteAll(owner, detail, components, ps);
@@ -130,7 +132,8 @@ const substitutePlaces = <D extends CompositeSketchDetail>(owner: Option<string>
   return outcome;
 };
 
-const singleReplace = <D extends CompositeSketchDetail>(detail: D, p: UiSubstitutesAdt) => p.fold((req, valueThunk) => [ valueThunk(detail) ], (req, valuesThunk) => valuesThunk(detail));
+const singleReplace = <D extends CompositeSketchDetail>(detail: D, p: UiSubstitutesAdt): AlloySpec[] =>
+  p.fold((req, valueThunk) => [ valueThunk(detail) ], (req, valuesThunk) => valuesThunk(detail));
 
 const single = adt.single;
 const multiple = adt.multiple;

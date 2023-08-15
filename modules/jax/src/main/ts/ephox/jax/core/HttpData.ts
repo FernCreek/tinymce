@@ -1,4 +1,3 @@
-import { Blob, File } from '@ephox/dom-globals';
 import { DataType } from './DataType';
 
 export interface ResponseTypeMap {
@@ -7,6 +6,7 @@ export interface ResponseTypeMap {
   [DataType.Text]: string;
 }
 
+export type ResponseType = keyof ResponseTypeMap;
 export type RequestBody = JsonData | BlobData | TextData | FormData | MultipartFormData;
 export type ResponseBody = Exclude<RequestBody, FormData>;
 export type ResponseBodyDataTypes = Exclude<DataType, DataType.FormData>;

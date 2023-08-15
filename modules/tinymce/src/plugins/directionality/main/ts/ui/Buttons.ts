@@ -5,12 +5,16 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import Editor from 'tinymce/core/api/Editor';
-import { Element, Direction } from '@ephox/sugar';
+import { Direction, SugarElement } from '@ephox/sugar';
 
-const getNodeChangeHandler = (editor: Editor, dir: 'ltr' | 'rtl') => (api) => {
-  const nodeChangeHandler = (e) => {
-    const element = Element.fromDom(e.element);
+import Editor from 'tinymce/core/api/Editor';
+import { NodeChangeEvent } from 'tinymce/core/api/EventTypes';
+import { Toolbar } from 'tinymce/core/api/ui/Ui';
+import { EditorEvent } from 'tinymce/core/api/util/EventDispatcher';
+
+const getNodeChangeHandler = (editor: Editor, dir: 'ltr' | 'rtl') => (api: Toolbar.ToolbarToggleButtonInstanceApi) => {
+  const nodeChangeHandler = (e: EditorEvent<NodeChangeEvent>) => {
+    const element = SugarElement.fromDom(e.element);
     api.setActive(Direction.getDirection(element) === dir);
   };
   editor.on('NodeChange', nodeChangeHandler);
@@ -18,7 +22,7 @@ const getNodeChangeHandler = (editor: Editor, dir: 'ltr' | 'rtl') => (api) => {
   return () => editor.off('NodeChange', nodeChangeHandler);
 };
 
-const register = function (editor: Editor) {
+const register = (editor: Editor): void => {
   editor.ui.registry.addToggleButton('ltr', {
     tooltip: 'Left to right',
     icon: 'ltr',

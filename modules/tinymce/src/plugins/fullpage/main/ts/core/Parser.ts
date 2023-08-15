@@ -7,30 +7,48 @@
 
 import Editor from 'tinymce/core/api/Editor';
 import DomParser from 'tinymce/core/api/html/DomParser';
-import Node from 'tinymce/core/api/html/Node';
-import Serializer from 'tinymce/core/api/html/Serializer';
+import AstNode from 'tinymce/core/api/html/Node';
+import HtmlSerializer from 'tinymce/core/api/html/Serializer';
 import Tools from 'tinymce/core/api/util/Tools';
+
 import * as Settings from '../api/Settings';
 
-const parseHeader = function (head: string) {
+interface Data {
+  fontface?: string;
+  fontsize?: string;
+  xml_pi?: boolean;
+  docencoding?: string;
+  doctype?: string;
+  title?: string;
+  langcode?: string;
+  stylesheets?: string[];
+  dir?: string;
+  langdir?: string;
+  style?: string;
+  visited_color?: string;
+  link_color?: string;
+  active_color?: string;
+}
+
+const parseHeader = (editor: Editor, head: string): AstNode => {
   // Parse the contents with a DOM parser
   return DomParser({
     validate: false,
     root_name: '#document'
   // Parse as XHTML to allow for inclusion of the XML processing instruction
-  }).parse(head, { format: 'xhtml' });
+  }, editor.schema).parse(head, { format: 'xhtml' });
 };
 
-const htmlToData = function (editor: Editor, head: string) {
-  const headerFragment = parseHeader(head);
-  const data: any = {};
+const htmlToData = (editor: Editor, head: string): Data => {
+  const headerFragment = parseHeader(editor, head);
+  const data: Data = {};
   let elm, matches;
 
-  function getAttr(elm, name) {
+  const getAttr = (elm: AstNode, name: string): string => {
     const value = elm.attr(name);
 
     return value || '';
-  }
+  };
 
   // Default some values
   // TODO: Not sure these are used anymore
@@ -60,7 +78,7 @@ const htmlToData = function (editor: Editor, head: string) {
   }
 
   // Parse meta elements
-  Tools.each<Node>(headerFragment.getAll('meta'), function (meta) {
+  Tools.each<AstNode>(headerFragment.getAll('meta'), (meta) => {
     const name = meta.attr('name');
     const httpEquiv = meta.attr('http-equiv');
     let matches;
@@ -84,7 +102,7 @@ const htmlToData = function (editor: Editor, head: string) {
 
   // Parse stylesheets
   data.stylesheets = [];
-  Tools.each(headerFragment.getAll('link'), function (link) {
+  Tools.each(headerFragment.getAll('link'), (link) => {
     if (link.attr('rel') === 'stylesheet') {
       data.stylesheets.push(link.attr('href'));
     }
@@ -103,27 +121,27 @@ const htmlToData = function (editor: Editor, head: string) {
   return data;
 };
 
-const dataToHtml = function (editor: Editor, data, head) {
-  let headElement, elm, value;
+const dataToHtml = (editor: Editor, data: Data, head: string): string => {
+  let headElement: AstNode, elm: AstNode;
   const dom = editor.dom;
 
-  function setAttr(elm, name, value) {
+  const setAttr = (elm: AstNode, name: string, value: string | undefined) => {
     elm.attr(name, value ? value : undefined);
-  }
+  };
 
-  function addHeadNode(node) {
+  const addHeadNode = (node: AstNode) => {
     if (headElement.firstChild) {
       headElement.insert(node, headElement.firstChild);
     } else {
       headElement.append(node);
     }
-  }
+  };
 
-  const headerFragment = parseHeader(head);
+  const headerFragment = parseHeader(editor, head);
   headElement = headerFragment.getAll('head')[0];
   if (!headElement) {
     elm = headerFragment.getAll('html')[0];
-    headElement = new Node('head', 1);
+    headElement = new AstNode('head', 1);
 
     if (elm.firstChild) {
       elm.insert(headElement, elm.firstChild, true);
@@ -135,14 +153,14 @@ const dataToHtml = function (editor: Editor, data, head) {
   // Add/update/remove XML-PI
   elm = headerFragment.firstChild;
   if (data.xml_pi) {
-    value = 'version="1.0"';
+    let value = 'version="1.0"';
 
     if (data.docencoding) {
       value += ' encoding="' + data.docencoding + '"';
     }
 
     if (elm.type !== 7) {
-      elm = new Node('xml', 7);
+      elm = new AstNode('xml', 7);
       headerFragment.insert(elm, headerFragment.firstChild, true);
     }
 
@@ -155,7 +173,7 @@ const dataToHtml = function (editor: Editor, data, head) {
   elm = headerFragment.getAll('#doctype')[0];
   if (data.doctype) {
     if (!elm) {
-      elm = new Node('#doctype', 10);
+      elm = new AstNode('#doctype', 10);
 
       if (data.xml_pi) {
         headerFragment.insert(elm, headerFragment.firstChild);
@@ -171,7 +189,7 @@ const dataToHtml = function (editor: Editor, data, head) {
 
   // Add meta encoding
   elm = null;
-  Tools.each(headerFragment.getAll('meta'), function (meta) {
+  Tools.each(headerFragment.getAll('meta'), (meta) => {
     if (meta.attr('http-equiv') === 'Content-Type') {
       elm = meta;
     }
@@ -179,7 +197,7 @@ const dataToHtml = function (editor: Editor, data, head) {
 
   if (data.docencoding) {
     if (!elm) {
-      elm = new Node('meta', 1);
+      elm = new AstNode('meta', 1);
       elm.attr('http-equiv', 'Content-Type');
       elm.shortEnded = true;
       addHeadNode(elm);
@@ -194,19 +212,19 @@ const dataToHtml = function (editor: Editor, data, head) {
   elm = headerFragment.getAll('title')[0];
   if (data.title) {
     if (!elm) {
-      elm = new Node('title', 1);
+      elm = new AstNode('title', 1);
       addHeadNode(elm);
     } else {
       elm.empty();
     }
 
-    elm.append(new Node('#text', 3)).value = data.title;
+    elm.append(new AstNode('#text', 3)).value = data.title;
   } else if (elm) {
     elm.remove();
   }
 
   // Add/update/remove meta
-  Tools.each('keywords,description,author,copyright,robots'.split(','), function (name) {
+  Tools.each('keywords,description,author,copyright,robots'.split(','), (name) => {
     const nodes = headerFragment.getAll('meta');
     let i, meta;
     const value = data[name];
@@ -226,7 +244,7 @@ const dataToHtml = function (editor: Editor, data, head) {
     }
 
     if (value) {
-      elm = new Node('meta', 1);
+      elm = new AstNode('meta', 1);
       elm.attr('name', name);
       elm.attr('content', value);
       elm.shortEnded = true;
@@ -235,17 +253,17 @@ const dataToHtml = function (editor: Editor, data, head) {
     }
   });
 
-  const currentStyleSheetsMap: Record<string, Node> = {};
-  Tools.each(headerFragment.getAll('link'), function (stylesheet) {
+  const currentStyleSheetsMap: Record<string, AstNode> = {};
+  Tools.each(headerFragment.getAll('link'), (stylesheet) => {
     if (stylesheet.attr('rel') === 'stylesheet') {
       currentStyleSheetsMap[stylesheet.attr('href')] = stylesheet;
     }
   });
 
   // Add new
-  Tools.each(data.stylesheets, function (stylesheet) {
+  Tools.each(data.stylesheets, (stylesheet) => {
     if (!currentStyleSheetsMap[stylesheet]) {
-      elm = new Node('link', 1);
+      elm = new AstNode('link', 1);
       elm.attr({
         rel: 'stylesheet',
         text: 'text/css',
@@ -259,7 +277,7 @@ const dataToHtml = function (editor: Editor, data, head) {
   });
 
   // Delete old
-  Tools.each(currentStyleSheetsMap, function (stylesheet) {
+  Tools.each(currentStyleSheetsMap, (stylesheet) => {
     stylesheet.remove();
   });
 
@@ -295,7 +313,7 @@ const dataToHtml = function (editor: Editor, data, head) {
   }
 
   // Serialize header fragment and crop away body part
-  const html = Serializer({
+  const html = HtmlSerializer({
     validate: false,
     indent: true,
     indent_before: 'head,html,body,meta,title,script,link,style',

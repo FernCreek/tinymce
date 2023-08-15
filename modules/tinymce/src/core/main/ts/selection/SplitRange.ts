@@ -5,15 +5,14 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Text } from '@ephox/dom-globals';
 import * as NodeType from '../dom/NodeType';
 import { RangeLikeObject } from './RangeTypes';
 
-const splitText = function (node: Text, offset: number) {
+const splitText = (node: Text, offset: number) => {
   return node.splitText(offset);
 };
 
-const split = function (rng: RangeLikeObject): RangeLikeObject {
+const split = (rng: RangeLikeObject): RangeLikeObject => {
   let startContainer = rng.startContainer,
     startOffset = rng.startOffset,
     endContainer = rng.endContainer,

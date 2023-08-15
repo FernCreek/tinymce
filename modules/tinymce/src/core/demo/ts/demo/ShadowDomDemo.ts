@@ -1,10 +1,9 @@
-import { document, ShadowRootInit } from '@ephox/dom-globals';
-
 declare let tinymce: any;
 
-export default function (init: ShadowRootInit) {
+export default (init: ShadowRootInit) => {
 
   const shadowHost = document.getElementById('shadow-host');
+  shadowHost.tabIndex = 1;
 
   const shadow = shadowHost.attachShadow(init);
 
@@ -13,6 +12,7 @@ export default function (init: ShadowRootInit) {
   shadow.appendChild(node);
 
   tinymce.init({
-    target: node
+    target: node,
+    plugins: 'advlist charmap code codesample emoticons fullscreen image link lists media paste preview searchreplace table wordcount'
   });
-}
+};

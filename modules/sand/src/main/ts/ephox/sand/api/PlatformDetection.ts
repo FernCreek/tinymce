@@ -1,5 +1,4 @@
-import { navigator, window } from '@ephox/dom-globals';
-import { Fun, Thunk } from '@ephox/katamari';
+import { Fun, Optional, Thunk } from '@ephox/katamari';
 
 import { Browser as BrowserCore } from '../core/Browser';
 import { OperatingSystem as OperatingSystemCore } from '../core/OperatingSystem';
@@ -14,11 +13,12 @@ const mediaMatch = (query: string) => window.matchMedia(query).matches;
 
 // IMPORTANT: Must be in a thunk, otherwise rollup thinks calling this immediately
 // causes side effects and won't tree shake this away
-let platform = Thunk.cached(() => PlatformDetection.detect(navigator.userAgent, mediaMatch));
+// Note: navigator.userAgentData is not part of the native typescript types yet
+let platform = Thunk.cached(() => PlatformDetection.detect(navigator.userAgent, Optional.from(((navigator as any).userAgentData)), mediaMatch));
 
 export const detect = (): PlatformDetection => platform();
 
-export const override = (overrides: Partial<PlatformDetection>) => {
+export const override = (overrides: Partial<PlatformDetection>): void => {
   platform = Fun.constant({
     ...detect(),
     ...overrides

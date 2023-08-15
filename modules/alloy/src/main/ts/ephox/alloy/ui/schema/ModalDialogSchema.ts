@@ -1,4 +1,4 @@
-import { FieldProcessorAdt, FieldSchema } from '@ephox/boulder';
+import { FieldSchema } from '@ephox/boulder';
 import { Fun } from '@ephox/katamari';
 import { SelectorFind } from '@ephox/sugar';
 
@@ -11,11 +11,11 @@ import * as Fields from '../../data/Fields';
 import * as PartType from '../../parts/PartType';
 import { ModalDialogDetail } from '../types/ModalDialogTypes';
 
-const schema: () => FieldProcessorAdt[] = Fun.constant([
-  FieldSchema.strict('lazySink'),
+const schema = Fun.constant([
+  FieldSchema.required('lazySink'),
   FieldSchema.option('dragBlockClass'),
   FieldSchema.defaultedFunction('getBounds', Boxes.win),
-  FieldSchema.defaulted('useTabstopAt', Fun.constant(true)),
+  FieldSchema.defaulted('useTabstopAt', Fun.always),
   FieldSchema.defaulted('eventOrder', {}),
   SketchBehaviours.field('modalBehaviours', [ Keying ]),
 
@@ -28,16 +28,16 @@ const basic = { sketch: Fun.identity };
 const parts: () => PartType.PartTypeAdt[] = Fun.constant([
   PartType.optional<ModalDialogDetail>({
     name: 'draghandle',
-    overrides(detail: ModalDialogDetail, spec) {
+    overrides: (detail: ModalDialogDetail, spec) => {
       return {
         behaviours: Behaviour.derive([
           Dragging.config({
             mode: 'mouse',
-            getTarget(handle) {
+            getTarget: (handle) => {
               return SelectorFind.ancestor(handle, '[role="dialog"]').getOr(handle);
             },
             blockerClass: detail.dragBlockClass.getOrDie(
-              // TODO: Support errors in Option getOrDie.
+              // TODO: Support errors in Optional getOrDie.
               new Error(
                 'The drag blocker class was not specified for a dialog with a drag handle: \n' +
                 JSON.stringify(spec, null, 2)
@@ -51,25 +51,25 @@ const parts: () => PartType.PartTypeAdt[] = Fun.constant([
   }),
 
   PartType.required<ModalDialogDetail>({
-    schema: [ FieldSchema.strict('dom') ],
+    schema: [ FieldSchema.required('dom') ],
     name: 'title'
   }),
 
   PartType.required<ModalDialogDetail>({
     factory: basic,
-    schema: [ FieldSchema.strict('dom') ],
+    schema: [ FieldSchema.required('dom') ],
     name: 'close'
   }),
 
   PartType.required<ModalDialogDetail>({
     factory: basic,
-    schema:  [ FieldSchema.strict('dom') ],
+    schema: [ FieldSchema.required('dom') ],
     name: 'body'
   }),
 
   PartType.optional<ModalDialogDetail>({
     factory: basic,
-    schema:  [ FieldSchema.strict('dom') ],
+    schema: [ FieldSchema.required('dom') ],
     name: 'footer'
   }),
 

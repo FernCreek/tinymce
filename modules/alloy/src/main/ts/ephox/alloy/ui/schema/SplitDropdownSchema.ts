@@ -1,5 +1,5 @@
-import { FieldProcessorAdt, FieldSchema } from '@ephox/boulder';
-import { Fun, Option } from '@ephox/katamari';
+import { FieldSchema } from '@ephox/boulder';
+import { Fun, Optional } from '@ephox/katamari';
 
 import * as Behaviour from '../../api/behaviour/Behaviour';
 import { Coupling } from '../../api/behaviour/Coupling';
@@ -19,16 +19,16 @@ import { ButtonSpec } from '../types/ButtonTypes';
 import { SplitDropdownDetail } from '../types/SplitDropdownTypes';
 import { TieredMenuSpec } from '../types/TieredMenuTypes';
 
-const schema: () => FieldProcessorAdt[] = Fun.constant([
-  FieldSchema.strict('toggleClass'),
-  FieldSchema.strict('fetch'),
+const schema = Fun.constant([
+  FieldSchema.required('toggleClass'),
+  FieldSchema.required('fetch'),
   Fields.onStrictHandler('onExecute'),
-  FieldSchema.defaulted('getHotspot', Option.some),
+  FieldSchema.defaulted('getHotspot', Optional.some),
   FieldSchema.defaulted('getAnchorOverrides', Fun.constant({ })),
   AnchorLayouts.schema(),
   Fields.onStrictHandler('onItemExecute'),
   FieldSchema.option('lazySink'),
-  FieldSchema.strict('dom'),
+  FieldSchema.required('dom'),
   Fields.onHandler('onOpen'),
   SketchBehaviours.field('splitDropdownBehaviours', [ Coupling, Keying, Focusing ]),
   FieldSchema.defaulted('matchWidth', false),
@@ -41,9 +41,9 @@ const schema: () => FieldProcessorAdt[] = Fun.constant([
 
 const arrowPart = PartType.required<SplitDropdownDetail, ButtonSpec>({
   factory: Button,
-  schema: [ FieldSchema.strict('dom') ],
+  schema: [ FieldSchema.required('dom') ],
   name: 'arrow',
-  defaults() {
+  defaults: () => {
     return {
       buttonBehaviours: Behaviour.derive([
         // TODO: Remove all traces of revoking
@@ -51,7 +51,7 @@ const arrowPart = PartType.required<SplitDropdownDetail, ButtonSpec>({
       ])
     };
   },
-  overrides(detail) {
+  overrides: (detail) => {
     return {
       dom: {
         tag: 'span',
@@ -59,7 +59,7 @@ const arrowPart = PartType.required<SplitDropdownDetail, ButtonSpec>({
           role: 'presentation'
         }
       },
-      action(arrow: AlloyComponent) {
+      action: (arrow: AlloyComponent) => {
         arrow.getSystem().getByUid(detail.uid).each(AlloyTriggers.emitExecute);
       },
       buttonBehaviours: Behaviour.derive([
@@ -74,9 +74,9 @@ const arrowPart = PartType.required<SplitDropdownDetail, ButtonSpec>({
 
 const buttonPart = PartType.required<SplitDropdownDetail, ButtonSpec>({
   factory: Button,
-  schema: [ FieldSchema.strict('dom') ],
+  schema: [ FieldSchema.required('dom') ],
   name: 'button',
-  defaults() {
+  defaults: () => {
     return {
       buttonBehaviours: Behaviour.derive([
         // TODO: Remove all traces of revoking
@@ -84,7 +84,7 @@ const buttonPart = PartType.required<SplitDropdownDetail, ButtonSpec>({
       ])
     };
   },
-  overrides(detail) {
+  overrides: (detail) => {
     return {
       dom: {
         tag: 'span',
@@ -92,7 +92,7 @@ const buttonPart = PartType.required<SplitDropdownDetail, ButtonSpec>({
           role: 'presentation'
         }
       },
-      action(btn: AlloyComponent) {
+      action: (btn: AlloyComponent) => {
         btn.getSystem().getByUid(detail.uid).each((splitDropdown) => {
           detail.onExecute(splitDropdown, btn);
         });
@@ -107,7 +107,7 @@ const parts: () => PartType.PartTypeAdt[] = Fun.constant([
 
   PartType.optional({
     factory: {
-      sketch(spec) {
+      sketch: (spec) => {
         return {
           uid: spec.uid,
           dom: {
@@ -123,7 +123,7 @@ const parts: () => PartType.PartTypeAdt[] = Fun.constant([
         };
       }
     },
-    schema: [ FieldSchema.strict('text') ],
+    schema: [ FieldSchema.required('text') ],
     name: 'aria-descriptor'
   }),
 
@@ -132,9 +132,9 @@ const parts: () => PartType.PartTypeAdt[] = Fun.constant([
       Fields.tieredMenuMarkers()
     ],
     name: 'menu',
-    defaults(detail) {
+    defaults: (detail) => {
       return {
-        onExecute(tmenu: AlloyComponent, item: AlloyComponent) {
+        onExecute: (tmenu: AlloyComponent, item: AlloyComponent) => {
           tmenu.getSystem().getByUid(detail.uid).each((splitDropdown) => {
             detail.onItemExecute(splitDropdown, tmenu, item);
           });

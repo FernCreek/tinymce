@@ -1,17 +1,18 @@
 import { Universe } from '@ephox/boss';
 import { Fun } from '@ephox/katamari';
+
 import { InjectPosition } from '../api/data/InjectPosition';
 import * as Split from '../api/general/Split';
 
-const insertAtText = function <E, D> (universe: Universe<E, D>, element: E, offset: number) {
+const insertAtText = <E, D>(universe: Universe<E, D>, element: E, offset: number): InjectPosition<E> => {
   const split = Split.split(universe, element, offset);
   const position = Split.position(universe, split);
-  return position.fold(function () {
+  return position.fold(() => {
     return InjectPosition.invalid(element, offset);
   }, InjectPosition.before, (before, _after) => InjectPosition.after(before), InjectPosition.after);
 };
 
-const insertAtElement = function <E, D> (universe: Universe<E, D>, parent: E, offset: number) {
+const insertAtElement = <E, D>(universe: Universe<E, D>, parent: E, offset: number): InjectPosition<E> => {
   const children = universe.property().children(parent);
   const isEmptyTag = universe.property().isEmptyTag(parent);
 
@@ -39,19 +40,19 @@ const insertAtElement = function <E, D> (universe: Universe<E, D>, parent: E, of
  *   - if a valid child, insert before the child.
  *   - if invalid .... invalid case.
  */
-const atStartOf = function <E, D> (universe: Universe<E, D>, element: E, offset: number, injection: E) {
+const atStartOf = <E, D>(universe: Universe<E, D>, element: E, offset: number, injection: E): void => {
   const insertion = universe.property().isText(element) ? insertAtText : insertAtElement;
   const position = insertion(universe, element, offset);
 
-  const onLast = function (p: E) {
+  const onLast = (p: E) => {
     universe.insert().append(p, injection);
   };
 
-  const onBefore = function (m: E) {
+  const onBefore = (m: E) => {
     universe.insert().before(m, injection);
   };
 
-  const onAfter = function (m: E) {
+  const onAfter = (m: E) => {
     universe.insert().after(m, injection);
   };
 

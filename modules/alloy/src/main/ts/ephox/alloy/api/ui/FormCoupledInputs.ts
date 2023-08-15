@@ -1,13 +1,15 @@
-import { Obj, Option } from '@ephox/katamari';
+import { Obj, Optional } from '@ephox/katamari';
 
-import { SketchSpec } from '../../api/component/SpecTypes';
 import * as AlloyParts from '../../parts/AlloyParts';
 import * as FormCoupledInputsSchema from '../../ui/schema/FormCoupledInputsSchema';
-import { FormCoupledInputsApis, FormCoupledInputsDetail, FormCoupledInputsSketcher, FormCoupledInputsSpec } from '../../ui/types/FormCoupledInputsTypes';
+import {
+  FormCoupledInputsApis, FormCoupledInputsDetail, FormCoupledInputsSketcher, FormCoupledInputsSpec
+} from '../../ui/types/FormCoupledInputsTypes';
 import { Composing } from '../behaviour/Composing';
 import { Representing } from '../behaviour/Representing';
 import { AlloyComponent } from '../component/ComponentApi';
 import { SketchBehaviours } from '../component/SketchBehaviours';
+import { SketchSpec } from '../component/SpecTypes';
 import * as Sketcher from './Sketcher';
 import { CompositeSketchFactory } from './UiSketcher';
 
@@ -19,12 +21,12 @@ const factory: CompositeSketchFactory<FormCoupledInputsDetail, FormCoupledInputs
   behaviours: SketchBehaviours.augment(
     detail.coupledFieldBehaviours,
     [
-      Composing.config({ find: Option.some }),
+      Composing.config({ find: Optional.some }),
 
       Representing.config({
         store: {
           mode: 'manual',
-          getValue(comp) {
+          getValue: (comp) => {
 
             const parts = AlloyParts.getPartsOrDie(comp, detail, [ 'field1', 'field2' ]);
             return {
@@ -32,10 +34,14 @@ const factory: CompositeSketchFactory<FormCoupledInputsDetail, FormCoupledInputs
               [detail.field2Name]: Representing.getValue(parts.field2())
             };
           },
-          setValue(comp, value) {
+          setValue: (comp, value) => {
             const parts = AlloyParts.getPartsOrDie(comp, detail, [ 'field1', 'field2' ]);
-            if (Obj.hasNonNullableKey(value, detail.field1Name)) { Representing.setValue(parts.field1(), value[detail.field1Name]); }
-            if (Obj.hasNonNullableKey(value, detail.field2Name)) { Representing.setValue(parts.field2(), value[detail.field2Name]); }
+            if (Obj.hasNonNullableKey(value, detail.field1Name)) {
+              Representing.setValue(parts.field1(), value[detail.field1Name]);
+            }
+            if (Obj.hasNonNullableKey(value, detail.field2Name)) {
+              Representing.setValue(parts.field2(), value[detail.field2Name]);
+            }
           }
         }
       })

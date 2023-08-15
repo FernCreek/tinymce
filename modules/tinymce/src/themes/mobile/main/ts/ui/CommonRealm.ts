@@ -5,14 +5,14 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Behaviour, Button, Container, GuiFactory, Replacing, Swapping, AlloyComponent } from '@ephox/alloy';
+import { AlloyComponent, Behaviour, Button, Container, GuiFactory, Replacing, Swapping } from '@ephox/alloy';
 
 import * as UiDomFactory from '../util/UiDomFactory';
 
 const makeEditSwitch = (webapp): AlloyComponent => GuiFactory.build(
   Button.sketch({
     dom: UiDomFactory.dom('<div class="${prefix}-mask-edit-icon ${prefix}-icon"></div>'),
-    action() {
+    action: () => {
       webapp.run((w) => {
         w.setReadOnly(false);
       });

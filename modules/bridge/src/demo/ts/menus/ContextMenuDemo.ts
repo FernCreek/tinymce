@@ -1,9 +1,8 @@
-import { console } from '@ephox/dom-globals';
 import { getDemoRegistry } from '../buttons/DemoRegistry';
 
-/* tslint:disable:no-console */
+/* eslint-disable no-console */
 
-export const registerDemoContextMenus = () => {
+export const registerDemoContextMenus = (): void => {
   getDemoRegistry().addContextMenu('regular', {
     update: () => [ 'bold', 'italic', '|', 'table' ]
   });

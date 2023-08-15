@@ -1,7 +1,7 @@
-import { Blob } from '@ephox/dom-globals';
-import { Options } from '@ephox/katamari';
+import { Optionals, Results } from '@ephox/katamari';
+import Promise from '@ephox/wrap-promise-polyfill';
+
 import * as Conversions from '../util/Conversions';
-import { Promise } from '../util/Promise';
 import { BinaryReader } from './BinaryReader';
 import { readShort } from './BinaryReaderUtils';
 import { ExifTags, GPSTags, readMetaData, TiffTags } from './ExifReader';
@@ -22,11 +22,11 @@ interface Header {
   segment: ArrayBuffer;
 }
 
-const extractFrom = function (blob: Blob): Promise<JPEGMeta> {
-  return Conversions.blobToArrayBuffer(blob).then<JPEGMeta>(function (ar) {
+const extractFrom = (blob: Blob): Promise<JPEGMeta> => {
+  return Conversions.blobToArrayBuffer(blob).then<JPEGMeta>((ar) => {
     try {
       const br = new BinaryReader(ar);
-      if (readShort(br, 0).is(0xFFD8)) { // is JPEG
+      if (Results.is(readShort(br, 0), 0xFFD8)) { // is JPEG
         const headers = extractHeaders(br);
         const app1 = headers.filter((header) => header.name === 'APP1'); // APP1 contains Exif, Gps, etc
         const meta: JPEGMeta = {
@@ -37,9 +37,9 @@ const extractFrom = function (blob: Blob): Promise<JPEGMeta> {
           const data = readMetaData(app1[0].segment);
           meta.tiff = data.tiff.getOrDie();
           // silence errors for the optional parts
-          meta.exif = Options.flatten(data.exif.toOption()).getOrNull();
-          meta.gps = Options.flatten(data.gps.toOption()).getOrNull();
-          meta.thumb = Options.flatten(data.thumb.toOption()).getOrNull();
+          meta.exif = Optionals.flatten(data.exif.toOptional()).getOrNull();
+          meta.gps = Optionals.flatten(data.gps.toOptional()).getOrNull();
+          meta.thumb = Optionals.flatten(data.thumb.toOptional()).getOrNull();
         } else {
           return Promise.reject('Headers did not include required information');
         }
@@ -48,18 +48,18 @@ const extractFrom = function (blob: Blob): Promise<JPEGMeta> {
       }
       return Promise.reject('Image was not a jpeg');
     } catch (ex) {
-      return Promise.reject(`Unsupported format or not an image: ${blob.type} (Exception: ${ex.message})`);
+      return Promise.reject(`Unsupported format or not an image: ${blob.type} (Exception: ${(ex as Error).message})`);
     }
   });
 };
 
-const extractHeaders = function (br: BinaryReader): Header[] {
+const extractHeaders = (br: BinaryReader): Header[] => {
   const headers: Header[] = [];
 
   let idx = 2;
 
   while (idx + 2 <= br.length()) {
-    const marker = readShort(br, idx).toOption().getOrNull();
+    const marker = readShort(br, idx).toOptional().getOrNull();
     if (marker === null) {
       throw new Error('Invalid Exif data.');
     }
@@ -75,7 +75,7 @@ const extractHeaders = function (br: BinaryReader): Header[] {
       break;
     }
 
-    const lengthTemp = readShort(br, idx + 2).toOption().getOrNull();
+    const lengthTemp = readShort(br, idx + 2).toOptional().getOrNull();
     if (lengthTemp === null) {
       throw new Error('Invalid Exif data.');
     }

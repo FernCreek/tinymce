@@ -1,8 +1,9 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
+
 import { Gene } from 'ephox/boss/api/Gene';
 import * as Comparator from 'ephox/boss/mutant/Comparator';
 
-UnitTest.test('ComparatorTest', function () {
+UnitTest.test('ComparatorTest', () => {
   const a = Gene('id1', 'bob', [], {}, { border: '10' });
 
   const b = Gene('id2', 'b name', [], {}, { cat: 'dog' });

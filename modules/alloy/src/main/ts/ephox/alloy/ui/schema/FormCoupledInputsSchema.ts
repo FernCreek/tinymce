@@ -1,4 +1,4 @@
-import { FieldProcessorAdt, FieldSchema } from '@ephox/boulder';
+import { FieldSchema } from '@ephox/boulder';
 import { Fun } from '@ephox/katamari';
 
 import * as AddEventsBehaviour from '../../api/behaviour/AddEventsBehaviour';
@@ -19,7 +19,7 @@ import { ButtonSpec } from '../types/ButtonTypes';
 import { FormCoupledInputsDetail } from '../types/FormCoupledInputsTypes';
 import { FormFieldSpec } from '../types/FormFieldTypes';
 
-const schema: () => FieldProcessorAdt[] = Fun.constant([
+const schema = Fun.constant([
   FieldSchema.defaulted('field1Name', 'field1'),
   FieldSchema.defaulted('field2Name', 'field2'),
   Fields.onStrictHandler('onLockedChange'),
@@ -33,7 +33,7 @@ const getField = (comp: AlloyComponent, detail: FormCoupledInputsDetail, partNam
 const coupledPart = (selfName: string, otherName: string) => PartType.required<FormCoupledInputsDetail, FormFieldSpec>({
   factory: FormField,
   name: selfName,
-  overrides(detail) {
+  overrides: (detail) => {
     return {
       fieldBehaviours: Behaviour.derive([
         AddEventsBehaviour.config('coupled-input-behaviour', [
@@ -41,7 +41,9 @@ const coupledPart = (selfName: string, otherName: string) => PartType.required<F
             getField(me, detail, otherName).each((other) => {
               AlloyParts.getPart(me, detail, 'lock').each((lock) => {
                 // TODO IMPROVEMENT: Allow locker to fire onLockedChange if it is turned on after being off.
-                if (Toggling.isOn(lock)) { detail.onLockedChange(me, other, lock); }
+                if (Toggling.isOn(lock)) {
+                  detail.onLockedChange(me, other, lock);
+                }
               });
             });
           })
@@ -58,10 +60,10 @@ const parts: () => PartType.PartTypeAdt[] = Fun.constant([
   PartType.required<FormCoupledInputsDetail, ButtonSpec>({
     factory: Button,
     schema: [
-      FieldSchema.strict('dom')
+      FieldSchema.required('dom')
     ],
     name: 'lock',
-    overrides(detail) {
+    overrides: (detail) => {
       return {
         buttonBehaviours: Behaviour.derive([
           Toggling.config({
@@ -77,7 +79,7 @@ const parts: () => PartType.PartTypeAdt[] = Fun.constant([
   })
 ]);
 
-const name = () => 'CoupledInputs';
+const name = Fun.constant('CoupledInputs');
 
 export {
   name,

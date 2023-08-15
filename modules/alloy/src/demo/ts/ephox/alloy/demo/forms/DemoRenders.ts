@@ -1,20 +1,22 @@
-import { FieldSchema, ValueSchema } from '@ephox/boulder';
+import { FieldSchema, StructureSchema } from '@ephox/boulder';
 
 import * as DomFactory from 'ephox/alloy/api/component/DomFactory';
-import { AlloySpec, SketchSpec } from 'ephox/alloy/api/component/SpecTypes';
+import { AlloySpec, RawDomSchema, SketchSpec } from 'ephox/alloy/api/component/SpecTypes';
 import * as ItemWidget from 'ephox/alloy/api/ui/ItemWidget';
 import { Menu } from 'ephox/alloy/api/ui/Menu';
 import { ToolbarGroup } from 'ephox/alloy/api/ui/ToolbarGroup';
 import { ItemDataTuple, ItemSpec, SeparatorItemSpec, WidgetItemSpec } from 'ephox/alloy/ui/types/ItemTypes';
-import { PartialMenuSpec } from 'ephox/alloy/ui/types/TieredMenuTypes';
+import { MenuSpec } from 'ephox/alloy/ui/types/MenuTypes';
+import { PartialMenuSpec, TieredMenuSpec } from 'ephox/alloy/ui/types/TieredMenuTypes';
+import { ToolbarGroupSpec } from 'ephox/alloy/ui/types/ToolbarGroupTypes';
 
 export interface DemoItem {
-  type: 'item';
-  text?: string;
-  data: {
-    value: string;
-    meta?: {
-      text: string;
+  readonly type: 'item';
+  readonly text?: string;
+  readonly data: {
+    readonly value: string;
+    readonly meta?: {
+      readonly text: string;
 
       [key: string]: string;
     };
@@ -24,73 +26,73 @@ export interface DemoItem {
 }
 
 export interface DemoSeparatorItem {
-  type: 'separator';
-  text?: string;
-  data?: {
-    value: string;
-    meta?: {
-      text: string;
+  readonly type: 'separator';
+  readonly text?: string;
+  readonly data?: {
+    readonly value: string;
+    readonly meta?: {
+      readonly text: string;
       [key: string]: string;
     };
   };
 }
 
 export interface DemoWidgetItem {
-  type: 'widget';
-  data: ItemDataTuple;
-  autofocus: boolean;
-  widget: SketchSpec;
+  readonly type: 'widget';
+  readonly data: ItemDataTuple;
+  readonly autofocus: boolean;
+  readonly widget: SketchSpec;
 }
 
 export type DemoItems = DemoWidgetItem | DemoItem | DemoSeparatorItem;
 
 export interface DemoMenu {
-  value: string;
-  items: ItemSpec[];
+  readonly value: string;
+  readonly items: ItemSpec[];
 
   [key: string]: any;
 }
 
-const demoItem = ValueSchema.objOf([
-  FieldSchema.strictObjOf('data', [
-    FieldSchema.strict('value'),
-    FieldSchema.strictObjOf('meta', [
-      FieldSchema.strict('text'),
+const demoItem = StructureSchema.objOf([
+  FieldSchema.requiredObjOf('data', [
+    FieldSchema.required('value'),
+    FieldSchema.requiredObjOf('meta', [
+      FieldSchema.required('text'),
       FieldSchema.defaulted('html', ''),
       FieldSchema.defaulted('meta-demo-content', { })
     ])
   ]),
-  FieldSchema.strict('type'),
+  FieldSchema.required('type'),
   FieldSchema.defaulted('itemBehaviours', { })
 ]);
 
-const demoWidgetItem = ValueSchema.objOf([
-  FieldSchema.strictObjOf('data', [
-    FieldSchema.strict('value'),
-    FieldSchema.strictObjOf('meta', [
-      FieldSchema.strict('text')
+const demoWidgetItem = StructureSchema.objOf([
+  FieldSchema.requiredObjOf('data', [
+    FieldSchema.required('value'),
+    FieldSchema.requiredObjOf('meta', [
+      FieldSchema.required('text')
     ])
   ]),
-  FieldSchema.strict('type'),
+  FieldSchema.required('type'),
   FieldSchema.defaulted('autofocus', false),
-  FieldSchema.strict('widget')
+  FieldSchema.required('widget')
 ]);
 
-const demoMenu = ValueSchema.objOf([
-  FieldSchema.strict('value'),
-  FieldSchema.strict('items')
+const demoMenu = StructureSchema.objOf([
+  FieldSchema.required('value'),
+  FieldSchema.required('items')
 ]);
 
-const demoGridMenu = ValueSchema.objOf([
-  FieldSchema.strict('columns'),
-  FieldSchema.strict('rows'),
-  FieldSchema.strict('items')
+const demoGridMenu = StructureSchema.objOf([
+  FieldSchema.required('columns'),
+  FieldSchema.required('rows'),
+  FieldSchema.required('items')
 ]);
 
-const demoChoice = ValueSchema.objOf([ ]);
+const demoChoice = StructureSchema.objOf([ ]);
 
-const choice = (choiceSpec: { value: string; text: string }) => {
-  const spec = ValueSchema.asRawOrDie('DemoRenders.choice', demoChoice, choiceSpec);
+const choice = (choiceSpec: { value: string; text: string }): { dom: RawDomSchema; value: string } => {
+  const spec = StructureSchema.asRawOrDie('DemoRenders.choice', demoChoice, choiceSpec);
   return {
     dom: DomFactory.fromHtml(
       '<span class="ephox-pastry-independent-button" title="' + spec.text + '" style="display: flex;"></span>'
@@ -130,11 +132,11 @@ const item = (itemSpec: DemoItems): ItemSpec => {
   } else if (itemSpec.type === 'separator') {
     return demoSeparatorRender(itemSpec);
   }
-  const spec = ValueSchema.asRawOrDie('DemoRenders.item', demoItem, itemSpec);
+  const spec = StructureSchema.asRawOrDie('DemoRenders.item', demoItem, itemSpec);
   const html = (() => {
     if (spec.data && spec.data.meta && spec.data.meta.html) {
       return spec.data.meta.html;
-    } else if (spec && spec.data.meta && spec.data.meta.text) {
+    } else if (spec.data && spec.data.meta && spec.data.meta.text) {
       return spec.data.meta.text;
     } else {
       return 'No.Text.For.Item';
@@ -151,7 +153,7 @@ const item = (itemSpec: DemoItems): ItemSpec => {
 };
 
 const gridItem = (itemSpec: DemoItem): ItemSpec => {
-  const spec = ValueSchema.asRawOrDie('DemoRenders.gridItem', demoItem, itemSpec);
+  const spec = StructureSchema.asRawOrDie('DemoRenders.gridItem', demoItem, itemSpec);
   const html = (() => {
     if (spec.data && spec.data.meta && spec.data.meta.text) {
       return spec.data.meta.text;
@@ -178,7 +180,7 @@ const gridItem = (itemSpec: DemoItem): ItemSpec => {
 };
 
 const widgetItem = (itemSpec: DemoWidgetItem): WidgetItemSpec => {
-  const spec = ValueSchema.asRawOrDie('DemoRenders.widgetItem', demoWidgetItem, itemSpec);
+  const spec = StructureSchema.asRawOrDie('DemoRenders.widgetItem', demoWidgetItem, itemSpec);
   return {
     type: spec.type,
     data: spec.data,
@@ -188,13 +190,13 @@ const widgetItem = (itemSpec: DemoWidgetItem): WidgetItemSpec => {
       classes: [ 'demo-alloy-item' ]
     },
     components: [
-      ItemWidget.parts().widget(spec.widget)
+      ItemWidget.parts.widget(spec.widget)
     ]
   };
 };
 
-const gridMenu = (menuSpec: DemoMenu & { columns: number; rows: number }) => {
-  const spec = ValueSchema.asRawOrDie('DemoRenders.gridMenu', demoGridMenu, menuSpec);
+const gridMenu = (menuSpec: DemoMenu & { columns: number; rows: number }): PartialMenuSpec => {
+  const spec = StructureSchema.asRawOrDie('DemoRenders.gridMenu', demoGridMenu, menuSpec);
   return {
     movement: {
       mode: 'grid',
@@ -211,14 +213,14 @@ const gridMenu = (menuSpec: DemoMenu & { columns: number; rows: number }) => {
       }
     },
     components: [
-      Menu.parts().items({ })
+      Menu.parts.items({ })
     ],
     items: spec.items
-  } as PartialMenuSpec;
+  };
 };
 
-const menu = (menuSpec: DemoMenu) => {
-  const spec = ValueSchema.asRawOrDie('DemoRenders.menu', demoMenu, menuSpec);
+const menu = (menuSpec: DemoMenu): PartialMenuSpec => {
+  const spec = StructureSchema.asRawOrDie('DemoRenders.menu', demoMenu, menuSpec);
   return {
     dom: {
       tag: 'div',
@@ -229,14 +231,16 @@ const menu = (menuSpec: DemoMenu) => {
     },
     items: spec.items,
     components: [
-      Menu.parts().items({ })
+      Menu.parts.items({ })
     ]
   };
 };
 
 const orb = (spec: DemoItem): ItemSpec => {
   const html = (() => {
-    if (spec.data && spec.data.meta && spec.data.meta.text) { return spec.data.meta.text; }
+    if (spec.data && spec.data.meta && spec.data.meta.text) {
+      return spec.data.meta.text;
+    }
     return 'No.Text.For.Orb';
   })();
 
@@ -259,7 +263,7 @@ const orb = (spec: DemoItem): ItemSpec => {
   };
 };
 
-const toolbarItem = (spec: { text: string; action: () => void }) => ({
+const toolbarItem = (spec: { text: string; action: () => void }): AlloySpec => ({
   dom: {
     tag: 'span',
     classes: [ 'demo-alloy-toolbar-item' ],
@@ -267,7 +271,7 @@ const toolbarItem = (spec: { text: string; action: () => void }) => ({
   }
 });
 
-const toolbarGroup = (group: { label?: string; items: AlloySpec[] }) => {
+const toolbarGroup = (group: { label?: string; items: AlloySpec[] }): ToolbarGroupSpec => {
   const spec = group;
   return {
     dom: {
@@ -276,7 +280,7 @@ const toolbarGroup = (group: { label?: string; items: AlloySpec[] }) => {
     },
 
     components: [
-      ToolbarGroup.parts().items({ })
+      ToolbarGroup.parts.items({ })
     ],
 
     items: spec.items,
@@ -286,12 +290,12 @@ const toolbarGroup = (group: { label?: string; items: AlloySpec[] }) => {
   };
 };
 
-const orbMarkers = () => ({
+const orbMarkers = (): MenuSpec['markers'] => ({
   item: 'demo-alloy-orb',
   selectedItem: 'demo-alloy-orb-selected'
 });
 
-const tieredMarkers = () => ({
+const tieredMarkers = (): TieredMenuSpec['markers'] => ({
   item: 'demo-alloy-item',
   selectedItem: 'demo-alloy-item-selected',
   menu: 'demo-alloy-menu',

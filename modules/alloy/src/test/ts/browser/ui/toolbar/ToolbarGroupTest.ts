@@ -44,7 +44,7 @@ UnitTest.asynctest('ToolbarGroupTest', (success, failure) => {
             classes: [ 'test-group1' ]
           },
           components: [
-            ToolbarGroup.parts().items({
+            ToolbarGroup.parts.items({
               dom: {
                 tag: 'div',
                 classes: [ 'group-items' ]
@@ -66,7 +66,7 @@ UnitTest.asynctest('ToolbarGroupTest', (success, failure) => {
   ), (doc, _body, _gui, component: AlloyComponent, _store) => {
 
     const group1 = component.getSystem().getByDom(
-      SelectorFind.descendant(component.element(), '.test-group1').getOrDie('Could not find test-group1')
+      SelectorFind.descendant(component.element, '.test-group1').getOrDie('Could not find test-group1')
     ).getOrDie();
 
     return [
@@ -83,7 +83,7 @@ UnitTest.asynctest('ToolbarGroupTest', (success, failure) => {
             s.element('button', { html: str.is('B'), classes: [ arr.has('toolbar-item') ] })
           ]
         })),
-        group1.element()
+        group1.element
       ),
 
       Step.sync(() => {
@@ -94,5 +94,5 @@ UnitTest.asynctest('ToolbarGroupTest', (success, failure) => {
       Keyboard.sKeydown(doc, Keys.right(), { }),
       FocusTools.sTryOnSelector('Focus should move to B', doc, 'button:contains("B")')
     ];
-  }, () => { success(); }, failure);
+  }, success, failure);
 });

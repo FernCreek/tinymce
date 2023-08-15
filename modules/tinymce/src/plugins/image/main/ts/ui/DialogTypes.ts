@@ -5,44 +5,39 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Types } from '@ephox/bridge';
-import { File } from '@ephox/dom-globals';
-import { Option } from '@ephox/katamari';
+import { Optional } from '@ephox/katamari';
+
+import { Dialog } from 'tinymce/core/api/ui/Ui';
 
 import { ImageData } from '../core/ImageData';
-import { UploadHandler } from '../core/Uploader';
 
-export interface ListValue {
-  text: string;
-  value: string;
+export type ListValue = Dialog.ListBoxSingleItemSpec;
+export type ListGroup = Dialog.ListBoxNestedItemSpec;
+export type ListItem = Dialog.ListBoxItemSpec;
+
+export interface UserListItem {
+  readonly text?: string;
+  readonly title?: string;
+  readonly value?: string;
+  readonly url?: string;
+  readonly menu?: UserListItem[];
 }
-
-export interface ListGroup {
-  text: string;
-  items: ListItem[];
-}
-
-export type ListItem = ListValue | ListGroup;
 
 export interface ImageDialogInfo {
-  image: ImageData;
-  imageList: Option<ListItem[]>;
-  classList: Option<ListItem[]>;
-  hasAdvTab: boolean;
-  hasUploadTab: boolean;
-  hasUploadUrl: boolean;
-  hasUploadHandler: boolean;
-  hasDescription: boolean;
-  hasImageTitle: boolean;
-  hasDimensions: boolean;
-  hasImageCaption: boolean;
-  hasAccessibilityOptions: boolean;
-  url: string;
-  basePath: string;
-  credentials: boolean;
-  handler: UploadHandler;
-  automaticUploads: boolean;
-  prependURL: Option<string>;
+  readonly image: ImageData;
+  readonly imageList: Optional<ListItem[]>;
+  readonly classList: Optional<ListItem[]>;
+  readonly hasAdvTab: boolean;
+  readonly hasUploadTab: boolean;
+  readonly hasUploadUrl: boolean;
+  readonly hasUploadHandler: boolean;
+  readonly hasDescription: boolean;
+  readonly hasImageTitle: boolean;
+  readonly hasDimensions: boolean;
+  readonly hasImageCaption: boolean;
+  readonly hasAccessibilityOptions: boolean;
+  readonly automaticUploads: boolean;
+  readonly prependURL: Optional<string>;
 }
 
 export interface ImageDialogData {
@@ -82,4 +77,4 @@ export interface ImageDialogData {
   isDecorative: boolean;
 }
 
-export type API = Types.Dialog.DialogInstanceApi<ImageDialogData>;
+export type API = Dialog.DialogInstanceApi<ImageDialogData>;

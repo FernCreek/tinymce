@@ -1,39 +1,34 @@
-import { LegacyUnit } from '@ephox/mcagar';
-import { Pipeline } from '@ephox/agar';
-import * as Conversions from 'tinymce/core/file/Conversions';
-import Env from 'tinymce/core/api/Env';
-import { UnitTest } from '@ephox/bedrock-client';
+import { before, describe, it } from '@ephox/bedrock-client';
+import { assert } from 'chai';
 
-UnitTest.asynctest('browser.tinymce.core.file.ConversionsTest', function (success, failure) {
-  const suite = LegacyUnit.createSuite();
+import Env from 'tinymce/core/api/Env';
+import * as Conversions from 'tinymce/core/file/Conversions';
+
+describe('browser.tinymce.core.file.ConversionsTest', () => {
   const invalidBlobUriSrc = 'blob:70BE8432-BA4D-4787-9AB9-86563351FBF7';
 
-  if (!Env.fileApi) {
-    suite.test('File API not supported by browser.', function () {
-      LegacyUnit.equal(true, true);
-    });
-
-    return;
-  }
-
-  suite.asyncTest('uriToBlob', function (world, done) {
-    Conversions.uriToBlob('data:text/plain;base64,SGVsbG8sIFdvcmxkIQ%3D%3D').then(Conversions.blobToDataUri).then(function (dataUri) {
-      LegacyUnit.equal(dataUri, 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==');
-    }).then(done);
+  before(function () {
+    if (!Env.fileApi) {
+      // eslint-disable-next-line no-console
+      console.log('File API not supported by browser.');
+      this.skip();
+    }
   });
 
-  suite.asyncTest('uriToBlob', function (world, done) {
-    Conversions.uriToBlob(invalidBlobUriSrc).then(function () {
-      LegacyUnit.equal(true, false, 'Conversion should fail.');
-      done();
-    }).catch(function (error) {
-      LegacyUnit.equal(typeof error, 'string');
-      LegacyUnit.equal(error.indexOf(invalidBlobUriSrc) !== -1, true);
-      done();
-    });
+  it('uriToBlob', () => {
+    return Conversions.uriToBlob('data:text/plain;base64,SGVsbG8sIFdvcmxkIQ%3D%3D')
+      .then(Conversions.blobToDataUri)
+      .then((dataUri) => {
+        assert.equal(dataUri, 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==');
+      });
   });
 
-  Pipeline.async({}, suite.toSteps({}), function () {
-    success();
-  }, failure);
+  it('uriToBlob with invalid src', () => {
+    return Conversions.uriToBlob(invalidBlobUriSrc).then(() => {
+      assert.fail('Conversion should fail.');
+    }, (error) => {
+      assert.typeOf(error, 'string');
+      assert.include(error, invalidBlobUriSrc);
+    });
+  });
 });

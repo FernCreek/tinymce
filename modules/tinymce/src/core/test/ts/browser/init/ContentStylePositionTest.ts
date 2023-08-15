@@ -1,33 +1,29 @@
-import { Assertions, Pipeline, Step } from '@ephox/agar';
+import { describe, it } from '@ephox/bedrock-client';
 import { Arr } from '@ephox/katamari';
-import { TinyLoader } from '@ephox/mcagar';
-import { Element, Node } from '@ephox/sugar';
+import { SugarElement, SugarNode } from '@ephox/sugar';
+import { TinyHooks } from '@ephox/wrap-mcagar';
+import { assert } from 'chai';
+
+import Editor from 'tinymce/core/api/Editor';
 import Theme from 'tinymce/themes/silver/Theme';
-import { UnitTest } from '@ephox/bedrock-client';
-import { NodeListOf, HTMLElement } from '@ephox/dom-globals';
 
-UnitTest.asynctest('browser.tinymce.core.init.ContentStylePositionTest', (success, failure) => {
-  Theme();
-
+describe('browser.tinymce.core.init.ContentStylePositionTest', () => {
   const contentStyle = '.class {color: blue;}';
-
-  TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
-
-    Pipeline.async({}, [
-      Step.sync(function () {
-        const headStuff: NodeListOf<HTMLElement> = editor.getDoc().head.querySelectorAll('link, style');
-        const linkIndex = Arr.findIndex(headStuff, function (elm) {
-          return Node.name(Element.fromDom(elm)) === 'link';
-        }).getOrDie('could not find link elemnt');
-        const styleIndex = Arr.findIndex(headStuff, function (elm) {
-          return elm.innerText === contentStyle;
-        }).getOrDie('could not find content style tag');
-
-        Assertions.assertEq('style tag should be after link tag', linkIndex < styleIndex, true);
-      })
-    ], onSuccess, onFailure);
-  }, {
+  const hook = TinyHooks.bddSetupLight<Editor>({
     content_style: contentStyle,
     base_url: '/project/tinymce/js/tinymce'
-  }, success, failure);
+  }, [ Theme ]);
+
+  it('content styles should be after content css', () => {
+    const editor = hook.editor();
+    const headStuff = editor.getDoc().head.querySelectorAll<HTMLElement>('link, style');
+    const linkIndex = Arr.findIndex(headStuff, (elm) => {
+      return SugarNode.name(SugarElement.fromDom(elm)) === 'link';
+    }).getOrDie('could not find link element');
+    const styleIndex = Arr.findIndex(headStuff, (elm) => {
+      return elm.innerText === contentStyle;
+    }).getOrDie('could not find content style tag');
+
+    assert.isBelow(linkIndex, styleIndex, 'style tag should be after link tag');
+  });
 });

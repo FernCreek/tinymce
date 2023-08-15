@@ -5,25 +5,26 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { Type } from '@ephox/katamari';
+
+import Editor from 'tinymce/core/api/Editor';
 import Tools from 'tinymce/core/api/util/Tools';
 import XHR from 'tinymce/core/api/util/XHR';
+
 import * as Settings from '../api/Settings';
 import * as DateTimeHelper from './DateTimeHelper';
-import Editor from 'tinymce/core/api/Editor';
+import { ExternalTemplate, TemplateValues } from './Types';
 
-const createTemplateList = function (editor: Editor, callback) {
-  return function () {
+const createTemplateList = (editor: Editor, callback: (templates: ExternalTemplate[]) => void) => {
+  return (): void => {
     const templateList = Settings.getTemplates(editor);
 
-    if (typeof templateList === 'function') {
+    if (Type.isFunction(templateList)) {
       templateList(callback);
-      return;
-    }
-
-    if (typeof templateList === 'string') {
+    } else if (Type.isString(templateList)) {
       XHR.send({
         url: templateList,
-        success(text) {
+        success: (text) => {
           callback(JSON.parse(text));
         }
       });
@@ -33,9 +34,9 @@ const createTemplateList = function (editor: Editor, callback) {
   };
 };
 
-const replaceTemplateValues = function (html, templateValues) {
-  Tools.each(templateValues, function (v, k) {
-    if (typeof v === 'function') {
+const replaceTemplateValues = (html: string, templateValues: TemplateValues): string => {
+  Tools.each(templateValues, (v, k) => {
+    if (Type.isFunction(v)) {
       v = v(k);
     }
 
@@ -45,32 +46,32 @@ const replaceTemplateValues = function (html, templateValues) {
   return html;
 };
 
-const replaceVals = function (editor, e) {
+const replaceVals = (editor: Editor, scope: HTMLElement): void => {
   const dom = editor.dom, vl = Settings.getTemplateReplaceValues(editor);
 
-  Tools.each(dom.select('*', e), function (e) {
-    Tools.each(vl, function (v, k) {
+  Tools.each(dom.select('*', scope), (e) => {
+    Tools.each(vl, (v, k) => {
       if (dom.hasClass(e, k)) {
-        if (typeof vl[k] === 'function') {
-          vl[k](e);
+        if (Type.isFunction(v)) {
+          // TODO: TINY-7792: Investigate as this appears to be a bug as "replaceTemplateValues" above uses
+          // the same values here and it expects a string and return value so this is not compatible.
+          v(e as any);
         }
       }
     });
   });
 };
 
-const hasClass = function (n, c) {
-  return new RegExp('\\b' + c + '\\b', 'g').test(n.className);
-};
+const hasClass = (n: Element, c: string): boolean =>
+  new RegExp('\\b' + c + '\\b', 'g').test(n.className);
 
-const insertTemplate = function (editor, ui, html) {
+const insertTemplate = (editor: Editor, _ui: boolean, html: string): void => {
   // Note: ui is unused here but is required since this can be called by execCommand
-  let el;
   const dom = editor.dom;
   const sel = editor.selection.getContent();
 
   html = replaceTemplateValues(html, Settings.getTemplateReplaceValues(editor));
-  el = dom.create('div', null, html);
+  let el = dom.create('div', null, html);
 
   // Find template element within div
   const n = dom.select('.mceTmpl', el);
@@ -79,7 +80,7 @@ const insertTemplate = function (editor, ui, html) {
     el.appendChild(n[0].cloneNode(true));
   }
 
-  Tools.each(dom.select('*', el), function (n) {
+  Tools.each(dom.select('*', el), (n) => {
     // Replace cdate
     if (hasClass(n, Settings.getCreationDateClasses(editor).replace(/\s+/g, '|'))) {
       n.innerHTML = DateTimeHelper.getDateTime(editor, Settings.getCdateFormat(editor));

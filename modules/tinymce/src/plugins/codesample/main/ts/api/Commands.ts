@@ -5,12 +5,13 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import * as Dialog from '../ui/Dialog';
-import * as Utils from '../util/Utils';
 import Editor from 'tinymce/core/api/Editor';
 
-const register = function (editor: Editor) {
-  editor.addCommand('codesample', function () {
+import * as Dialog from '../ui/Dialog';
+import * as Utils from '../util/Utils';
+
+const register = (editor: Editor): void => {
+  editor.addCommand('codesample', () => {
     const node = editor.selection.getNode();
     if (editor.selection.isCollapsed() || Utils.isCodeSample(node)) {
       Dialog.open(editor);

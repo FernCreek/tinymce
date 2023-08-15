@@ -5,11 +5,11 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { HTMLElement } from '@ephox/dom-globals';
-import { Fun, Option } from '@ephox/katamari';
-import { Element } from '@ephox/sugar';
+import { Arr, Fun, Optional } from '@ephox/katamari';
+import { SugarElement } from '@ephox/sugar';
+
 import Editor from '../api/Editor';
-import Node from '../api/html/Node';
+import AstNode from '../api/html/Node';
 import * as Settings from '../api/Settings';
 import Tools from '../api/util/Tools';
 import { isWsPreserveElement } from '../dom/ElementType';
@@ -23,42 +23,44 @@ const trimEmptyContents = (editor: Editor, html: string): string => {
   return html.replace(emptyRegExp, '');
 };
 
+const setupArgs = (args: Partial<GetContentArgs>, format: ContentFormat): GetContentArgs => ({
+  ...args,
+  format,
+  get: true,
+  getInner: true
+});
+
 const getContentFromBody = (editor: Editor, args: GetContentArgs, format: ContentFormat, body: HTMLElement): Content => {
-  let content;
+  const defaultedArgs = setupArgs(args, format);
+  const updatedArgs = args.no_events ? defaultedArgs : editor.fire('BeforeGetContent', defaultedArgs);
 
-  args.format = format;
-  args.get = true;
-  args.getInner = true;
-
-  if (!args.no_events) {
-    editor.fire('BeforeGetContent', args);
-  }
-
-  if (args.format === 'raw') {
+  let content: string;
+  if (updatedArgs.format === 'raw') {
     content = Tools.trim(TrimHtml.trimExternal(editor.serializer, body.innerHTML));
-  } else if (args.format === 'text') {
-    content = Zwsp.trim(body.innerText || body.textContent);
-  } else if (args.format === 'tree') {
-    return editor.serializer.serialize(body, args);
+  } else if (updatedArgs.format === 'text') {
+    // return empty string for text format when editor is empty to avoid bogus elements being returned in content
+    content = editor.dom.isEmpty(body) ? '' : Zwsp.trim(body.innerText || body.textContent);
+  } else if (updatedArgs.format === 'tree') {
+    content = editor.serializer.serialize(body, updatedArgs);
   } else {
-    content = trimEmptyContents(editor, editor.serializer.serialize(body, args));
+    content = trimEmptyContents(editor, editor.serializer.serialize(body, updatedArgs));
   }
 
-  if (args.format !== 'text' && !isWsPreserveElement(Element.fromDom(body))) {
-    args.content = Tools.trim(content);
+  if (!Arr.contains([ 'text', 'tree' ], updatedArgs.format) && !isWsPreserveElement(SugarElement.fromDom(body))) {
+    updatedArgs.content = Tools.trim(content);
   } else {
-    args.content = content;
+    updatedArgs.content = content;
   }
 
-  if (!args.no_events) {
-    editor.fire('GetContent', args);
+  if (updatedArgs.no_events) {
+    return updatedArgs.content;
+  } else {
+    return editor.fire('GetContent', updatedArgs).content;
   }
-
-  return args.content;
 };
 
-export const getContentInternal = (editor: Editor, args: GetContentArgs, format): Content => Option.from(editor.getBody())
+export const getContentInternal = (editor: Editor, args: GetContentArgs, format: ContentFormat): Content => Optional.from(editor.getBody())
   .fold(
-    Fun.constant(args.format === 'tree' ? new Node('body', 11) : ''),
+    Fun.constant(args.format === 'tree' ? new AstNode('body', 11) : ''),
     (body) => getContentFromBody(editor, args, format, body)
   );

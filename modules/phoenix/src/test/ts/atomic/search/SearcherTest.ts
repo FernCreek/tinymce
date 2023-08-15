@@ -1,11 +1,12 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Gene, TestUniverse, TextGene } from '@ephox/boss';
 import { Arr, Fun } from '@ephox/katamari';
+
 import * as Searcher from 'ephox/phoenix/search/Searcher';
 import * as Finder from 'ephox/phoenix/test/Finder';
 import * as TestRenders from 'ephox/phoenix/test/TestRenders';
 
-UnitTest.test('SearcherTest', function () {
+UnitTest.test('SearcherTest', () => {
   /*
     An example of some <b>test</b> data. The word being looked for will be word and for.
 
@@ -17,7 +18,7 @@ UnitTest.test('SearcherTest', function () {
     <p>There will be three paragraphs. This one ends with partial fo</p>
     <p>r and more.</p>
   */
-  const data = function () {
+  const data = () => {
     return Gene('root', 'root', [
       Gene('p1', 'p', [
         TextGene('p1-a', 'An example of some '),
@@ -51,16 +52,16 @@ UnitTest.test('SearcherTest', function () {
     exact: string;
   }
 
-  const checkWords = function (expected: CheckItem[], itemIds: string[], words: string[], input: Gene) {
+  const checkWords = (expected: CheckItem[], itemIds: string[], words: string[], input: Gene) => {
     const universe = TestUniverse(input);
     const items = Finder.getAll(universe, itemIds);
-    const actual = Searcher.safeWords(universe, items, words, Fun.constant(false) as (e: Gene) => boolean);
+    const actual = Searcher.safeWords(universe, items, words, Fun.never as (e: Gene) => boolean);
 
-    const processed = Arr.map(actual, function (match): CheckItem {
+    const processed = Arr.map(actual, (match): CheckItem => {
       return {
-        items: TestRenders.texts(match.elements()),
-        word: match.word(),
-        exact: match.exact()
+        items: TestRenders.texts(match.elements),
+        word: match.word,
+        exact: match.exact
       };
     });
     assert.eq(expected, processed);

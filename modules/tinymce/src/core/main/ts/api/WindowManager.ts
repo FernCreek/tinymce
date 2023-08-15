@@ -5,11 +5,12 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Types } from '@ephox/bridge';
-import { Arr, Option } from '@ephox/katamari';
+import { Arr, Optional } from '@ephox/katamari';
+
 import * as SelectionBookmark from '../selection/SelectionBookmark';
 import WindowManagerImpl from '../ui/WindowManagerImpl';
 import Editor from './Editor';
+import { Dialog } from './ui/Ui';
 
 /**
  * This class handles the creation of native windows and dialogs. This class can be extended to provide for example inline dialogs.
@@ -33,58 +34,63 @@ import Editor from './Editor';
  * });
  */
 
-type InstanceApi<T> = Types.UrlDialog.UrlDialogInstanceApi | Types.Dialog.DialogInstanceApi<T>;
-
-export interface WindowManagerImpl {
-  open: <T>(config: Types.Dialog.DialogApi<T>, params, closeWindow: (dialog: Types.Dialog.DialogInstanceApi<T>) => void) => Types.Dialog.DialogInstanceApi<T>;
-  openUrl: <T>(config: Types.UrlDialog.UrlDialogApi, closeWindow: (dialog: Types.UrlDialog.UrlDialogInstanceApi) => void) => Types.UrlDialog.UrlDialogInstanceApi;
-  alert: (message: string, callback: () => void) => void;
-  confirm: (message: string, callback: (state: boolean) => void) => void;
-  close: (dialog: InstanceApi<any>) => void;
+export interface WindowParams {
+  readonly inline?: 'cursor' | 'toolbar';
+  readonly ariaAttrs?: boolean;
 }
 
 interface WindowManager {
-  open: <T>(config: Types.Dialog.DialogApi<T>, params?) => Types.Dialog.DialogInstanceApi<T>;
-  openUrl: <T>(config: Types.UrlDialog.UrlDialogApi) => Types.UrlDialog.UrlDialogInstanceApi;
+  open: <T>(config: Dialog.DialogSpec<T>, params?: WindowParams) => Dialog.DialogInstanceApi<T>;
+  openUrl: (config: Dialog.UrlDialogSpec) => Dialog.UrlDialogInstanceApi;
   alert: (message: string, callback?: () => void, scope?) => void;
   confirm: (message: string, callback?: (state: boolean) => void, scope?) => void;
   close: () => void;
 }
 
-const WindowManager = function (editor: Editor): WindowManager {
+export type InstanceApi<T> = Dialog.UrlDialogInstanceApi | Dialog.DialogInstanceApi<T>;
+
+export interface WindowManagerImpl {
+  open: <T>(config: Dialog.DialogSpec<T>, params: WindowParams, closeWindow: (dialog: Dialog.DialogInstanceApi<T>) => void) => Dialog.DialogInstanceApi<T>;
+  openUrl: (config: Dialog.UrlDialogSpec, closeWindow: (dialog: Dialog.UrlDialogInstanceApi) => void) => Dialog.UrlDialogInstanceApi;
+  alert: (message: string, callback: () => void) => void;
+  confirm: (message: string, callback: (state: boolean) => void) => void;
+  close: (dialog: InstanceApi<any>) => void;
+}
+
+const WindowManager = (editor: Editor): WindowManager => {
   let dialogs: InstanceApi<any>[] = [];
 
-  const getImplementation = function (): WindowManagerImpl {
+  const getImplementation = (): WindowManagerImpl => {
     const theme = editor.theme;
     return theme && theme.getWindowManagerImpl ? theme.getWindowManagerImpl() : WindowManagerImpl();
   };
 
-  const funcBind = function (scope, f) {
-    return function () {
-      return f ? f.apply(scope, arguments) : undefined;
+  const funcBind = (scope, f) => {
+    return (...args: any[]) => {
+      return f ? f.apply(scope, args) : undefined;
     };
   };
 
-  const fireOpenEvent = function <T> (dialog: InstanceApi<T>) {
+  const fireOpenEvent = <T>(dialog: InstanceApi<T>) => {
     editor.fire('OpenWindow', {
       dialog
     });
   };
 
-  const fireCloseEvent = function <T> (dialog: InstanceApi<T>) {
+  const fireCloseEvent = <T>(dialog: InstanceApi<T>) => {
     editor.fire('CloseWindow', {
       dialog
     });
   };
 
-  const addDialog = function <T> (dialog: InstanceApi<T>) {
+  const addDialog = <T>(dialog: InstanceApi<T>) => {
     dialogs.push(dialog);
     fireOpenEvent(dialog);
   };
 
-  const closeDialog = function <T> (dialog: InstanceApi<T>) {
+  const closeDialog = <T>(dialog: InstanceApi<T>) => {
     fireCloseEvent(dialog);
-    dialogs = Arr.filter(dialogs, function (otherDialog) {
+    dialogs = Arr.filter(dialogs, (otherDialog) => {
       return otherDialog !== dialog;
     });
     // Move focus back to editor when the last window is closed
@@ -93,8 +99,8 @@ const WindowManager = function (editor: Editor): WindowManager {
     }
   };
 
-  const getTopDialog = function () {
-    return Option.from(dialogs[dialogs.length - 1]);
+  const getTopDialog = () => {
+    return Optional.from(dialogs[dialogs.length - 1]);
   };
 
   const storeSelectionAndOpenDialog = <T extends InstanceApi<any>>(openDialog: () => T) => {
@@ -106,31 +112,33 @@ const WindowManager = function (editor: Editor): WindowManager {
     return dialog;
   };
 
-  const open = function <T> (args, params?): Types.Dialog.DialogInstanceApi<T> {
+  const open = <T>(args, params?: WindowParams): Dialog.DialogInstanceApi<T> => {
     return storeSelectionAndOpenDialog(() => getImplementation().open<T>(args, params, closeDialog));
   };
 
-  const openUrl = function (args): Types.UrlDialog.UrlDialogInstanceApi {
+  const openUrl = (args): Dialog.UrlDialogInstanceApi => {
     return storeSelectionAndOpenDialog(() => getImplementation().openUrl(args, closeDialog));
   };
 
-  const alert = function (message, callback?: () => void, scope?) {
-    getImplementation().alert(message, funcBind(scope ? scope : this, callback));
+  const alert = (message, callback?: () => void, scope?) => {
+    const windowManagerImpl = getImplementation();
+    windowManagerImpl.alert(message, funcBind(scope ? scope : windowManagerImpl, callback));
   };
 
-  const confirm = function (message, callback?: (state: boolean) => void, scope?) {
-    getImplementation().confirm(message, funcBind(scope ? scope : this, callback));
+  const confirm = (message, callback?: (state: boolean) => void, scope?) => {
+    const windowManagerImpl = getImplementation();
+    windowManagerImpl.confirm(message, funcBind(scope ? scope : windowManagerImpl, callback));
   };
 
-  const close = function () {
-    getTopDialog().each(function (dialog) {
+  const close = () => {
+    getTopDialog().each((dialog) => {
       getImplementation().close(dialog);
       closeDialog(dialog);
     });
   };
 
-  editor.on('remove', function () {
-    Arr.each(dialogs, function (dialog) {
+  editor.on('remove', () => {
+    Arr.each(dialogs, (dialog) => {
       getImplementation().close(dialog);
     });
   });

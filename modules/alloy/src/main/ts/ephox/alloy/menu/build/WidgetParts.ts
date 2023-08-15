@@ -5,21 +5,21 @@ import { Representing } from '../../api/behaviour/Representing';
 import * as PartType from '../../parts/PartType';
 import { WidgetItemDetail } from '../../ui/types/ItemTypes';
 
-const owner = () => 'item-widget';
+const owner = Fun.constant('item-widget');
 
 const parts: () => PartType.PartTypeAdt[] = Fun.constant([
   PartType.required({
     name: 'widget',
-    overrides(detail: WidgetItemDetail) {
+    overrides: (detail: WidgetItemDetail) => {
       return {
         behaviours: Behaviour.derive([
           Representing.config({
             store: {
               mode: 'manual',
-              getValue(_component) {
+              getValue: (_component) => {
                 return detail.data;
               },
-              setValue() { }
+              setValue: Fun.noop
             }
           })
         ])

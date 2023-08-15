@@ -50,7 +50,7 @@ UnitTest.asynctest('Browser Test: behaviour.KeyingAndFocusingTest', (success, fa
           Focusing.config({ }),
           Keying.config({
             mode: 'special',
-            focusIn(comp) {
+            focusIn: (comp) => {
               const child = memChild.get(comp);
               Focusing.focus(child);
             }
@@ -63,7 +63,7 @@ UnitTest.asynctest('Browser Test: behaviour.KeyingAndFocusingTest', (success, fa
         ':focus { outline: 10px solid green; }'
       ]),
       Step.sync(() => {
-        AlloyTriggers.dispatchFocus(component, component.element());
+        AlloyTriggers.dispatchFocus(component, component.element);
       }),
       FocusTools.sTryOnSelector('Focus should be on child span', doc, 'span.child'),
       GuiSetup.mRemoveStyles

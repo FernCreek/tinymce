@@ -1,30 +1,26 @@
-import { LegacyUnit } from '@ephox/mcagar';
-import { Pipeline } from '@ephox/agar';
+import { describe, it } from '@ephox/bedrock-client';
+import { LegacyUnit } from '@ephox/wrap-mcagar';
+import { assert } from 'chai';
+
 import * as NodePath from 'tinymce/core/dom/NodePath';
-import ViewBlock from '../../module/test/ViewBlock';
-import { UnitTest } from '@ephox/bedrock-client';
 
-UnitTest.asynctest('browser.tinymce.core.dom.NodePathTest', function (success, failure) {
-  const suite = LegacyUnit.createSuite();
-  const viewBlock = ViewBlock();
+import * as ViewBlock from '../../module/test/ViewBlock';
 
-  const getRoot = function () {
-    return viewBlock.get();
-  };
+describe('browser.tinymce.core.dom.NodePathTest', () => {
+  const viewBlock = ViewBlock.bddSetup();
 
-  const setupHtml = function (html) {
-    viewBlock.update(html);
-  };
+  const getRoot = viewBlock.get;
+  const setupHtml = viewBlock.update;
 
-  suite.test('create', function () {
+  it('create', () => {
     setupHtml('<p>a<b>12<input></b></p>');
 
-    LegacyUnit.deepEqual(NodePath.create(getRoot(), getRoot().firstChild), [ 0 ]);
-    LegacyUnit.deepEqual(NodePath.create(getRoot(), getRoot().firstChild.firstChild), [ 0, 0 ]);
-    LegacyUnit.deepEqual(NodePath.create(getRoot(), getRoot().firstChild.lastChild.lastChild), [ 1, 1, 0 ]);
+    assert.deepEqual(NodePath.create(getRoot(), getRoot().firstChild), [ 0 ]);
+    assert.deepEqual(NodePath.create(getRoot(), getRoot().firstChild.firstChild), [ 0, 0 ]);
+    assert.deepEqual(NodePath.create(getRoot(), getRoot().firstChild.lastChild.lastChild), [ 1, 1, 0 ]);
   });
 
-  suite.test('resolve', function () {
+  it('resolve', () => {
     setupHtml('<p>a<b>12<input></b></p>');
 
     LegacyUnit.equalDom(NodePath.resolve(getRoot(), NodePath.create(getRoot(), getRoot().firstChild)), getRoot().firstChild);
@@ -37,10 +33,4 @@ UnitTest.asynctest('browser.tinymce.core.dom.NodePathTest', function (success, f
       getRoot().firstChild.lastChild.lastChild
     );
   });
-
-  viewBlock.attach();
-  Pipeline.async({}, suite.toSteps({}), function () {
-    viewBlock.detach();
-    success();
-  }, failure);
 });

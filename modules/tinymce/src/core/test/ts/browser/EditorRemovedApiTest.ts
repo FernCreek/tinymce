@@ -1,110 +1,44 @@
-import { Assertions, GeneralSteps, Logger, Pipeline, Step } from '@ephox/agar';
-import { TinyApis, TinyLoader } from '@ephox/mcagar';
+import { describe, it } from '@ephox/bedrock-client';
+import { Fun } from '@ephox/katamari';
+import { TinyHooks } from '@ephox/wrap-mcagar';
+import { assert } from 'chai';
+
+import Editor from 'tinymce/core/api/Editor';
 import Theme from 'tinymce/themes/silver/Theme';
-import { UnitTest } from '@ephox/bedrock-client';
 
-UnitTest.asynctest('browser.tinymce.core.EditorApiTest', function (success, failure) {
-
-  Theme();
-
-  const sRemoveEditor = function (editor) {
-    return Step.sync(function () {
-      editor.remove();
-    });
-  };
-
-  const sExecCallback = function (editor, name, arg) {
-    return Step.sync(function () {
-      editor.execCallback(name, arg);
-    });
-  };
-
-  const sTryAccess = function (editor, name, expectedValue) {
-    return Step.sync(function () {
-      const result = editor[name]();
-      Assertions.assertEq('Should be expected value on a removed editor', expectedValue, result);
-    });
-  };
-
-  const sShow = function (editor) {
-    return Step.sync(function () {
-      editor.show();
-    });
-  };
-
-  const sHide = function (editor) {
-    return Step.sync(function () {
-      editor.hide();
-    });
-  };
-
-  const sLoad = function (editor) {
-    return Step.sync(function () {
-      editor.load();
-    });
-  };
-
-  const sSave = function (editor) {
-    return Step.sync(function () {
-      editor.save();
-    });
-  };
-
-  const sQueryCommandState = function (editor, name) {
-    return Step.sync(function () {
-      editor.queryCommandState(name);
-    });
-  };
-
-  const sQueryCommandValue = function (editor, name) {
-    return Step.sync(function () {
-      editor.queryCommandValue(name);
-    });
-  };
-
-  const sQueryCommandSupported = function (editor, name) {
-    return Step.sync(function () {
-      editor.queryCommandSupported(name);
-    });
-  };
-
-  const sUploadImages = function (editor) {
-    return Step.sync(function () {
-      editor.uploadImages(function () {
-      });
-    });
-  };
-
-  TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
-    const tinyApis = TinyApis(editor);
-
-    Pipeline.async({}, [
-      sRemoveEditor(editor),
-      Logger.t('Try to access/execute things on an editor that does not exists', GeneralSteps.sequence([
-        sTryAccess(editor, 'getBody', null),
-        sTryAccess(editor, 'getDoc', null),
-        sTryAccess(editor, 'getWin', null),
-        sTryAccess(editor, 'getContent', ''),
-        sTryAccess(editor, 'getContainer', null),
-        sTryAccess(editor, 'getContentAreaContainer', null),
-        sLoad(editor),
-        sSave(editor),
-        sShow(editor),
-        sHide(editor),
-        sQueryCommandState(editor, 'bold'),
-        sQueryCommandValue(editor, 'bold'),
-        sQueryCommandSupported(editor, 'bold'),
-        sUploadImages(editor),
-        tinyApis.sSetContent('a'),
-        tinyApis.sExecCommand('bold'),
-        tinyApis.sFocus(),
-        tinyApis.sNodeChanged(),
-        sExecCallback(editor, 'test_callback', 1)
-      ]))
-    ], onSuccess, onFailure);
-  }, {
+describe('browser.tinymce.core.EditorApiTest', () => {
+  const hook = TinyHooks.bddSetupLight<Editor>({
     base_url: '/project/tinymce/js/tinymce',
-    test_callback() {
-    }
-  }, success, failure);
+    test_callback: Fun.noop
+  }, [ Theme ]);
+
+  const tryAccess = (name: string, expectedValue: any) => {
+    const editor = hook.editor();
+    const result = editor[name]();
+    assert.equal(result, expectedValue, 'Should be expected value on a removed editor');
+  };
+
+  it('Try to access/execute things on an editor that does not exists', () => {
+    const editor = hook.editor();
+    editor.remove();
+    tryAccess('getBody', null);
+    tryAccess('getDoc', null);
+    tryAccess('getWin', null);
+    tryAccess('getContent', '');
+    tryAccess('getContainer', null);
+    tryAccess('getContentAreaContainer', null);
+    editor.load();
+    editor.save();
+    editor.show();
+    editor.hide();
+    editor.queryCommandState('bold');
+    editor.queryCommandValue('bold');
+    editor.queryCommandSupported('bold');
+    editor.uploadImages(Fun.noop);
+    editor.setContent('a');
+    editor.execCommand('bold');
+    editor.focus();
+    editor.nodeChanged();
+    editor.execCallback('test_callback', 1);
+  });
 });

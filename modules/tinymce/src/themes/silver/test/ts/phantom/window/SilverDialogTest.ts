@@ -1,24 +1,26 @@
-import { ApproxStructure, Assertions, Chain, FocusTools, GeneralSteps, Mouse, Pipeline, Step, UiFinder, Waiter } from '@ephox/agar';
+import { ApproxStructure, Assertions, FocusTools, Mouse, UiFinder, Waiter } from '@ephox/agar';
 import { TestHelpers } from '@ephox/alloy';
-import { UnitTest } from '@ephox/bedrock-client';
-import { Types } from '@ephox/bridge';
+import { before, describe, it } from '@ephox/bedrock-client';
+import { SugarBody, SugarDocument } from '@ephox/sugar';
+import { assert } from 'chai';
 
-import { document } from '@ephox/dom-globals';
-import { Cell } from '@ephox/katamari';
-import { Body, Element } from '@ephox/sugar';
+import { Dialog } from 'tinymce/core/api/ui/Ui';
+import { WindowManagerImpl } from 'tinymce/core/api/WindowManager';
 import * as WindowManager from 'tinymce/themes/silver/ui/dialog/WindowManager';
-import TestExtras from '../../module/TestExtras';
 
-UnitTest.asynctest('WindowManager:simple-dialog Test', (success, failure) => {
-  const helpers = TestExtras();
-  const windowManager = WindowManager.setup(helpers.extras);
+import * as TestExtras from '../../module/TestExtras';
 
-  const currentApi = Cell<Types.Dialog.DialogInstanceApi<any>>({ } as any);
-
+describe('phantom.tinymce.themes.silver.window.SilverDialogTest', () => {
   const store = TestHelpers.TestStore();
+  const helpers = TestExtras.bddSetup();
+  let windowManager: WindowManagerImpl;
+  let dialogApi: Dialog.DialogInstanceApi<any>;
+  before(() => {
+    windowManager = WindowManager.setup(helpers.extras());
+  });
 
-  const sTestOpen = Chain.asStep({ }, [
-    Chain.injectThunked(() => windowManager.open({
+  const openDialogAndAssertInitialData = () => {
+    dialogApi = windowManager.open({
       title: 'Silver Test Modal Dialog',
       body: {
         type: 'panel',
@@ -46,54 +48,44 @@ UnitTest.asynctest('WindowManager:simple-dialog Test', (success, failure) => {
       onClose: store.adder('onClose'),
       onChange: store.adder('onChange'),
       onAction: store.adder('onAction')
-    }, {}, () => store.adder('closeWindow')())),
+    }, {}, () => store.adder('closeWindow')());
 
-    Chain.op((dialogApi) => {
-      Assertions.assertEq('Initial data', {
-        fred: 'said hello pebbles'
-      }, dialogApi.getData());
+    assert.deepEqual(dialogApi.getData(), {
+      fred: 'said hello pebbles'
+    }, 'Initial data');
+  };
 
-      currentApi.set(dialogApi);
-    })
-  ]);
+  const closeDialog = () => {
+    Mouse.clickOn(SugarBody.body(), '[aria-label="Close"]');
+    UiFinder.notExists(SugarBody.body(), '[role="dialog"]');
+  };
 
-  const sTestClose = GeneralSteps.sequence([
-    Mouse.sClickOn(Body.body(), '[aria-label="Close"]'),
-    UiFinder.sNotExists(Body.body(), '[role="dialog"]')
-  ]);
-
-  Pipeline.async({}, [
-    sTestOpen,
-    FocusTools.sTryOnSelector(
-      'Focus should start on the input',
-      Element.fromDom(document),
-      'input'
-    ),
-    Assertions.sAssertStructure('"tox-dialog__scroll-disable" should exist on the body',
+  const assertScrollLock = (enabled: boolean) => {
+    Assertions.assertStructure(`"tox-dialog__scroll-disable" ${enabled ? 'should' : 'should not'} exist on the body`,
       ApproxStructure.build((s, str, arr) => s.element('body', {
-        classes: [ arr.has('tox-dialog__disable-scroll') ]
+        classes: [ enabled ? arr.has('tox-dialog__disable-scroll') : arr.not('tox-dialog__disable-scroll') ]
       })),
-      Body.body()
-    ),
-    Step.sync(() => {
-      currentApi.get().disable('barny');
-    }),
-    sTestClose,
-    Waiter.sTryUntil(
+      SugarBody.body()
+    );
+  };
+
+  it('Open a dialog, assert initial focus, close and assert events', async () => {
+    openDialogAndAssertInitialData();
+    await FocusTools.pTryOnSelector(
+      'Focus should start on the input',
+      SugarDocument.getDocument(),
+      'input'
+    );
+    assertScrollLock(true);
+    dialogApi.disable('barny');
+    closeDialog();
+    await Waiter.pTryUntil(
       'Waiting for all dialog events when closing',
-      store.sAssertEq('Checking stuff', [
+      () => store.assertEq('Checking stuff', [
         'closeWindow',
         'onClose'
       ])
-    ),
-    Assertions.sAssertStructure('"tox-dialog__scroll-disable" should have been removed from the body',
-      ApproxStructure.build((s, str, arr) => s.element('body', {
-        classes: [ arr.not('tox-dialog__disable-scroll') ]
-      })),
-      Body.body()
-    )
-  ], () => {
-    helpers.destroy();
-    success();
-  }, failure);
+    );
+    assertScrollLock(false);
+  });
 });

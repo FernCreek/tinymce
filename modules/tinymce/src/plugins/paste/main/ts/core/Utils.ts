@@ -6,9 +6,16 @@
  */
 
 import { Unicode } from '@ephox/katamari';
+
 import DomParser from 'tinymce/core/api/html/DomParser';
+import AstNode from 'tinymce/core/api/html/Node';
 import Schema from 'tinymce/core/api/html/Schema';
 import Tools from 'tinymce/core/api/util/Tools';
+
+type RegExpFilter = RegExp | [ RegExp, string ] | [ RegExp, (match: string, ...args: any[]) => string ];
+
+const isRegExp = (val: unknown): val is RegExp =>
+  val.constructor === RegExp;
 
 /**
  * This class contails various utility functions for the paste plugin.
@@ -16,17 +23,17 @@ import Tools from 'tinymce/core/api/util/Tools';
  * @class tinymce.pasteplugin.Utils
  */
 
-function filter(content, items) {
-  Tools.each(items, function (v) {
-    if (v.constructor === RegExp) {
+const filter = (content: string, items: RegExpFilter[]): string => {
+  Tools.each(items, (v) => {
+    if (isRegExp(v)) {
       content = content.replace(v, '');
     } else {
-      content = content.replace(v[0], v[1]);
+      content = content.replace(v[0], v[1] as any);
     }
   });
 
   return content;
-}
+};
 
 /**
  * Gets the innerText of the specified element. It will handle edge cases
@@ -35,7 +42,7 @@ function filter(content, items) {
  * @param {String} html HTML string to get text from.
  * @return {String} String of text with line feeds.
  */
-function innerText(html: string) {
+const innerText = (html: string): string => {
   const schema = Schema();
   const domParser = DomParser({}, schema);
   let text = '';
@@ -43,7 +50,7 @@ function innerText(html: string) {
   const ignoreElements = Tools.makeMap('script noscript style textarea video audio iframe object', ' ');
   const blockElements = schema.getBlockElements();
 
-  function walk(node) {
+  const walk = (node: AstNode): void => {
     const name = node.name, currentNode = node;
 
     if (name === 'br') {
@@ -88,7 +95,7 @@ function innerText(html: string) {
         text += '\n';
       }
     }
-  }
+  };
 
   html = filter(html, [
     /<!\[[^\]]+\]>/g // Conditional comments
@@ -97,7 +104,7 @@ function innerText(html: string) {
   walk(domParser.parse(html));
 
   return text;
-}
+};
 
 /**
  * Trims the specified HTML by removing all WebKit fragments, all elements wrapping the body trailing BR elements etc.
@@ -105,8 +112,8 @@ function innerText(html: string) {
  * @param {String} html Html string to trim contents on.
  * @return {String} Html contents that got trimmed.
  */
-function trimHtml(html: string) {
-  function trimSpaces(all, s1, s2) {
+const trimHtml = (html: string): string => {
+  const trimSpaces = (all: string, s1?: string, s2?: string) => {
     // WebKit &nbsp; meant to preserve multiple spaces but instead inserted around all inline tags,
     // including the spans with inline styles created on paste
     if (!s1 && !s2) {
@@ -114,7 +121,7 @@ function trimHtml(html: string) {
     }
 
     return Unicode.nbsp;
-  }
+  };
 
   html = filter(html, [
     /^[\s\S]*<body[^>]*>\s*|\s*<\/body[^>]*>[\s\S]*$/ig, // Remove anything but the contents within the BODY element
@@ -125,20 +132,36 @@ function trimHtml(html: string) {
   ]);
 
   return html;
-}
+};
 
 // TODO: Should be in some global class
-function createIdGenerator(prefix: string) {
+const createIdGenerator = (prefix: string): () => string => {
   let count = 0;
 
-  return function () {
+  return () => {
     return prefix + (count++);
   };
-}
+};
+
+const getImageMimeType = (ext: string): string => {
+  const lowerExt = ext.toLowerCase();
+  const mimeOverrides: Record<string, string> = {
+    jpg: 'jpeg',
+    jpe: 'jpeg',
+    jfi: 'jpeg',
+    jif: 'jpeg',
+    jfif: 'jpeg',
+    pjpeg: 'jpeg',
+    pjp: 'jpeg',
+    svg: 'svg+xml'
+  };
+  return Tools.hasOwn(mimeOverrides, lowerExt) ? 'image/' + mimeOverrides[lowerExt] : 'image/' + lowerExt;
+};
 
 export {
   filter,
   innerText,
   trimHtml,
-  createIdGenerator
+  createIdGenerator,
+  getImageMimeType
 };

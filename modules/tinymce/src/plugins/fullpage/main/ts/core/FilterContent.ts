@@ -5,20 +5,24 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { document, HTMLLinkElement } from '@ephox/dom-globals';
+import { Cell } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
+import { GetContentEvent, SetContentEvent } from 'tinymce/core/api/EventTypes';
+import { EditorEvent } from 'tinymce/core/api/util/EventDispatcher';
 import Tools from 'tinymce/core/api/util/Tools';
+
 import * as Settings from '../api/Settings';
 import * as Parser from './Parser';
 import * as Protect from './Protect';
 
 const each = Tools.each;
 
-const low = (s: string) =>
+const low = (s: string): string =>
   s.replace(/<\/?[A-Z]+/g, (a: string) => a.toLowerCase());
 
-const handleSetContent = function (editor: Editor, headState, footState, evt) {
-  let startPos, endPos, content, styles = '';
+const handleSetContent = (editor: Editor, headState: Cell<string>, footState: Cell<string>, evt: EditorEvent<SetContentEvent>): void => {
+  let startPos: number, endPos: number, content: string, styles = '';
   const dom = editor.dom;
 
   if (evt.selection) {
@@ -62,8 +66,8 @@ const handleSetContent = function (editor: Editor, headState, footState, evt) {
   }
 
   // Parse header and update iframe
-  const headerFragment = Parser.parseHeader(headState.get());
-  each(headerFragment.getAll('style'), function (node) {
+  const headerFragment = Parser.parseHeader(editor, headState.get());
+  each(headerFragment.getAll('style'), (node) => {
     if (node.firstChild) {
       styles += node.firstChild.value;
     }
@@ -90,14 +94,14 @@ const handleSetContent = function (editor: Editor, headState, footState, evt) {
   }
 
   const currentStyleSheetsMap: Record<string, HTMLLinkElement> = {};
-  Tools.each(headElm.getElementsByTagName('link'), function (stylesheet: HTMLLinkElement) {
+  Tools.each(headElm.getElementsByTagName('link'), (stylesheet: HTMLLinkElement) => {
     if (stylesheet.rel === 'stylesheet' && stylesheet.getAttribute('data-mce-fullpage')) {
       currentStyleSheetsMap[stylesheet.href] = stylesheet;
     }
   });
 
   // Add new
-  Tools.each(headerFragment.getAll('link'), function (stylesheet) {
+  Tools.each(headerFragment.getAll('link'), (stylesheet) => {
     const href = stylesheet.attr('href');
     if (!href) {
       return true;
@@ -116,12 +120,12 @@ const handleSetContent = function (editor: Editor, headState, footState, evt) {
   });
 
   // Delete old
-  Tools.each(currentStyleSheetsMap, function (stylesheet) {
+  Tools.each(currentStyleSheetsMap, (stylesheet) => {
     stylesheet.parentNode.removeChild(stylesheet);
   });
 };
 
-const getDefaultHeader = function (editor) {
+const getDefaultHeader = (editor: Editor): string => {
   let header = '', value, styles = '';
 
   if (Settings.getDefaultXmlPi(editor)) {
@@ -157,17 +161,17 @@ const getDefaultHeader = function (editor) {
   return header;
 };
 
-const handleGetContent = function (editor: Editor, head, foot, evt) {
-  if (!evt.selection && (!evt.source_view || !Settings.shouldHideInSourceView(editor))) {
+const handleGetContent = (editor: Editor, head: string, foot: string, evt: EditorEvent<GetContentEvent>): void => {
+  if (evt.format === 'html' && !evt.selection && (!evt.source_view || !Settings.shouldHideInSourceView(editor))) {
     evt.content = Protect.unprotectHtml(Tools.trim(head) + '\n' + Tools.trim(evt.content) + '\n' + Tools.trim(foot));
   }
 };
 
-const setup = function (editor: Editor, headState, footState) {
-  editor.on('BeforeSetContent', function (evt) {
+const setup = (editor: Editor, headState: Cell<string>, footState: Cell<string>): void => {
+  editor.on('BeforeSetContent', (evt) => {
     handleSetContent(editor, headState, footState, evt);
   });
-  editor.on('GetContent', function (evt) {
+  editor.on('GetContent', (evt) => {
     handleGetContent(editor, headState.get(), footState.get(), evt);
   });
 };

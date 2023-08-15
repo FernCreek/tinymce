@@ -1,7 +1,10 @@
+import { Fun } from '@ephox/katamari';
+
 import * as Binder from 'ephox/porkbun/Binder';
+import { Bindable, Event } from 'ephox/porkbun/Event';
 import * as Events from 'ephox/porkbun/Events';
-import { Event, Bindable } from 'ephox/porkbun/Event';
-import { Outlaw, ShootingEvent, Saloon } from './Types';
+
+import { Outlaw, Saloon, ShootingEvent } from './Types';
 
 interface SaloonEvents {
   registry: {
@@ -14,7 +17,7 @@ interface SaloonEvents {
 
 declare const $: any;
 
-const create = function (): Saloon {
+const create = (): Saloon => {
   const saloon = $('<div />');
   saloon.css({
     border: '3px solid brown',
@@ -24,48 +27,46 @@ const create = function (): Saloon {
     float: 'left'
   });
 
-  const getElement = function () {
-    return saloon;
-  };
+  const getElement = Fun.constant(saloon);
 
-  const events = Events.create({
+  const events: SaloonEvents = Events.create({
     shooting: Event([ 'shooter', 'target' ])
-  }) as SaloonEvents;
+  });
 
   const binder = Binder.create();
 
-  const seat = function (patron: Outlaw) {
+  const seat = (patron: Outlaw) => {
     const chair = $('<div />');
     chair.css({ border: '1px dashed green', float: 'right', clear: 'both' });
     chair.append(patron.getElement());
     saloon.append(chair);
   };
 
-  const unseat = function (patron: Outlaw) {
+  const unseat = (patron: Outlaw) => {
     const element = patron.getElement();
     const chair = element.parent();
     element.detach();
     chair.remove();
   };
 
-  const enter = function (patron: Outlaw) {
+  const enter = (patron: Outlaw) => {
     seat(patron);
 
-    binder.bind(patron.events.shoot, function (event) {
-      events.trigger.shooting(patron, event.target());
+    binder.bind(patron.events.shoot, (event) => {
+      events.trigger.shooting(patron, event.target);
     });
 
-    binder.bind(patron.events.die, function (_event) {
+    binder.bind(patron.events.die, (_event) => {
       stopListening(patron);
     });
   };
 
-  const leave = function (patron: Outlaw) {
+  const leave = (patron: Outlaw) => {
     unseat(patron);
     stopListening(patron);
   };
 
-  const stopListening = function (outlaw: Outlaw) {
+  const stopListening = (outlaw: Outlaw) => {
     binder.unbind(outlaw.events.shoot);
     binder.unbind(outlaw.events.die);
   };

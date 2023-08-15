@@ -1,4 +1,4 @@
-import { Fun, Option } from '@ephox/katamari';
+import { Fun, Optional } from '@ephox/katamari';
 import { Pattern, Search } from '@ephox/polaris';
 
 const wordstart = new RegExp(Pattern.wordbreak() + '+', 'g');
@@ -8,8 +8,8 @@ const zero = Fun.constant(0);
 /**
  * Returns optional text after the last word break character
  */
-const lastWord = function (text: string) {
-  return leftBreak(text).map(function (index) {
+const lastWord = (text: string): Optional<string> => {
+  return leftBreak(text).map((index) => {
     return text.substring(index);
   });
 };
@@ -17,8 +17,8 @@ const lastWord = function (text: string) {
 /**
  * Returns optional text up to the first word break character
  */
-const firstWord = function (text: string) {
-  return rightBreak(text).map(function (index) {
+const firstWord = (text: string): Optional<string> => {
+  return rightBreak(text).map((index) => {
     return text.substring(0, index + 1);
   });
 };
@@ -26,23 +26,23 @@ const firstWord = function (text: string) {
 /*
  * Returns the index position of a break when going left (i.e. last word break)
  */
-const leftBreak = function (text: string) {
-  const indices = Search.findall(text, Pattern.custom(Pattern.wordbreak(), zero, zero, Option.none()));
-  return Option.from(indices[indices.length - 1]).map(function (match) {
-    return match.start();
+const leftBreak = (text: string): Optional<number> => {
+  const indices = Search.findall(text, Pattern.custom(Pattern.wordbreak(), zero, zero, Optional.none()));
+  return Optional.from(indices[indices.length - 1]).map((match) => {
+    return match.start;
   });
 };
 
 /*
  * Returns the index position of a break when going right (i.e. first word break)
  */
-const rightBreak = function (text: string) {
+const rightBreak = (text: string): Optional<number> => {
   // ASSUMPTION: search is sufficient because we only need to find the first one.
   const index = text.search(wordstart);
-  return index > -1 ? Option.some(index) : Option.none<number>();
+  return index > -1 ? Optional.some(index) : Optional.none<number>();
 };
 
-const hasBreak = function (text: string) {
+const hasBreak = (text: string): boolean => {
   return rightBreak(text).isSome();
 };
 

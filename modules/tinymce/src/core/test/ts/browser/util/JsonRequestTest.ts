@@ -1,56 +1,50 @@
-import { Pipeline } from '@ephox/agar';
-import { LegacyUnit } from '@ephox/mcagar';
+import { describe, it } from '@ephox/bedrock-client';
+import { assert } from 'chai';
+
 import JSONRequest from 'tinymce/core/api/util/JSONRequest';
-import { UnitTest } from '@ephox/bedrock-client';
 
-UnitTest.asynctest('browser.tinymce.core.util.JsonRequestTest', function (success, failure) {
-  const suite = LegacyUnit.createSuite();
-
-  suite.asyncTest('Successful request - send method', function (editor, done) {
+describe('browser.tinymce.core.util.JsonRequestTest', () => {
+  it('Successful request - send method', (done) => {
     new JSONRequest({}).send({
       type: 'GET',
       url: '/custom/json_rpc_ok',
-      success(data) {
-        LegacyUnit.equal(data, 'Hello JSON-RPC');
+      success: (data) => {
+        assert.equal(data, 'Hello JSON-RPC');
         done();
       }
     });
   });
 
-  suite.asyncTest('Successful request - sendRPC static method', function (editor, done) {
+  it('Successful request - sendRPC static method', (done) => {
     JSONRequest.sendRPC({
       type: 'GET',
       url: '/custom/json_rpc_ok',
-      success(data) {
-        LegacyUnit.equal(data, 'Hello JSON-RPC');
+      success: (data) => {
+        assert.equal(data, 'Hello JSON-RPC');
         done();
       }
     });
   });
 
-  suite.asyncTest('Error request - send method', function (editor, done) {
+  it('Error request - send method', (done) => {
     new JSONRequest({}).send({
       type: 'GET',
       url: '/custom/json_rpc_fail',
-      error(error) {
-        LegacyUnit.equal(error.code, 42);
+      error: (error) => {
+        assert.equal(error.code, 42);
         done();
       }
     });
   });
 
-  suite.asyncTest('Error request - sendRPC static method', function (editor, done) {
+  it('Error request - sendRPC static method', (done) => {
     JSONRequest.sendRPC({
       type: 'GET',
       url: '/custom/json_rpc_fail',
-      error(error) {
-        LegacyUnit.equal(error.code, 42);
+      error: (error) => {
+        assert.equal(error.code, 42);
         done();
       }
     });
   });
-
-  Pipeline.async({}, suite.toSteps({}), function () {
-    success();
-  }, failure);
 });

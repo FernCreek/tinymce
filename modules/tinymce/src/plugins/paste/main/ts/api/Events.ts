@@ -6,23 +6,32 @@
  */
 
 import Editor from 'tinymce/core/api/Editor';
-import { HTMLElement } from '@ephox/dom-globals';
+import { EditorEvent } from 'tinymce/core/api/util/EventDispatcher';
 
-const firePastePreProcess = function (editor: Editor, html: string, internal: boolean, isWordHtml: boolean) {
-  return editor.fire('PastePreProcess', { content: html, internal, wordContent: isWordHtml });
-};
+export interface PastePreProcessEvent {
+  content: string;
+  readonly internal: boolean;
+  readonly wordContent: boolean;
+}
 
-const firePastePostProcess = function (editor: Editor, node: HTMLElement, internal: boolean, isWordHtml: boolean) {
-  return editor.fire('PastePostProcess', { node, internal, wordContent: isWordHtml });
-};
+export interface PastePostProcessEvent {
+  node: HTMLElement;
+  readonly internal: boolean;
+  readonly wordContent: boolean;
+}
 
-const firePastePlainTextToggle = function (editor: Editor, state: boolean) {
-  return editor.fire('PastePlainTextToggle', { state });
-};
+const firePastePreProcess = (editor: Editor, html: string, internal: boolean, isWordHtml: boolean): EditorEvent<PastePreProcessEvent> =>
+  editor.fire('PastePreProcess', { content: html, internal, wordContent: isWordHtml });
 
-const firePaste = function (editor: Editor, ieFake: boolean) {
-  return editor.fire('paste', { ieFake });
-};
+const firePastePostProcess = (editor: Editor, node: HTMLElement, internal: boolean, isWordHtml: boolean): EditorEvent<PastePostProcessEvent> =>
+  editor.fire('PastePostProcess', { node, internal, wordContent: isWordHtml });
+
+const firePastePlainTextToggle = (editor: Editor, state: boolean): EditorEvent<{ state: boolean }> =>
+  editor.fire('PastePlainTextToggle', { state });
+
+const firePaste = (editor: Editor, ieFake: boolean): EditorEvent<ClipboardEvent> =>
+  // Casting this as it only exists for IE compatibility
+  editor.fire('paste', { ieFake } as any as ClipboardEvent);
 
 export {
   firePastePreProcess,

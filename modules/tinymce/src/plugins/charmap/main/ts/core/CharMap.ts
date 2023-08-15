@@ -5,21 +5,25 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { Arr } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
 import Tools from 'tinymce/core/api/util/Tools';
+
 import * as Settings from '../api/Settings';
-import { Arr } from '@ephox/katamari';
 
 const isArray = Tools.isArray;
 
 export const UserDefined = 'User Defined';
 
-export type CharMap = {
-  name: string;
-  characters: [number, string][];
-};
+export type Char = [ number, string ];
 
-const getDefaultCharMap = function (): CharMap[] {
+export interface CharMap {
+  name: string;
+  characters: Char[];
+}
+
+const getDefaultCharMap = (): CharMap[] => {
   return [
     // TODO: Merge categories with TBIO
     // {
@@ -365,15 +369,15 @@ const getDefaultCharMap = function (): CharMap[] {
   ];
 };
 
-const charmapFilter = function (charmap) {
-  return Tools.grep(charmap, function (item) {
+const charmapFilter = (charmap: Char[]): Char[] => {
+  return Tools.grep(charmap, (item) => {
     return isArray(item) && item.length === 2;
   });
 };
 
-const getCharsFromSetting = function (settingValue) {
+const getCharsFromSetting = (settingValue: Char[] | (() => Char[]) | undefined): Char[] => {
   if (isArray(settingValue)) {
-    return [].concat(charmapFilter(settingValue));
+    return charmapFilter(settingValue);
   }
 
   if (typeof settingValue === 'function') {
@@ -383,7 +387,7 @@ const getCharsFromSetting = function (settingValue) {
   return [];
 };
 
-const extendCharMap = function (editor: Editor, charmap: CharMap[]) {
+const extendCharMap = (editor: Editor, charmap: CharMap[]): CharMap[] => {
   const userCharMap = Settings.getCharMap(editor);
   if (userCharMap) {
     charmap = [{ name: UserDefined, characters: getCharsFromSetting(userCharMap) }];
@@ -396,13 +400,13 @@ const extendCharMap = function (editor: Editor, charmap: CharMap[]) {
       userDefinedGroup[0].characters = [].concat(userDefinedGroup[0].characters).concat(getCharsFromSetting(userCharMapAppend));
       return charmap;
     }
-    return [].concat(charmap).concat({ name: UserDefined, characters: getCharsFromSetting(userCharMapAppend) });
+    return charmap.concat({ name: UserDefined, characters: getCharsFromSetting(userCharMapAppend) });
   }
 
   return charmap;
 };
 
-const getCharMap = function (editor: Editor): CharMap[] {
+const getCharMap = (editor: Editor): CharMap[] => {
   const groups = extendCharMap(editor, getDefaultCharMap());
   return groups.length > 1 ? [
     {

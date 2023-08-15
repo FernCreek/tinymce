@@ -9,37 +9,31 @@ import {
   AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloyTriggers, Behaviour, Disabling, EventFormat, FormField as AlloyFormField, Keying,
   NativeEvents, Replacing, Representing, SimulatedEvent, SketchSpec, SystemEvents, Tabstopping
 } from '@ephox/alloy';
-import { Types } from '@ephox/bridge';
-import { HTMLElement } from '@ephox/dom-globals';
+import { Dialog } from '@ephox/bridge';
 import { Arr, Fun } from '@ephox/katamari';
+import { Attribute, Class, EventArgs, Focus, Html, SelectorFilter, SelectorFind, SugarElement } from '@ephox/sugar';
 
-import { Attr, Class, Element, EventArgs, Focus, Html, SelectorFilter, SelectorFind } from '@ephox/sugar';
+import Entities from 'tinymce/core/api/html/Entities';
 import I18n from 'tinymce/core/api/util/I18n';
 import { renderFormFieldWith, renderLabel } from 'tinymce/themes/silver/ui/alien/FieldLabeller';
+
 import { UiFactoryBackstageProviders } from '../../backstage/Backstage';
 import * as ReadOnly from '../../ReadOnly';
-
 import { detectSize } from '../alien/FlatgridAutodetect';
 import { formActionEvent, formResizeEvent } from '../general/FormEvents';
 import * as ItemClasses from '../menus/item/ItemClasses';
 import { deriveCollectionMovement } from '../menus/menu/MenuMovement';
-import { Omit } from '../Omit';
 
-type CollectionSpec = Omit<Types.Collection.Collection, 'type'>;
+type CollectionSpec = Omit<Dialog.Collection, 'type'>;
 
 export const renderCollection = (spec: CollectionSpec, providersBackstage: UiFactoryBackstageProviders): SketchSpec => {
   // DUPE with TextField.
   const pLabel = spec.label.map((label) => renderLabel(label, providersBackstage));
 
-  const runOnItem = <T extends EventFormat>(f: (c: AlloyComponent, se: SimulatedEvent<T>, tgt: Element, itemValue: string) => void) => (comp: AlloyComponent, se: SimulatedEvent<T>) => {
-    SelectorFind.closest(se.event().target(), '[data-collection-item-value]').each((target: Element<HTMLElement>) => {
-      f(comp, se, target, Attr.get(target, 'data-collection-item-value'));
+  const runOnItem = <T extends EventFormat>(f: (c: AlloyComponent, se: SimulatedEvent<T>, tgt: SugarElement, itemValue: string) => void) => (comp: AlloyComponent, se: SimulatedEvent<T>) => {
+    SelectorFind.closest(se.event.target, '[data-collection-item-value]').each((target: SugarElement<HTMLElement>) => {
+      f(comp, se, target, Attribute.get(target, 'data-collection-item-value'));
     });
-  };
-
-  const escapeAttribute = (ch) => {
-    if (ch === '"') { return '&quot;'; }
-    return ch;
   };
 
   const setContents = (comp, items) => {
@@ -63,19 +57,19 @@ export const renderCollection = (spec: CollectionSpec, providersBackstage: UiFac
       // But if only the title attribute is used instead, the names are read out twice. i.e., the description followed by the item.text.
       const ariaLabel = itemText.replace(/\_| \- |\-/g, (match) => mapItemName[match]);
 
-      const readonlyClass = providersBackstage.isReadOnly() ? ' tox-collection__item--state-disabled' : '';
-      return `<div class="tox-collection__item${readonlyClass}" tabindex="-1" data-collection-item-value="${escapeAttribute(item.value)}" title="${ariaLabel}" aria-label="${ariaLabel}">${iconContent}${textContent}</div>`;
+      const disabledClass = providersBackstage.isDisabled() ? ' tox-collection__item--state-disabled' : '';
+      return `<div class="tox-collection__item${disabledClass}" tabindex="-1" data-collection-item-value="${Entities.encodeAllRaw(item.value)}" title="${ariaLabel}" aria-label="${ariaLabel}">${iconContent}${textContent}</div>`;
     });
 
-    const chunks = spec.columns > 1 && spec.columns !== 'auto' ? Arr.chunk(htmlLines, spec.columns) : [ htmlLines ];
+    const chunks = spec.columns !== 'auto' && spec.columns > 1 ? Arr.chunk(htmlLines, spec.columns) : [ htmlLines ];
     const html = Arr.map(chunks, (ch) => `<div class="tox-collection__group">${ch.join('')}</div>`);
 
-    Html.set(comp.element(), html.join(''));
+    Html.set(comp.element, html.join(''));
   };
 
   const onClick = runOnItem((comp, se, tgt, itemValue) => {
     se.stop();
-    if (!providersBackstage.isReadOnly()) {
+    if (!providersBackstage.isDisabled()) {
       AlloyTriggers.emitWith(comp, formActionEvent, {
         name: spec.name,
         value: itemValue
@@ -90,13 +84,13 @@ export const renderCollection = (spec: CollectionSpec, providersBackstage: UiFac
     AlloyEvents.run<EventArgs>(NativeEvents.click(), onClick),
     AlloyEvents.run<EventArgs>(SystemEvents.tap(), onClick),
     AlloyEvents.run(NativeEvents.focusin(), runOnItem((comp, se, tgt) => {
-      SelectorFind.descendant(comp.element(), '.' + ItemClasses.activeClass).each((currentActive) => {
+      SelectorFind.descendant(comp.element, '.' + ItemClasses.activeClass).each((currentActive) => {
         Class.remove(currentActive, ItemClasses.activeClass);
       });
       Class.add(tgt, ItemClasses.activeClass);
     })),
     AlloyEvents.run(NativeEvents.focusout(), runOnItem((comp) => {
-      SelectorFind.descendant(comp.element(), '.' + ItemClasses.activeClass).each((currentActive) => {
+      SelectorFind.descendant(comp.element, '.' + ItemClasses.activeClass).each((currentActive) => {
         Class.remove(currentActive, ItemClasses.activeClass);
       });
     })),
@@ -108,9 +102,9 @@ export const renderCollection = (spec: CollectionSpec, providersBackstage: UiFac
     }))
   ];
 
-  const iterCollectionItems = (comp, applyAttributes) => Arr.map(SelectorFilter.descendants(comp.element(), '.tox-collection__item'), applyAttributes);
+  const iterCollectionItems = (comp, applyAttributes) => Arr.map(SelectorFilter.descendants(comp.element, '.tox-collection__item'), applyAttributes);
 
-  const pField = AlloyFormField.parts().field({
+  const pField = AlloyFormField.parts.field({
     dom: {
       tag: 'div',
       // FIX: Read from columns
@@ -120,17 +114,17 @@ export const renderCollection = (spec: CollectionSpec, providersBackstage: UiFac
     factory: { sketch: Fun.identity },
     behaviours: Behaviour.derive([
       Disabling.config({
-        disabled: providersBackstage.isReadOnly,
+        disabled: providersBackstage.isDisabled,
         onDisabled: (comp) => {
           iterCollectionItems(comp, (childElm) => {
             Class.add(childElm, 'tox-collection__item--state-disabled');
-            Attr.set(childElm, 'aria-disabled', true);
+            Attribute.set(childElm, 'aria-disabled', true);
           });
         },
         onEnabled: (comp) => {
           iterCollectionItems(comp, (childElm) => {
             Class.remove(childElm, 'tox-collection__item--state-disabled');
-            Attr.remove(childElm, 'aria-disabled');
+            Attribute.remove(childElm, 'aria-disabled');
           });
         }
       }),
@@ -159,7 +153,7 @@ export const renderCollection = (spec: CollectionSpec, providersBackstage: UiFac
       AddEventsBehaviour.config('collection-events', collectionEvents)
     ]),
     eventOrder: {
-      'alloy.execute': [ 'disabling', 'alloy.base.behaviour', 'collection-events' ]
+      [SystemEvents.execute()]: [ 'disabling', 'alloy.base.behaviour', 'collection-events' ]
     }
   });
 

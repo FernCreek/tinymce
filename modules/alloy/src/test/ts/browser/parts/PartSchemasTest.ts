@@ -1,16 +1,16 @@
 import { Assert, UnitTest } from '@ephox/bedrock-client';
-import { ValueSchema } from '@ephox/boulder';
+import { StructureSchema } from '@ephox/boulder';
 import { Fun } from '@ephox/katamari';
 import Jsc from '@ephox/wrap-jsverify';
 
 import * as AlloyParts from 'ephox/alloy/parts/AlloyParts';
 import * as PartType from 'ephox/alloy/parts/PartType';
 
-type TestSpec = { defaultValue: number; overriddenValue: number };
+interface TestSpec { defaultValue: number; overriddenValue: number }
 
 UnitTest.test('Atomic Test: parts.SchemasTest', () => {
   const internal = PartType.required<any, TestSpec>({
-    factory: { sketch(x) { return 'sketch.' + x; } },
+    factory: { sketch: (x) => 'sketch.' + x },
     schema: [ ],
     name: 'internal',
     pname: '<part.internal>',
@@ -19,7 +19,7 @@ UnitTest.test('Atomic Test: parts.SchemasTest', () => {
   });
 
   const external = PartType.external<any, TestSpec>({
-    factory: { sketch(x) { return x + '.external'; } },
+    factory: { sketch: (x) => x + '.external' },
     schema: [ ],
     name: 'external',
     defaults: Fun.constant({ defaultValue: 10 }),
@@ -27,7 +27,7 @@ UnitTest.test('Atomic Test: parts.SchemasTest', () => {
   });
 
   const optional = PartType.optional<any, TestSpec>({
-    factory: { sketch(x) { return x + '.optional'; } },
+    factory: { sketch: (x) => x + '.optional' },
     schema: [ ],
     name: 'optional',
     pname: '<part.optional>',
@@ -36,7 +36,7 @@ UnitTest.test('Atomic Test: parts.SchemasTest', () => {
   });
 
   const group = PartType.group<any, TestSpec>({
-    factory: { sketch(x) { return x + '.group'; } },
+    factory: { sketch: (x) => x + '.group' },
     schema: [ ],
     name: 'group',
     unit: 'member',
@@ -51,9 +51,9 @@ UnitTest.test('Atomic Test: parts.SchemasTest', () => {
 
   const checkSuccess = (label: string, expected: { external?: { entirety: string } }, parts: PartType.PartTypeAdt[], input: { external?: string }) => {
     const schemas = AlloyParts.schemas(parts);
-    const output = ValueSchema.asRawOrDie(
+    const output = StructureSchema.asRawOrDie(
       label,
-      ValueSchema.objOfOnly(schemas),
+      StructureSchema.objOfOnly(schemas),
       input
     );
 

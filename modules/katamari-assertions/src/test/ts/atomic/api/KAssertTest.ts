@@ -1,12 +1,13 @@
 import { Assert, UnitTest } from '@ephox/bedrock-client';
-import { KAssert } from '@ephox/katamari-assertions';
+import { Eq, Pprint, Testable } from '@ephox/dispute';
+import { Fun, Optional, Result } from '@ephox/katamari';
 import fc from 'fast-check';
-import { Result, Fun, Option } from '@ephox/katamari';
-import { Testable, Eq, Pprint } from '@ephox/dispute';
+
+import * as KAssert from 'ephox/katamari-assertions/api/KAssert';
 
 const { tNumber } = Testable;
 
-const tBoom = <T>() => Testable.testable(Eq.eq(Fun.die('⊥')), Pprint.pprint(Fun.die('⊥')));
+const tBoom = () => Testable.testable(Eq.eq(Fun.die('should not be called')), Pprint.pprint(Fun.die('should not be called')));
 
 const twoDifferentNumbers = fc.tuple(fc.integer(), fc.integer()).filter(([ a, b ]) => a !== b);
 
@@ -139,69 +140,69 @@ UnitTest.test('KAssert.eqResult: fail', () => {
 
 UnitTest.test('KAssert.eqSome: success (reflexivity)', () => {
   fc.assert(fc.property(fc.integer(), (i) => {
-    KAssert.eqSome('eq', i, Option.some(i));
-    KAssert.eqSome('eq', i, Option.some(i), tNumber);
+    KAssert.eqSome('eq', i, Optional.some(i));
+    KAssert.eqSome('eq', i, Optional.some(i), tNumber);
   }));
 });
 
 UnitTest.test('KAssert.eqSome: failure', () => {
   fc.assert(fc.property(twoDifferentNumbers, ([ a, b ]) => {
     Assert.throws('some(i) != some(!i) #1', () => {
-      KAssert.eqSome('eq', a, Option.some(b));
+      KAssert.eqSome('eq', a, Optional.some(b));
     });
   }));
   fc.assert(fc.property(twoDifferentNumbers, ([ a, b ]) => {
     Assert.throws('some(i) != some(!i) #2', () => {
-      KAssert.eqSome('eq', a, Option.some(b), tNumber);
+      KAssert.eqSome('eq', a, Optional.some(b), tNumber);
     });
   }));
 });
 
 UnitTest.test('KAssert.eqNone: success (reflexivity)', () => {
-  KAssert.eqNone('eq', Option.none());
+  KAssert.eqNone('eq', Optional.none());
 });
 
 UnitTest.test('KAssert.eqNone: failure', () => {
   fc.assert(fc.property(fc.integer(), (i) => {
     Assert.throws('some(i) != none', () => {
-      KAssert.eqNone('eq', Option.some(i));
+      KAssert.eqNone('eq', Optional.some(i));
     });
   }));
 });
 
 UnitTest.test('KAssert.eqOption: success (reflexivity)', () => {
   fc.assert(fc.property(fc.integer(), (i) => {
-    KAssert.eqOption('eq', Option.some(i), Option.some(i));
-    KAssert.eqOption('eq', Option.some(i), Option.some(i), tNumber);
+    KAssert.eqOptional('eq', Optional.some(i), Optional.some(i));
+    KAssert.eqOptional('eq', Optional.some(i), Optional.some(i), tNumber);
   }));
-  KAssert.eqOption('eq', Option.none(), Option.none());
+  KAssert.eqOptional('eq', Optional.none(), Optional.none());
 });
 
 UnitTest.test('KAssert.eqOption: failure', () => {
   fc.assert(fc.property(twoDifferentNumbers, ([ a, b ]) => {
     Assert.throws('some(i) != some(!i) #1', () => {
-      KAssert.eqOption('eq', Option.some(a), Option.some(b));
+      KAssert.eqOptional('eq', Optional.some(a), Optional.some(b));
     });
   }));
   fc.assert(fc.property(twoDifferentNumbers, ([ a, b ]) => {
     Assert.throws('some(i) != some(!i) #2', () => {
-      KAssert.eqOption('eq', Option.some(a), Option.some(b), tNumber);
+      KAssert.eqOptional('eq', Optional.some(a), Optional.some(b), tNumber);
     });
   }));
   fc.assert(fc.property(fc.integer(), (i) => {
     Assert.throws('none != some(i) #1', () => {
-      KAssert.eqOption('eq', Option.none(), Option.some(i));
+      KAssert.eqOptional('eq', Optional.none(), Optional.some(i));
     });
     Assert.throws('none != some(i) #2', () => {
-      KAssert.eqOption('eq', Option.none(), Option.some(i), tBoom());
+      KAssert.eqOptional('eq', Optional.none(), Optional.some(i), tBoom());
     });
   }));
   fc.assert(fc.property(fc.integer(), (i) => {
     Assert.throws('some(i) != none #1', () => {
-      KAssert.eqOption('eq', Option.some(i), Option.none());
+      KAssert.eqOptional('eq', Optional.some(i), Optional.none());
     });
     Assert.throws('some(i) != none #2', () => {
-      KAssert.eqOption('eq', Option.some(i), Option.none(), tBoom());
+      KAssert.eqOptional('eq', Optional.some(i), Optional.none(), tBoom());
     });
   }));
 });

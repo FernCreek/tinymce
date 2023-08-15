@@ -1,15 +1,14 @@
-import { console } from '@ephox/dom-globals';
 import { Arr } from '@ephox/katamari';
 
 type Task = () => void;
 
 export interface Cleaner {
-  add: (task: Task) => void;
-  run: () => void;
-  wrap: <T extends any[], U>(fn: (...a: T) => U) => (...args: T) => U;
+  readonly add: (task: Task) => void;
+  readonly run: () => void;
+  readonly wrap: <T extends any[], U>(fn: (...a: T) => U) => (...args: T) => U;
 }
 
-export const Cleaner = () => {
+export const Cleaner = (): Cleaner => {
   let tasks: Task[] = [];
 
   const add = (task: Task) => {
@@ -21,7 +20,7 @@ export const Cleaner = () => {
       try {
         task();
       } catch (e) {
-        // tslint:disable-next-line:no-console
+        // eslint-disable-next-line no-console
         console.log(e);
       }
     });

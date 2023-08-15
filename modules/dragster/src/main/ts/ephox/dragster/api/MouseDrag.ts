@@ -1,21 +1,22 @@
-import { Option } from '@ephox/katamari';
-import { DomEvent, Insert, Position, Remove, Element, EventArgs } from '@ephox/sugar';
+import { Optional } from '@ephox/katamari';
+import { DomEvent, EventArgs, Insert, Remove, SugarElement, SugarPosition } from '@ephox/sugar';
+
 import { Blocker, BlockerOptions } from '../detect/Blocker';
-import { DragApi, DragSink, DragMode, DragMutation } from './DragApis';
+import { DragApi, DragMode, DragMutation, DragSink } from './DragApis';
 
-const compare = function (old: Position, nu: Position) {
-  return Position(nu.left() - old.left(), nu.top() - old.top());
+const compare = (old: SugarPosition, nu: SugarPosition) => {
+  return SugarPosition(nu.left - old.left, nu.top - old.top);
 };
 
-const extract = function (event: EventArgs) {
-  return Option.some(Position(event.x(), event.y()));
+const extract = (event: EventArgs) => {
+  return Optional.some(SugarPosition(event.x, event.y));
 };
 
-const mutate = function (mutation: DragMutation, info: Position) {
-  mutation.mutate(info.left(), info.top());
+const mutate = (mutation: DragMutation, info: SugarPosition) => {
+  mutation.mutate(info.left, info.top);
 };
 
-const sink = function (dragApi: DragApi, settings: Partial<BlockerOptions>) {
+const sink = (dragApi: DragApi, settings: Partial<BlockerOptions>) => {
   const blocker = Blocker(settings);
 
   // Included for safety. If the blocker has stayed on the screen, get rid of it on a click.
@@ -25,7 +26,7 @@ const sink = function (dragApi: DragApi, settings: Partial<BlockerOptions>) {
   const mmove = DomEvent.bind(blocker.element(), 'mousemove', dragApi.move);
   const mout = DomEvent.bind(blocker.element(), 'mouseout', dragApi.delayDrop);
 
-  const destroy = function () {
+  const destroy = () => {
     blocker.destroy();
     mup.unbind();
     mmove.unbind();
@@ -33,11 +34,11 @@ const sink = function (dragApi: DragApi, settings: Partial<BlockerOptions>) {
     mdown.unbind();
   };
 
-  const start = function (parent: Element) {
+  const start = (parent: SugarElement) => {
     Insert.append(parent, blocker.element());
   };
 
-  const stop = function () {
+  const stop = () => {
     Remove.remove(blocker.element());
   };
 

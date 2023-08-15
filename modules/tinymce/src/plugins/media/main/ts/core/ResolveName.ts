@@ -7,9 +7,9 @@
 
 import Editor from 'tinymce/core/api/Editor';
 
-const setup = function (editor: Editor) {
-  editor.on('ResolveName', function (e) {
-    let name;
+const setup = (editor: Editor): void => {
+  editor.on('ResolveName', (e) => {
+    let name: string;
 
     if (e.target.nodeType === 1 && (name = e.target.getAttribute('data-mce-object'))) {
       e.name = name;

@@ -1,6 +1,6 @@
 import { Log, Pipeline } from '@ephox/agar';
 import { UnitTest } from '@ephox/bedrock-client';
-import { TinyApis, TinyLoader, TinyUi } from '@ephox/mcagar';
+import { TinyApis, TinyLoader, TinyUi } from '@ephox/wrap-mcagar';
 
 import SpellcheckerPlugin from 'tinymce/plugins/spellchecker/Plugin';
 import SilverTheme from 'tinymce/themes/silver/Theme';
@@ -12,7 +12,7 @@ UnitTest.asynctest('browser.tinymce.plugins.spellchecker.SpellcheckerSpanClassTe
 
   const dict = [];
 
-  TinyLoader.setup(function (editor, onSuccess, onFailure) {
+  TinyLoader.setup((editor, onSuccess, onFailure) => {
     const api = TinyApis(editor);
     const ui = TinyUi(editor);
 
@@ -71,7 +71,7 @@ UnitTest.asynctest('browser.tinymce.plugins.spellchecker.SpellcheckerSpanClassTe
     toolbar: 'spellchecker',
     spellchecker_languages: 'English=en,French=fr,German=de',
     base_url: '/project/tinymce/js/tinymce',
-    spellchecker_callback(method, text, success, _failure) {
+    spellchecker_callback: (method, text, success, _failure) => {
       if (method === 'spellcheck') {
         success({ dictionary: dict, words: { hello: [ 'word1' ], world: [ 'word2' ], bold: [ 'word3' ] }});
       } else if (method === 'addToDictionary') {

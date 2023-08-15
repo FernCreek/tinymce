@@ -5,29 +5,28 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { Menu } from '@ephox/bridge';
+
 import Editor from 'tinymce/core/api/Editor';
+
 import * as ColorSwatch from '../ui/core/color/ColorSwatch';
 import * as Settings from '../ui/core/color/Settings';
-import { Menu } from '@ephox/bridge';
-import { Option } from '@ephox/katamari';
-
-type ColorInputCallback = (valueOpt: Option<string>) => void;
 
 export interface UiFactoryBackstageForColorInput {
-  colorPicker: (callback: ColorInputCallback, value: string) => void;
+  colorPicker: (callback: ColorSwatch.ColorInputCallback, value: string) => void;
   hasCustomColors: () => boolean;
-  getColors: () => Menu.ChoiceMenuItemApi[];
+  getColors: () => Menu.ChoiceMenuItemSpec[];
   getColorCols: () => number;
 }
 
-const colorPicker = (editor: Editor) => (callback: ColorInputCallback, value: string) => {
+const colorPicker = (editor: Editor) => (callback: ColorSwatch.ColorInputCallback, value: string) => {
   const dialog = ColorSwatch.colorPickerDialog(editor);
   dialog(callback, value);
 };
 
 const hasCustomColors = (editor: Editor) => (): boolean => Settings.hasCustomColors(editor);
 
-const getColors = (editor: Editor) => (): Menu.ChoiceMenuItemApi[] => Settings.getColors(editor);
+const getColors = (editor: Editor) => (): Menu.ChoiceMenuItemSpec[] => Settings.getColors(editor);
 
 const getColorCols = (editor: Editor) => (): number => ColorSwatch.getColorCols(editor);
 

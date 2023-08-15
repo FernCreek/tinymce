@@ -1,20 +1,30 @@
-import { Document, HTMLElement, Node, Range, Window } from '@ephox/dom-globals';
-
-type EventCallback = false | ((event: any) => void);
+type EventCallback = (event: any) => void;
 
 export interface Selection {
   win: Window;
 
   setRng: (rng: Range) => void;
-  getRng: () => Range;
+  getRng: () => Range | null;
   select: (node: Node, content?: boolean) => Node;
   setCursorLocation: (node?: Node, offset?: number) => void;
   isCollapsed: () => boolean;
 }
 
+export type ContentFormat = 'raw' | 'text' | 'html' | 'tree';
+
+export interface GetContentArgs {
+  format?: ContentFormat;
+  get?: boolean;
+  content?: string;
+  getInner?: boolean;
+  no_events?: boolean;
+  [key: string]: any;
+}
+
 export interface Editor {
   id: string;
   settings: Record<string, any>;
+  inline: boolean;
 
   dom: any;
   editorCommands: any;
@@ -31,7 +41,7 @@ export interface Editor {
   getContentAreaContainer: () => HTMLElement;
   getElement: () => HTMLElement;
 
-  getContent: () => string;
+  getContent: (args?: GetContentArgs) => string;
   setContent: (content: string) => void;
 
   execCommand: (command: string, ui?: boolean, value?: any, args?: any) => boolean;

@@ -5,25 +5,26 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { document, Element, FocusEvent, HTMLElement } from '@ephox/dom-globals';
 import { Fun } from '@ephox/katamari';
+import { Focus, SugarElement, SugarShadowDom } from '@ephox/sugar';
+
 import DOMUtils from '../api/dom/DOMUtils';
 import Editor from '../api/Editor';
 import EditorManager from '../api/EditorManager';
 import FocusManager from '../api/FocusManager';
+import * as Settings from '../api/Settings';
 import Delay from '../api/util/Delay';
 import * as SelectionRestore from '../selection/SelectionRestore';
-import * as Settings from '../api/Settings';
 
 let documentFocusInHandler;
 const DOM = DOMUtils.DOM;
 
-const isEditorUIElement = function (elm: Element) {
+const isEditorUIElement = (elm: Element) => {
   // Since this can be overridden by third party we need to use the API reference here
   return FocusManager.isEditorUIElement(elm);
 };
 
-const isEditorContentAreaElement = function (elm: Element) {
+const isEditorContentAreaElement = (elm: Element) => {
   const classList = elm.classList;
   if (classList !== undefined) {
     // tox-edit-area__iframe === iframe container element
@@ -34,9 +35,9 @@ const isEditorContentAreaElement = function (elm: Element) {
   }
 };
 
-const isUIElement = function (editor: Editor, elm: Element) {
+const isUIElement = (editor: Editor, elm: Node) => {
   const customSelector = Settings.getCustomUiSelector(editor);
-  const parent = DOM.getParent(elm, function (elm) {
+  const parent = DOM.getParent(elm, (elm) => {
     return (
       isEditorUIElement(elm) ||
       (customSelector ? editor.dom.is(elm, customSelector) : false)
@@ -45,9 +46,13 @@ const isUIElement = function (editor: Editor, elm: Element) {
   return parent !== null;
 };
 
-const getActiveElement = function (): Element {
+const getActiveElement = (editor: Editor): Element => {
   try {
-    return document.activeElement;
+    const root = SugarShadowDom.getRootNode(SugarElement.fromDom(editor.getElement()));
+    return Focus.active(root).fold(
+      () => document.body,
+      (x) => x.dom
+    );
   } catch (ex) {
     // IE sometimes fails to get the activeElement when resizing table
     // TODO: Investigate this
@@ -55,35 +60,33 @@ const getActiveElement = function (): Element {
   }
 };
 
-const registerEvents = function (editorManager: EditorManager, e: { editor: Editor }) {
+const registerEvents = (editorManager: EditorManager, e: { editor: Editor }) => {
   const editor = e.editor;
 
   SelectionRestore.register(editor);
 
-  editor.on('focusin', function () {
-    const self: Editor = this;
+  editor.on('focusin', () => {
     const focusedEditor = editorManager.focusedEditor;
 
-    if (focusedEditor !== self) {
+    if (focusedEditor !== editor) {
       if (focusedEditor) {
-        focusedEditor.fire('blur', { focusedEditor: self });
+        focusedEditor.fire('blur', { focusedEditor: editor });
       }
 
-      editorManager.setActive(self);
-      editorManager.focusedEditor = self;
-      self.fire('focus', { blurredEditor: focusedEditor });
-      self.focus(true);
+      editorManager.setActive(editor);
+      editorManager.focusedEditor = editor;
+      editor.fire('focus', { blurredEditor: focusedEditor });
+      editor.focus(true);
     }
   });
 
-  editor.on('focusout', function () {
-    const self: Editor = this;
-    Delay.setEditorTimeout(self, function () {
+  editor.on('focusout', () => {
+    Delay.setEditorTimeout(editor, () => {
       const focusedEditor = editorManager.focusedEditor;
 
       // Still the same editor the blur was outside any editor UI
-      if (!isUIElement(self, getActiveElement()) && focusedEditor === self) {
-        self.fire('blur', { focusedEditor: null });
+      if (!isUIElement(editor, getActiveElement(editor)) && focusedEditor === editor) {
+        editor.fire('blur', { focusedEditor: null });
         editorManager.focusedEditor = null;
       }
     });
@@ -92,17 +95,19 @@ const registerEvents = function (editorManager: EditorManager, e: { editor: Edit
   // Check if focus is moved to an element outside the active editor by checking if the target node
   // isn't within the body of the activeEditor nor a UI element such as a dialog child control
   if (!documentFocusInHandler) {
-    documentFocusInHandler = function (e: FocusEvent) {
+    documentFocusInHandler = (e: FocusEvent) => {
       const activeEditor = editorManager.activeEditor;
 
-      const target = e.target as HTMLElement;
-
-      if (activeEditor && target.ownerDocument === document) {
-        // Fire a blur event if the element isn't a UI element
-        if (target !== document.body && !isUIElement(activeEditor, target) && editorManager.focusedEditor === activeEditor) {
-          activeEditor.fire('blur', { focusedEditor: null });
-          editorManager.focusedEditor = null;
-        }
+      if (activeEditor) {
+        SugarShadowDom.getOriginalEventTarget(e).each((target: Element) => {
+          if (target.ownerDocument === document) {
+            // Fire a blur event if the element isn't a UI element
+            if (target !== document.body && !isUIElement(activeEditor, target) && editorManager.focusedEditor === activeEditor) {
+              activeEditor.fire('blur', { focusedEditor: null });
+              editorManager.focusedEditor = null;
+            }
+          }
+        });
       }
     };
 
@@ -110,7 +115,7 @@ const registerEvents = function (editorManager: EditorManager, e: { editor: Edit
   }
 };
 
-const unregisterDocumentEvents = function (editorManager: EditorManager, e: { editor: Editor }) {
+const unregisterDocumentEvents = (editorManager: EditorManager, e: { editor: Editor }) => {
   if (editorManager.focusedEditor === e.editor) {
     editorManager.focusedEditor = null;
   }
@@ -121,7 +126,7 @@ const unregisterDocumentEvents = function (editorManager: EditorManager, e: { ed
   }
 };
 
-const setup = function (editorManager: EditorManager) {
+const setup = (editorManager: EditorManager) => {
   editorManager.on('AddEditor', Fun.curry(registerEvents, editorManager));
   editorManager.on('RemoveEditor', Fun.curry(unregisterDocumentEvents, editorManager));
 };

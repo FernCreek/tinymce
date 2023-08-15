@@ -1,8 +1,8 @@
 import { UnitTest } from '@ephox/bedrock-client';
-import { document } from '@ephox/dom-globals';
 import { Arr } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
-import { DomEvent, Element, Insert, Remove } from '@ephox/sugar';
+import { DomEvent, Insert, Remove, SugarElement } from '@ephox/sugar';
+
 import * as Assertions from 'ephox/agar/api/Assertions';
 import { Chain } from 'ephox/agar/api/Chain';
 import * as GeneralSteps from 'ephox/agar/api/GeneralSteps';
@@ -11,15 +11,15 @@ import { Pipeline } from 'ephox/agar/api/Pipeline';
 import { Step } from 'ephox/agar/api/Step';
 import * as UiFinder from 'ephox/agar/api/UiFinder';
 
-UnitTest.asynctest('MouseTest', function (success, failure) {
+UnitTest.asynctest('MouseTest', (success, failure) => {
 
-  const input = Element.fromTag('input');
-  const container = Element.fromTag('container');
+  const input = SugarElement.fromTag('input');
+  const container = SugarElement.fromTag('container');
 
   const platform = PlatformDetection.detect();
 
   // Add to the DOM so focus calls happen
-  Insert.append(Element.fromDom(document.body), container);
+  Insert.append(SugarElement.fromDom(document.body), container);
 
   let repository = [];
 
@@ -54,6 +54,30 @@ UnitTest.asynctest('MouseTest', function (success, failure) {
     // Focus events are not fired until the window has focus: https://bugzilla.mozilla.org/show_bug.cgi?id=566671
     platform.browser.isFirefox() && !document.hasFocus();
 
+  const trueClickEventOrder = (() => {
+    // IE seems to fire input.focus at the end.
+    if (platform.browser.isIE()) {
+      return [
+        'input.mousedown', 'container.mousedown',
+        'input.mouseup', 'container.mouseup',
+        'input.click', 'container.click', 'input.focus'
+      ];
+    } else if (isUnfocusedFirefox()) {
+      return [
+        'input.mousedown', 'container.mousedown',
+        'input.mouseup', 'container.mouseup',
+        'input.click', 'container.click'
+      ];
+    } else {
+      return [
+        'input.focus',
+        'input.mousedown', 'container.mousedown',
+        'input.mouseup', 'container.mouseup',
+        'input.click', 'container.click'
+      ];
+    }
+  })();
+
   Insert.append(container, input);
 
   Pipeline.async({}, [
@@ -68,22 +92,7 @@ UnitTest.asynctest('MouseTest', function (success, failure) {
 
     runStep(
       'sTrueClickOn (container > input)',
-      // IE seems to fire input.focus at the end.
-      platform.browser.isIE() ? [
-        'input.mousedown', 'container.mousedown',
-        'input.mouseup', 'container.mouseup',
-        'input.click', 'container.click', 'input.focus'
-
-      ] : (isUnfocusedFirefox() ? [
-        'input.mousedown', 'container.mousedown',
-        'input.mouseup', 'container.mouseup',
-        'input.click', 'container.click'
-      ] : [
-        'input.focus',
-        'input.mousedown', 'container.mousedown',
-        'input.mouseup', 'container.mouseup',
-        'input.click', 'container.click'
-      ]),
+      trueClickEventOrder,
       Mouse.sTrueClickOn(container, 'input')
     ),
 

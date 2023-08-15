@@ -1,43 +1,50 @@
-import { Fun, Obj, Option } from '@ephox/katamari';
-import { Element, TransformFind } from '@ephox/sugar';
+import { Obj, Optional } from '@ephox/katamari';
+import { SugarElement, TransformFind } from '@ephox/sugar';
 
 import * as Tagger from '../registry/Tagger';
 import * as DescribedHandler from './DescribedHandler';
 
 export interface ElementAndHandler {
-  readonly element: Element;
+  readonly element: SugarElement;
   readonly descHandler: CurriedHandler;
 }
 
-const eventHandler = (element: Element, descHandler: CurriedHandler): ElementAndHandler => ({
-  element,
-  descHandler
-});
-
 export interface CurriedHandler {
-  readonly purpose: () => string;
+  readonly purpose: string;
   readonly cHandler: Function;
 }
 
 export interface UncurriedHandler {
-  readonly purpose: () => string;
+  readonly purpose: string;
   readonly handler: Function;
 }
 
 export interface UidAndHandler {
-  readonly id: () => string;
-  readonly descHandler: () => CurriedHandler;
+  readonly id: string;
+  readonly descHandler: CurriedHandler;
 }
 
+export interface EventRegistry {
+  readonly registerId: (extraArgs: any[], id: string, events: Record<EventName, UncurriedHandler>) => void;
+  readonly unregisterId: (id: string) => void;
+  readonly filterByType: (type: string) => UidAndHandler[];
+  readonly find: (isAboveRoot: (elem: SugarElement) => boolean, type: string, target: SugarElement) => Optional<ElementAndHandler>;
+}
+
+const eventHandler = (element: SugarElement, descHandler: CurriedHandler): ElementAndHandler => ({
+  element,
+  descHandler
+});
+
 const broadcastHandler = (id: string, handler: CurriedHandler): UidAndHandler => ({
-  id: Fun.constant(id),
-  descHandler: Fun.constant(handler)
+  id,
+  descHandler: handler
 });
 
 export type EventName = string;
 export type Uid = string;
 
-export default () => {
+export const EventRegistry = (): EventRegistry => {
   const registry: Record<EventName, Record<Uid, CurriedHandler>> = { };
 
   const registerId = (extraArgs: any[], id: string, events: Record<EventName, UncurriedHandler>) => {
@@ -48,29 +55,28 @@ export default () => {
     });
   };
 
-  const findHandler = (handlers: Option<Record<Uid, CurriedHandler>>, elem: Element): Option<ElementAndHandler> =>
-    Tagger.read(elem).fold(
-      () => Option.none(),
-      (id) => handlers.bind((h) => Obj.get(h, id)).
-        map((descHandler: CurriedHandler) => eventHandler(elem, descHandler))
-    );
+  const findHandler = (handlers: Record<Uid, CurriedHandler>, elem: SugarElement): Optional<ElementAndHandler> =>
+    Tagger.read(elem)
+      .bind((id) => Obj.get(handlers, id))
+      .map((descHandler) => eventHandler(elem, descHandler));
 
   // Given just the event type, find all handlers regardless of element
   const filterByType = (type: string): UidAndHandler[] =>
-    Obj.get(registry, type).
-      map((handlers) => Obj.mapToArray(handlers, (f, id) => broadcastHandler(id, f))).
-      getOr([ ]);
+    Obj.get(registry, type)
+      .map((handlers) => Obj.mapToArray(handlers, (f, id) => broadcastHandler(id, f)))
+      .getOr([ ]);
 
   // Given event type, and element, find the handler.
-  const find = (isAboveRoot: (elem: Element) => boolean, type: string, target: Element): Option<ElementAndHandler> => {
-    const handlers = Obj.get(registry, type);
-    return TransformFind.closest(target, (elem: Element) => findHandler(handlers, elem), isAboveRoot);
-  };
+  const find = (isAboveRoot: (elem: SugarElement) => boolean, type: string, target: SugarElement): Optional<ElementAndHandler> =>
+    Obj.get(registry, type)
+      .bind((handlers) => TransformFind.closest(target, (elem) => findHandler(handlers, elem), isAboveRoot));
 
   const unregisterId = (id: string): void => {
     // INVESTIGATE: Find a better way than mutation if we can.
-    Obj.each(registry, (handlersById: Record<string, CurriedHandler>, _eventName) => {
-      if (handlersById.hasOwnProperty(id)) { delete handlersById[id]; }
+    Obj.each(registry, (handlersById, _eventName) => {
+      if (Obj.has(handlersById, id)) {
+        delete handlersById[id];
+      }
     });
   };
 

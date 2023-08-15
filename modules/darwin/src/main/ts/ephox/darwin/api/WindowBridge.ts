@@ -1,62 +1,63 @@
-import { ClientRect, DOMRect, Element as DomElement, Window } from '@ephox/dom-globals';
-import { Option } from '@ephox/katamari';
-import { Element, RawRect, Rect, Scroll, Selection, SimRange, Situ, WindowSelection } from '@ephox/sugar';
+import { Optional } from '@ephox/katamari';
+import { RawRect, Scroll, SimRange, SimSelection, Situ, SugarElement, WindowSelection } from '@ephox/sugar';
+
 import { Situs } from '../selection/Situs';
 import * as Util from '../selection/Util';
 
 export interface WindowBridge {
-  elementFromPoint: (x: number, y: number) => Option<Element>;
-  getRect: (element: Element) => ClientRect | DOMRect;
-  getRangedRect: (start: Element, soffset: number, finish: Element, foffset: number) => Option<RawRect>;
-  getSelection: () => Option<SimRange>;
+  elementFromPoint: (x: number, y: number) => Optional<SugarElement>;
+  getRect: (element: SugarElement) => ClientRect | DOMRect;
+  getRangedRect: (start: SugarElement, soffset: number, finish: SugarElement, foffset: number) => Optional<RawRect>;
+  getSelection: () => Optional<SimRange>;
   fromSitus: (situs: Situs) => SimRange;
-  situsFromPoint: (x: number, y: number) => Option<Situs>;
+  situsFromPoint: (x: number, y: number) => Optional<Situs>;
   clearSelection: () => void;
   collapseSelection: (toStart?: boolean) => void;
   setSelection: (sel: SimRange) => void;
   setRelativeSelection: (start: Situ, finish: Situ) => void;
-  selectContents: (element: Element) => void;
+  selectContents: (element: SugarElement<Node>) => void;
+  selectNode: (element: SugarElement<Node>) => void;
   getInnerHeight: () => number;
   getScrollY: () => number;
   scrollBy: (x: number, y: number) => void;
 }
 
-export const WindowBridge = function (win: Window): WindowBridge {
-  const elementFromPoint = function (x: number, y: number) {
-    return Element.fromPoint(Element.fromDom(win.document), x, y);
+export const WindowBridge = (win: Window): WindowBridge => {
+  const elementFromPoint = (x: number, y: number) => {
+    return SugarElement.fromPoint(SugarElement.fromDom(win.document), x, y);
   };
 
-  const getRect = function (element: Element) {
-    return (element.dom() as DomElement).getBoundingClientRect();
+  const getRect = (element: SugarElement<Element>) => {
+    return element.dom.getBoundingClientRect();
   };
 
-  const getRangedRect = function (start: Element, soffset: number, finish: Element, foffset: number): Option<RawRect> {
-    const sel = Selection.exact(start, soffset, finish, foffset);
-    return WindowSelection.getFirstRect(win, sel).map(Rect.toRaw);
+  const getRangedRect = (start: SugarElement, soffset: number, finish: SugarElement, foffset: number): Optional<RawRect> => {
+    const sel = SimSelection.exact(start, soffset, finish, foffset);
+    return WindowSelection.getFirstRect(win, sel);
   };
 
-  const getSelection = function () {
-    return WindowSelection.get(win).map(function (exactAdt) {
+  const getSelection = () => {
+    return WindowSelection.get(win).map((exactAdt) => {
       return Util.convertToRange(win, exactAdt);
     });
   };
 
-  const fromSitus = function (situs: Situs) {
-    const relative = Selection.relative(situs.start(), situs.finish());
+  const fromSitus = (situs: Situs) => {
+    const relative = SimSelection.relative(situs.start, situs.finish);
     return Util.convertToRange(win, relative);
   };
 
-  const situsFromPoint = function (x: number, y: number) {
-    return WindowSelection.getAtPoint(win, x, y).map(function (exact) {
-      return Situs.create(exact.start(), exact.soffset(), exact.finish(), exact.foffset());
+  const situsFromPoint = (x: number, y: number) => {
+    return WindowSelection.getAtPoint(win, x, y).map((exact) => {
+      return Situs.create(exact.start, exact.soffset, exact.finish, exact.foffset);
     });
   };
 
-  const clearSelection = function () {
+  const clearSelection = () => {
     WindowSelection.clear(win);
   };
 
-  const collapseSelection = function (toStart: boolean = false) {
+  const collapseSelection = (toStart: boolean = false) => {
     WindowSelection.get(win).each((sel) => sel.fold(
       (rng) => rng.collapse(toStart),
       (startSitu, finishSitu) => {
@@ -71,29 +72,33 @@ export const WindowBridge = function (win: Window): WindowBridge {
     ));
   };
 
-  const selectContents = function (element: Element) {
+  const selectNode = (element: SugarElement<Node>) => {
+    WindowSelection.setToElement(win, element, false);
+  };
+
+  const selectContents = (element: SugarElement<Node>) => {
     WindowSelection.setToElement(win, element);
   };
 
-  const setSelection = function (sel: SimRange) {
-    WindowSelection.setExact(win, sel.start(), sel.soffset(), sel.finish(), sel.foffset());
+  const setSelection = (sel: SimRange) => {
+    WindowSelection.setExact(win, sel.start, sel.soffset, sel.finish, sel.foffset);
   };
 
-  const setRelativeSelection = function (start: Situ, finish: Situ) {
+  const setRelativeSelection = (start: Situ, finish: Situ) => {
     WindowSelection.setRelative(win, start, finish);
   };
 
-  const getInnerHeight = function () {
+  const getInnerHeight = () => {
     return win.innerHeight;
   };
 
-  const getScrollY = function () {
-    const pos = Scroll.get(Element.fromDom(win.document));
-    return pos.top();
+  const getScrollY = () => {
+    const pos = Scroll.get(SugarElement.fromDom(win.document));
+    return pos.top;
   };
 
-  const scrollBy = function (x: number, y: number) {
-    Scroll.by(x, y, Element.fromDom(win.document));
+  const scrollBy = (x: number, y: number) => {
+    Scroll.by(x, y, SugarElement.fromDom(win.document));
   };
 
   return {
@@ -107,6 +112,7 @@ export const WindowBridge = function (win: Window): WindowBridge {
     collapseSelection,
     setSelection,
     setRelativeSelection,
+    selectNode,
     selectContents,
     getInnerHeight,
     getScrollY,

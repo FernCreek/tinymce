@@ -1,7 +1,9 @@
 import { ApproxStructure, Assertions, Step, Waiter } from '@ephox/agar';
-import { Merger } from '@ephox/katamari';
+import { Fun, Merger } from '@ephox/katamari';
 import { SelectorFind } from '@ephox/sugar';
 
+import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
+import { Disabling } from 'ephox/alloy/api/behaviour/Disabling';
 import { Representing } from 'ephox/alloy/api/behaviour/Representing';
 import { AlloyComponent } from 'ephox/alloy/api/component/ComponentApi';
 import { TestStore } from 'ephox/alloy/api/testhelpers/TestStore';
@@ -9,7 +11,11 @@ import * as ItemWidget from 'ephox/alloy/api/ui/ItemWidget';
 import { Menu } from 'ephox/alloy/api/ui/Menu';
 import * as Tagger from 'ephox/alloy/registry/Tagger';
 import { ItemSpec } from 'ephox/alloy/ui/types/ItemTypes';
-import { PartialMenuSpec } from 'ephox/alloy/ui/types/TieredMenuTypes';
+import { PartialMenuSpec, TieredMenuSpec } from 'ephox/alloy/ui/types/TieredMenuTypes';
+
+interface MenuState {
+  readonly menuUid: string;
+}
 
 const renderMenu = (spec: { value: string; text?: string; items: ItemSpec[] }): PartialMenuSpec => ({
   dom: {
@@ -21,7 +27,7 @@ const renderMenu = (spec: { value: string; text?: string; items: ItemSpec[] }): 
   },
   items: spec.items,
   components: [
-    Menu.parts().items({ })
+    Menu.parts.items({ })
   ]
 });
 
@@ -36,7 +42,7 @@ const renderItem = (spec: { type: any; widget?: any; data: { value: string; meta
     classes: [ 'item-widget' ]
   },
   components: [
-    ItemWidget.parts().widget(spec.widget)
+    ItemWidget.parts.widget(spec.widget)
   ]
 } : {
   type: spec.type,
@@ -46,40 +52,47 @@ const renderItem = (spec: { type: any; widget?: any; data: { value: string; meta
     tag: 'li',
     attributes: {
       'data-value': spec.data.value,
-      'data-test-id': 'item-' + spec.data.value
+      'data-test-id': 'item-' + spec.data.value,
+      'aria-disabled': spec.data.meta.disabled === true ? true : false
     },
     classes: [ ],
     innerHtml: spec.data.meta.text
   },
-  components: [ ]
+  components: [ ],
+  itemBehaviours: Behaviour.derive([
+    Disabling.config({
+      disabled: () => spec.data.meta.disabled
+    })
+  ])
 };
 
-const part = (store: TestStore) => ({
+const part = (store: TestStore): Partial<TieredMenuSpec> => ({
   dom: {
     tag: 'div'
   },
   markers: itemMarkers,
-  onExecute(_dropdown: AlloyComponent, item: AlloyComponent) {
+  onExecute: (_dropdown: AlloyComponent, item: AlloyComponent) => {
     const v = Representing.getValue(item);
     return store.adderH('dropdown.menu.execute: ' + v.value)();
   }
 });
 
-const mStoreMenuUid = (component: AlloyComponent) => Step.stateful((value: any, next, _die) => {
-  const menu = SelectorFind.descendant(component.element(), '.menu').getOrDie('Could not find menu');
-  const uid = Tagger.readOrDie(menu);
-  next(
-    Merger.deepMerge(value, { menuUid: uid })
-  );
-});
+const mStoreMenuUid = <T>(component: AlloyComponent): Step<T, T & MenuState> =>
+  Step.stateful((value: any, next, _die) => {
+    const menu = SelectorFind.descendant(component.element, '.menu').getOrDie('Could not find menu');
+    const uid = Tagger.readOrDie(menu);
+    next(
+      Merger.deepMerge(value, { menuUid: uid })
+    );
+  });
 
-const mWaitForNewMenu = (component: AlloyComponent) =>
+const mWaitForNewMenu = (component: AlloyComponent): Step<MenuState, unknown> =>
   // TODO: Create an API to hide this detail
-  Step.raw((value: any, next, die, logs) => {
+  Step.raw((value, next, die, logs) => {
     Waiter.sTryUntil(
       'Waiting for a new menu (different uid)',
       Step.sync(() => {
-        SelectorFind.descendant(component.element(), '.menu').filter((menu) => {
+        SelectorFind.descendant(component.element, '.menu').filter((menu) => {
           const uid = Tagger.readOrDie(menu);
           return value.menuUid !== uid;
         }).getOrDie('New menu has not appeared');
@@ -89,17 +102,17 @@ const mWaitForNewMenu = (component: AlloyComponent) =>
     ).runStep(value, next, die, logs);
   });
 
-const assertLazySinkArgs = (expectedTag: string, expectedClass: string, comp: AlloyComponent) => {
+const assertLazySinkArgs = (expectedTag: string, expectedClass: string, comp: AlloyComponent): void => {
   Assertions.assertStructure(
     'Lazy sink should get passed the split button',
     ApproxStructure.build((s, _str, arr) => s.element(expectedTag, {
       classes: [ arr.has(expectedClass) ]
     })),
-    comp.element()
+    comp.element
   );
 };
 
-const itemMarkers = {
+const itemMarkers: TieredMenuSpec['markers'] = {
   item: 'item',
   selectedItem: 'selected-item',
   menu: 'menu',
@@ -107,7 +120,7 @@ const itemMarkers = {
   backgroundMenu: 'background-menu'
 };
 
-const markers = () => itemMarkers;
+const markers = Fun.constant(itemMarkers);
 
 export {
   assertLazySinkArgs,

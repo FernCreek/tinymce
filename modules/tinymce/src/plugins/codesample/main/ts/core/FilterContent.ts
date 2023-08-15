@@ -5,18 +5,18 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { HTMLElement } from '@ephox/dom-globals';
 import Editor from 'tinymce/core/api/Editor';
+
 import * as Utils from '../util/Utils';
 import * as Prism from './Prism';
 
-const setup = function (editor: Editor) {
+const setup = (editor: Editor): void => {
   const $ = editor.$;
 
-  editor.on('PreProcess', function (e) {
-    $('pre[contenteditable=false]', e.node).
-      filter(Utils.trimArg(Utils.isCodeSample)).
-      each(function (idx, elm) {
+  editor.on('PreProcess', (e) => {
+    $('pre[contenteditable=false]', e.node)
+      .filter(Utils.trimArg(Utils.isCodeSample))
+      .each((idx, elm) => {
         const $elm = $(elm), code = elm.textContent;
 
         $elm.attr('class', $.trim($elm.attr('class')));
@@ -29,15 +29,15 @@ const setup = function (editor: Editor) {
       });
   });
 
-  editor.on('SetContent', function () {
-    const unprocessedCodeSamples = $('pre').filter(Utils.trimArg(Utils.isCodeSample)).filter(function (idx, elm) {
+  editor.on('SetContent', () => {
+    const unprocessedCodeSamples = $('pre').filter(Utils.trimArg(Utils.isCodeSample)).filter((idx, elm) => {
       return elm.contentEditable !== 'false';
     });
 
     if (unprocessedCodeSamples.length) {
-      editor.undoManager.transact(function () {
-        unprocessedCodeSamples.each(function (idx, elm: HTMLElement) {
-          $(elm).find('br').each(function (idx, elm) {
+      editor.undoManager.transact(() => {
+        unprocessedCodeSamples.each((idx, elm: HTMLElement) => {
+          $(elm).find('br').each((idx, elm) => {
             elm.parentNode.replaceChild(editor.getDoc().createTextNode('\n'), elm);
           });
 

@@ -1,27 +1,31 @@
-import * as Strings from 'ephox/katamari/api/Strings';
-import { Assert, UnitTest } from '@ephox/bedrock-client';
+import { describe, it } from '@ephox/bedrock-client';
+import { assert } from 'chai';
 import fc from 'fast-check';
 
-UnitTest.test('endsWith: Unit tests', () => {
-  const check = (expected, str, suffix) => {
-    const actual = Strings.endsWith(str, suffix);
-    Assert.eq('endsWith', expected, actual);
-  };
+import * as Strings from 'ephox/katamari/api/Strings';
 
-  check(true, '', '');
-  check(true, 'a', '');
-  check(true, 'a', 'a');
-  check(true, 'ab', 'b');
-  check(true, 'abc', 'bc');
+describe('atomic.katamari.api.str.EndsWithTest', () => {
+  it('Unit tests', () => {
+    const check = (expected, str, suffix) => {
+      const actual = Strings.endsWith(str, suffix);
+      assert.equal(actual, expected);
+    };
 
-  check(false, '', 'a');
-  check(false, 'caatatetatat', 'cat');
-});
+    check(true, '', '');
+    check(true, 'a', '');
+    check(true, 'a', 'a');
+    check(true, 'ab', 'b');
+    check(true, 'abc', 'bc');
 
-UnitTest.test('endsWith: A string added to a string (at the end) must have endsWith as true', () => {
-  fc.assert(fc.property(
-    fc.asciiString(),
-    fc.asciiString(),
-    (str, contents) => Strings.endsWith(str + contents, contents)
-  ));
+    check(false, '', 'a');
+    check(false, 'caatatetatat', 'cat');
+  });
+
+  it('A string added to a string (at the end) must have endsWith as true', () => {
+    fc.assert(fc.property(
+      fc.asciiString(),
+      fc.asciiString(),
+      (str, contents) => Strings.endsWith(str + contents, contents)
+    ));
+  });
 });

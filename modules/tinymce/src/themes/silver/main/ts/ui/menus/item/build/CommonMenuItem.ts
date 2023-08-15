@@ -8,18 +8,18 @@
 import {
   AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloySpec, Behaviour, Button, Focusing, ItemTypes, NativeEvents, Replacing
 } from '@ephox/alloy';
-import { Arr, Cell, Fun, Option } from '@ephox/katamari';
+import { Cell, Fun, Optional, Optionals } from '@ephox/katamari';
+
 import { UiFactoryBackstageProviders } from 'tinymce/themes/silver/backstage/Backstage';
 import * as ReadOnly from 'tinymce/themes/silver/ReadOnly';
-
 import { DisablingConfigs } from 'tinymce/themes/silver/ui/alien/DisablingConfigs';
 import { onControlAttached, onControlDetached, OnDestroy } from 'tinymce/themes/silver/ui/controls/Controls';
+
 import { menuItemEventOrder, onMenuItemExecute } from '../ItemEvents';
 import ItemResponse from '../ItemResponse';
 import { ItemStructure } from '../structure/ItemStructure';
 
-export const componentRenderPipeline = (xs: Array<Option<AlloySpec>>) =>
-  Arr.bind(xs, (o) => o.toArray());
+export const componentRenderPipeline: (xs: Array<Optional<AlloySpec>>) => AlloySpec[] = Optionals.cat;
 
 export interface CommonMenuItemSpec<T> {
   onAction: (itemApi: T) => void;
@@ -48,7 +48,7 @@ const renderCommonItem = <T>(spec: CommonMenuItemSpec<T>, structure: ItemStructu
           onControlAttached(spec, editorOffCell),
           onControlDetached(spec, editorOffCell)
         ]),
-        DisablingConfigs.item(() => spec.disabled || providersbackstage.isReadOnly()),
+        DisablingConfigs.item(() => spec.disabled || providersbackstage.isDisabled()),
         ReadOnly.receivingConfig(),
         Replacing.config({ })
       ].concat(spec.itemBehaviours)
@@ -66,7 +66,7 @@ export interface CommonCollectionItemSpec {
 // from other renders because it is used for rendering a component
 // inside a dialog, not inside a menu. That's basically the reason
 // for the differences here.
-const renderCommonChoice = <T>(spec: CommonCollectionItemSpec, structure: ItemStructure, itemResponse: ItemResponse, providersbackstage: UiFactoryBackstageProviders): AlloySpec => Button.sketch({
+const renderCommonChoice = (spec: CommonCollectionItemSpec, structure: ItemStructure, itemResponse: ItemResponse, providersbackstage: UiFactoryBackstageProviders): AlloySpec => Button.sketch({
   dom: structure.dom,
   components: componentRenderPipeline(structure.optComponents),
   eventOrder: menuItemEventOrder,
@@ -75,7 +75,7 @@ const renderCommonChoice = <T>(spec: CommonCollectionItemSpec, structure: ItemSt
       AddEventsBehaviour.config('item-events', [
         AlloyEvents.run(NativeEvents.mouseover(), Focusing.focus)
       ]),
-      DisablingConfigs.item(() => spec.disabled || providersbackstage.isReadOnly()),
+      DisablingConfigs.item(() => spec.disabled || providersbackstage.isDisabled()),
       ReadOnly.receivingConfig()
     ]
   ),
@@ -84,7 +84,7 @@ const renderCommonChoice = <T>(spec: CommonCollectionItemSpec, structure: ItemSt
 
 export interface ItemDataInput {
   value: string;
-  text: Option<string>;
+  text: Optional<string>;
   meta: Record<string, any>;
 }
 

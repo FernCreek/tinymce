@@ -1,7 +1,7 @@
-import { Option, Result } from '@ephox/katamari';
-import { FieldSchema, ValueSchema } from '@ephox/boulder';
+import { FieldSchema, StructureSchema } from '@ephox/boulder';
+import { Optional, Result } from '@ephox/katamari';
 
-export interface SeparatorMenuItemApi {
+export interface SeparatorMenuItemSpec {
   type?: 'separator';
   text?: string;
 }
@@ -11,12 +11,13 @@ export interface SeparatorMenuItemInstanceApi { }
 
 export interface SeparatorMenuItem {
   type: 'separator';
-  text: Option<string>;
+  text: Optional<string>;
 }
 
-export const separatorMenuItemSchema = ValueSchema.objOf([
-  FieldSchema.strictString('type'),
+export const separatorMenuItemSchema = StructureSchema.objOf([
+  FieldSchema.requiredString('type'),
   FieldSchema.optionString('text')
 ]);
 
-export const createSeparatorMenuItem = (spec: SeparatorMenuItemApi): Result<SeparatorMenuItem, ValueSchema.SchemaError<any>> => ValueSchema.asRaw('separatormenuitem', separatorMenuItemSchema, spec);
+export const createSeparatorMenuItem = (spec: SeparatorMenuItemSpec): Result<SeparatorMenuItem, StructureSchema.SchemaError<any>> =>
+  StructureSchema.asRaw('separatormenuitem', separatorMenuItemSchema, spec);

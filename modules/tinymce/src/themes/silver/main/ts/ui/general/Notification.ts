@@ -10,9 +10,11 @@ import {
   UiSketcher
 } from '@ephox/alloy';
 import { FieldSchema } from '@ephox/boulder';
-import { Arr, Option } from '@ephox/katamari';
+import { Arr, Optional } from '@ephox/katamari';
+
 import { TranslatedString, Untranslated } from 'tinymce/core/api/util/I18n';
-import { get as getIcon, getFirst, IconProvider } from '../icons/Icons';
+
+import * as Icons from '../icons/Icons';
 
 export interface NotificationSketchApis {
   updateProgress: (comp: AlloyComponent, percent: number) => void;
@@ -23,23 +25,23 @@ export interface NotificationSketchApis {
 export interface NotificationSketchSpec extends Sketcher.SingleSketchSpec {
   text: string;
   level: 'info' | 'warn' | 'warning' | 'error' | 'success';
-  icon: Option<string>;
+  icon: Optional<string>;
   closeButton?: boolean;
   progress: boolean;
   onAction: Function;
-  iconProvider: IconProvider;
+  iconProvider: Icons.IconProvider;
   translationProvider: (text: Untranslated) => TranslatedString;
 }
 
 // tslint:disable-next-line:no-empty-interface
 export interface NotificationSketchDetail extends Sketcher.SingleSketchDetail {
   text: string;
-  level: Option<'info' | 'warn' | 'warning' | 'error' | 'success'>;
-  icon: Option<string>;
+  level: Optional<'info' | 'warn' | 'warning' | 'error' | 'success'>;
+  icon: Optional<string>;
   closeButton: boolean;
   onAction: Function;
   progress: boolean;
-  iconProvider: IconProvider;
+  iconProvider: Icons.IconProvider;
   translationProvider: (text: Untranslated) => TranslatedString;
 }
 
@@ -144,7 +146,7 @@ const factory: UiSketcher.SingleSketchFactory<NotificationSketchDetail, Notifica
   const iconChoices = Arr.flatten([
     detail.icon.toArray(),
     detail.level.toArray(),
-    detail.level.bind((level) => Option.from(notificationIconMap[level])).toArray()
+    detail.level.bind((level) => Optional.from(notificationIconMap[level])).toArray()
   ]);
 
   const memButton = Memento.record(Button.sketch({
@@ -152,42 +154,35 @@ const factory: UiSketcher.SingleSketchFactory<NotificationSketchDetail, Notifica
       tag: 'button',
       classes: [ 'tox-notification__dismiss', 'tox-button', 'tox-button--naked', 'tox-button--icon' ]
     },
-    components: [{
-      dom: {
+    components: [
+      Icons.render('close', {
         tag: 'div',
         classes: [ 'tox-icon' ],
-        innerHtml: getIcon('close', detail.iconProvider),
         attributes: {
           'aria-label': detail.translationProvider('Close')
         }
-      }
-    }],
+      }, detail.iconProvider)
+    ],
     action: (comp) => {
       detail.onAction(comp);
     }
   }));
 
-  const components: AlloySpec[] = [
-    {
-      dom: {
-        tag: 'div',
-        classes: [ 'tox-notification__icon' ],
-        innerHtml: getFirst(iconChoices, detail.iconProvider)
-      }
+  const notificationIconSpec = Icons.renderFirst(iconChoices, { tag: 'div', classes: [ 'tox-notification__icon' ] }, detail.iconProvider);
+  const notificationBodySpec = {
+    dom: {
+      tag: 'div',
+      classes: [ 'tox-notification__body' ]
     },
-    {
-      dom: {
-        tag: 'div',
-        classes: [ 'tox-notification__body' ]
-      },
-      components: [
-        memBannerText.asSpec()
-      ],
-      behaviours: Behaviour.derive([
-        Replacing.config({ })
-      ])
-    }
-  ];
+    components: [
+      memBannerText.asSpec()
+    ],
+    behaviours: Behaviour.derive([
+      Replacing.config({ })
+    ])
+  };
+
+  const components: AlloySpec[] = [ notificationIconSpec, notificationBodySpec ];
 
   return {
     uid: detail.uid,
@@ -220,12 +215,12 @@ export const Notification: NotificationSketcher = Sketcher.single({
   factory,
   configFields: [
     FieldSchema.option('level'),
-    FieldSchema.strict('progress'),
-    FieldSchema.strict('icon'),
-    FieldSchema.strict('onAction'),
-    FieldSchema.strict('text'),
-    FieldSchema.strict('iconProvider'),
-    FieldSchema.strict('translationProvider'),
+    FieldSchema.required('progress'),
+    FieldSchema.required('icon'),
+    FieldSchema.required('onAction'),
+    FieldSchema.required('text'),
+    FieldSchema.required('iconProvider'),
+    FieldSchema.required('translationProvider'),
     FieldSchema.defaultedBoolean('closeButton', true)
   ],
   apis: {

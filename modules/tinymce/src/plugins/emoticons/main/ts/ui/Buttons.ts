@@ -5,12 +5,10 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import * as Dialog from './Dialog';
 import Editor from 'tinymce/core/api/Editor';
-import { EmojiDatabase } from '../core/EmojiDatabase';
 
-const register = function (editor: Editor, database: EmojiDatabase): void {
-  const onAction = () => Dialog.open(editor, database);
+const register = (editor: Editor): void => {
+  const onAction = () => editor.execCommand('mceEmoticons');
 
   editor.ui.registry.addButton('emoticons', {
     tooltip: 'Emoticons',

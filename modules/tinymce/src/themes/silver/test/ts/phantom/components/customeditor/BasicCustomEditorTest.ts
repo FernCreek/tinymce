@@ -1,107 +1,102 @@
-// TODO: Expose properly through alloy.
-import { ApproxStructure, Assertions, Logger, Step, Waiter, Cleaner } from '@ephox/agar';
+import { ApproxStructure, Assertions, Waiter } from '@ephox/agar';
 import { GuiFactory, TestHelpers } from '@ephox/alloy';
-import { UnitTest } from '@ephox/bedrock-client';
-import { Global, Cell } from '@ephox/katamari';
-import { renderCustomEditor } from 'tinymce/themes/silver/ui/dialog/CustomEditor';
-import { RepresentingSteps } from '../../../module/ReperesentingSteps';
+import { after, before, describe, it } from '@ephox/bedrock-client';
+import { Cell, Fun, Global } from '@ephox/katamari';
+import { Class, SugarElement } from '@ephox/sugar';
+
 import Resource from 'tinymce/core/api/Resource';
+import { TinyMCE } from 'tinymce/core/api/Tinymce';
 import Delay from 'tinymce/core/api/util/Delay';
-import Promise from 'tinymce/core/api/util/Promise';
-import { Element, Class } from '@ephox/sugar';
-import { HTMLElement } from '@ephox/dom-globals';
+import PromisePolyfill from 'tinymce/core/api/util/Promise';
+import { renderCustomEditor } from 'tinymce/themes/silver/ui/dialog/CustomEditor';
 
-declare const tinymce: { Resource: Resource };
+import * as RepresentingUtils from '../../../module/RepresentingUtils';
 
-const install = () => {
-  const origTiny = Global.tinymce;
-  Global.tinymce = {
-    Resource
-  };
-  const uninstall = () => {
-    Global.tinymce = origTiny;
-  };
-  return uninstall;
-};
+declare const tinymce: TinyMCE;
 
-UnitTest.asynctest('CustomEditor component Test', (success, failure) => {
-  const cleanup = Cleaner();
-  cleanup.add(install());
+describe('phantom.tinymce.themes.silver.components.customeditor.BasicCustomEditorTest', () => {
   const resolveInit = Cell(false);
   const customEditorValue = Cell('zztop');
 
-  tinymce.Resource.add('BasicCustomEditorTest', (e: HTMLElement) => new Promise((resolve) => {
-    const intervalId = Delay.setInterval(() => {
-      if (resolveInit.get()) {
-        Delay.clearInterval(intervalId);
-        Class.add(Element.fromDom(e), 'my-custom-editor');
-        resolve({
-          setValue(s: string) { customEditorValue.set(s); },
-          getValue() { return customEditorValue.get(); },
-          destroy() {}
-        });
-      }
-    }, 100);
-  }));
+  let origTiny: TinyMCE | undefined;
+  before(() => {
+    origTiny = Global.tinymce;
+    Global.tinymce = {
+      Resource
+    };
 
-  TestHelpers.GuiSetup.setup(
-    (_store, _doc, _body) => GuiFactory.build(
-      renderCustomEditor({
-        type: 'customeditor',
-        name: 'customeditor',
-        tag: 'textarea',
-        scriptId: 'BasicCustomEditorTest',
-        scriptUrl: '/custom/404', // using the cache
-        settings: undefined
-      })
-    ),
-    (_doc, _body, _gui, component, _store) => [
-      Assertions.sAssertStructure(
-        'Checking initial structure',
+    tinymce.Resource.add('BasicCustomEditorTest', (e: HTMLElement) => new PromisePolyfill((resolve) => {
+      const intervalId = Delay.setInterval(() => {
+        if (resolveInit.get()) {
+          Delay.clearInterval(intervalId);
+          Class.add(SugarElement.fromDom(e), 'my-custom-editor');
+          resolve({
+            setValue: (s: string) => customEditorValue.set(s),
+            getValue: () => customEditorValue.get(),
+            destroy: Fun.noop
+          });
+        }
+      }, 100);
+    }));
+  });
+
+  after(() => {
+    Global.tinymce = origTiny;
+    origTiny = undefined;
+  });
+
+  const hook = TestHelpers.GuiSetup.bddSetup((_store, _doc, _body) => GuiFactory.build(
+    renderCustomEditor({
+      type: 'customeditor',
+      name: 'customeditor',
+      tag: 'textarea',
+      scriptId: 'BasicCustomEditorTest',
+      scriptUrl: '/custom/404', // using the cache
+      settings: undefined
+    })
+  ));
+
+  it('Check basic structure', () => {
+    Assertions.assertStructure(
+      'Checking initial structure',
+      ApproxStructure.build((s, _str, arr) => s.element('div', {
+        children: [
+          s.element('textarea', {
+            classes: [ arr.not('my-custom-editor') ]
+          })
+        ]
+      })),
+      hook.component().element
+    );
+  });
+
+  it('Representing state', async () => {
+    const component = hook.component();
+    RepresentingUtils.assertRoundtrip(
+      component,
+      'foo'
+    );
+
+    // Set to initialised
+    resolveInit.set(true);
+    await Waiter.pTryUntil(
+      'Waiting for CustomEditor init',
+      () => Assertions.assertStructure(
+        'Checking structure after init',
         ApproxStructure.build((s, _str, arr) => s.element('div', {
           children: [
             s.element('textarea', {
-              classes: [ arr.not('my-custom-editor') ]
+              classes: [ arr.has('my-custom-editor') ]
             })
           ]
         })),
-        component.element()
-      ),
-
-      RepresentingSteps.sAssertRoundtrip(
-        'Roundtripping before initialised',
-        component,
-        'foo'
-      ),
-
-      Logger.t(
-        'Set to initialised',
-        Step.sync(() => {
-          resolveInit.set(true);
-        })
-      ),
-
-      Waiter.sTryUntil(
-        'Waiting for CustomEditor init',
-        Assertions.sAssertStructure(
-          'Checking structure after init',
-          ApproxStructure.build((s, _str, arr) => s.element('div', {
-            children: [
-              s.element('textarea', {
-                classes: [ arr.has('my-custom-editor') ]
-              })
-            ]
-          })),
-          component.element()
-        )
-      ),
-
-      RepresentingSteps.sAssertRoundtrip(
-        'Roundtripping after initialised',
-        component,
-        'bar'
+        component.element
       )
-    ],
-    cleanup.wrap(success), cleanup.wrap(failure)
-  );
+    );
+
+    RepresentingUtils.assertRoundtrip(
+      component,
+      'bar'
+    );
+  });
 });

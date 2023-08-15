@@ -6,19 +6,21 @@
  */
 
 import { AddEventsBehaviour, AlloyEvents, Behaviour, Memento, Representing, SimpleSpec } from '@ephox/alloy';
-import { Cell, Option } from '@ephox/katamari';
+import { Dialog } from '@ephox/bridge';
+import { Obj, Singleton } from '@ephox/katamari';
 
-import { ComposingConfigs } from '../alien/ComposingConfigs';
-import { Types } from '@ephox/bridge';
 import Resource from 'tinymce/core/api/Resource';
 
-type CustomEditorSpec = Types.CustomEditor.CustomEditor;
-type CustomEditorInitFn = Types.CustomEditor.CustomEditorInitFn;
+import { ComposingConfigs } from '../alien/ComposingConfigs';
 
-const isOldCustomEditor = (spec: CustomEditorSpec): spec is Types.CustomEditor.CustomEditorOld => Object.prototype.hasOwnProperty.call(spec, 'init');
+type CustomEditorSpec = Dialog.CustomEditor;
+type CustomEditorInitFn = Dialog.CustomEditorInitFn;
+
+const isOldCustomEditor = (spec: CustomEditorSpec): spec is Dialog.CustomEditorOld =>
+  Obj.has(spec as Dialog.CustomEditorOld, 'init');
 
 export const renderCustomEditor = (spec: CustomEditorSpec): SimpleSpec => {
-  const editorApi = Cell(Option.none<Types.CustomEditor.CustomEditorInit>());
+  const editorApi = Singleton.value<Dialog.CustomEditorInit>();
 
   const memReplaced = Memento.record({
     dom: {
@@ -26,7 +28,7 @@ export const renderCustomEditor = (spec: CustomEditorSpec): SimpleSpec => {
     }
   });
 
-  const initialValue = Cell(Option.none<string>());
+  const initialValue = Singleton.value<string>();
 
   return {
     dom: {
@@ -34,21 +36,21 @@ export const renderCustomEditor = (spec: CustomEditorSpec): SimpleSpec => {
       classes: [ 'tox-custom-editor' ]
     },
     behaviours: Behaviour.derive([
-      AddEventsBehaviour.config('editor-foo-events', [
+      AddEventsBehaviour.config('custom-editor-events', [
         AlloyEvents.runOnAttached((component) => {
           memReplaced.getOpt(component).each((ta) => {
             (isOldCustomEditor(spec)
-              ? spec.init(ta.element().dom())
+              ? spec.init(ta.element.dom)
               : Resource.load(spec.scriptId, spec.scriptUrl).then(
-                (init: CustomEditorInitFn) => init(ta.element().dom(), spec.settings)
+                (init: CustomEditorInitFn) => init(ta.element.dom, spec.settings)
               )
             ).then((ea) => {
-              initialValue.get().each((cvalue) => {
+              initialValue.on((cvalue) => {
                 ea.setValue(cvalue);
               });
 
-              initialValue.set(Option.none());
-              editorApi.set(Option.some(ea));
+              initialValue.clear();
+              editorApi.set(ea);
             });
           });
         })
@@ -63,7 +65,7 @@ export const renderCustomEditor = (spec: CustomEditorSpec): SimpleSpec => {
           setValue: (component, value) => {
             editorApi.get().fold(
               () => {
-                initialValue.set(Option.some(value));
+                initialValue.set(value);
               },
               (ed) => ed.setValue(value)
             );

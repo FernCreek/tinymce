@@ -1,89 +1,94 @@
-import { ApproxStructure, Assertions, Chain, Log, Pipeline, Step, UiFinder } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { TinyLoader } from '@ephox/mcagar';
-import { Body } from '@ephox/sugar';
+import { ApproxStructure, Assertions, UiFinder, Waiter } from '@ephox/agar';
+import { describe, it } from '@ephox/bedrock-client';
+import { SugarBody } from '@ephox/sugar';
+import { TinyHooks } from '@ephox/wrap-mcagar';
+
+import Editor from 'tinymce/core/api/Editor';
 import Theme from 'tinymce/themes/silver/Theme';
 
-UnitTest.asynctest('tinymce.themes.silver.test.browser.throbber.ThrobberTest', (success, failure) => {
-  Theme();
+describe('browser.tinymce.themes.silver.throbber.ThrobberTest', () => {
+  const hook = TinyHooks.bddSetupLight<Editor>({
+    base_url: '/project/tinymce/js/tinymce',
+  }, [ Theme ]);
 
-  const sAssertThrobberHiddenStructure = Chain.asStep(Body.body(), [
-    UiFinder.cFindIn('.tox-throbber'),
-    Assertions.cAssertStructure('Checking disabled structure', ApproxStructure.build((s, str, arr) => s.element('div', {
-      attrs: {
-        'aria-hidden': str.is('true')
-      },
-      classes: [ arr.has('tox-throbber') ],
-      styles: {
-        display: str.is('none')
-      }
-    })))
-  ]);
+  const assertThrobberHiddenStructure = () => {
+    const throbber = UiFinder.findIn(SugarBody.body(), '.tox-throbber').getOrDie();
+    Assertions.assertStructure('Checking disabled structure', ApproxStructure.build((s, str, arr) =>
+      s.element('div', {
+        attrs: {
+          'aria-hidden': str.is('true'),
+          'aria-busy': str.none()
+        },
+        classes: [ arr.has('tox-throbber') ],
+        styles: {
+          display: str.is('none')
+        }
+      })
+    ), throbber);
+  };
 
-  const sAssertThrobberShownStructure = Chain.asStep(Body.body(), [
-    UiFinder.cFindIn('.tox-throbber'),
-    Assertions.cAssertStructure('Checking enabled structure', ApproxStructure.build((s, str, arr) => s.element('div', {
-      attrs: {
-        'aria-hidden': str.none()
-      },
-      classes: [ arr.has('tox-throbber') ],
-      styles: {
-        display: str.none()
-      },
-      children: [
-        s.element('div', {
-          attrs: {
-            'aria-label': str.is('Loading...')
-          },
-          classes: [ arr.has('tox-throbber__busy-spinner') ],
-          children: [
-            s.element('div', {
-              classes: [ arr.has('tox-spinner') ],
-              children: [
-                s.element('div', { }),
-                s.element('div', { }),
-                s.element('div', { })
-              ]
-            })
-          ]
-        })
-      ]
-    })))
-  ]);
+  const assertThrobberShownStructure = () => {
+    const throbber = UiFinder.findIn(SugarBody.body(), '.tox-throbber').getOrDie();
+    Assertions.assertStructure('Checking enabled structure', ApproxStructure.build((s, str, arr) =>
+      s.element('div', {
+        attrs: {
+          'aria-hidden': str.none(),
+          'aria-busy': str.is('true')
+        },
+        classes: [ arr.has('tox-throbber') ],
+        styles: {
+          display: str.none()
+        },
+        children: [
+          s.element('div', {
+            attrs: {
+              'aria-label': str.is('Loading...'),
+              'tabindex': str.is('0'),
+            },
+            classes: [ arr.has('tox-throbber__busy-spinner') ],
+            children: [
+              s.element('div', {
+                classes: [ arr.has('tox-spinner') ],
+                children: [
+                  s.element('div', {}),
+                  s.element('div', {}),
+                  s.element('div', {})
+                ]
+              })
+            ]
+          })
+        ]
+      })
+    ), throbber);
+  };
 
-  TinyLoader.setupLight((editor, onSuccess, onFailure) => {
-    const sSetProgressState = (state: boolean, time?: number) => Step.sync(() => {
-      if (state) {
-        editor.setProgressState(true, time);
-      } else {
-        editor.setProgressState(false);
-      }
-    });
+  const pAssertThrobber = async (editor: Editor, state: boolean) => {
+    const finder = state ? UiFinder.pWaitForVisible : UiFinder.pWaitForHidden;
+    await finder(`Wait for throbber to be ${state ? 'visible' : 'hidden'}`, SugarBody.body(), '.tox-throbber');
+    if (state) {
+      assertThrobberShownStructure();
+    } else {
+      assertThrobberHiddenStructure();
+    }
+  };
 
-    Pipeline.async({}, [
-      Log.stepsAsStep('TBA', 'Throbber actions test', [
-        sAssertThrobberHiddenStructure,
-        sSetProgressState(true),
-        UiFinder.sWaitForVisible('Wait for throbber to show', Body.body(), '.tox-throbber'),
-        sAssertThrobberShownStructure,
-        sSetProgressState(false),
-        UiFinder.sWaitForHidden('Wait for throbber to hide', Body.body(), '.tox-throbber'),
-        sAssertThrobberHiddenStructure
-      ]),
-      Log.stepsAsStep('TBA', 'Throbber actions with timeout test', [
-        sSetProgressState(true, 300),
-        // Wait for a little and make sure the throbber is still hidden
-        Step.wait(150),
-        sAssertThrobberHiddenStructure,
-        UiFinder.sWaitForVisible('Wait for throbber to show', Body.body(), '.tox-throbber'),
-        sAssertThrobberShownStructure,
-        sSetProgressState(false),
-        UiFinder.sWaitForHidden('Wait for throbber to hide', Body.body(), '.tox-throbber'),
-        sAssertThrobberHiddenStructure
-      ])
-    ], onSuccess, onFailure);
-  }, {
-    theme: 'silver',
-    base_url: '/project/tinymce/js/tinymce'
-  }, success, failure);
+  it('TINY-3453: Throbber actions test', async () => {
+    const editor = hook.editor();
+    await pAssertThrobber(editor, false);
+    editor.setProgressState(true);
+    await pAssertThrobber(editor, true);
+    editor.setProgressState(false);
+    await pAssertThrobber(editor, false);
+  });
+
+  it('TINY-3453: Throbber actions with timeout test', async () => {
+    const editor = hook.editor();
+    editor.setProgressState(true, 300);
+    // Wait for a little and make sure the throbber is still hidden
+    await Waiter.pWait(150);
+    assertThrobberHiddenStructure();
+    await pAssertThrobber(editor, true);
+    editor.setProgressState(false);
+    await pAssertThrobber(editor, false);
+  });
 });

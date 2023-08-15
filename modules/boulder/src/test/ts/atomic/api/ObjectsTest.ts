@@ -1,9 +1,9 @@
 import { Assert, UnitTest } from '@ephox/bedrock-client';
 import { Arr, Obj, Result } from '@ephox/katamari';
-import Jsc from '@ephox/wrap-jsverify';
-import * as Objects from 'ephox/boulder/api/Objects';
-
 import { KAssert } from '@ephox/katamari-assertions';
+import Jsc from '@ephox/wrap-jsverify';
+
+import * as Objects from 'ephox/boulder/api/Objects';
 
 UnitTest.test('ObjectsTest', () => {
   const smallSet = Jsc.nestring;
@@ -37,7 +37,7 @@ UnitTest.test('ObjectsTest', () => {
     });
 
     // Sanity test.
-    const actual = Objects.narrow({ a: 'a', b: 'b', c: 'c' }, [ 'a', 'c', 'e' ]);
+    const actual = Objects.narrow({ a: 'a', b: 'b', c: 'c' }, [ 'a', 'c' ]);
     Assert.eq('eq', { a: 'a', c: 'c' }, actual);
   };
 

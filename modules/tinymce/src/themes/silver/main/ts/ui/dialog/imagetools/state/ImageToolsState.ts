@@ -5,10 +5,11 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Cell, Option } from '@ephox/katamari';
+import { Cell, Fun, Singleton } from '@ephox/katamari';
+
 import Tools from 'tinymce/core/api/util/Tools';
+
 import UndoStack from '../UndoStack';
-import { Blob, URL } from '@ephox/dom-globals';
 
 interface BlobState {
   blob: Blob;
@@ -22,7 +23,7 @@ interface UndoRedoState {
 
 const makeState = (initialState: BlobState) => {
   const blobState = Cell(initialState);
-  const tempState = Cell(Option.none<BlobState>());
+  const tempState = Singleton.value<BlobState>();
   const undoStack = UndoStack();
   undoStack.add(initialState);
 
@@ -32,13 +33,13 @@ const makeState = (initialState: BlobState) => {
     blobState.set(state);
   };
 
-  const getTempState = (): BlobState => tempState.get().fold(() => blobState.get(), (temp) => temp);
+  const getTempState = (): BlobState => tempState.get().getOrThunk(blobState.get);
 
   const updateTempState = (blob: Blob): string => {
     const newTempState = createState(blob);
 
     destroyTempState();
-    tempState.set(Option.some(newTempState));
+    tempState.set(newTempState);
     return newTempState.url;
   };
 
@@ -56,8 +57,8 @@ const makeState = (initialState: BlobState) => {
   };
 
   const destroyTempState = (): void => {
-    tempState.get().each(destroyState);
-    tempState.set(Option.none());
+    tempState.on(destroyState);
+    tempState.clear();
   };
 
   const addBlobState = (blob: Blob): string => {
@@ -70,16 +71,18 @@ const makeState = (initialState: BlobState) => {
 
   const addTempState = (blob: Blob): string => {
     const newState = createState(blob);
-    tempState.set(Option.some(newState));
+    tempState.set(newState);
     return newState.url;
   };
 
-  const applyTempState = (postApply: () => void): void => tempState.get().fold(() => {
+  const applyTempState = (postApply: () => void): void => tempState.get().fold(
     // TODO: Inform the user of failures somehow
-  }, (temp) => {
-    addBlobState(temp.blob);
-    postApply();
-  });
+    Fun.noop,
+    (temp) => {
+      addBlobState(temp.blob);
+      postApply();
+    }
+  );
 
   const undo = (): string => {
     const currentState = undoStack.undo();

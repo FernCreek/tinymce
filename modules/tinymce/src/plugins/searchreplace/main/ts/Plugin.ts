@@ -6,14 +6,16 @@
  */
 
 import { Cell } from '@ephox/katamari';
+
 import PluginManager from 'tinymce/core/api/PluginManager';
+
 import * as Api from './api/Api';
 import * as Commands from './api/Commands';
 import { SearchState } from './core/Actions';
 import * as Buttons from './ui/Buttons';
 
-export default function () {
-  PluginManager.add('searchreplace', function (editor) {
+export default (): void => {
+  PluginManager.add('searchreplace', (editor) => {
     const currentSearchState = Cell<SearchState>({
       index: -1,
       count: 0,
@@ -28,4 +30,4 @@ export default function () {
 
     return Api.get(editor, currentSearchState);
   });
-}
+};

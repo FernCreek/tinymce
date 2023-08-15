@@ -1,74 +1,84 @@
-import { Pipeline, Log, FocusTools, Keyboard, Keys, Waiter } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { document } from '@ephox/dom-globals';
-import { TinyApis, TinyLoader, TinyDom } from '@ephox/mcagar';
-import LinkPlugin from 'tinymce/plugins/link/Plugin';
-import SilverTheme from 'tinymce/themes/silver/Theme';
+import { FocusTools, Keys } from '@ephox/agar';
+import { describe, it, before, afterEach } from '@ephox/bedrock-client';
+import { SugarDocument } from '@ephox/sugar';
+import { TinyHooks, TinySelections, TinyUiActions } from '@ephox/wrap-mcagar';
+
+import Editor from 'tinymce/core/api/Editor';
+import Plugin from 'tinymce/plugins/link/Plugin';
+import Theme from 'tinymce/themes/silver/Theme';
 
 import { TestLinkUi } from '../module/TestLinkUi';
 
-UnitTest.asynctest('browser.tinymce.plugins.link.UpdateLinkTest', (success, failure) => {
-
-  LinkPlugin();
-  SilverTheme();
-
-  TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
-    const tinyApis = TinyApis(editor);
-    const doc = TinyDom.fromDom(document);
-
-    Pipeline.async({}, [
-      Log.stepsAsStep('TBA', 'Link: should not get anchor info if not selected node', [
-        TestLinkUi.sClearHistory,
-        tinyApis.sSetContent('<p><a href="http://tinymce.com" class="shouldbekept" title="shouldalsobekept">tiny</a></p>'),
-        tinyApis.sSetSelection([ 0, 0, 0 ], 2, [ 0, 0, 0 ], 2),
-        tinyApis.sExecCommand('mcelink'),
-        TestLinkUi.sAssertDialogContents({
-          href: 'http://tinymce.com',
-          text: 'tiny',
-          title: 'shouldalsobekept',
-          target: ''
-        }),
-        FocusTools.sSetActiveValue(doc, 'http://something'),
-        Keyboard.sKeydown(doc, Keys.enter(), { }),
-        Waiter.sTryUntil(
-          'Wait until link is inserted',
-          tinyApis.sAssertContentPresence({
-            'a[href="http://something"]': 1,
-            'a[class="shouldbekept"]': 1,
-            'a[title="shouldalsobekept"]': 1
-          })
-        ),
-        TestLinkUi.sClearHistory
-      ]),
-      Log.stepsAsStep('TBA', 'Link: should remove attributes if unset in the dialog', [
-        TestLinkUi.sClearHistory,
-        tinyApis.sSetContent('<p><a href="http://tinymce.com" class="shouldbekept" title="shouldnotbekept">tiny</a></p>'),
-        tinyApis.sSetSelection([ 0, 0, 0 ], 2, [ 0, 0, 0 ], 2),
-        tinyApis.sExecCommand('mcelink'),
-        TestLinkUi.sAssertDialogContents({
-          href: 'http://tinymce.com',
-          text: 'tiny',
-          title: 'shouldnotbekept',
-          target: ''
-        }),
-        FocusTools.sSetActiveValue(doc, 'http://something'),
-        TestLinkUi.sSetInputFieldValue('Title', ''),
-        Keyboard.sKeydown(doc, Keys.enter(), { }),
-        Waiter.sTryUntil(
-          'Wait until link is inserted',
-          tinyApis.sAssertContentPresence({
-            'a[href="http://something"]': 1,
-            'a[class="shouldbekept"]': 1,
-            'a[title="shouldnotbekept"]': 0
-          })
-        ),
-        TestLinkUi.sClearHistory
-      ])
-    ], onSuccess, onFailure);
-  }, {
+describe('browser.tinymce.plugins.link.UpdateLinkTest', () => {
+  const hook = TinyHooks.bddSetupLight<Editor>({
     plugins: 'link',
     toolbar: '',
-    theme: 'silver',
     base_url: '/project/tinymce/js/tinymce'
-  }, success, failure);
+  }, [ Plugin, Theme ]);
+
+  before(() => {
+    TestLinkUi.clearHistory();
+  });
+
+  afterEach(() => {
+    TestLinkUi.clearHistory();
+  });
+
+  it('TBA: should not get anchor info if not selected node', async () => {
+    const editor = hook.editor();
+    editor.setContent('<p><a href="http://tinymce.com" class="shouldbekept" title="shouldalsobekept">tiny</a></p>');
+    TinySelections.setCursor(editor, [ 0, 0, 0 ], 2);
+    editor.execCommand('mcelink');
+    await TinyUiActions.pWaitForDialog(editor);
+    TestLinkUi.assertDialogContents({
+      href: 'http://tinymce.com',
+      text: 'tiny',
+      title: 'shouldalsobekept',
+      target: ''
+    });
+    FocusTools.setActiveValue(SugarDocument.getDocument(), 'http://something');
+    TinyUiActions.keydown(editor, Keys.enter());
+    await TestLinkUi.pAssertContentPresence(editor, {
+      'a[href="http://something"]': 1,
+      'a[class="shouldbekept"]': 1,
+      'a[title="shouldalsobekept"]': 1
+    });
+  });
+
+  it('TBA: should remove attributes if unset in the dialog', async () => {
+    const editor = hook.editor();
+    editor.setContent('<p><a href="http://tinymce.com" class="shouldbekept" title="shouldnotbekept">tiny</a></p>');
+    TinySelections.setCursor(editor, [ 0, 0, 0 ], 2);
+    editor.execCommand('mcelink');
+    await TinyUiActions.pWaitForDialog(editor);
+    TestLinkUi.assertDialogContents({
+      href: 'http://tinymce.com',
+      text: 'tiny',
+      title: 'shouldnotbekept',
+      target: ''
+    });
+    FocusTools.setActiveValue(SugarDocument.getDocument(), 'http://something');
+    await TestLinkUi.pSetInputFieldValue(editor, 'Title', '');
+    TinyUiActions.keydown(editor, Keys.enter());
+    await TestLinkUi.pAssertContentPresence(editor, {
+      'a[href="http://something"]': 1,
+      'a[class="shouldbekept"]': 1,
+      'a[title="shouldnotbekept"]': 0
+    });
+  });
+
+  it('TINY-7998: Updating a link with a dangerous URL should remove the href attribute', async () => {
+    const editor = hook.editor();
+    editor.setContent('<p><a href="https://tinymce.com" title="shouldbekept">tiny</a></p>');
+    TinySelections.setCursor(editor, [ 0, 0, 0 ], 2);
+    editor.execCommand('mceLink');
+    await TinyUiActions.pWaitForDialog(editor);
+    FocusTools.setActiveValue(SugarDocument.getDocument(), 'javascript:alert(1)');
+    TinyUiActions.submitDialog(editor);
+    await TestLinkUi.pAssertContentPresence(editor, {
+      'a[href]': 0,
+      'a[title="shouldbekept"]': 1,
+      'a:contains("tiny")': 1
+    });
+  });
 });

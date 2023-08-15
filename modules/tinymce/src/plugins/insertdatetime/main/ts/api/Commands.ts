@@ -5,16 +5,18 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import * as Settings from './Settings';
-import * as Actions from '../core/Actions';
+import Editor from 'tinymce/core/api/Editor';
 
-const register = function (editor) {
-  editor.addCommand('mceInsertDate', function () {
-    Actions.insertDateTime(editor, Settings.getDateFormat(editor));
+import * as Actions from '../core/Actions';
+import * as Settings from './Settings';
+
+const register = (editor: Editor): void => {
+  editor.addCommand('mceInsertDate', (_ui, value) => {
+    Actions.insertDateTime(editor, value ?? Settings.getDateFormat(editor));
   });
 
-  editor.addCommand('mceInsertTime', function () {
-    Actions.insertDateTime(editor, Settings.getTimeFormat(editor));
+  editor.addCommand('mceInsertTime', (_ui, value) => {
+    Actions.insertDateTime(editor, value ?? Settings.getTimeFormat(editor));
   });
 };
 

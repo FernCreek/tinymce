@@ -7,7 +7,9 @@
 
 import { AddEventsBehaviour, AlloyEvents, Behaviour, Button, Disabling, Keying, Replacing, Tabstopping } from '@ephox/alloy';
 import { Arr } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
+
 import { UiFactoryBackstageProviders } from '../../backstage/Backstage';
 import * as ReadOnly from '../../ReadOnly';
 import { DisablingConfigs } from '../alien/DisablingConfigs';
@@ -52,7 +54,7 @@ const renderElementPath = (editor: Editor, settings, providersBackstage: UiFacto
         editor.nodeChanged();
       },
       buttonBehaviours: Behaviour.derive([
-        DisablingConfigs.button(providersBackstage.isReadOnly),
+        DisablingConfigs.button(providersBackstage.isDisabled),
         ReadOnly.receivingConfig()
       ])
     }));
@@ -115,7 +117,7 @@ const renderElementPath = (editor: Editor, settings, providersBackstage: UiFacto
         selector: 'div[role=button]'
       }),
       Disabling.config({
-        disabled: providersBackstage.isReadOnly
+        disabled: providersBackstage.isDisabled
       }),
       ReadOnly.receivingConfig(),
       Tabstopping.config({ }),

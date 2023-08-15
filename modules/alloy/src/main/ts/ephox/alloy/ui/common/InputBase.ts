@@ -1,4 +1,4 @@
-import { FieldProcessorAdt, FieldSchema } from '@ephox/boulder';
+import { FieldProcessor, FieldSchema } from '@ephox/boulder';
 import { Fun } from '@ephox/katamari';
 import { Value } from '@ephox/sugar';
 
@@ -8,9 +8,9 @@ import { Representing } from '../../api/behaviour/Representing';
 import * as SketchBehaviours from '../../api/component/SketchBehaviours';
 import { RawDomSchema } from '../../api/component/SpecTypes';
 import * as Fields from '../../data/Fields';
-import { InputDetail } from '../../ui/types/InputTypes';
+import { InputDetail } from '../types/InputTypes';
 
-const schema: () => FieldProcessorAdt[] = Fun.constant([
+const schema: () => FieldProcessor[] = Fun.constant([
   FieldSchema.option('data'),
   FieldSchema.defaulted('inputAttributes', { }),
   FieldSchema.defaulted('inputStyles', { }),
@@ -26,9 +26,9 @@ const schema: () => FieldProcessorAdt[] = Fun.constant([
 const focusBehaviours = (detail: InputDetail): Behaviour.AlloyBehaviourRecord => Behaviour.derive([
   Focusing.config({
     onFocus: !detail.selectOnFocus ? Fun.noop : (component) => {
-      const input = component.element();
+      const input = component.element;
       const value = Value.get(input);
-      input.dom().setSelectionRange(0, value.length);
+      input.dom.setSelectionRange(0, value.length);
     }
   })
 ]);
@@ -41,16 +41,16 @@ const behaviours = (detail: InputDetail): Behaviour.AlloyBehaviourRecord => ({
       Representing.config({
         store: {
           mode: 'manual',
-          // Propagating its Option
+          // Propagating its Optional
           ...detail.data.map((data) => ({ initialValue: data } as { initialValue?: string })).getOr({ }),
-          getValue(input) {
-            return Value.get(input.element());
+          getValue: (input) => {
+            return Value.get(input.element);
           },
-          setValue(input, data) {
-            const current = Value.get(input.element());
+          setValue: (input, data) => {
+            const current = Value.get(input.element);
             // Only set it if it has changed ... otherwise the cursor goes to the end.
             if (current !== data) {
-              Value.set(input.element(), data);
+              Value.set(input.element, data);
             }
           }
         },

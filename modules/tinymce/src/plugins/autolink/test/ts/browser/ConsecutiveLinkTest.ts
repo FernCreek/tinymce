@@ -1,41 +1,38 @@
-import { Pipeline, Step, Log } from '@ephox/agar';
-import { TinyApis, TinyLoader } from '@ephox/mcagar';
+import { before, describe, it } from '@ephox/bedrock-client';
+import { TinyAssertions, TinyHooks, TinySelections } from '@ephox/wrap-mcagar';
+
+import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
-import AutolinkPlugin from 'tinymce/plugins/autolink/Plugin';
-import * as KeyUtils from '../module/test/KeyUtils';
+import Plugin from 'tinymce/plugins/autolink/Plugin';
 import Theme from 'tinymce/themes/silver/Theme';
-import { UnitTest } from '@ephox/bedrock-client';
 
-UnitTest.asynctest('browser.tinymce.plugins.autolink.ConsecutiveLinkTest', (success, failure) => {
+import * as KeyUtils from '../module/test/KeyUtils';
 
-  Theme();
-  AutolinkPlugin();
+describe('browser.tinymce.plugins.autolink.ConsecutiveLinkTest', () => {
+  before(function () {
+    if (Env.browser.isIE()) {
+      this.skip();
+    }
+  });
 
-  TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
-    const tinyApis = TinyApis(editor);
-    const steps = Env.browser.isIE() ? [] : [
-      tinyApis.sFocus(),
-      Log.stepsAsStep('TBA', 'AutoLink: Chrome adds a nbsp between link and text', [
-        tinyApis.sSetContent('<p><a href="http://www.domain.com/">www.domain.com</a>&nbsp;www.domain.com</p>'),
-        tinyApis.sSetCursor([ 0, 1 ], 15),
-        Step.sync(function () {
-          KeyUtils.type(editor, ' ');
-        }),
-        tinyApis.sAssertContent('<p><a href="http://www.domain.com/">www.domain.com</a>&nbsp;<a href="http://www.domain.com/">www.domain.com</a>&nbsp;</p>')
-      ]),
-      Log.stepsAsStep('TBA', 'AutoLink: FireFox does not seem to add a nbsp between link and text', [
-        tinyApis.sSetContent('<p><a href="http://www.domain.com/">www.domain.com</a> www.domain.com</p>'),
-        tinyApis.sSetCursor([ 0, 1 ], 15),
-        Step.sync(function () {
-          KeyUtils.type(editor, ' ');
-        }),
-        tinyApis.sAssertContent('<p><a href="http://www.domain.com/">www.domain.com</a> <a href="http://www.domain.com/">www.domain.com</a>&nbsp;</p>')
-      ])
-    ];
-
-    Pipeline.async({}, steps, onSuccess, onFailure);
-  }, {
+  const hook = TinyHooks.bddSetupLight<Editor>({
     plugins: 'autolink',
     base_url: '/project/tinymce/js/tinymce'
-  }, success, failure);
+  }, [ Plugin, Theme ], true);
+
+  it('TBA: Chrome adds a nbsp between link and text', () => {
+    const editor = hook.editor();
+    editor.setContent('<p><a href="http://www.domain.com">www.domain.com</a>&nbsp;www.domain.com</p>');
+    TinySelections.setCursor(editor, [ 0, 1 ], 15);
+    KeyUtils.type(editor, ' ');
+    TinyAssertions.assertContent(editor, '<p><a href="http://www.domain.com">www.domain.com</a>&nbsp;<a href="http://www.domain.com">www.domain.com</a>&nbsp;</p>');
+  });
+
+  it('TBA: FireFox does not seem to add a nbsp between link and text', () => {
+    const editor = hook.editor();
+    editor.setContent('<p><a href="http://www.domain.com">www.domain.com</a> www.domain.com</p>');
+    TinySelections.setCursor(editor, [ 0, 1 ], 15);
+    KeyUtils.type(editor, ' ');
+    TinyAssertions.assertContent(editor, '<p><a href="http://www.domain.com">www.domain.com</a> <a href="http://www.domain.com">www.domain.com</a>&nbsp;</p>');
+  });
 });

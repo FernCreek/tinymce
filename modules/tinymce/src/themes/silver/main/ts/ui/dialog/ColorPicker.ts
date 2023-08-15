@@ -7,13 +7,11 @@
 
 import { ColourPicker } from '@ephox/acid';
 import { AlloyTriggers, Behaviour, Composing, Form, Memento, NativeEvents, Representing, SimpleSpec } from '@ephox/alloy';
-import { Types } from '@ephox/bridge';
-import { console } from '@ephox/dom-globals';
-import { Option } from '@ephox/katamari';
+import { Dialog } from '@ephox/bridge';
+import { Optional } from '@ephox/katamari';
 
 import { ComposingConfigs } from '../alien/ComposingConfigs';
 import { formActionEvent } from '../general/FormEvents';
-import { Omit } from '../Omit';
 
 // import I18n from 'tinymce/core/api/util/I18n';
 
@@ -40,16 +38,16 @@ const english = {
   'aria.input.invalid': 'Invalid input'
 };
 
-const getEnglishText = function (key) {
+const getEnglishText = (key) => {
   return english[key];
 };
 
-const translate = function (key) {
+const translate = (key) => {
   // TODO: use this: I18n.translate()
   return getEnglishText(key);
 };
 
-type ColorPickerSpec = Omit<Types.ColorPicker.ColorPicker, 'type'>;
+type ColorPickerSpec = Omit<Dialog.ColorPicker, 'type'>;
 
 export const renderColorPicker = (_spec: ColorPickerSpec): SimpleSpec => {
   const getClass = (key: string) => 'tox-' + key;
@@ -57,11 +55,11 @@ export const renderColorPicker = (_spec: ColorPickerSpec): SimpleSpec => {
   const colourPickerFactory = ColourPicker.makeFactory(translate, getClass);
 
   const onValidHex = (form) => {
-    AlloyTriggers.emitWith(form, formActionEvent, { name: 'hex-valid', value: true }, );
+    AlloyTriggers.emitWith(form, formActionEvent, { name: 'hex-valid', value: true });
   };
 
   const onInvalidHex = (form) => {
-    AlloyTriggers.emitWith(form, formActionEvent, { name: 'hex-valid', value: false } );
+    AlloyTriggers.emitWith(form, formActionEvent, { name: 'hex-valid', value: false });
   };
 
   const memPicker = Memento.record(
@@ -95,7 +93,7 @@ export const renderColorPicker = (_spec: ColorPickerSpec): SimpleSpec => {
             const optRgbForm = Composing.getCurrent(picker);
             const optHex = optRgbForm.bind((rgbForm) => {
               const formValues = Representing.getValue(rgbForm);
-              return formValues.hex as Option<string>;
+              return formValues.hex as Optional<string>;
             }) ;
             return optHex.map((hex) => '#' + hex).getOr('');
           },
@@ -105,11 +103,11 @@ export const renderColorPicker = (_spec: ColorPickerSpec): SimpleSpec => {
             const picker = memPicker.get(comp);
             const optRgbForm = Composing.getCurrent(picker);
             optRgbForm.fold(() => {
-              // tslint:disable-next-line:no-console
+              // eslint-disable-next-line no-console
               console.log('Can not find form');
             }, (rgbForm) => {
               Representing.setValue(rgbForm, {
-                hex: Option.from(m[1]).getOr('')
+                hex: Optional.from(m[1]).getOr('')
               });
 
               // So not the way to do this.

@@ -5,18 +5,19 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Element } from '@ephox/sugar';
+import { SugarElement } from '@ephox/sugar';
+
 import Tools from '../util/Tools';
 
 export interface EntitiesMap { [name: string]: string }
 
 interface Entities {
-  encodeRaw (text: string, attr?: boolean): string;
-  encodeAllRaw (text: string): string;
-  encodeNumeric (text: string, attr?: boolean): string;
-  encodeNamed (text: string, attr?: boolean, entities?: EntitiesMap): string;
-  getEncodeFunc (name: string, entities?: EntitiesMap | string): (text: string, attr?: boolean) => string;
-  decode (text: string): string;
+  encodeRaw: (text: string, attr?: boolean) => string;
+  encodeAllRaw: (text: string) => string;
+  encodeNumeric: (text: string, attr?: boolean) => string;
+  encodeNamed: (text: string, attr?: boolean, entities?: EntitiesMap) => string;
+  getEncodeFunc: (name: string, entities?: EntitiesMap | string) => (text: string, attr?: boolean) => string;
+  decode: (text: string) => string;
 }
 
 /**
@@ -62,7 +63,7 @@ const reverseEntities = {
 
 // Decodes text by using the browser
 const nativeDecode = (text: string): string => {
-  const elm = Element.fromTag('div').dom();
+  const elm = SugarElement.fromTag('div').dom;
   elm.innerHTML = text;
 
   return elm.textContent || elm.innerText || text;
@@ -129,7 +130,7 @@ const namedEntities = buildEntitiesLookup(
  * @param {Boolean} attr Optional flag to specify if the text is attribute contents.
  * @return {String} Entity encoded text.
  */
-const encodeRaw = (text: string, attr?: boolean): string => text.replace(attr ? attrsCharsRegExp : textCharsRegExp, function (chr) {
+const encodeRaw = (text: string, attr?: boolean): string => text.replace(attr ? attrsCharsRegExp : textCharsRegExp, (chr) => {
   return baseEntities[chr] || chr;
 });
 
@@ -142,7 +143,7 @@ const encodeRaw = (text: string, attr?: boolean): string => text.replace(attr ? 
  * @param {String} text Text to encode.
  * @return {String} Entity encoded text.
  */
-const encodeAllRaw = (text: string): string => ('' + text).replace(rawCharsRegExp, function (chr) {
+const encodeAllRaw = (text: string): string => ('' + text).replace(rawCharsRegExp, (chr) => {
   return baseEntities[chr] || chr;
 });
 
@@ -155,7 +156,7 @@ const encodeAllRaw = (text: string): string => ('' + text).replace(rawCharsRegEx
  * @param {Boolean} attr Optional flag to specify if the text is attribute contents.
  * @return {String} Entity encoded text.
  */
-const encodeNumeric = (text: string, attr?: boolean): string => text.replace(attr ? attrsCharsRegExp : textCharsRegExp, function (chr) {
+const encodeNumeric = (text: string, attr?: boolean): string => text.replace(attr ? attrsCharsRegExp : textCharsRegExp, (chr) => {
   // Multi byte sequence convert it to a single entity
   if (chr.length > 1) {
     return '&#' + (((chr.charCodeAt(0) - 0xD800) * 0x400) + (chr.charCodeAt(1) - 0xDC00) + 0x10000) + ';';
@@ -177,7 +178,7 @@ const encodeNumeric = (text: string, attr?: boolean): string => text.replace(att
 const encodeNamed = (text: string, attr?: boolean, entities?: EntitiesMap): string => {
   entities = entities || namedEntities;
 
-  return text.replace(attr ? attrsCharsRegExp : textCharsRegExp, function (chr) {
+  return text.replace(attr ? attrsCharsRegExp : textCharsRegExp, (chr) => {
     return baseEntities[chr] || entities[chr] || chr;
   });
 };
@@ -193,7 +194,7 @@ const encodeNamed = (text: string, attr?: boolean, entities?: EntitiesMap): stri
 const getEncodeFunc = (name: string, entities?: EntitiesMap | string) => {
   const entitiesMap = buildEntitiesLookup(entities) || namedEntities;
 
-  const encodeNamedAndNumeric = (text: string, attr?: boolean): string => text.replace(attr ? attrsCharsRegExp : textCharsRegExp, function (chr) {
+  const encodeNamedAndNumeric = (text: string, attr?: boolean): string => text.replace(attr ? attrsCharsRegExp : textCharsRegExp, (chr) => {
     if (baseEntities[chr] !== undefined) {
       return baseEntities[chr];
     }
@@ -210,7 +211,7 @@ const getEncodeFunc = (name: string, entities?: EntitiesMap | string) => {
     return '&#' + chr.charCodeAt(0) + ';';
   });
 
-  const encodeCustomNamed = function (text: string, attr) {
+  const encodeCustomNamed = (text: string, attr) => {
     return encodeNamed(text, attr, entitiesMap);
   };
 
@@ -248,7 +249,7 @@ const getEncodeFunc = (name: string, entities?: EntitiesMap | string) => {
  * @param {String} text Text to entity decode.
  * @return {String} Entity decoded string.
  */
-const decode = (text: string): string => text.replace(entityRegExp, function (all, numeric) {
+const decode = (text: string): string => text.replace(entityRegExp, (all, numeric) => {
   if (numeric) {
     if (numeric.charAt(0).toLowerCase() === 'x') {
       numeric = parseInt(numeric.substr(1), 16);

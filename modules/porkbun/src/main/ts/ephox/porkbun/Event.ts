@@ -1,4 +1,4 @@
-import { Arr, Struct } from '@ephox/katamari';
+import { Arr } from '@ephox/katamari';
 
 export type EventHandler<T> = (event: T) => void;
 
@@ -11,29 +11,30 @@ export interface Event extends Bindable<any> {
   trigger: (...values: any[]) => void;
 }
 
-export const Event = function (fields: string[]): Event {
-  const struct = Struct.immutable.apply(null, fields);
-
+export const Event = (fields: string[]): Event => {
   let handlers: EventHandler<any>[] = [];
 
-  const bind = function (handler: EventHandler<any>) {
+  const bind = (handler: EventHandler<any>) => {
     if (handler === undefined) {
       throw new Error('Event bind error: undefined handler');
     }
     handlers.push(handler);
   };
 
-  const unbind = function (handler: EventHandler<any>) {
+  const unbind = (handler: EventHandler<any>) => {
     // This is quite a bit slower than handlers.splice() but we hate mutation.
     // Unbind isn't used very often so it should be ok.
-    handlers = Arr.filter(handlers, function (h) {
+    handlers = Arr.filter(handlers, (h) => {
       return h !== handler;
     });
   };
 
-  const trigger = function (...args: any[]) {
-    const event = struct.apply(null, args);
-    Arr.each(handlers, function (handler) {
+  const trigger = <T> (...args: T[]) => {
+    const event: Record<string, T> = {};
+    Arr.each(fields, (name, i) => {
+      event[name] = args[i];
+    });
+    Arr.each(handlers, (handler) => {
       handler(event);
     });
   };

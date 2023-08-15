@@ -1,48 +1,36 @@
-import { ApproxStructure, GeneralSteps, Keys, Logger, Step, StructAssert } from '@ephox/agar';
-import { Arr, Unicode } from '@ephox/katamari';
-import { TinyActions, TinyApis } from '@ephox/mcagar';
+import { ApproxStructure, Keys, StructAssert } from '@ephox/agar';
+import { Unicode } from '@ephox/katamari';
+import { TinyContentActions, TinySelections } from '@ephox/wrap-mcagar';
 
-const sSetContentAndFireKeystroke = function (key: number) {
-  return function (tinyApis: TinyApis, tinyActions: TinyActions, content: string, offset = content.length, elementPath = [ 0, 0 ], wrapInP = true) {
-    return Logger.t(`Set content and press ${key}`, GeneralSteps.sequence([
-      tinyApis.sSetContent(wrapInP ? '<p>' + content + '</p>' : content),
-      tinyApis.sFocus(),
-      tinyApis.sSetCursor(
-        elementPath,
-        offset
-      ),
-      tinyActions.sContentKeystroke(key, {})
-    ]));
+import Editor from 'tinymce/core/api/Editor';
+
+const setContentAndFireKeystroke = (key: number) => {
+  return (editor: Editor, content: string, offset = content.length, elementPath = [ 0, 0 ], wrapInP = true) => {
+    editor.setContent(wrapInP ? '<p>' + content + '</p>' : content);
+    editor.focus();
+    TinySelections.setCursor(editor, elementPath, offset);
+    TinyContentActions.keystroke(editor, key);
   };
 };
 
-const sSetContentAndPressSpace = (tinyApis: TinyApis, tinyActions: TinyActions, content: string, offset = content.length, elementPath = [ 0, 0 ]) => Step.label('Set content and press space', GeneralSteps.sequence([
-  tinyApis.sSetContent('<p>' + content + '</p>'),
-  tinyApis.sFocus(),
-  tinyApis.sSetCursor(
-    elementPath,
-    offset
-  ),
-  tinyApis.sExecCommand('mceInsertContent', ' '),
-  tinyActions.sContentKeystroke(32, {})
-]));
-
-const withTeardown = function (steps: Step<any, any>[], teardownStep: Step<any, any>) {
-  return Arr.bind(steps, function (step) {
-    return [ step, teardownStep ];
-  });
+const setContentAndPressSpace = (editor: Editor, content: string, offset = content.length, elementPath = [ 0, 0 ]) => {
+  editor.setContent('<p>' + content + '</p>');
+  editor.focus();
+  TinySelections.setCursor(editor, elementPath, offset);
+  editor.execCommand('mceInsertContent', false, ' ');
+  TinyContentActions.keystroke(editor, Keys.space());
 };
 
-const bodyStruct = function (children: StructAssert[]) {
-  return ApproxStructure.build(function (s, _str) {
+const bodyStruct = (children: StructAssert[]) => {
+  return ApproxStructure.build((s, _str) => {
     return s.element('body', {
       children
     });
   });
 };
 
-const inlineStructHelper = function (tag: string, content: string) {
-  return ApproxStructure.build(function (s, str) {
+const inlineStructHelper = (tag: string, content: string) => {
+  return ApproxStructure.build((s, str) => {
     return bodyStruct([
       s.element('p', {
         children: [
@@ -58,8 +46,8 @@ const inlineStructHelper = function (tag: string, content: string) {
   });
 };
 
-const inlineBlockStructHelper = function (tag: string, content: string) {
-  return ApproxStructure.build(function (s, str) {
+const inlineBlockStructHelper = (tag: string, content: string) => {
+  return ApproxStructure.build((s, str) => {
     return bodyStruct([
       s.element('p', {
         children: [
@@ -76,8 +64,8 @@ const inlineBlockStructHelper = function (tag: string, content: string) {
   });
 };
 
-const blockStructHelper = function (tag: string, content: string) {
-  return ApproxStructure.build(function (s, str) {
+const blockStructHelper = (tag: string, content: string) => {
+  return ApproxStructure.build((s, str) => {
     return bodyStruct([
       s.element(tag, {
         children: [
@@ -89,8 +77,8 @@ const blockStructHelper = function (tag: string, content: string) {
   });
 };
 
-const forcedRootBlockInlineStructHelper = function (tag: string, content: string) {
-  return ApproxStructure.build(function (s, str) {
+const forcedRootBlockInlineStructHelper = (tag: string, content: string) => {
+  return ApproxStructure.build((s, str) => {
     return bodyStruct([
       s.element(tag, {
         children: [
@@ -104,8 +92,8 @@ const forcedRootBlockInlineStructHelper = function (tag: string, content: string
   });
 };
 
-const forcedRootBlockStructHelper = function (tag: string, content: string) {
-  return ApproxStructure.build(function (s, str) {
+const forcedRootBlockStructHelper = (tag: string, content: string) => {
+  return ApproxStructure.build((s, str) => {
     return bodyStruct([
       s.element(tag, {
         children: [
@@ -118,12 +106,11 @@ const forcedRootBlockStructHelper = function (tag: string, content: string) {
   });
 };
 
-const sSetContentAndPressEnter = sSetContentAndFireKeystroke(Keys.enter());
+const setContentAndPressEnter = setContentAndFireKeystroke(Keys.enter());
 
 export {
-  sSetContentAndPressSpace,
-  sSetContentAndPressEnter,
-  withTeardown,
+  setContentAndPressSpace,
+  setContentAndPressEnter,
   bodyStruct,
   inlineStructHelper,
   inlineBlockStructHelper,

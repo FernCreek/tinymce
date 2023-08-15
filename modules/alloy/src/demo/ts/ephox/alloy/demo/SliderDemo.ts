@@ -1,25 +1,24 @@
-import { document } from '@ephox/dom-globals';
 import { Fun, Type } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
+import { Class, Css, DomEvent, Insert, SugarElement } from '@ephox/sugar';
 
-import { Class, Css, DomEvent, Element, Insert } from '@ephox/sugar';
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
 import { Keying } from 'ephox/alloy/api/behaviour/Keying';
 import { Replacing } from 'ephox/alloy/api/behaviour/Replacing';
 import { Toggling } from 'ephox/alloy/api/behaviour/Toggling';
+import { AlloyComponent } from 'ephox/alloy/api/component/ComponentApi';
 import * as GuiFactory from 'ephox/alloy/api/component/GuiFactory';
 import * as Gui from 'ephox/alloy/api/system/Gui';
 import { Container } from 'ephox/alloy/api/ui/Container';
 import { Slider } from 'ephox/alloy/api/ui/Slider';
 import * as HtmlDisplay from 'ephox/alloy/demo/HtmlDisplay';
 import { SliderValue, SliderValueX, SliderValueY } from 'ephox/alloy/ui/types/SliderTypes';
-import { AlloyComponent } from 'ephox/alloy/api/component/ComponentApi';
 
 export default (): void => {
   const gui = Gui.create();
-  const body = Element.fromDom(document.body);
-  Class.add(gui.element(), 'gui-root-demo-container');
-  Insert.append(body, gui.element());
+  const body = SugarElement.fromDom(document.body);
+  Class.add(gui.element, 'gui-root-demo-container');
+  Insert.append(body, gui.element);
 
   const slider1 = HtmlDisplay.section(
     gui,
@@ -32,13 +31,13 @@ export default (): void => {
         mode: 'x',
         minX: 20,
         maxX: 100,
-        getInitialValue: Fun.constant({ x: Fun.constant(80) })
+        getInitialValue: Fun.constant({ x: 80 })
       },
       stepSize: 10,
       snapToGrid: true,
 
       components: [
-        Slider.parts().spectrum({
+        Slider.parts.spectrum({
           dom: {
             tag: 'div',
             styles: {
@@ -48,7 +47,7 @@ export default (): void => {
             }
           }
         }),
-        Slider.parts().thumb({
+        Slider.parts.thumb({
           dom: {
             tag: 'div',
             styles: {
@@ -71,32 +70,36 @@ export default (): void => {
       dom: { tag: 'div', styles: { 'margin-bottom': '40px' }},
       model: {
         mode: 'y',
-        getInitialValue: Fun.constant({ y: Fun.constant(35) })
+        getInitialValue: Fun.constant({ y: 35 })
       },
 
       stepSize: 40,
       snapStart: 35,
       snapToGrid: true,
-      onDragStart(_, thumb) { Toggling.on(thumb); },
-      onDragEnd(_, thumb) { Toggling.off(thumb); },
+      onDragStart: (_, thumb) => {
+        Toggling.on(thumb);
+      },
+      onDragEnd: (_, thumb) => {
+        Toggling.off(thumb);
+      },
 
-      onChange(_slider, thumb, value: SliderValue) {
+      onChange: (_slider, thumb, value: SliderValue) => {
         if (isValueY(value)) {
           Replacing.set(thumb, [
-            GuiFactory.text(value.y().toString())
+            GuiFactory.text(value.y.toString())
           ]);
         }
       },
-      onInit(_slider, thumb, _spectrum, value: SliderValue) {
+      onInit: (_slider, thumb, _spectrum, value: SliderValue) => {
         if (isValueY(value)) {
           Replacing.set(thumb, [
-            GuiFactory.text(value.y().toString())
+            GuiFactory.text(value.y.toString())
           ]);
         }
       },
 
       components: [
-        Slider.parts().spectrum({
+        Slider.parts.spectrum({
           dom: {
             tag: 'div',
             styles: {
@@ -104,7 +107,7 @@ export default (): void => {
             }
           }
         }),
-        Slider.parts().thumb({
+        Slider.parts.thumb({
           dom: {
             tag: 'div',
             styles: {
@@ -127,17 +130,26 @@ export default (): void => {
     })
   );
 
-  function isValueX(v: SliderValue): v is SliderValueX {
+  const isValueX = (v: SliderValue): v is SliderValueX => {
     return Type.isFunction((v as SliderValueX).x);
-  }
+  };
 
-  function isValueY(v: SliderValue): v is SliderValueY {
+  const isValueY = (v: SliderValue): v is SliderValueY => {
     return Type.isFunction((v as SliderValueY).y);
-  }
+  };
+
+  const getColor = (hue: number) => {
+    if (hue < 0) {
+      return 'black';
+    } else if (hue > 360) {
+      return 'white';
+    } else {
+      return 'hsl(' + hue + ', 100%, 50%)';
+    }
+  };
 
   const setColor = (thumb: AlloyComponent, hue: number) => {
-    const color = (hue < 0) ? 'black' : (hue > 360) ? 'white' : 'hsl(' + hue + ', 100%, 50%)';
-    Css.set(thumb.element(), 'background', color);
+    Css.set(thumb.element, 'background', getColor(hue));
   };
 
   HtmlDisplay.section(
@@ -153,19 +165,19 @@ export default (): void => {
         maxX: 360,
         minY: 0,
         maxY: 360,
-        getInitialValue: Fun.constant({ x: Fun.constant(120), y: Fun.constant(120) })
+        getInitialValue: Fun.constant({ x: 120, y: 120 })
       },
       stepSize: 10,
 
-      onChange(_slider, thumb, value: SliderValue) {
+      onChange: (_slider, thumb, value: SliderValue) => {
         if (isValueX(value)) {
-          setColor(thumb, value.x());
+          setColor(thumb, value.x);
         }
       },
 
-      onInit(_slider, thumb, _spectrum, value: SliderValue) {
+      onInit: (_slider, thumb, _spectrum, value: SliderValue) => {
         if (isValueX(value)) {
-          setColor(thumb, value.x());
+          setColor(thumb, value.x);
         }
       },
 
@@ -180,7 +192,7 @@ export default (): void => {
             }
           },
           components: [
-            Slider.parts()['left-edge']({
+            Slider.parts['left-edge']({
               dom: {
                 tag: 'div',
                 styles: {
@@ -190,7 +202,7 @@ export default (): void => {
                 }
               }
             }),
-            Slider.parts().spectrum({
+            Slider.parts.spectrum({
               dom: {
                 tag: 'div',
                 styles: {
@@ -200,7 +212,7 @@ export default (): void => {
                 }
               }
             }),
-            Slider.parts()['right-edge']({
+            Slider.parts['right-edge']({
               dom: {
                 tag: 'div',
                 styles: {
@@ -212,7 +224,7 @@ export default (): void => {
             })
           ]
         }),
-        Slider.parts().thumb({
+        Slider.parts.thumb({
           dom: {
             tag: 'div',
             classes: [ 'demo-sliding-thumb' ],
@@ -235,6 +247,8 @@ export default (): void => {
   const isTouch = platform.deviceType.isTouch();
 
   DomEvent.bind(body, 'click', () => {
-    if (!isTouch) { Keying.focusIn(slider1); }
+    if (!isTouch) {
+      Keying.focusIn(slider1);
+    }
   });
 };

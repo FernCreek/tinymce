@@ -1,11 +1,12 @@
+import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Gene, TestUniverse, TextGene } from '@ephox/boss';
+
 import * as Split from 'ephox/phoenix/api/general/Split';
 import * as Finder from 'ephox/phoenix/test/Finder';
 import * as TestRenders from 'ephox/phoenix/test/TestRenders';
-import { UnitTest, assert } from '@ephox/bedrock-client';
 
-UnitTest.test('IdentifyTest', function () {
-  const check = function (all: string[], expected: string[], baseid: string, baseoffset: number, endid: string, endoffset: number, input: Gene) {
+UnitTest.test('IdentifyTest', () => {
+  const check = (all: string[], expected: string[], baseid: string, baseoffset: number, endid: string, endoffset: number, input: Gene) => {
     const universe = TestUniverse(input);
     const base = Finder.get(universe, baseid);
     const end = Finder.get(universe, endid);

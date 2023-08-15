@@ -1,7 +1,10 @@
-import * as GenSelection from '../arbitrary/GenSelection';
-import * as TagDecorator from '../arbitrary/TagDecorator';
 import { Hierarchy, Html, Truncate } from '@ephox/sugar';
 import Jsc from '@ephox/wrap-jsverify';
+
+import * as GenSelection from '../arbitrary/GenSelection';
+import * as TagDecorator from '../arbitrary/TagDecorator';
+
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 
 const selection = (container, exclusions) => GenSelection.selection(container, exclusions);
 

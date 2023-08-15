@@ -5,7 +5,8 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Arr, Option, Type } from '@ephox/katamari';
+import { Arr, Optional, Type } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
 import Promise from 'tinymce/core/api/util/Promise';
 
@@ -18,7 +19,7 @@ import { ImageDialogInfo, ListItem } from './DialogTypes';
 const collect = (editor: Editor): Promise<ImageDialogInfo> => {
   const urlListSanitizer = ListUtils.sanitizer((item) => editor.convertURL(item.value || item.url, 'src'));
 
-  const futureImageList = new Promise<Option<ListItem[]>>((completer) => {
+  const futureImageList = new Promise<Optional<ListItem[]>>((completer) => {
     Utils.createImageList(editor, (imageList) => {
       completer(
         urlListSanitizer(imageList).map(
@@ -42,12 +43,8 @@ const collect = (editor: Editor): Promise<ImageDialogInfo> => {
   const hasDimensions = Settings.hasDimensions(editor);
   const hasImageCaption = Settings.hasImageCaption(editor);
   const hasAccessibilityOptions = Settings.showAccessibilityOptions(editor);
-  const url = Settings.getUploadUrl(editor);
-  const basePath = Settings.getUploadBasePath(editor);
-  const credentials = Settings.getUploadCredentials(editor);
-  const handler = Settings.getUploadHandler(editor);
   const automaticUploads = Settings.isAutomaticUploadsEnabled(editor);
-  const prependURL: Option<string> = Option.some(Settings.getPrependUrl(editor)).filter(
+  const prependURL: Optional<string> = Optional.some(Settings.getPrependUrl(editor)).filter(
     (preUrl) => Type.isString(preUrl) && preUrl.length > 0);
 
   return futureImageList.then((imageList): ImageDialogInfo => ({
@@ -62,10 +59,6 @@ const collect = (editor: Editor): Promise<ImageDialogInfo> => {
     hasImageTitle,
     hasDimensions,
     hasImageCaption,
-    url,
-    basePath,
-    credentials,
-    handler,
     prependURL,
     hasAccessibilityOptions,
     automaticUploads

@@ -5,42 +5,46 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Option, Type } from '@ephox/katamari';
+import { Optional, Type } from '@ephox/katamari';
+
+import Editor from 'tinymce/core/api/Editor';
 import Promise from 'tinymce/core/api/util/Promise';
 import XHR from 'tinymce/core/api/util/XHR';
+
 import * as Settings from '../../api/Settings';
 import { ListOptions } from '../../core/ListOptions';
-import { ListItem } from '../DialogTypes';
+import { ListItem, UserListItem } from '../DialogTypes';
 
-const parseJson = (text: string): Option<ListItem[]> => {
+const parseJson = (text: string): Optional<ListItem[]> => {
   // Do some proper modelling.
   try {
-    return Option.some(JSON.parse(text));
+    return Optional.some(JSON.parse(text));
   } catch (err) {
-    return Option.none();
+    return Optional.none();
   }
 };
 
-const getLinks = (editor): Promise<Option<ListItem[]>> => {
-  const extractor = (item) => editor.convertURL(item.value || item.url, 'href');
+const getLinks = (editor: Editor): Promise<Optional<ListItem[]>> => {
+  const extractor = (item: UserListItem) => editor.convertURL(item.value || item.url, 'href');
 
   const linkList = Settings.getLinkList(editor);
-  return new Promise<Option<ListItem[]>>((callback) => {
+  return new Promise<Optional<UserListItem[]>>((callback) => {
     // TODO - better handling of failure
     if (Type.isString(linkList)) {
       XHR.send({
         url: linkList,
         success: (text) => callback(parseJson(text)),
-        error: (_) => callback(Option.none())
+        error: (_) => callback(Optional.none())
       });
     } else if (Type.isFunction(linkList)) {
-      linkList((output) => callback(Option.some(output)));
+      linkList((output) => callback(Optional.some(output)));
     } else {
-      callback(Option.from(linkList));
+      callback(Optional.from(linkList));
     }
   }).then((optItems) => optItems.bind(ListOptions.sanitizeWith(extractor)).map((items) => {
     if (items.length > 0) {
-      return [{ text: 'None', value: '' }].concat(items);
+      const noneItem: ListItem[] = [{ text: 'None', value: '' }];
+      return noneItem.concat(items);
     } else {
       return items;
     }

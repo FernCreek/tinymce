@@ -5,12 +5,14 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import Editor from 'tinymce/core/api/Editor';
+
 import * as Settings from '../api/Settings';
 
-const setup = function (editor) {
+const setup = (editor: Editor): void => {
   const $ = editor.$, tocClass = Settings.getTocClass(editor);
 
-  editor.on('PreProcess', function (e) {
+  editor.on('PreProcess', (e) => {
     const $tocElm = $('.' + tocClass, e.node);
     if ($tocElm.length) {
       $tocElm.removeAttr('contentEditable');
@@ -18,7 +20,7 @@ const setup = function (editor) {
     }
   });
 
-  editor.on('SetContent', function () {
+  editor.on('SetContent', () => {
     const $tocElm = $('.' + tocClass);
     if ($tocElm.length) {
       $tocElm.attr('contentEditable', false);

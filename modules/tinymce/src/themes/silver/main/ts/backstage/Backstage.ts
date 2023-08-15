@@ -7,11 +7,13 @@
 
 import { AlloyComponent, AlloySpec, FormTypes, HotspotAnchorSpec, NodeAnchorSpec, SelectionAnchorSpec } from '@ephox/alloy';
 import { Menu } from '@ephox/bridge';
-import { Cell, Option, Result } from '@ephox/katamari';
-import { Element } from '@ephox/sugar';
+import { Cell, Optional, Result } from '@ephox/katamari';
+import { SugarElement } from '@ephox/sugar';
+
 import Editor from 'tinymce/core/api/Editor';
 import I18n, { TranslatedString } from 'tinymce/core/api/util/I18n';
 import * as UiFactory from 'tinymce/themes/silver/ui/general/UiFactory';
+
 import { SelectData } from '../ui/core/complex/BespokeSelect';
 import { IconProvider } from '../ui/icons/Icons';
 import * as Anchors from './Anchors';
@@ -26,9 +28,10 @@ export type BridgedType = any;
 
 export interface UiFactoryBackstageProviders {
   icons: IconProvider;
-  menuItems: () => Record<string, Menu.MenuItemApi | Menu.NestedMenuItemApi | Menu.ToggleMenuItemApi>;
+  menuItems: () => Record<string, Menu.MenuItemSpec | Menu.NestedMenuItemSpec | Menu.ToggleMenuItemSpec>;
   translate: (any) => TranslatedString;
-  isReadOnly: () => boolean;
+  isDisabled: () => boolean;
+  getSetting: Editor['getParam'];
 }
 
 type UiFactoryBackstageForStyleButton = SelectData;
@@ -40,7 +43,7 @@ export interface UiFactoryBackstageShared {
     inlineDialog: () => HotspotAnchorSpec | NodeAnchorSpec;
     banner: () => HotspotAnchorSpec | NodeAnchorSpec;
     cursor: () => SelectionAnchorSpec;
-    node: (elem: Option<Element>) => NodeAnchorSpec;
+    node: (elem: Optional<SugarElement>) => NodeAnchorSpec;
   };
   header?: UiFactoryBackstageForHeader;
   formInterpreter?: (parts: FormTypes.FormParts, spec: BridgedType, backstage: UiFactoryBackstage) => AlloySpec;
@@ -66,7 +69,12 @@ const init = (sink: AlloyComponent, editor: Editor, lazyAnchorbar: () => AlloyCo
         icons: () => editor.ui.registry.getAll().icons,
         menuItems: () => editor.ui.registry.getAll().menuItems,
         translate: I18n.translate,
-        isReadOnly: () => editor.mode.isReadOnly()
+        isDisabled: () => editor.mode.isReadOnly() || editor.ui.isDisabled(),
+        /*
+          TODO: Remove bind when TINY-6621 is complete
+          This bind is important to ensure we don't lose reference to the editor in getParam
+        */
+        getSetting: editor.getParam.bind(editor)
       },
       interpreter: (s) => UiFactory.interpretWithoutForm(s, backstage),
       anchors: Anchors.getAnchors(editor, lazyAnchorbar, toolbar.isPositionedAtTop),

@@ -1,13 +1,14 @@
-import { document, HTMLButtonElement, HTMLElement, HTMLFormElement, HTMLImageElement, HTMLSelectElement } from '@ephox/dom-globals';
-import * as ResultConversions from 'ephox/imagetools/api/ResultConversions';
+import { Arr } from '@ephox/katamari';
+
 import * as ImageTransformations from 'ephox/imagetools/api/ImageTransformations';
+import * as ResultConversions from 'ephox/imagetools/api/ResultConversions';
 import { ImageResult } from 'ephox/imagetools/util/ImageResult';
 
-function isSelect(el: HTMLElement): el is HTMLSelectElement {
+const isSelect = (el: HTMLElement): el is HTMLSelectElement => {
   return el.tagName === 'SELECT';
-}
+};
 
-function getValue(el: HTMLSelectElement | HTMLButtonElement): string {
+const getValue = (el: HTMLSelectElement | HTMLButtonElement): string => {
   let value;
   if (isSelect(el)) {
     value = el.options[el.selectedIndex].value;
@@ -15,35 +16,31 @@ function getValue(el: HTMLSelectElement | HTMLButtonElement): string {
     value = el.value;
   }
   return value.trim();
-}
+};
 
-function modify(image: HTMLImageElement, op: string, args: any[]) {
-  ResultConversions.imageToImageResult(image).then(function (ir) {
+const modify = (image: HTMLImageElement, op: string, args: any[]) => {
+  ResultConversions.imageToImageResult(image).then((ir) => {
     args.unshift(ir);
     return (ImageTransformations as any)[op].apply(null, args)
-      .then(function (imageResult: ImageResult) {
+      .then((imageResult: ImageResult) => {
         image.src = imageResult.toDataURL();
       });
   });
-}
+};
 
 const forms = document.querySelectorAll<HTMLFormElement>('.options');
 // tslint:disable-next-line:prefer-for-of
 for (let i = 0; i < forms.length; i++) {
-  (function (form: HTMLFormElement) {
-    form.onsubmit = function (_) {
+  ((form: HTMLFormElement) => {
+    form.onsubmit = (_) => {
       const selector = document.getElementById('selector') as HTMLSelectElement;
       const currOp = getValue(selector);
       const image = document.getElementById('editor') as HTMLImageElement;
-      modify(image, currOp, [].slice.call((<HTMLFormElement> this).elements)
-        .filter(function (el: HTMLElement) {
-          return el.tagName !== 'BUTTON';
-        })
-        .map(function (el: HTMLButtonElement) {
-          return getValue(el);
-        })
+      modify(image, currOp, Arr.from(form.elements)
+        .filter((el): el is HTMLButtonElement => el.tagName !== 'BUTTON')
+        .map(getValue)
       );
       return false;
     };
-  }(forms[i]));
+  })(forms[i]);
 }

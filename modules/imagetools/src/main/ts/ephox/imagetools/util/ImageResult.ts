@@ -1,8 +1,8 @@
-import { Blob, HTMLCanvasElement, HTMLImageElement } from '@ephox/dom-globals';
 import { Fun } from '@ephox/katamari';
+import Promise from '@ephox/wrap-promise-polyfill';
+
 import * as Canvas from './Canvas';
 import * as Conversions from './Conversions';
-import { Promise } from './Promise';
 
 export interface ImageResult {
   getType (): string;
@@ -15,42 +15,42 @@ export interface ImageResult {
   toCanvas (): Promise<HTMLCanvasElement>;
 }
 
-function create(getCanvas: Promise<HTMLCanvasElement>, blob: Blob, uri: string): ImageResult {
+const create = (getCanvas: Promise<HTMLCanvasElement>, blob: Blob, uri: string): ImageResult => {
   const initialType = blob.type;
 
   const getType = Fun.constant(initialType);
 
-  function toBlob() {
+  const toBlob = () => {
     return Promise.resolve(blob);
-  }
+  };
 
   const toDataURL = Fun.constant(uri);
 
-  function toBase64() {
+  const toBase64 = () => {
     return uri.split(',')[1];
-  }
+  };
 
-  function toAdjustedBlob(type: string, quality: number) {
-    return getCanvas.then(function (canvas) {
+  const toAdjustedBlob = (type: string, quality: number) => {
+    return getCanvas.then((canvas) => {
       return Conversions.canvasToBlob(canvas, type, quality);
     });
-  }
+  };
 
-  function toAdjustedDataURL(type?: string, quality?: number) {
-    return getCanvas.then(function (canvas) {
+  const toAdjustedDataURL = (type?: string, quality?: number) => {
+    return getCanvas.then((canvas) => {
       return Conversions.canvasToDataURL(canvas, type, quality);
     });
-  }
+  };
 
-  function toAdjustedBase64(type: string, quality: number) {
-    return toAdjustedDataURL(type, quality).then(function (dataurl) {
+  const toAdjustedBase64 = (type: string, quality: number) => {
+    return toAdjustedDataURL(type, quality).then((dataurl) => {
       return dataurl.split(',')[1];
     });
-  }
+  };
 
-  function toCanvas() {
+  const toCanvas = () => {
     return getCanvas.then(Canvas.clone);
-  }
+  };
 
   return {
     getType,
@@ -62,27 +62,27 @@ function create(getCanvas: Promise<HTMLCanvasElement>, blob: Blob, uri: string):
     toAdjustedBase64,
     toCanvas
   };
-}
+};
 
-function fromBlob(blob: Blob): Promise<ImageResult> {
-  return Conversions.blobToDataUri(blob).then(function (uri) {
+const fromBlob = (blob: Blob): Promise<ImageResult> => {
+  return Conversions.blobToDataUri(blob).then((uri) => {
     return create(Conversions.blobToCanvas(blob), blob, uri);
   });
-}
+};
 
-function fromCanvas(canvas: HTMLCanvasElement, type?: string): Promise<ImageResult> {
-  return Conversions.canvasToBlob(canvas, type).then(function (blob) {
+const fromCanvas = (canvas: HTMLCanvasElement, type?: string): Promise<ImageResult> => {
+  return Conversions.canvasToBlob(canvas, type).then((blob) => {
     return create(Promise.resolve(canvas), blob, canvas.toDataURL());
   });
-}
+};
 
-function fromImage(image: HTMLImageElement): Promise<ImageResult> {
-  return Conversions.imageToBlob(image).then(function (blob) {
+const fromImage = (image: HTMLImageElement): Promise<ImageResult> => {
+  return Conversions.imageToBlob(image).then((blob) => {
     return fromBlob(blob);
   });
-}
+};
 
-const fromBlobAndUrlSync = function (blob: Blob, url: string): ImageResult {
+const fromBlobAndUrlSync = (blob: Blob, url: string): ImageResult => {
   return create(Conversions.blobToCanvas(blob), blob, url);
 };
 

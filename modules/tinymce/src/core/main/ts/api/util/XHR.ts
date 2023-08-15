@@ -5,9 +5,7 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { BodyInit, Document, XMLHttpRequest } from '@ephox/dom-globals';
 import Delay from './Delay';
-import { NativeEventMap } from './EventDispatcher';
 import Observable from './Observable';
 import Tools from './Tools';
 
@@ -16,29 +14,33 @@ export interface XHRSettings {
   content_type?: string;
   crossDomain?: boolean;
   data?: Document | BodyInit;
-  requestheaders?: Record<string, { key: string; value: string}>;
-  scope?: {};
+  requestheaders?: Record<string, { key: string; value: string }>;
+  scope?: any;
   type?: string;
   url: string;
-  error_scope?: {};
-  success_scope?: {};
-  error? (message: 'TIMED_OUT' | 'GENERAL', xhr: XMLHttpRequest, settings: XHRSettings): void;
-  success? (text: string, xhr: XMLHttpRequest, settings: XHRSettings): void;
+  error_scope?: any;
+  success_scope?: any;
+  error?: (message: 'TIMED_OUT' | 'GENERAL', xhr: XMLHttpRequest, settings: XHRSettings) => void;
+  success?: (text: string, xhr: XMLHttpRequest, settings: XHRSettings) => void;
 }
 
-export interface XHREventMap extends NativeEventMap {
-  'beforeInitialize': { settings: XHRSettings };
+export interface XHREventMap {
+  beforeInitialize: { settings: XHRSettings };
+  beforeSend: { xhr: XMLHttpRequest; settings: XHRSettings };
 }
 
 interface XHR extends Observable<XHREventMap> {
-  send (settings: XHRSettings): void;
+  send (this: XHR, settings: XHRSettings): void;
 }
 
 /**
- * This API allows you to send XMLHTTPRequests cross browser.
+ * This API allows you to send XMLHTTPRequests cross browser. Extends the Observable class.
+ *
+ * @deprecated
  * @class tinymce.util.XHR
  * @mixes tinymce.util.Observable
  * @static
+ * @summary XHR has been deprecated in TinyMCE 5.10 and has been marked for removal in TinyMCE 6.0.
  * @example
  * // Sends a low level Ajax request
  * tinymce.util.XHR.send({
@@ -231,10 +233,10 @@ const XHR: XHR = {
    * </table>
    * </div>
    */
-  send(settings: XHRSettings) {
+  send(this: XHR, settings: XHRSettings) {
     let xhr, count = 0;
 
-    const ready = function () {
+    const ready = () => {
       if (!settings.async || xhr.readyState === 4 || count++ > 10000) {
         if (settings.success && count < 10000 && xhr.status === 200) {
           settings.success.call(settings.success_scope, '' + xhr.responseText, xhr, settings);
@@ -259,40 +261,38 @@ const XHR: XHR = {
 
     xhr = new XMLHttpRequest();
 
-    if (xhr) {
-      if (xhr.overrideMimeType) {
-        xhr.overrideMimeType(settings.content_type);
-      }
-
-      xhr.open(settings.type || (settings.data ? 'POST' : 'GET'), settings.url, settings.async);
-
-      if (settings.crossDomain) {
-        xhr.withCredentials = true;
-      }
-
-      if (settings.content_type) {
-        xhr.setRequestHeader('Content-Type', settings.content_type);
-      }
-
-      if (settings.requestheaders) {
-        Tools.each(settings.requestheaders, function (header) {
-          xhr.setRequestHeader(header.key, header.value);
-        });
-      }
-
-      xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-
-      xhr = XHR.fire('beforeSend', { xhr, settings }).xhr;
-      xhr.send(settings.data);
-
-      // Syncronous request
-      if (!settings.async) {
-        return ready();
-      }
-
-      // Wait for response, onReadyStateChange can not be used since it leaks memory in IE
-      Delay.setTimeout(ready, 10);
+    if (xhr.overrideMimeType) {
+      xhr.overrideMimeType(settings.content_type);
     }
+
+    xhr.open(settings.type || (settings.data ? 'POST' : 'GET'), settings.url, settings.async);
+
+    if (settings.crossDomain) {
+      xhr.withCredentials = true;
+    }
+
+    if (settings.content_type) {
+      xhr.setRequestHeader('Content-Type', settings.content_type);
+    }
+
+    if (settings.requestheaders) {
+      Tools.each(settings.requestheaders, (header) => {
+        xhr.setRequestHeader(header.key, header.value);
+      });
+    }
+
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+    xhr = XHR.fire('beforeSend', { xhr, settings }).xhr;
+    xhr.send(settings.data);
+
+    // Syncronous request
+    if (!settings.async) {
+      return ready();
+    }
+
+    // Wait for response, onReadyStateChange can not be used since it leaks memory in IE
+    Delay.setTimeout(ready, 10);
   }
 };
 

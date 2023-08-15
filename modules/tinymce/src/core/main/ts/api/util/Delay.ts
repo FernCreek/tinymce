@@ -5,25 +5,24 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { clearInterval, clearTimeout, document, HTMLElement, setInterval, setTimeout, window } from '@ephox/dom-globals';
 import Editor from '../Editor';
 import Promise from './Promise';
 
-type DebounceFunc<T extends (...args: any[]) => void> = {
+interface DebounceFunc<T extends (...args: any[]) => void> {
   (...args: Parameters<T>): void;
   stop: () => void;
-};
+}
 
 interface Delay {
-  requestAnimationFrame (callback: () => void, element?: HTMLElement): void;
-  setEditorInterval (editor: Editor, callback: () => void, time?: number): number;
-  setEditorTimeout (editor: Editor, callback: () => void, time?: number): number;
-  setInterval (callback: () => void, time?: number): number;
-  setTimeout (callback: () => void, time?: number): number;
-  clearInterval (id: number): void;
-  clearTimeout (id: number): void;
-  debounce <T extends (...args: any[]) => any>(callback: T, time?: number): DebounceFunc<T>;
-  throttle <T extends (...args: any[]) => any>(callback: T, time?: number): DebounceFunc<T>;
+  requestAnimationFrame: (callback: () => void, element?: HTMLElement) => void;
+  setEditorInterval: (editor: Editor, callback: () => void, time?: number) => number;
+  setEditorTimeout: (editor: Editor, callback: () => void, time?: number) => number;
+  setInterval: (callback: () => void, time?: number) => number;
+  setTimeout: (callback: () => void, time?: number) => number;
+  clearInterval: (id?: number) => void;
+  clearTimeout: (id?: number) => void;
+  debounce: <T extends (...args: any[]) => any>(callback: T, time?: number) => DebounceFunc<T>;
+  throttle: <T extends (...args: any[]) => any>(callback: T, time?: number) => DebounceFunc<T>;
 }
 
 /**
@@ -34,15 +33,15 @@ interface Delay {
 
 let requestAnimationFramePromise;
 
-const requestAnimationFrame = function (callback, element?) {
-  let i, requestAnimationFrameFunc: any = window.requestAnimationFrame;
+const requestAnimationFrame = (callback: () => void, element?: HTMLElement) => {
+  let requestAnimationFrameFunc: any = window.requestAnimationFrame;
   const vendors = [ 'ms', 'moz', 'webkit' ];
 
-  const featurefill = function (callback) {
-    window.setTimeout(callback, 0);
+  const featurefill = (cb: () => void) => {
+    window.setTimeout(cb, 0);
   };
 
-  for (i = 0; i < vendors.length && !requestAnimationFrameFunc; i++) {
+  for (let i = 0; i < vendors.length && !requestAnimationFrameFunc; i++) {
     requestAnimationFrameFunc = window[vendors[i] + 'RequestAnimationFrame'];
   }
 
@@ -53,7 +52,7 @@ const requestAnimationFrame = function (callback, element?) {
   requestAnimationFrameFunc(callback, element);
 };
 
-const wrappedSetTimeout = function (callback, time?) {
+const wrappedSetTimeout = (callback: () => void, time?: number) => {
   if (typeof time !== 'number') {
     time = 0;
   }
@@ -61,7 +60,7 @@ const wrappedSetTimeout = function (callback, time?) {
   return setTimeout(callback, time);
 };
 
-const wrappedSetInterval = function (callback: Function, time?: number): number {
+const wrappedSetInterval = (callback: Function, time?: number): number => {
   if (typeof time !== 'number') {
     time = 1; // IE 8 needs it to be > 0
   }
@@ -69,18 +68,18 @@ const wrappedSetInterval = function (callback: Function, time?: number): number 
   return setInterval(callback, time);
 };
 
-const wrappedClearTimeout = function (id: number) {
+const wrappedClearTimeout = (id?: number) => {
   return clearTimeout(id);
 };
 
-const wrappedClearInterval = function (id: number) {
+const wrappedClearInterval = (id?: number) => {
   return clearInterval(id);
 };
 
-const debounce = function <T extends (...args: any[]) => any>(callback: T, time?: number): DebounceFunc<T> {
+const debounce = <T extends (...args: any[]) => any>(callback: T, time?: number): DebounceFunc<T> => {
   let timer;
 
-  const func = function (...args: Parameters<T>): void {
+  const func = (...args: Parameters<T>): void => {
     clearTimeout(timer);
 
     timer = wrappedSetTimeout(function () {
@@ -88,7 +87,7 @@ const debounce = function <T extends (...args: any[]) => any>(callback: T, time?
     }, time);
   };
 
-  func.stop = function () {
+  func.stop = () => {
     clearTimeout(timer);
   };
 
@@ -98,18 +97,21 @@ const debounce = function <T extends (...args: any[]) => any>(callback: T, time?
 const Delay: Delay = {
   /**
    * Requests an animation frame and fallbacks to a timeout on older browsers.
+   * <br>
+   * <em>Deprecated in TinyMCE 5.10 and has been marked for removal in TinyMCE 6.0</em> - use the native browser <code>requestAnimationFrame</code> API instead.
    *
+   * @deprecated
    * @method requestAnimationFrame
    * @param {function} callback Callback to execute when a new frame is available.
    * @param {DOMElement} element Optional element to scope it to.
    */
-  requestAnimationFrame(callback, element?) {
+  requestAnimationFrame: (callback, element?) => {
     if (requestAnimationFramePromise) {
       requestAnimationFramePromise.then(callback);
       return;
     }
 
-    requestAnimationFramePromise = new Promise(function (resolve) {
+    requestAnimationFramePromise = new Promise<void>((resolve) => {
       if (!element) {
         element = document.body;
       }
@@ -120,7 +122,10 @@ const Delay: Delay = {
 
   /**
    * Sets a timer in ms and executes the specified callback when the timer runs out.
+   * <br>
+   * <em>Deprecated in TinyMCE 5.10 and has been marked for removal in TinyMCE 6.0</em> - use the native browser <code>setTimeout</code> API instead.
    *
+   * @deprecated
    * @method setTimeout
    * @param {function} callback Callback to execute when timer runs out.
    * @param {Number} time Optional time to wait before the callback is executed, defaults to 0.
@@ -130,7 +135,10 @@ const Delay: Delay = {
 
   /**
    * Sets an interval timer in ms and executes the specified callback at every interval of that time.
+   * <br>
+   * <em>Deprecated in TinyMCE 5.10 and has been marked for removal in TinyMCE 6.0</em> - use the native browser <code>setInterval</code> API instead.
    *
+   * @deprecated
    * @method setInterval
    * @param {function} callback Callback to execute when interval time runs out.
    * @param {Number} time Optional time to wait before the callback is executed, defaults to 0.
@@ -148,8 +156,8 @@ const Delay: Delay = {
    * @param {Number} time Optional time to wait before the callback is executed, defaults to 0.
    * @return {Number} Timeout id number.
    */
-  setEditorTimeout(editor, callback, time?) {
-    return wrappedSetTimeout(function () {
+  setEditorTimeout: (editor, callback, time?) => {
+    return wrappedSetTimeout(() => {
       if (!editor.removed) {
         callback();
       }
@@ -165,8 +173,8 @@ const Delay: Delay = {
    * @param {Number} time Optional time to wait before the callback is executed, defaults to 0.
    * @return {Number} Timeout id number.
    */
-  setEditorInterval(editor, callback, time?) {
-    const timer = wrappedSetInterval(function () {
+  setEditorInterval: (editor, callback, time?) => {
+    const timer = wrappedSetInterval(() => {
       if (!editor.removed) {
         callback();
       } else {
@@ -179,7 +187,10 @@ const Delay: Delay = {
 
   /**
    * Creates debounced callback function that only gets executed once within the specified time.
+   * <br>
+   * <em>Deprecated in TinyMCE 5.10 and has been marked for removal in TinyMCE 6.0.</em>
    *
+   * @deprecated
    * @method debounce
    * @param {function} callback Callback to execute when timer finishes.
    * @param {Number} time Optional time to wait before the callback is executed, defaults to 0.
@@ -192,7 +203,10 @@ const Delay: Delay = {
 
   /**
    * Clears an interval timer so it won't execute.
+   * <br>
+   * <em>Deprecated in TinyMCE 5.10 and has been marked for removal in TinyMCE 6.0</em> - use the native browser <code>clearInterval</code> API instead.
    *
+   * @deprecated
    * @method clearInterval
    * @param {Number} Interval timer id number.
    */
@@ -200,7 +214,10 @@ const Delay: Delay = {
 
   /**
    * Clears an timeout timer so it won't execute.
+   * <br>
+   * <em>Deprecated in TinyMCE 5.10 and has been marked for removal in TinyMCE 6.0</em> - use the native browser <code>clearTimeout</code> API instead.
    *
+   * @deprecated
    * @method clearTimeout
    * @param {Number} Timeout timer id number.
    */

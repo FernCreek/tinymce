@@ -1,21 +1,27 @@
-import { Pipeline } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { LegacyUnit, TinyLoader } from '@ephox/mcagar';
+import { describe, it } from '@ephox/bedrock-client';
+import { LegacyUnit, TinyHooks } from '@ephox/wrap-mcagar';
+import { assert } from 'chai';
+
 import Editor from 'tinymce/core/api/Editor';
 import * as Hooks from 'tinymce/core/fmt/Hooks';
 import Theme from 'tinymce/themes/silver/Theme';
 
-UnitTest.asynctest('browser.tinymce.core.fmt.HooksTest', function (success, failure) {
-  const suite = LegacyUnit.createSuite<Editor>();
+describe('browser.tinymce.core.fmt.HooksTest', () => {
+  const hook = TinyHooks.bddSetupLight<Editor>({
+    add_unload_trigger: false,
+    disable_nodechange: true,
+    entities: 'raw',
+    indent: false,
+    base_url: '/project/tinymce/js/tinymce'
+  }, [ Theme ]);
 
-  Theme();
-
-  suite.test('pre - postProcessHook', function (editor) {
-    const assertPreHook = function (setupHtml, setupSelection, expected) {
+  it('pre - postProcessHook', () => {
+    const editor = hook.editor();
+    const assertPreHook = (setupHtml: string, setupSelection: [ string, number, string, number ], expected: string) => {
       editor.getBody().innerHTML = setupHtml;
-      LegacyUnit.setSelection.apply(LegacyUnit, [ editor ].concat(setupSelection));
+      LegacyUnit.setSelection(editor, ...setupSelection);
       Hooks.postProcess('pre', editor);
-      LegacyUnit.equal(editor.getContent(), expected);
+      assert.equal(editor.getContent(), expected);
     };
 
     assertPreHook(
@@ -60,15 +66,4 @@ UnitTest.asynctest('browser.tinymce.core.fmt.HooksTest', function (success, fail
       '<pre>a<br /><br />b</pre><p>c</p><pre>d<br /><br />e</pre>'
     );
   });
-
-  TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
-    Pipeline.async({}, suite.toSteps(editor), onSuccess, onFailure);
-  }, {
-    selector: 'textarea',
-    add_unload_trigger: false,
-    disable_nodechange: true,
-    entities: 'raw',
-    indent: false,
-    base_url: '/project/tinymce/js/tinymce'
-  }, success, failure);
 });

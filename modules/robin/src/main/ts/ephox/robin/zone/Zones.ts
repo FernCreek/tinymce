@@ -1,5 +1,6 @@
 import { Universe } from '@ephox/boss';
 import { Arr } from '@ephox/katamari';
+
 import { WordScope } from '../data/WordScope';
 import * as Identify from '../words/Identify';
 import { ZoneDetails } from './LanguageZones';
@@ -14,8 +15,8 @@ export interface Zones<E> {
   readonly zones: Zone<E>[];
 }
 
-export const fromWalking = function <E, D> (universe: Universe<E, D>, groups: ZoneDetails<E>[]): Zones<E> {
-  const zones = Arr.map(groups, function (group: ZoneDetails<E>) {
+export const fromWalking = <E, D>(universe: Universe<E, D>, groups: ZoneDetails<E>[]): Zones<E> => {
+  const zones = Arr.map(groups, (group: ZoneDetails<E>) => {
     const details = group.details;
     const lang = group.lang;
 

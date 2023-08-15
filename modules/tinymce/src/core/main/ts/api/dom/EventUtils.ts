@@ -5,22 +5,22 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { document, HTMLElementEventMap, window } from '@ephox/dom-globals';
-import { Obj } from '@ephox/katamari';
-import Env from '../Env';
+import { Obj, Type } from '@ephox/katamari';
+
+import * as Utils from '../../events/EventUtils';
 
 export type EventUtilsCallback<T> = (event: EventUtilsEvent<T>) => void;
-
-export type EventUtilsEvent<T> = T & {
-  type: string;
-  target: any;
-  isDefaultPrevented (): boolean;
-  preventDefault (): void;
-  isPropagationStopped (): boolean;
-  stopPropagation (): void;
-  isImmediatePropagationStopped (): boolean;
-  stopImmediatePropagation (): void;
+export type EventUtilsEvent<T> = Utils.NormalizedEvent<T> & {
+  metaKey: boolean;
 };
+
+interface PartialEvent extends Utils.PartialEvent {
+  readonly type: string;
+}
+
+interface ReadyEvent {
+  readonly type: string;
+}
 
 /**
  * This class wraps the browsers native event logic with more convenient methods.
@@ -30,30 +30,11 @@ export type EventUtilsEvent<T> = T & {
 
 const eventExpandoPrefix = 'mce-data-';
 const mouseEventRe = /^(?:mouse|contextmenu)|click/;
-const deprecated = {
-  keyLocation: 1, layerX: 1, layerY: 1, returnValue: 1,
-  webkitMovementX: 1, webkitMovementY: 1, keyIdentifier: 1, mozPressure: 1
-};
-
-// Checks if it is our own isDefaultPrevented function
-const hasIsDefaultPrevented = function (event) {
-  return event.isDefaultPrevented === returnTrue || event.isDefaultPrevented === returnFalse;
-};
-
-// Dummy function that gets replaced on the delegation state functions
-const returnFalse = function () {
-  return false;
-};
-
-// Dummy function that gets replaced on the delegation state functions
-const returnTrue = function () {
-  return true;
-};
 
 /**
  * Binds a native event to a callback on the speified target.
  */
-const addEvent = function (target, name, callback, capture?) {
+const addEvent = (target, name, callback, capture?) => {
   if (target.addEventListener) {
     target.addEventListener(name, callback, capture || false);
   } else if (target.attachEvent) {
@@ -64,7 +45,7 @@ const addEvent = function (target, name, callback, capture?) {
 /**
  * Unbinds a native event callback on the specified target.
  */
-const removeEvent = function (target, name, callback, capture?) {
+const removeEvent = (target, name, callback, capture?) => {
   if (target.removeEventListener) {
     target.removeEventListener(name, callback, capture || false);
   } else if (target.detachEvent) {
@@ -72,103 +53,31 @@ const removeEvent = function (target, name, callback, capture?) {
   }
 };
 
-/**
- * Gets the event target based on shadow dom properties like path and composedPath.
- */
-const getTargetFromShadowDom = function (event, defaultTarget) {
-  // When target element is inside Shadow DOM we need to take first element from composedPath
-  // otherwise we'll get Shadow Root parent, not actual target element
-  if (event.composedPath) {
-    const composedPath = event.composedPath();
-    if (composedPath && composedPath.length > 0) {
-      return composedPath[0];
-    }
-  }
-
-  return defaultTarget;
-};
+const isMouseEvent = (event: PartialEvent | null): event is MouseEvent =>
+  Type.isNonNullable(event) && mouseEventRe.test(event.type);
 
 /**
  * Normalizes a native event object or just adds the event specific methods on a custom event.
  */
-const fix = function <T extends any> (originalEvent: T, data?): EventUtilsEvent<T> {
-  let name;
-  const event = data || {};
-
-  // Copy all properties from the original event
-  for (name in originalEvent) {
-    // layerX/layerY is deprecated in Chrome and produces a warning
-    if (!deprecated[name]) {
-      event[name] = originalEvent[name];
-    }
-  }
-
-  // Normalize target IE uses srcElement
-  if (!event.target) {
-    event.target = event.srcElement || document;
-  }
-
-  // Experimental shadow dom support
-  if (Env.experimentalShadowDom) {
-    event.target = getTargetFromShadowDom(originalEvent, event.target);
-  }
+const fix = <T extends PartialEvent> (originalEvent: T, data?): EventUtilsEvent<T> => {
+  const event = Utils.normalize<T>(originalEvent.type, originalEvent, document, data) as EventUtilsEvent<T>;
 
   // Calculate pageX/Y if missing and clientX/Y available
-  if (originalEvent && mouseEventRe.test(originalEvent.type) && originalEvent.pageX === undefined && originalEvent.clientX !== undefined) {
+  if (isMouseEvent(originalEvent) && Type.isUndefined(originalEvent.pageX) && !Type.isUndefined(originalEvent.clientX)) {
     const eventDoc = event.target.ownerDocument || document;
     const doc = eventDoc.documentElement;
     const body = eventDoc.body;
+    const mouseEvent = event as EventUtilsEvent<T> & { pageX: number; pageY: number };
 
-    event.pageX = originalEvent.clientX + (doc && doc.scrollLeft || body && body.scrollLeft || 0) -
+    mouseEvent.pageX = originalEvent.clientX + (doc && doc.scrollLeft || body && body.scrollLeft || 0) -
       (doc && doc.clientLeft || body && body.clientLeft || 0);
 
-    event.pageY = originalEvent.clientY + (doc && doc.scrollTop || body && body.scrollTop || 0) -
+    mouseEvent.pageY = originalEvent.clientY + (doc && doc.scrollTop || body && body.scrollTop || 0) -
       (doc && doc.clientTop || body && body.clientTop || 0);
   }
 
-  // Add preventDefault method
-  event.preventDefault = function () {
-    event.isDefaultPrevented = returnTrue;
-
-    // Execute preventDefault on the original event object
-    if (originalEvent) {
-      if (originalEvent.preventDefault) {
-        originalEvent.preventDefault();
-      } else {
-        originalEvent.returnValue = false; // IE
-      }
-    }
-  };
-
-  // Add stopPropagation
-  event.stopPropagation = function () {
-    event.isPropagationStopped = returnTrue;
-
-    // Execute stopPropagation on the original event object
-    if (originalEvent) {
-      if (originalEvent.stopPropagation) {
-        originalEvent.stopPropagation();
-      } else {
-        originalEvent.cancelBubble = true; // IE
-      }
-    }
-  };
-
-  // Add stopImmediatePropagation
-  event.stopImmediatePropagation = function () {
-    event.isImmediatePropagationStopped = returnTrue;
-    event.stopPropagation();
-  };
-
-  // Add event delegation states
-  if (hasIsDefaultPrevented(event) === false) {
-    event.isDefaultPrevented = returnFalse;
-    event.isPropagationStopped = returnFalse;
-    event.isImmediatePropagationStopped = returnFalse;
-  }
-
   // Add missing metaKey for IE 8
-  if (typeof event.metaKey === 'undefined') {
+  if (Type.isUndefined(event.metaKey)) {
     event.metaKey = false;
   }
 
@@ -179,7 +88,7 @@ const fix = function <T extends any> (originalEvent: T, data?): EventUtilsEvent<
  * Bind a DOMContentLoaded event across browsers and executes the callback once the page DOM is initialized.
  * It will also set/check the domLoaded state of the event_utils instance so ready isn't called multiple times.
  */
-const bindOnReady = function (win, callback, eventUtils) {
+const bindOnReady = (win: Window, callback: (event: ReadyEvent) => void, eventUtils: EventUtils) => {
   const doc = win.document, event = { type: 'ready' };
 
   if (eventUtils.domLoaded) {
@@ -187,14 +96,14 @@ const bindOnReady = function (win, callback, eventUtils) {
     return;
   }
 
-  const isDocReady = function () {
+  const isDocReady = () => {
     // Check complete or interactive state if there is a body
     // element on some iframes IE 8 will produce a null body
     return doc.readyState === 'complete' || (doc.readyState === 'interactive' && doc.body);
   };
 
   // Gets called when the DOM is ready
-  const readyHandler = function () {
+  const readyHandler = () => {
     removeEvent(win, 'DOMContentLoaded', readyHandler);
     removeEvent(win, 'load', readyHandler);
 
@@ -202,6 +111,9 @@ const bindOnReady = function (win, callback, eventUtils) {
       eventUtils.domLoaded = true;
       callback(event);
     }
+
+    // Clean memory for IE
+    win = null;
   };
 
   if (isDocReady()) {
@@ -211,15 +123,17 @@ const bindOnReady = function (win, callback, eventUtils) {
   }
 
   // Fallback if any of the above methods should fail for some odd reason
-  addEvent(win, 'load', readyHandler);
+  if (!eventUtils.domLoaded) {
+    addEvent(win, 'load', readyHandler);
+  }
 };
 
 export interface EventUtilsConstructor {
   readonly prototype: EventUtils;
 
-  Event: EventUtils;
-
   new (): EventUtils;
+
+  Event: EventUtils;
 }
 
 /**
@@ -255,15 +169,15 @@ class EventUtils {
    * @param {Object} scope Scope to call the callback function on, defaults to target.
    * @return {function} Callback function that got bound.
    */
-  public bind <K extends keyof HTMLElementEventMap>(target: any, name: K, callback: EventUtilsCallback<HTMLElementEventMap[K]>, scope?: {}): EventUtilsCallback<HTMLElementEventMap[K]>;
-  public bind <T = any>(target: any, names: string, callback: EventUtilsCallback<T>, scope?: {}): EventUtilsCallback<T>;
-  public bind(target: any, names: string, callback: EventUtilsCallback<any>, scope?: {}): EventUtilsCallback<any> {
+  public bind <K extends keyof HTMLElementEventMap>(target: any, name: K, callback: EventUtilsCallback<HTMLElementEventMap[K]>, scope?: any): EventUtilsCallback<HTMLElementEventMap[K]>;
+  public bind <T = any>(target: any, names: string, callback: EventUtilsCallback<T>, scope?: any): EventUtilsCallback<T>;
+  public bind(target: any, names: string, callback: EventUtilsCallback<any>, scope?: any): EventUtilsCallback<any> {
     const self = this;
     let id, callbackList, i, name, fakeName, nativeHandler, capture;
     const win = window;
 
     // Native event handler function patches the event and executes the callbacks for the expando
-    const defaultNativeHandler = function (evt) {
+    const defaultNativeHandler = (evt) => {
       self.executeHandlers(fix(evt || win.event), id);
     };
 
@@ -308,7 +222,7 @@ class EventUtils {
         fakeName = self.mouseEnterLeave[name];
 
         if (fakeName) {
-          nativeHandler = function (evt) {
+          nativeHandler = (evt) => {
             const current = evt.currentTarget;
             let related = evt.relatedTarget;
 
@@ -338,7 +252,7 @@ class EventUtils {
       if (!self.hasFocusIn && (name === 'focusin' || name === 'focusout')) {
         capture = true;
         fakeName = name === 'focusin' ? 'focus' : 'blur';
-        nativeHandler = function (evt) {
+        nativeHandler = (evt) => {
           evt = fix(evt || win.event);
           evt.type = evt.type === 'focus' ? 'focusin' : 'focusout';
           self.executeHandlers(evt, id);
@@ -365,7 +279,7 @@ class EventUtils {
         }
       } else {
         if (name === 'ready' && self.domLoaded) {
-          callback(fix({ type: name }) as EventUtilsEvent<any>);
+          callback(fix({ type: name }));
         } else {
           // If it already has an native handler then just push the callback
           callbackList.push({ func: callback, scope });
@@ -373,7 +287,7 @@ class EventUtils {
       }
     }
 
-    target = callbackList = 0; // Clean memory for IE
+    target = callbackList = null; // Clean memory for IE
 
     return callback;
   }
@@ -389,7 +303,7 @@ class EventUtils {
    */
   public unbind <K extends keyof HTMLElementEventMap>(target: any, name: K, callback?: EventUtilsCallback<HTMLElementEventMap[K]>): this;
   public unbind <T = any>(target: any, names: string, callback?: EventUtilsCallback<T>): this;
-  public unbind (target: any): this;
+  public unbind(target: any): this;
   public unbind(target: any, names?: string, callback?: EventUtilsCallback<any>): this {
     let callbackList, i, ci, name, eventMap;
 
@@ -489,9 +403,7 @@ class EventUtils {
     }
 
     // Build event object by patching the args
-    const event = fix(null, args);
-    event.type = name;
-    event.target = target;
+    const event = fix({ type: name, target }, args);
 
     do {
       // Found an expando that means there is listeners to execute

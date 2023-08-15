@@ -1,5 +1,4 @@
-import { FieldProcessorAdt } from '@ephox/boulder';
-import { Fun, Option } from '@ephox/katamari';
+import { Fun, Optional } from '@ephox/katamari';
 
 import * as Behaviour from '../../api/behaviour/Behaviour';
 import { Focusing } from '../../api/behaviour/Focusing';
@@ -16,7 +15,7 @@ import { SplitSlidingToolbarDetail } from '../types/SplitSlidingToolbarTypes';
 import { ToolbarSpec } from '../types/ToolbarTypes';
 import * as ToolbarSchema from './ToolbarSchema';
 
-const schema: () => FieldProcessorAdt[] = Fun.constant([
+const schema = Fun.constant([
   Fields.markers([ 'closedClass', 'openClass', 'shrinkingClass', 'growingClass', 'overflowToggledClass' ]),
   Fields.onHandler('onOpened'),
   Fields.onHandler('onClosed')
@@ -35,7 +34,7 @@ const parts: () => PartType.PartTypeAdt[] = Fun.constant([
     factory: Toolbar,
     schema: ToolbarSchema.schema(),
     name: 'overflow',
-    overrides(detail) {
+    overrides: (detail) => {
       return {
         toolbarBehaviours: Behaviour.derive([
           Sliding.config({
@@ -65,7 +64,7 @@ const parts: () => PartType.PartTypeAdt[] = Fun.constant([
             mode: 'acyclic',
             onEscape: (comp) => {
               AlloyParts.getPart(comp, detail, 'overflow-button').each(Focusing.focus);
-              return Option.some<boolean>(true);
+              return Optional.some<boolean>(true);
             }
           })
         ])

@@ -5,13 +5,13 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Range } from '@ephox/dom-globals';
 import { Arr } from '@ephox/katamari';
+
 import Env from '../api/Env';
 import * as ClientRect from '../geom/ClientRect';
 import * as NodeType from './NodeType';
 
-const isXYWithinRange = function (clientX: number, clientY: number, range: Range): boolean {
+const isXYWithinRange = (clientX: number, clientY: number, range: Range): boolean => {
   if (range.collapsed) {
     return false;
   }

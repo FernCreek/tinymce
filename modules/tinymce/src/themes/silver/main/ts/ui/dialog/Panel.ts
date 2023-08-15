@@ -6,12 +6,12 @@
  */
 
 import { SimpleSpec } from '@ephox/alloy';
+import { Dialog } from '@ephox/bridge';
 import { Arr } from '@ephox/katamari';
-import { UiFactoryBackstage } from '../../backstage/Backstage';
-import { Omit } from '../Omit';
-import { Types } from '@ephox/bridge';
 
-export type PanelSpec = Omit<Types.Dialog.Panel, 'type'>;
+import { UiFactoryBackstage } from '../../backstage/Backstage';
+
+export type PanelSpec = Omit<Dialog.Panel, 'type'>;
 
 const renderPanel = (spec: PanelSpec, backstage: UiFactoryBackstage): SimpleSpec => ({
   dom: {

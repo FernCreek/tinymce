@@ -5,45 +5,46 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Option } from '@ephox/katamari';
+import { Optional } from '@ephox/katamari';
+
 import Delay from 'tinymce/core/api/util/Delay';
 
-const adjust = function (value, destination, amount) {
+const adjust = (value, destination, amount) => {
   if (Math.abs(value - destination) <= amount) {
-    return Option.none();
+    return Optional.none();
   } else if (value < destination) {
-    return Option.some(value + amount);
+    return Optional.some(value + amount);
   } else {
-    return Option.some(value - amount);
+    return Optional.some(value - amount);
   }
 };
 
-const create = function () {
+const create = () => {
   let interval = null;
 
-  const animate = function (getCurrent, destination, amount, increment, doFinish, rate) {
+  const animate = (getCurrent, destination, amount, increment, doFinish, rate) => {
     let finished = false;
 
-    const finish = function (v) {
+    const finish = (v) => {
       finished = true;
       doFinish(v);
     };
 
     Delay.clearInterval(interval);
 
-    const abort = function (v) {
+    const abort = (v) => {
       Delay.clearInterval(interval);
       finish(v);
     };
 
-    interval = Delay.setInterval(function () {
+    interval = Delay.setInterval(() => {
       const value = getCurrent();
-      adjust(value, destination, amount).fold(function () {
+      adjust(value, destination, amount).fold(() => {
         Delay.clearInterval(interval);
         finish(destination);
-      }, function (s) {
+      }, (s) => {
         increment(s, abort);
-        if (! finished) {
+        if (!finished) {
           const newValue = getCurrent();
           // Jump to the end if the increment is no longer working.
           if (newValue !== s || Math.abs(newValue - destination) > Math.abs(value - destination)) {

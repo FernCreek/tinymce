@@ -1,6 +1,5 @@
-import { console, document } from '@ephox/dom-globals';
-import { Arr, Future, Obj, Option, Result } from '@ephox/katamari';
-import { Class, Element } from '@ephox/sugar';
+import { Arr, Future, Obj, Optional, Result } from '@ephox/katamari';
+import { Class, SugarElement } from '@ephox/sugar';
 
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
 import { Keying } from 'ephox/alloy/api/behaviour/Keying';
@@ -20,7 +19,7 @@ import * as HtmlDisplay from 'ephox/alloy/demo/HtmlDisplay';
 
 import * as DemoRenders from './forms/DemoRenders';
 
-// tslint:disable:no-console
+/* eslint-disable no-console */
 
 const makeItem = (v: string, t: string, c?: string): DemoRenders.DemoItem => ({
   type: 'item',
@@ -35,9 +34,9 @@ const makeItem = (v: string, t: string, c?: string): DemoRenders.DemoItem => ({
 
 export default (): void => {
   const gui = Gui.create();
-  const body = Element.fromDom(document.body);
-  Class.add(gui.element(), 'gui-root-demo-container');
-  // Css.set(gui.element(), 'direction', 'rtl');
+  const body = SugarElement.fromDom(document.body);
+  Class.add(gui.element, 'gui-root-demo-container');
+  // Css.set(gui.element, 'direction', 'rtl');
 
   Attachment.attachSystem(body, gui);
 
@@ -82,36 +81,36 @@ export default (): void => {
         tag: 'div'
       },
       components: [
-        SplitDropdown.parts().button({
+        SplitDropdown.parts.button({
           dom: {
             tag: 'button',
             innerHtml: 'Run'
           },
           uid: 'supplied'
         }),
-        SplitDropdown.parts().arrow({
+        SplitDropdown.parts.arrow({
           dom: {
             tag: 'button',
             innerHtml: 'v'
           }
         }),
-        SplitDropdown.parts().sink({ })
+        SplitDropdown.parts.sink({ })
       ],
-      fetch() {
+      fetch: () => {
         const wMenu = DemoRenders.menu({
           value: 'demo.1.widget.menu',
           items: [ wDoubleInput ]
         });
 
         return Future.pure(
-          Option.some(TieredMenu.singleData('name', wMenu))
+          Optional.some(TieredMenu.singleData('name', wMenu))
         );
       },
       lazySink,
-      onExecute() {
+      onExecute: () => {
         console.log('split-dropdown button clicked');
       },
-      onItemExecute() {
+      onItemExecute: () => {
         console.log('split-dropdown menuitem clicked');
       },
       parts: {
@@ -147,13 +146,13 @@ export default (): void => {
         }
       },
 
-      fetch() {
+      fetch: () => {
         const menu = DemoRenders.menu({
           value: 'demo.2.widget',
           items: [ wDoubleInput ]
         });
 
-        return Future.pure(menu).map(() => Option.some(TieredMenu.singleData('demo.2.menu', menu)));
+        return Future.pure(menu).map(() => Optional.some(TieredMenu.singleData('demo.2.menu', menu)));
       }
     })
   );
@@ -198,17 +197,17 @@ export default (): void => {
             }
           },
 
-          fetch() {
+          fetch: () => {
             const menu = DemoRenders.menu({
               value: 'demo.2.widget',
               items: [ wDoubleInput ]
             });
 
-            return Future.pure(menu).map(() => Option.some(TieredMenu.singleData('demo.2.menu', menu)));
+            return Future.pure(menu).map(() => Optional.some(TieredMenu.singleData('demo.2.menu', menu)));
           }
         })
       ]
-    }),
+    })
 
   );
 
@@ -234,7 +233,7 @@ export default (): void => {
           }
         }
       },
-      fetch() {
+      fetch: () => {
         const data = Arr.map([
           makeItem('alpha', '+Alpha'),
           makeItem('beta', '+Beta'),
@@ -250,7 +249,7 @@ export default (): void => {
             columns: 2,
             rows: 2
           });
-          return Option.some(TieredMenu.singleData('grid-list', menu));
+          return Optional.some(TieredMenu.singleData('grid-list', menu));
         });
       },
 
@@ -267,7 +266,7 @@ export default (): void => {
         innerHtml: 'Click me to expand'
       },
       components: [
-        Dropdown.parts().sink({ })
+        Dropdown.parts.sink({ })
       ],
 
       toggleClass: 'demo-selected',
@@ -284,7 +283,7 @@ export default (): void => {
 
       matchWidth: true,
 
-      fetch() {
+      fetch: () => {
         const data = Arr.map([
           makeItem('alpha', 'Alpha', 'class-alpha'),
           makeItem('beta', 'Beta', 'class-beta'),
@@ -299,10 +298,10 @@ export default (): void => {
             value: 'demo.4.menu',
             items
           });
-          return Option.some(TieredMenu.singleData('basic-list', menu));
+          return Optional.some(TieredMenu.singleData('basic-list', menu));
         });
       },
-      onExecute(sandbox, item) {
+      onExecute: (sandbox, item) => {
         console.log('*** dropdown demo execute on: ' + Representing.getValue(item));
       }
     })
@@ -331,11 +330,11 @@ export default (): void => {
 
       toggleClass: 'demo-selected',
 
-      onExecute(sandbox, item) {
+      onExecute: (sandbox, item) => {
         console.trace();
         console.log('*** dropdown menu demo execute on: ' + Representing.getValue(item).value + ' ***');
       },
-      fetch() {
+      fetch: () => {
         const future = Future.pure({
           primary: 'tools-menu',
           menus: Obj.map({
@@ -371,14 +370,18 @@ export default (): void => {
                       Container.sketch({
                         components: [
                           Button.sketch({
-                            action(...args) { console.log('clicked on a button', ...args); },
+                            action: (...args) => {
+                              console.log('clicked on a button', ...args);
+                            },
                             dom: {
                               tag: 'button',
                               innerHtml: '-'
                             }
                           }),
                           Button.sketch({
-                            action(...args) { console.log('clicked on a button', ...args); },
+                            action: (...args) => {
+                              console.log('clicked on a button', ...args);
+                            },
                             dom: {
                               tag: 'button',
                               innerHtml: '+'
@@ -442,7 +445,7 @@ export default (): void => {
           }
         });
 
-        return future.map((f) => Option.from(TieredMenu.tieredData(f.primary, f.menus, f.expansions)));
+        return future.map((f) => Optional.from(TieredMenu.tieredData(f.primary, f.menus, f.expansions)));
       }
     })
   );

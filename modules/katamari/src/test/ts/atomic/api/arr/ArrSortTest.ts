@@ -1,19 +1,20 @@
-import * as Arr from 'ephox/katamari/api/Arr';
-import { Assert, UnitTest } from '@ephox/bedrock-client';
-import { Testable } from '@ephox/dispute';
+import { describe, it } from '@ephox/bedrock-client';
+import { assert } from 'chai';
 import fc from 'fast-check';
 
-const { tArray, tNumber } = Testable;
+import * as Arr from 'ephox/katamari/api/Arr';
 
-UnitTest.test('Arr.sort: unit test', () => {
-  Assert.eq('sort array', [ 1, 2, 3 ], Arr.sort([ 1, 3, 2 ]), tArray(tNumber));
-  Assert.eq('sort frozen array', [ 1, 2, 3 ], Arr.sort(Object.freeze([ 1, 3, 2 ])), tArray(tNumber));
-});
+describe('atomic.katamari.api.arr.ArrSortTest', () => {
+  it('unit test', () => {
+    assert.deepEqual(Arr.sort([ 1, 3, 2 ]), [ 1, 2, 3 ]);
+    assert.deepEqual(Arr.sort(Object.freeze([ 1, 3, 2 ])), [ 1, 2, 3 ]);
+  });
 
-UnitTest.test('Arr.sort: idempotency', () => {
-  fc.assert(fc.property(
-    fc.array(fc.nat()), (arr) => {
-      Assert.eq('idempotency', Arr.sort(arr), Arr.sort(Arr.sort(arr)), tArray(tNumber));
-    }
-  ));
+  it('is idempotent', () => {
+    fc.assert(fc.property(
+      fc.array(fc.nat()), (arr) => {
+        assert.deepEqual(Arr.sort(Arr.sort(arr)), Arr.sort(arr));
+      }
+    ));
+  });
 });

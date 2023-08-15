@@ -1,14 +1,16 @@
 import { DomUniverse } from '@ephox/boss';
-import { Element } from '@ephox/sugar';
+import { Optional } from '@ephox/katamari';
+import { SugarElement } from '@ephox/sugar';
+
 import * as TextZone from '../general/TextZone';
 
 const universe = DomUniverse();
 
-const single = function (element: Element, envLang: string, onlyLang: string) {
+const single = (element: SugarElement, envLang: string, onlyLang: string): Optional<TextZone.Zone<SugarElement>> => {
   return TextZone.single(universe, element, envLang, onlyLang);
 };
 
-const range = function (start: Element, soffset: number, finish: Element, foffset: number, envLang: string, onlyLang: string) {
+const range = (start: SugarElement, soffset: number, finish: SugarElement, foffset: number, envLang: string, onlyLang: string): Optional<TextZone.Zone<SugarElement>> => {
   return TextZone.range(universe, start, soffset, finish, foffset, envLang, onlyLang);
 };
 

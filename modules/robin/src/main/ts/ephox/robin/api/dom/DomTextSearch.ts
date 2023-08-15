@@ -1,37 +1,39 @@
 import { DomUniverse } from '@ephox/boss';
-import { Document } from '@ephox/dom-globals';
-import { Option } from '@ephox/katamari';
-import { Element } from '@ephox/sugar';
-import { TextSeekerPhaseProcessor } from '../../textdata/TextSeeker';
+import { Optional } from '@ephox/katamari';
+import { SpotPoint } from '@ephox/phoenix';
+import { SugarElement } from '@ephox/sugar';
+
+import { CharPos } from '../../textdata/TextSearch';
+import { TextSeekerOutcome, TextSeekerPhaseProcessor } from '../../textdata/TextSeeker';
 import { TextSearch, TextSearchSeeker } from '../general/TextSearch';
 
 const universe = DomUniverse();
 
-const previousChar = function (text: string, offset: Option<number>) {
+const previousChar = (text: string, offset: Optional<number>): Optional<CharPos> => {
   return TextSearch.previousChar(text, offset);
 };
 
-const nextChar = function (text: string, offset: Option<number>) {
+const nextChar = (text: string, offset: Optional<number>): Optional<CharPos> => {
   return TextSearch.nextChar(text, offset);
 };
 
-const repeatLeft = function (item: Element, offset: number, process: TextSeekerPhaseProcessor<Element, Document>) {
+const repeatLeft = (item: SugarElement, offset: number, process: TextSeekerPhaseProcessor<SugarElement, Document>): TextSeekerOutcome<SugarElement> => {
   return TextSearch.repeatLeft(universe, item, offset, process);
 };
 
-const repeatRight = function (item: Element, offset: number, process: TextSeekerPhaseProcessor<Element, Document>) {
+const repeatRight = (item: SugarElement, offset: number, process: TextSeekerPhaseProcessor<SugarElement, Document>): TextSeekerOutcome<SugarElement> => {
   return TextSearch.repeatRight(universe, item, offset, process);
 };
 
-const expandLeft = function (item: Element, offset: number, rawSeeker: TextSearchSeeker) {
+const expandLeft = (item: SugarElement, offset: number, rawSeeker: TextSearchSeeker): TextSeekerOutcome<SugarElement> => {
   return TextSearch.expandLeft(universe, item, offset, rawSeeker);
 };
 
-const expandRight = function (item: Element, offset: number, rawSeeker: TextSearchSeeker) {
+const expandRight = (item: SugarElement, offset: number, rawSeeker: TextSearchSeeker): TextSeekerOutcome<SugarElement> => {
   return TextSearch.expandRight(universe, item, offset, rawSeeker);
 };
 
-const scanRight = function (item: Element, offset: number) {
+const scanRight = (item: SugarElement, offset: number): Optional<SpotPoint<SugarElement>> => {
   return TextSearch.scanRight(universe, item, offset);
 };
 

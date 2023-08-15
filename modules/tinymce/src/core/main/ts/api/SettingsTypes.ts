@@ -5,20 +5,27 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { HTMLElement, HTMLImageElement, Node, ReferrerPolicy as DomReferrerPolicy } from '@ephox/dom-globals';
 import { UploadHandler } from '../file/Uploader';
 import Editor from './Editor';
 import { Formats } from './fmt/Format';
 import { AllowedFormat } from './fmt/StyleFormat';
 import { SchemaType } from './html/Schema';
+import { EditorUiApi } from './ui/Ui';
 
-export type EntityEncoding = 'named' | 'numeric' | 'raw';
+export type EntityEncoding = 'named' | 'numeric' | 'raw' | 'named,numeric' | 'named+numeric' | 'numeric,named' | 'numeric+named';
+
+export interface ContentLanguage {
+  readonly title: string;
+  readonly code: string;
+  readonly customCode?: string;
+}
 
 export type ThemeInitFunc = (editor: Editor, elm: HTMLElement) => {
   editorContainer: HTMLElement;
   iframeContainer: HTMLElement;
   height?: number;
   iframeHeight?: number;
+  api?: EditorUiApi;
 };
 
 export type SetupCallback = (editor: Editor) => void;
@@ -26,9 +33,6 @@ export type SetupCallback = (editor: Editor) => void;
 export type FilePickerCallback = (callback: Function, value: any, meta: Record<string, any>) => void;
 export type FilePickerValidationStatus = 'valid' | 'unknown' | 'invalid' | 'none';
 export type FilePickerValidationCallback = (info: { type: string; url: string }, callback: (validation: { status: FilePickerValidationStatus; message: string}) => void) => void;
-
-// dom-globals is outdated and missing a number of valid values
-export type ReferrerPolicy = DomReferrerPolicy | 'origin' | 'same-origin' | 'strict-origin' | 'strict-origin-when-cross-origin';
 
 export type URLConverter = (url: string, name: string, elm?: HTMLElement) => string;
 export type URLConverterCallback = (url: string, node: Node, on_save: boolean, name: string) => void;
@@ -47,6 +51,7 @@ interface BaseEditorSettings {
   allow_html_data_urls?: boolean;
   allow_html_in_named_anchor?: boolean;
   allow_script_urls?: boolean;
+  allow_svg_data_urls?: boolean;
   allow_unsafe_link_target?: boolean;
   anchor_bottom?: false | string;
   anchor_top?: false | string;
@@ -68,6 +73,9 @@ interface BaseEditorSettings {
   content_css_cors?: boolean;
   content_security_policy?: string;
   content_style?: string;
+  deprecation_warnings?: boolean;
+  font_css?: string | string[];
+  content_langs?: ContentLanguage[];
   contextmenu?: string | false;
   contextmenu_never_use_native?: boolean;
   convert_fonts_to_spans?: boolean;
@@ -92,6 +100,7 @@ interface BaseEditorSettings {
   file_picker_validator_handler?: FilePickerValidationCallback;
   fix_list_elements?: boolean;
   fixed_toolbar_container?: string;
+  fixed_toolbar_container_target?: HTMLElement;
   font_formats?: string;
   font_size_classes?: string;
   font_size_legacy_values?: string;
@@ -101,13 +110,16 @@ interface BaseEditorSettings {
   forced_root_block?: boolean | string;
   forced_root_block_attrs?: Record<string, string>;
   formats?: Formats;
+  format_empty_lines?: boolean;
   gecko_spellcheck?: boolean;
   height?: number | string;
   hidden_input?: boolean;
   icons?: string;
   icons_url?: string;
   id?: string;
+  iframe_aria_text?: string;
   images_dataimg_filter?: (imgElm: HTMLImageElement) => boolean;
+  images_file_types?: string;
   images_replace_blob_uris?: boolean;
   images_reuse_filename?: boolean;
   images_upload_base_path?: string;
@@ -125,11 +137,12 @@ interface BaseEditorSettings {
   inline_boundaries_selector?: string;
   inline_styles?: boolean;
   invalid_elements?: string;
-  invalid_styles?: string;
+  invalid_styles?: string | Record<string, string>;
   keep_styles?: boolean;
   language?: string;
   language_load?: boolean;
   language_url?: string;
+  lineheight_formats?: string;
   max_height?: number;
   max_width?: number;
   menu?: Record<string, { title: string; items: string }>;
@@ -139,6 +152,7 @@ interface BaseEditorSettings {
   no_newline_selector?: string;
   nowrap?: boolean;
   object_resizing?: boolean | string;
+  padd_empty_with_br?: boolean;
   placeholder?: string;
   preserve_cdata?: boolean;
   preview_styles?: boolean | string;
@@ -179,12 +193,13 @@ interface BaseEditorSettings {
   toolbar_mode?: ToolbarMode;
   typeahead_urls?: boolean;
   url_converter?: URLConverter;
-  url_converter_scope?: {};
+  url_converter_scope?: any;
   urlconverter_callback?: string | URLConverterCallback;
   valid_children?: string;
   valid_classes?: string | Record<string, string>;
   valid_elements?: string;
   valid_styles?: string | Record<string, string>;
+  verify_html?: boolean;
   visual?: boolean;
   visual_anchor_class?: string;
   visual_table_class?: string;
@@ -209,6 +224,7 @@ interface BaseEditorSettings {
   text_block_elements?: string;
   text_inline_elements?: string;
   whitespace_elements?: string;
+  special?: string;
 
   // Internal settings (used by cloud or tests)
   disable_nodechange?: boolean;

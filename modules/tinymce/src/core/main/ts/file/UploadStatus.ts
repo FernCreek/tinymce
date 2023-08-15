@@ -12,48 +12,59 @@
  * @class tinymce.file.UploadStatus
  */
 
-export default function () {
+export interface UploadStatus {
+  readonly hasBlobUri: (blobUri: string) => boolean;
+  readonly getResultUri: (blobUri: string) => string | null;
+  readonly isPending: (blobUri: string) => boolean;
+  readonly isUploaded: (blobUri: string) => boolean;
+  readonly markPending: (blobUri: string) => void;
+  readonly markUploaded: (blobUri: string, resultUri: string) => void;
+  readonly removeFailed: (blobUri: string) => void;
+  readonly destroy: () => void;
+}
+
+export const UploadStatus = (): UploadStatus => {
   const PENDING = 1, UPLOADED = 2;
   let blobUriStatuses = {};
 
-  const createStatus = function (status, resultUri) {
+  const createStatus = (status: number, resultUri: string) => {
     return {
       status,
       resultUri
     };
   };
 
-  const hasBlobUri = function (blobUri) {
+  const hasBlobUri = (blobUri: string) => {
     return blobUri in blobUriStatuses;
   };
 
-  const getResultUri = function (blobUri) {
+  const getResultUri = (blobUri: string) => {
     const result = blobUriStatuses[blobUri];
 
     return result ? result.resultUri : null;
   };
 
-  const isPending = function (blobUri) {
+  const isPending = (blobUri: string) => {
     return hasBlobUri(blobUri) ? blobUriStatuses[blobUri].status === PENDING : false;
   };
 
-  const isUploaded = function (blobUri) {
+  const isUploaded = (blobUri: string) => {
     return hasBlobUri(blobUri) ? blobUriStatuses[blobUri].status === UPLOADED : false;
   };
 
-  const markPending = function (blobUri) {
+  const markPending = (blobUri: string) => {
     blobUriStatuses[blobUri] = createStatus(PENDING, null);
   };
 
-  const markUploaded = function (blobUri, resultUri) {
+  const markUploaded = (blobUri: string, resultUri: string) => {
     blobUriStatuses[blobUri] = createStatus(UPLOADED, resultUri);
   };
 
-  const removeFailed = function (blobUri) {
+  const removeFailed = (blobUri: string) => {
     delete blobUriStatuses[blobUri];
   };
 
-  const destroy = function () {
+  const destroy = () => {
     blobUriStatuses = {};
   };
 
@@ -67,4 +78,4 @@ export default function () {
     removeFailed,
     destroy
   };
-}
+};

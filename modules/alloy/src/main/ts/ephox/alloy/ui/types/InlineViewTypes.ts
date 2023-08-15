@@ -1,5 +1,5 @@
-import { Option } from '@ephox/katamari';
-import { Element } from '@ephox/sugar';
+import { Optional } from '@ephox/katamari';
+import { SugarElement } from '@ephox/sugar';
 
 import { Bounds } from '../../alien/Boxes';
 import { AlloyBehaviourRecord } from '../../api/behaviour/Behaviour';
@@ -8,7 +8,7 @@ import { AlloyComponent } from '../../api/component/ComponentApi';
 import { SketchBehaviours } from '../../api/component/SketchBehaviours';
 import { AlloySpec, RawDomSchema } from '../../api/component/SpecTypes';
 import { SingleSketch, SingleSketchDetail, SingleSketchSpec } from '../../api/ui/Sketcher';
-import { AnchorSpec } from '../../positioning/mode/Anchoring';
+import { PlacementSpec } from '../../behaviour/positioning/PositioningTypes';
 import { TieredData, TieredMenuSpec } from './TieredMenuTypes';
 
 export interface InlineViewDetail extends SingleSketchDetail {
@@ -18,15 +18,15 @@ export interface InlineViewDetail extends SingleSketchDetail {
   inlineBehaviours: SketchBehaviours;
   onShow: (component: AlloyComponent) => void;
   onHide: (component: AlloyComponent) => void;
-  onEscape: Option<(component: AlloyComponent) => void>;
-  getRelated: (component: AlloyComponent) => Option<AlloyComponent>;
-  isExtraPart: (component: AlloyComponent, target: Element) => boolean;
+  onEscape: Optional<(component: AlloyComponent) => void>;
+  getRelated: (component: AlloyComponent) => Optional<AlloyComponent>;
+  isExtraPart: (component: AlloyComponent, target: SugarElement) => boolean;
   lazySink: LazySink;
   eventOrder: Record<string, string[]>;
-  fireDismissalEventInstead: Option<{
+  fireDismissalEventInstead: Optional<{
     event: string;
   }>;
-  fireRepositionEventInstead: Option<{
+  fireRepositionEventInstead: Optional<{
     event: string;
   }>;
 }
@@ -40,8 +40,8 @@ export interface InlineViewSpec extends SingleSketchSpec {
   onShow?: (component: AlloyComponent) => void;
   onHide?: (component: AlloyComponent) => void;
   onEscape?: (component: AlloyComponent) => void;
-  getRelated?: (component: AlloyComponent) => Option<AlloyComponent>;
-  isExtraPart?: (component: AlloyComponent, target: Element) => boolean;
+  getRelated?: (component: AlloyComponent) => Optional<AlloyComponent>;
+  isExtraPart?: (component: AlloyComponent, target: SugarElement) => boolean;
   eventOrder?: Record<string, string[]>;
   fireDismissalEventInstead?: {
     event?: string;
@@ -58,14 +58,14 @@ export interface InlineMenuSpec {
 }
 
 export interface InlineViewApis {
-  showAt: (component: AlloyComponent, anchor: AnchorSpec, thing: AlloySpec) => void;
-  showWithin: (component: AlloyComponent, anchor: AnchorSpec, thing: AlloySpec, boxElement: Option<Element>) => void;
-  showWithinBounds: (component: AlloyComponent, anchor: AnchorSpec, thing: AlloySpec, getBounds: () => Option<Bounds>) => void;
-  showMenuAt: (component: AlloyComponent, anchor: AnchorSpec, menuSpec: InlineMenuSpec) => void;
-  showMenuWithinBounds: (component: AlloyComponent, anchor: AnchorSpec, menuSpec: InlineMenuSpec, getBounds: () => Option<Bounds>) => void;
+  showAt: (component: AlloyComponent, thing: AlloySpec, placementSpec: PlacementSpec) => void;
+  showWithin: (component: AlloyComponent, thing: AlloySpec, placementSpec: PlacementSpec, boxElement: Optional<SugarElement>) => void;
+  showWithinBounds: (component: AlloyComponent, thing: AlloySpec, placementSpec: PlacementSpec, getBounds: () => Optional<Bounds>) => void;
+  showMenuAt: (component: AlloyComponent, placementSpec: PlacementSpec, menuSpec: InlineMenuSpec) => void;
+  showMenuWithinBounds: (component: AlloyComponent, placementSpec: PlacementSpec, menuSpec: InlineMenuSpec, getBounds: () => Optional<Bounds>) => void;
   hide: (component: AlloyComponent) => void;
   isOpen: (component: AlloyComponent) => boolean;
-  getContent: (component: AlloyComponent) => Option<AlloyComponent>;
+  getContent: (component: AlloyComponent) => Optional<AlloyComponent>;
   setContent: (component: AlloyComponent, thing: AlloySpec) => void;
   reposition: (component: AlloyComponent) => void;
 }

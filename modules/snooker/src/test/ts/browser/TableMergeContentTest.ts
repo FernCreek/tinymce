@@ -1,25 +1,26 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Arr } from '@ephox/katamari';
-import { Body, Element, Html, Insert, Remove } from '@ephox/sugar';
+import { Html, Insert, Remove, SugarBody, SugarElement } from '@ephox/sugar';
+
 import * as TableContent from 'ephox/snooker/api/TableContent';
 
-UnitTest.test('TableMergeContentTest', function () {
-  const mergeContentTest = function (specs: { label: string; html: string; expected: string }[]) {
-    const table = Element.fromTag('table');
-    const row = Element.fromTag('tr');
+UnitTest.test('TableMergeContentTest', () => {
+  const mergeContentTest = (specs: { label: string; html: string; expected: string }[]) => {
+    const table = SugarElement.fromTag('table');
+    const row = SugarElement.fromTag('tr');
     Insert.append(table, row);
-    const cells = Arr.map(specs, function (item) {
-      const cell = Element.fromTag('td');
-      cell.dom().innerHTML = item.html;
+    const cells = Arr.map(specs, (item) => {
+      const cell = SugarElement.fromTag('td');
+      cell.dom.innerHTML = item.html;
 
       Insert.append(row, cell);
       return cell;
     });
 
-    Insert.append(Body.body(), table);
+    Insert.append(SugarBody.body(), table);
 
     TableContent.merge(cells);
-    Arr.each(specs, function (spec, i) {
+    Arr.each(specs, (spec, i) => {
       assert.eq(spec.expected, Html.get(cells[i]), () => spec.label + ' expected:\n' + spec.expected + '\n got: \n' + Html.get(cells[i]));
     });
 

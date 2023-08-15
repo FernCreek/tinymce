@@ -1,6 +1,6 @@
-import { Option } from '@ephox/katamari';
-import { BehaviourStateInitialiser } from '../../behaviour/common/BehaviourState';
+import { Optional } from '@ephox/katamari';
 
+import { BehaviourStateInitialiser } from '../../behaviour/common/BehaviourState';
 import * as DraggingApis from '../../behaviour/dragging/DraggingApis';
 import * as DraggingBranches from '../../behaviour/dragging/DraggingBranches';
 import { DraggingBehaviour, DraggingConfig, DraggingState, SnapConfig, SnapConfigSpec } from '../../dragging/common/DraggingTypes';
@@ -12,7 +12,7 @@ const Dragging: DraggingBehaviour<any> = Behaviour.createModes({
   branches: DraggingBranches,
   name: 'dragging',
   active: {
-    events(dragConfig, dragState) {
+    events: (dragConfig, dragState) => {
       const dragger = dragConfig.dragger;
       return dragger.handlers(dragConfig, dragState);
     }
@@ -23,7 +23,7 @@ const Dragging: DraggingBehaviour<any> = Behaviour.createModes({
       sensor: sConfig.sensor,
       range: sConfig.range,
       output: sConfig.output,
-      extra: Option.from(sConfig.extra)
+      extra: Optional.from(sConfig.extra)
     })
   },
   state: DragState as BehaviourStateInitialiser<DraggingConfig<any>, DraggingState>,

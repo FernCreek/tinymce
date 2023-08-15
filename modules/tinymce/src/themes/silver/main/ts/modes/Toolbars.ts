@@ -5,8 +5,10 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Option, Type } from '@ephox/katamari';
+import { Optional, Type } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
+
 import { UiFactoryBackstage } from '../backstage/Backstage';
 import { RenderUiComponents, RenderUiConfig } from '../Render';
 import OuterContainer from '../ui/general/OuterContainer';
@@ -22,13 +24,13 @@ const setToolbar = (editor: Editor, uiComponents: RenderUiComponents, rawUiConfi
   if (Type.isArrayOf(toolbarConfig, Type.isString)) {
     const toolbars = toolbarConfig.map((t) => {
       const config = { toolbar: t, buttons: toolbarButtonsConfig, allowToolbarGroups: rawUiConfig.allowToolbarGroups };
-      return identifyButtons(editor, config, { backstage }, Option.none());
+      return identifyButtons(editor, config, { backstage }, Optional.none());
     });
     OuterContainer.setToolbars(comp, toolbars);
   } else {
     OuterContainer.setToolbar(
       comp,
-      identifyButtons(editor, rawUiConfig, { backstage }, Option.none())
+      identifyButtons(editor, rawUiConfig, { backstage }, Optional.none())
     );
   }
 };

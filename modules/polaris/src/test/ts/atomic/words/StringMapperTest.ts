@@ -1,8 +1,9 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
+
 import * as StringMapper from 'ephox/polaris/words/StringMapper';
 import * as UnicodeData from 'ephox/polaris/words/UnicodeData';
 
-UnitTest.test('Words.StringMapperTest', function () {
+UnitTest.test('Words.StringMapperTest', () => {
   const ci = UnicodeData.characterIndices;
 
   const ALETTER = ci.ALETTER;
@@ -22,7 +23,7 @@ UnitTest.test('Words.StringMapperTest', function () {
 
   const classify = StringMapper.classify;
 
-  const testClassify = function () {
+  const testClassify = () => {
     assert.eq([ ALETTER, ALETTER, ALETTER ], classify('abc'.split('')));
     assert.eq([ ALETTER, ALETTER, ALETTER ], classify('åäö'.split('')));
     assert.eq([ ALETTER, NUMERIC, ALETTER ], classify('a2c'.split('')));

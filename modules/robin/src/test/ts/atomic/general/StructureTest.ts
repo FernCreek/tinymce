@@ -1,8 +1,9 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Gene, TestUniverse } from '@ephox/boss';
+
 import * as Structure from 'ephox/robin/api/general/Structure';
 
-UnitTest.test('StructureTest', function () {
+UnitTest.test('StructureTest', () => {
   const doc = TestUniverse(Gene('root', 'root', [
     Gene('d1', 'div', []),
     Gene('ol1', 'ol', []),
@@ -15,7 +16,7 @@ UnitTest.test('StructureTest', function () {
     Gene('strong1', 'strong', [])
   ]));
 
-  const check = function (expected: boolean, id: string) {
+  const check = (expected: boolean, id: string) => {
     const item = doc.find(doc.get(), id).getOrDie();
     const actual = Structure.isInline(doc, item);
     assert.eq(expected, actual);

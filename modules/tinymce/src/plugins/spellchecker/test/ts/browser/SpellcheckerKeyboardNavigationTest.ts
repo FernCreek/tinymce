@@ -1,27 +1,26 @@
 import { FocusTools, Keyboard, Keys, Log, Pipeline, Step } from '@ephox/agar';
 import { Assert, UnitTest } from '@ephox/bedrock-client';
-import { document } from '@ephox/dom-globals';
-import { TinyLoader } from '@ephox/mcagar';
-import { Element } from '@ephox/sugar';
-import Tools from 'tinymce/core/api/util/Tools';
+import { SugarElement } from '@ephox/sugar';
+import { TinyLoader } from '@ephox/wrap-mcagar';
 
+import Tools from 'tinymce/core/api/util/Tools';
 import * as Settings from 'tinymce/plugins/spellchecker/api/Settings';
 import SpellcheckerPlugin from 'tinymce/plugins/spellchecker/Plugin';
 import SilverTheme from 'tinymce/themes/silver/Theme';
 
-UnitTest.asynctest('browser.tinymce.plugins.spellchecker.SpellcheckerTest', function (success, failure) {
+UnitTest.asynctest('browser.tinymce.plugins.spellchecker.SpellcheckerTest', (success, failure) => {
 
   SilverTheme();
   SpellcheckerPlugin();
 
-  const sTestDefaultLanguage = function (editor) {
-    return Step.sync(function () {
+  const sTestDefaultLanguage = (editor) => {
+    return Step.sync(() => {
       Assert.eq('should be same', Settings.getLanguage(editor), 'en');
     });
   };
 
-  TinyLoader.setup(function (editor, onSuccess, onFailure) {
-    const doc = Element.fromDom(document);
+  TinyLoader.setup((editor, onSuccess, onFailure) => {
+    const doc = SugarElement.fromDom(document);
 
     const sPressTab = Keyboard.sKeydown(doc, Keys.tab(), {});
     const sPressEsc = Keyboard.sKeydown(doc, Keys.escape(), {});
@@ -66,7 +65,7 @@ UnitTest.asynctest('browser.tinymce.plugins.spellchecker.SpellcheckerTest', func
     toolbar: 'spellchecker',
     base_url: '/project/tinymce/js/tinymce',
     statusbar: false,
-    spellchecker_callback(method, _text, success, _failure) {
+    spellchecker_callback: (method, _text, success, _failure) => {
       if (method === 'spellcheck') {
         success({ words: {
           helo: [ 'hello' ],

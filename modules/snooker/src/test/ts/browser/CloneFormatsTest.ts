@@ -1,23 +1,23 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
-import { document } from '@ephox/dom-globals';
-import { Fun, Option } from '@ephox/katamari';
-import { Element, Html, Insert } from '@ephox/sugar';
-import { CellSpan } from 'ephox/snooker/api/Generators';
+import { Fun, Optional } from '@ephox/katamari';
+import { Html, Insert, SugarElement } from '@ephox/sugar';
+
+import { CellData } from 'ephox/snooker/api/Generators';
 import * as TableFill from 'ephox/snooker/api/TableFill';
 
-UnitTest.test('CloneFormatsTest', function () {
-  const doc = Element.fromDom(document);
-  const noCloneFormats = Option.some([] as string[]);
-  const cloneTableFill = TableFill.cellOperations(Fun.noop, doc, Option.none());
+UnitTest.test('CloneFormatsTest', () => {
+  const doc = SugarElement.fromDom(document);
+  const noCloneFormats = Optional.some([] as string[]);
+  const cloneTableFill = TableFill.cellOperations(Fun.noop, doc, Optional.none());
   const noCloneTableFill = TableFill.cellOperations(Fun.noop, doc, noCloneFormats);
 
-  const cellElement = Element.fromTag('td');
-  const cellContent = Element.fromHtml('<strong contenteditable="false"><em>stuff</em></strong>');
+  const cellElement = SugarElement.fromTag('td');
+  const cellContent = SugarElement.fromHtml('<strong contenteditable="false"><em>stuff</em></strong>');
   Insert.append(cellElement, cellContent);
-  const cell: CellSpan = {
-    element: Fun.constant(cellElement),
-    colspan: Fun.constant(1),
-    rowspan: Fun.constant(1)
+  const cell: CellData = {
+    element: cellElement,
+    colspan: 1,
+    rowspan: 1
   };
 
   const clonedCell = cloneTableFill.cell(cell);

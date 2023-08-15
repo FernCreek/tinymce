@@ -5,20 +5,22 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import * as Dialog from './Dialog';
 import Editor from 'tinymce/core/api/Editor';
 
-const register = function (editor: Editor) {
+const register = (editor: Editor): void => {
+
+  const onAction = () => editor.execCommand('mceCodeEditor');
+
   editor.ui.registry.addButton('code', {
     icon: 'sourcecode',
     tooltip: 'Source code',
-    onAction: () => Dialog.open(editor)
+    onAction
   });
 
   editor.ui.registry.addMenuItem('code', {
     icon: 'sourcecode',
     text: 'Source code',
-    onAction: () => Dialog.open(editor)
+    onAction
   });
 };
 

@@ -17,9 +17,15 @@ const deriveToggling = (spec, component: AlloyComponent) => {
     return spec.toggle().bind((toggle) => {
       if (toggle === true) {
         return {
-          toggleOn: () => { Toggling.on(component); },
-          toggleOff: () => { Toggling.off(component); },
-          toggleIsOn: () => { Toggling.isOn(component); }
+          toggleOn: () => {
+            Toggling.on(component);
+          },
+          toggleOff: () => {
+            Toggling.off(component);
+          },
+          toggleIsOn: () => {
+            Toggling.isOn(component);
+          }
         };
       }
     });
@@ -62,7 +68,7 @@ const component = (spec, component: AlloyComponent) => {
 
   const defaults = {
     // Expose more as required
-    element: component.element().dom(),
+    element: component.element.dom,
     isDisabled: () => Disabling.isDisabled(component),
     setDisabled: (state: boolean) => Disabling.set(component, state)
   };

@@ -6,6 +6,7 @@
  */
 
 import PluginManager from 'tinymce/core/api/PluginManager';
+
 import * as Api from './api/Api';
 import * as Commands from './api/Commands';
 import * as FilterContent from './core/FilterContent';
@@ -13,8 +14,8 @@ import * as ResolveName from './core/ResolveName';
 import * as Selection from './core/Selection';
 import * as Buttons from './ui/Buttons';
 
-export default function () {
-  PluginManager.add('media', function (editor) {
+export default (): void => {
+  PluginManager.add('media', (editor) => {
     Commands.register(editor);
     Buttons.register(editor);
     ResolveName.setup(editor);
@@ -22,4 +23,4 @@ export default function () {
     Selection.setup(editor);
     return Api.get(editor);
   });
-}
+};

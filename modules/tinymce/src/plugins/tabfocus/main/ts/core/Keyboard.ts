@@ -5,59 +5,62 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { window } from '@ephox/dom-globals';
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import Editor from 'tinymce/core/api/Editor';
 import EditorManager from 'tinymce/core/api/EditorManager';
 import Env from 'tinymce/core/api/Env';
 import Delay from 'tinymce/core/api/util/Delay';
+import { EditorEvent } from 'tinymce/core/api/util/EventDispatcher';
 import Tools from 'tinymce/core/api/util/Tools';
 import VK from 'tinymce/core/api/util/VK';
+
 import * as Settings from '../api/Settings';
 
 const DOM = DOMUtils.DOM;
 
-const tabCancel = function (e) {
+const tabCancel = (e: EditorEvent<KeyboardEvent>): void => {
   if (e.keyCode === VK.TAB && !e.ctrlKey && !e.altKey && !e.metaKey) {
     e.preventDefault();
   }
 };
 
-const setup = function (editor: Editor) {
-  function tabHandler(e) {
-    let x, el, i;
+const setup = (editor: Editor): void => {
+  const tabHandler = (e: EditorEvent<KeyboardEvent>) => {
+    let x: number;
 
     if (e.keyCode !== VK.TAB || e.ctrlKey || e.altKey || e.metaKey || e.isDefaultPrevented()) {
       return;
     }
 
-    function find(direction) {
-      el = DOM.select(':input:enabled,*[tabindex]:not(iframe)');
+    const find = (direction: number): HTMLElement | null => {
+      const el = DOM.select(':input:enabled,*[tabindex]:not(iframe)');
 
-      function canSelectRecursive(e) {
-        return e.nodeName === 'BODY' || (e.type !== 'hidden' &&
-          e.style.display !== 'none' &&
-          e.style.visibility !== 'hidden' && canSelectRecursive(e.parentNode));
-      }
+      const canSelectRecursive = (e: Node): boolean => {
+        const castElem = (e as HTMLInputElement | HTMLTextAreaElement);
+        return e.nodeName === 'BODY' || (castElem.type !== 'hidden' &&
+          castElem.style.display !== 'none' &&
+          castElem.style.visibility !== 'hidden' && canSelectRecursive(e.parentNode));
+      };
 
-      function canSelect(el) {
-        return /INPUT|TEXTAREA|BUTTON/.test(el.tagName) && EditorManager.get(e.id) && el.tabIndex !== -1 && canSelectRecursive(el);
-      }
+      const canSelect = (el: HTMLElement): boolean => {
+        // TODO: Is "e.id" correct here? It seems unlikely as "e" is the event so it likely should be "el.id"
+        return /INPUT|TEXTAREA|BUTTON/.test(el.tagName) && EditorManager.get((e as any).id) && el.tabIndex !== -1 && canSelectRecursive(el);
+      };
 
-      Tools.each(el, function (e, i) {
+      Tools.each(el, (e, i) => {
         if (e.id === editor.id) {
           x = i;
           return false;
         }
       });
       if (direction > 0) {
-        for (i = x + 1; i < el.length; i++) {
+        for (let i = x + 1; i < el.length; i++) {
           if (canSelect(el[i])) {
             return el[i];
           }
         }
       } else {
-        for (i = x - 1; i >= 0; i--) {
+        for (let i = x - 1; i >= 0; i--) {
           if (canSelect(el[i])) {
             return el[i];
           }
@@ -65,7 +68,7 @@ const setup = function (editor: Editor) {
       }
 
       return null;
-    }
+    };
 
     const v = Tools.explode(Settings.getTabFocus(editor));
 
@@ -75,6 +78,7 @@ const setup = function (editor: Editor) {
     }
 
     // Find element to focus
+    let el: HTMLElement;
     if (e.shiftKey) {
       if (v[0] === ':prev') {
         el = find(-1);
@@ -90,12 +94,12 @@ const setup = function (editor: Editor) {
     }
 
     if (el) {
-      const focusEditor = EditorManager.get(el.id || el.name);
+      const focusEditor = EditorManager.get(el.id || (el as any).name);
 
       if (el.id && focusEditor) {
         focusEditor.focus();
       } else {
-        Delay.setTimeout(function () {
+        Delay.setTimeout(() => {
           if (!Env.webkit) {
             window.focus();
           }
@@ -106,9 +110,9 @@ const setup = function (editor: Editor) {
 
       e.preventDefault();
     }
-  }
+  };
 
-  editor.on('init', function () {
+  editor.on('init', () => {
     if (editor.inline) {
       // Remove default tabIndex in inline mode
       DOM.setAttrib(editor.getBody(), 'tabIndex', null);

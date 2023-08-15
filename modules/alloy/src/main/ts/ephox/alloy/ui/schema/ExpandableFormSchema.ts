@@ -1,4 +1,4 @@
-import { FieldProcessorAdt, FieldSchema } from '@ephox/boulder';
+import { FieldSchema } from '@ephox/boulder';
 import { Fun } from '@ephox/katamari';
 import { Class, Focus } from '@ephox/sugar';
 
@@ -15,7 +15,7 @@ import * as PartType from '../../parts/PartType';
 import { ButtonSpec } from '../types/ButtonTypes';
 import { ExpandableFormDetail } from '../types/ExpandableFormTypes';
 
-const schema: () => FieldProcessorAdt[] = Fun.constant([
+const schema = Fun.constant([
   Fields.markers([
     'closedClass',
     'openClass',
@@ -39,15 +39,15 @@ const runOnExtra = (detail: ExpandableFormDetail, operation: (comp: AlloyCompone
 const parts: () => PartType.PartTypeAdt[] = Fun.constant([
   PartType.required<ExpandableFormDetail>({
     // factory: Form,
-    schema: [ FieldSchema.strict('dom') ],
+    schema: [ FieldSchema.required('dom') ],
     name: 'minimal'
   }),
 
   PartType.required<ExpandableFormDetail>({
     // factory: Form,
-    schema: [ FieldSchema.strict('dom') ],
+    schema: [ FieldSchema.required('dom') ],
     name: 'extra',
-    overrides(detail) {
+    overrides: (detail) => {
       return {
         behaviours: Behaviour.derive([
           Sliding.config({
@@ -59,32 +59,32 @@ const parts: () => PartType.PartTypeAdt[] = Fun.constant([
             shrinkingClass: detail.markers.shrinkingClass,
             growingClass: detail.markers.growingClass,
             expanded: true,
-            onStartShrink(extra: AlloyComponent) {
+            onStartShrink: (extra: AlloyComponent) => {
               // If the focus is inside the extra part, move the focus to the expander button
-              Focus.search(extra.element()).each((_) => {
+              Focus.search(extra.element).each((_) => {
                 const comp = extra.getSystem().getByUid(detail.uid).getOrDie();
                 Keying.focusIn(comp);
               });
 
               extra.getSystem().getByUid(detail.uid).each((form) => {
-                Class.remove(form.element(), detail.markers.expandedClass);
-                Class.add(form.element(), detail.markers.collapsedClass);
+                Class.remove(form.element, detail.markers.expandedClass);
+                Class.add(form.element, detail.markers.collapsedClass);
               });
             },
-            onStartGrow(extra: AlloyComponent) {
+            onStartGrow: (extra: AlloyComponent) => {
               extra.getSystem().getByUid(detail.uid).each((form) => {
-                Class.add(form.element(), detail.markers.expandedClass);
-                Class.remove(form.element(), detail.markers.collapsedClass);
+                Class.add(form.element, detail.markers.expandedClass);
+                Class.remove(form.element, detail.markers.collapsedClass);
               });
             },
-            onShrunk(extra: AlloyComponent) {
+            onShrunk: (extra: AlloyComponent) => {
               detail.onShrunk(extra);
             },
-            onGrown(extra: AlloyComponent) {
+            onGrown: (extra: AlloyComponent) => {
               detail.onGrown(extra);
             },
-            getAnimationRoot(extra: AlloyComponent) {
-              return extra.getSystem().getByUid(detail.uid).getOrDie().element();
+            getAnimationRoot: (extra: AlloyComponent) => {
+              return extra.getSystem().getByUid(detail.uid).getOrDie().element;
             }
           })
         ])
@@ -94,9 +94,9 @@ const parts: () => PartType.PartTypeAdt[] = Fun.constant([
 
   PartType.required<ExpandableFormDetail, ButtonSpec>({
     factory: Button,
-    schema: [ FieldSchema.strict('dom') ],
+    schema: [ FieldSchema.required('dom') ],
     name: 'expander',
-    overrides(detail) {
+    overrides: (detail) => {
       return {
         action: runOnExtra(detail, Sliding.toggleGrow)
       };
@@ -104,12 +104,12 @@ const parts: () => PartType.PartTypeAdt[] = Fun.constant([
   }),
 
   PartType.required({
-    schema: [ FieldSchema.strict('dom') ],
+    schema: [ FieldSchema.required('dom') ],
     name: 'controls'
   })
 ]);
 
-const name = () => 'ExpandableForm';
+const name = Fun.constant('ExpandableForm');
 
 export {
   name,

@@ -1,8 +1,9 @@
+import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Arr } from '@ephox/katamari';
-import * as Chars from 'ephox/polaris/pattern/Chars';
-import { UnitTest, assert } from '@ephox/bedrock-client';
 
-UnitTest.test('CharsTest', function () {
+import * as Chars from 'ephox/polaris/pattern/Chars';
+
+UnitTest.test('CharsTest', () => {
   const supported = [ 'fr', 'en_au', 'pt', 'it', 'nl', 'en_uk', 'pt_pt', 'de', 'nb', 'en_br', 'sv', 'da', 'en', 'es', 'en_gb', 'fi', 'en_us' ];
 
   interface Extra {
@@ -52,7 +53,8 @@ UnitTest.test('CharsTest', function () {
     de: {
       label: 'German',
       html: 'http://character-code.com/german-html-codes.php',
-      chars: 'ÄäÉéÖöÜüß'
+      // TINY-7908: Including \u00AD (soft hyphens) because they appear to be more common in German text
+      chars: 'ÄäÉéÖöÜüß\u00AD'
     },
     nb: {
       label: 'Norwegian',
@@ -103,9 +105,9 @@ UnitTest.test('CharsTest', function () {
 
   const regex = new RegExp(Chars.wordchar(), '');
 
-  const checkAllKnown = function (label: string, str: string) {
+  const checkAllKnown = (label: string, str: string) => {
     const chars = str.split('');
-    const breaks = Arr.filter(chars, function (c) {
+    const breaks = Arr.filter(chars, (c) => {
       return !regex.test(c);
     });
 
@@ -117,7 +119,7 @@ UnitTest.test('CharsTest', function () {
     );
   };
 
-  Arr.each(supported, function (code) {
+  Arr.each(supported, (code) => {
     const info = extras[code];
     checkAllKnown(info.label, info.chars);
   });

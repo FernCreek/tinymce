@@ -1,4 +1,5 @@
-import { console } from '@ephox/dom-globals';
+import { Failure } from '@ephox/bedrock-common';
+import Promise from '@ephox/wrap-promise-polyfill';
 
 import * as AsyncActions from '../pipe/AsyncActions';
 import * as GeneralActions from '../pipe/GeneralActions';
@@ -48,7 +49,7 @@ const debugging: Step<any, any> =
 
 const log = <T>(message: string): Step<T, T> =>
   raw<T, T>((value: T, next: NextFn<T>, die: DieFn, logs: TestLogs) => {
-    // tslint:disable-next-line:no-console
+    // eslint-disable-next-line no-console
     console.log(message);
     next(value, addLogEntry(logs, message));
   });
@@ -69,6 +70,24 @@ const predicate = <T>(p: (value: T) => boolean): Step<T, T> =>
     p(value) ? next(value) : die('predicate did not succeed');
   });
 
+const toPromise = <A, B>(step: Step<A, B>) => (a: A): Promise<B> => {
+  return new Promise(((resolve, reject) => {
+    step.runStep(a,
+      (b, _logs) => {
+        // TODO: What to do with logs? We lose them.
+        resolve(b);
+      }, (err, logs) => {
+        reject(Failure.prepFailure(err, logs));
+      },
+      TestLogs.init()
+    );
+  }));
+};
+
+const fromPromise = <T>(p: () => Promise<unknown>): Step<T, T> => Step.async<T>((next, die) => {
+  p().then(next, die);
+});
+
 export const Step = {
   stateful,
   control,
@@ -81,5 +100,7 @@ export const Step = {
   fail,
   pass,
   raw,
-  predicate
+  predicate,
+  toPromise,
+  fromPromise
 };

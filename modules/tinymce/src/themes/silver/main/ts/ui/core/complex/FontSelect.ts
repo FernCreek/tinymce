@@ -6,9 +6,11 @@
  */
 
 import { AlloyComponent, AlloyTriggers } from '@ephox/alloy';
-import { Arr, Option } from '@ephox/katamari';
+import { Arr, Fun, Optional, Optionals } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
 import { UiFactoryBackstage } from 'tinymce/themes/silver/backstage/Backstage';
+
 import { updateMenuText } from '../../dropdown/CommonDropdown';
 import { createMenuItems, createSelectButton, SelectSpec } from './BespokeSelect';
 import { buildBasicSettingsDataset, Delimiter } from './SelectDatasets';
@@ -55,6 +57,8 @@ const isSystemFontStack = (fontFamily: string): boolean => {
 };
 
 const getSpec = (editor: Editor): SelectSpec => {
+  const systemFont = 'System Font';
+
   const getMatchingValue = () => {
     const getFirstFont = (fontFamily) => fontFamily ? splitFonts(fontFamily)[0] : '';
 
@@ -66,27 +70,23 @@ const getSpec = (editor: Editor): SelectSpec => {
       const format = item.format;
       return (format.toLowerCase() === font) || (getFirstFont(format).toLowerCase() === getFirstFont(font).toLowerCase());
     }).orThunk(() => {
-      if (isSystemFontStack(font)) {
-        return Option.from({
-          title: 'System Font',
-          format: font
-        });
-      } else {
-        return Option.none();
-      }
+      return Optionals.someIf(isSystemFontStack(font), {
+        title: systemFont,
+        format: font
+      });
     });
 
     return { matchOpt, font: fontFamily };
   };
 
-  const isSelectedFor = (item) => (valueOpt: Option<{ format: string; title: string }>) => valueOpt.exists((value) => value.format === item);
+  const isSelectedFor = (item) => (valueOpt: Optional<{ format: string; title: string }>) => valueOpt.exists((value) => value.format === item);
 
   const getCurrentValue = () => {
     const { matchOpt } = getMatchingValue();
     return matchOpt;
   };
 
-  const getPreviewFor = (item) => () => Option.some({
+  const getPreviewFor = (item) => () => Optional.some({
     tag: 'div',
     styles: item.indexOf('dings') === -1 ? { 'font-family': item } : { }
   });
@@ -100,30 +100,26 @@ const getSpec = (editor: Editor): SelectSpec => {
 
   const updateSelectMenuText = (comp: AlloyComponent) => {
     const { matchOpt, font } = getMatchingValue();
-    const text = matchOpt.fold(() => font, (item) => item.title);
+    const text = matchOpt.fold(Fun.constant(font), (item) => item.title);
     AlloyTriggers.emitWith(comp, updateMenuText, {
       text
     });
   };
 
-  const nodeChangeHandler = Option.some((comp) => () => updateSelectMenuText(comp));
-
-  const setInitialValue = Option.some((comp) => updateSelectMenuText(comp));
-
   const dataset = buildBasicSettingsDataset(editor, 'font_formats', defaultFontsFormats, Delimiter.SemiColon);
 
   return {
     tooltip: 'Fonts',
-    icon: Option.none(),
+    text: Optional.some(systemFont),
+    icon: Optional.none(),
     isSelectedFor,
     getCurrentValue,
     getPreviewFor,
     onAction,
-    setInitialValue,
-    nodeChangeHandler,
+    updateText: updateSelectMenuText,
     dataset,
     shouldHide: false,
-    isInvalid: () => false
+    isInvalid: Fun.never
   };
 };
 

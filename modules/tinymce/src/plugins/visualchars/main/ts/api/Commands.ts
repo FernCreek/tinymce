@@ -5,10 +5,14 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { Cell } from '@ephox/katamari';
+
+import Editor from 'tinymce/core/api/Editor';
+
 import * as Actions from '../core/Actions';
 
-const register = function (editor, toggleState) {
-  editor.addCommand('mceVisualChars', function () {
+const register = (editor: Editor, toggleState: Cell<boolean>): void => {
+  editor.addCommand('mceVisualChars', () => {
     Actions.toggleVisualChars(editor, toggleState);
   });
 };

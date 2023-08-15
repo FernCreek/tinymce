@@ -1,69 +1,70 @@
-import * as Strings from 'ephox/katamari/api/Strings';
-import { UnitTest, Assert } from '@ephox/bedrock-client';
+import { describe, it } from '@ephox/bedrock-client';
+import { assert } from 'chai';
 import fc from 'fast-check';
-import { Testable } from '@ephox/dispute';
 
-const { tString } = Testable;
+import * as Strings from 'ephox/katamari/api/Strings';
 
-UnitTest.test('Strings.trim: unit tests', () => {
-  function check(expectedL, expectedR, expected, input) {
-    Assert.eq('trim', expected, Strings.trim(input), tString);
-    Assert.eq('lTrim', expectedL, Strings.lTrim(input), tString);
-    Assert.eq('rTrim', expectedR, Strings.rTrim(input), tString);
-  }
+describe('atomic.katamari.api.str.TrimTest', () => {
+  it('unit tests', () => {
+    const check = (expectedL: string, expectedR: string, expected: string, input: string) => {
+      assert.equal(Strings.trim(input), expected);
+      assert.equal(Strings.lTrim(input), expectedL);
+      assert.equal(Strings.rTrim(input), expectedR);
+    };
 
-  check('', '', '', '');
-  check('', '', '', ' ');
-  check('', '', '', '  ');
-  check('a', 'a', 'a', 'a');
-  check('a ', 'a', 'a', 'a ');
-  check('a', ' a', 'a', ' a');
-  check('a ', ' a', 'a', ' a ');
-  check('a      ', '    a', 'a', '    a      ');
-  check('a    b  cd  ', '    a    b  cd', 'a    b  cd', '    a    b  cd  ');
-});
+    check('', '', '', '');
+    check('', '', '', ' ');
+    check('', '', '', '  ');
+    check('a', 'a', 'a', 'a');
+    check('a ', 'a', 'a', 'a ');
+    check('a', ' a', 'a', ' a');
+    check('a ', ' a', 'a', ' a ');
+    check('a      ', '    a', 'a', '    a      ');
+    check('a    b  cd  ', '    a    b  cd', 'a    b  cd', '    a    b  cd  ');
+  });
 
-UnitTest.test('leftTrim(whitespace + s) === leftTrim(s)', () => {
-  fc.assert(fc.property(
-    fc.string(),
-    (s) => {
-      Assert.eq('leftTrim', Strings.lTrim(' ' + s), Strings.lTrim(s), tString);
-    }
-  ));
-});
+  it('leftTrim(whitespace + s) === leftTrim(s)', () => {
+    fc.assert(fc.property(
+      fc.string(),
+      (s) => {
+        assert.equal(Strings.lTrim(s), Strings.lTrim(' ' + s));
+      }
+    ));
+  });
 
-UnitTest.test('rightTrim(s + whitespace) === rightTrim(s)', () => {
-  fc.assert(fc.property(
-    fc.string(),
-    (s) => {
-      Assert.eq('rightTrim', Strings.rTrim(s + ' '), Strings.rTrim(s), tString);
-    }
-  ));
-});
+  it('rightTrim(s + whitespace) === rightTrim(s)', () => {
+    fc.assert(fc.property(
+      fc.string(),
+      (s) => {
+        assert.equal(Strings.rTrim(s), Strings.rTrim(s + ' '));
+      }
+    ));
+  });
 
-UnitTest.test('trim(whitespace + s) === trim(s)', () => {
-  fc.assert(fc.property(
-    fc.string(),
-    (s) => {
-      Assert.eq('trim', Strings.trim(' ' + s), Strings.trim(s), tString);
-    }
-  ));
-});
+  it('trim(whitespace + s) === trim(s)', () => {
+    fc.assert(fc.property(
+      fc.string(),
+      (s) => {
+        assert.equal(Strings.trim(s), Strings.trim(' ' + s));
+      }
+    ));
+  });
 
-UnitTest.test('trim(s + whitespace) === trim(s)', () => {
-  fc.assert(fc.property(
-    fc.string(),
-    (s) => {
-      Assert.eq('trim', Strings.trim(s + ' '), Strings.trim(s), tString);
-    }
-  ));
-});
+  it('trim(s + whitespace) === trim(s)', () => {
+    fc.assert(fc.property(
+      fc.string(),
+      (s) => {
+        assert.equal(Strings.trim(s), Strings.trim(s + ' '));
+      }
+    ));
+  });
 
-UnitTest.test('trim(whitespace + s + whitespace) === trim(s)', () => {
-  fc.assert(fc.property(
-    fc.string(),
-    (s) => {
-      Assert.eq('trim', Strings.trim(' ' + s + ' '), Strings.trim(s), tString);
-    }
-  ));
+  it('trim(whitespace + s + whitespace) === trim(s)', () => {
+    fc.assert(fc.property(
+      fc.string(),
+      (s) => {
+        assert.equal(Strings.trim(s), Strings.trim(' ' + s + ' '));
+      }
+    ));
+  });
 });

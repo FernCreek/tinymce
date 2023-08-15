@@ -1,16 +1,16 @@
-import { Pipeline } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { LegacyUnit } from '@ephox/mcagar';
-import TreeWalker from 'tinymce/core/api/dom/TreeWalker';
-import ViewBlock from '../../module/test/ViewBlock';
+import { before, describe, it } from '@ephox/bedrock-client';
+import { assert } from 'chai';
 
-UnitTest.asynctest('browser.tinymce.core.dom.TreeWalkerTest', function (success, failure) {
-  const suite = LegacyUnit.createSuite();
-  const viewBlock = ViewBlock();
-  let nodes;
+import DomTreeWalker from 'tinymce/core/api/dom/TreeWalker';
 
-  const setup = function () {
-    const all = function (node) {
+import * as ViewBlock from '../../module/test/ViewBlock';
+
+describe('browser.tinymce.core.dom.TreeWalkerTest', () => {
+  const viewBlock = ViewBlock.bddSetup();
+  let nodes: Node[];
+
+  before(() => {
+    const all = (node) => {
       let list = [ node ];
 
       if (node.hasChildNodes()) {
@@ -44,15 +44,15 @@ UnitTest.asynctest('browser.tinymce.core.dom.TreeWalkerTest', function (success,
     );
 
     nodes = all(viewBlock.get()).slice(1);
-  };
+  });
 
-  const compareNodeLists = function (expectedNodes, actutalNodes) {
-    if (expectedNodes.length !== actutalNodes.length) {
+  const compareNodeLists = (expectedNodes: ArrayLike<Node>, actualNodes: ArrayLike<Node>) => {
+    if (expectedNodes.length !== actualNodes.length) {
       return false;
     }
 
     for (let i = 0; i < expectedNodes.length; i++) {
-      if (expectedNodes[i] !== actutalNodes[i]) {
+      if (expectedNodes[i] !== actualNodes[i]) {
         return false;
       }
     }
@@ -60,19 +60,19 @@ UnitTest.asynctest('browser.tinymce.core.dom.TreeWalkerTest', function (success,
     return true;
   };
 
-  suite.test('next', function () {
-    const walker = new TreeWalker(nodes[0], viewBlock.get());
+  it('next', () => {
+    const walker = new DomTreeWalker(nodes[0], viewBlock.get());
 
     const actualNodes = [ walker.current() ];
     while ((walker.next())) {
       actualNodes.push(walker.current());
     }
 
-    LegacyUnit.equal(compareNodeLists(nodes, actualNodes), true, 'Should be the same');
+    assert.isTrue(compareNodeLists(nodes, actualNodes), 'Should be the same');
   });
 
-  suite.test('prev2', function () {
-    const walker = new TreeWalker(nodes[nodes.length - 1], viewBlock.get());
+  it('prev2', () => {
+    const walker = new DomTreeWalker(nodes[nodes.length - 1], viewBlock.get());
     let actualNodes;
 
     actualNodes = [ walker.current() ];
@@ -81,11 +81,11 @@ UnitTest.asynctest('browser.tinymce.core.dom.TreeWalkerTest', function (success,
     }
 
     actualNodes = actualNodes.reverse();
-    LegacyUnit.equal(compareNodeLists(nodes, actualNodes), true, 'Should be the same');
+    assert.isTrue(compareNodeLists(nodes, actualNodes), 'Should be the same');
   });
 
-  suite.test('prev2(shallow:true)', function () {
-    const walker = new TreeWalker(nodes[nodes.length - 1], viewBlock.get());
+  it('prev2(shallow:true)', () => {
+    const walker = new DomTreeWalker(nodes[nodes.length - 1], viewBlock.get());
     let actualNodes;
 
     actualNodes = [ walker.current() ];
@@ -94,14 +94,6 @@ UnitTest.asynctest('browser.tinymce.core.dom.TreeWalkerTest', function (success,
     }
 
     actualNodes = actualNodes.reverse();
-    LegacyUnit.equal(compareNodeLists(viewBlock.get().childNodes, actualNodes), true, 'Should be the same');
+    assert.isTrue(compareNodeLists(viewBlock.get().childNodes, actualNodes), 'Should be the same');
   });
-
-  viewBlock.attach();
-  setup();
-
-  Pipeline.async({}, suite.toSteps({}), function () {
-    viewBlock.detach();
-    success();
-  }, failure);
 });

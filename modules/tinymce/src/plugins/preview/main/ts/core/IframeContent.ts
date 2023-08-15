@@ -8,23 +8,24 @@
 import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
 import Tools from 'tinymce/core/api/util/Tools';
+
 import * as Settings from '../api/Settings';
 
-const getPreviewHtml = function (editor: Editor) {
+const getPreviewHtml = (editor: Editor): string => {
   let headHtml = '';
   const encode = editor.dom.encode;
   const contentStyle = Settings.getContentStyle(editor);
 
   headHtml += '<base href="' + encode(editor.documentBaseURI.getURI()) + '">';
 
+  const cors = Settings.shouldUseContentCssCors(editor) ? ' crossorigin="anonymous"' : '';
+  Tools.each(editor.contentCSS, (url) => {
+    headHtml += '<link type="text/css" rel="stylesheet" href="' + encode(editor.documentBaseURI.toAbsolute(url)) + '"' + cors + '>';
+  });
+
   if (contentStyle) {
     headHtml += '<style type="text/css">' + contentStyle + '</style>';
   }
-
-  const cors = Settings.shouldUseContentCssCors(editor) ? ' crossorigin="anonymous"' : '';
-  Tools.each(editor.contentCSS, function (url) {
-    headHtml += '<link type="text/css" rel="stylesheet" href="' + encode(editor.documentBaseURI.toAbsolute(url)) + '"' + cors + '>';
-  });
 
   const bodyId = Settings.getBodyId(editor);
 

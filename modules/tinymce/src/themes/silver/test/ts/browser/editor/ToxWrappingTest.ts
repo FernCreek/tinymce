@@ -1,36 +1,22 @@
-import { Assertions, Pipeline, Chain, UiFinder } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { TinyLoader } from '@ephox/mcagar';
-import { Element, Body, Attr, Traverse, Class } from '@ephox/sugar';
+import { describe, it } from '@ephox/bedrock-client';
+import { Class, Traverse } from '@ephox/sugar';
+import { TinyDom, TinyHooks } from '@ephox/wrap-mcagar';
+import { assert } from 'chai';
 
 import Editor from 'tinymce/core/api/Editor';
 import Theme from 'tinymce/themes/silver/Theme';
-import { Result } from '@ephox/katamari';
 
-UnitTest.asynctest('Editor (Silver) test', (success, failure) => {
-  Theme();
+describe('browser.tinymce.themes.silver.editor.ToxWrappingTest', () => {
+  const hook = TinyHooks.bddSetupLight<Editor>({
+    menubar: true,
+    base_url: '/project/tinymce/js/tinymce'
+  }, [ Theme ]);
 
-  TinyLoader.setupLight(
-    (editor: Editor, onSuccess, onFailure) => {
-      const replacedElem = Element.fromDom(editor.getElement());
-
-      Pipeline.async({ }, [
-        Chain.asStep(Body.body(), [
-          UiFinder.cFindIn(`#${Attr.get(replacedElem, 'id')}`),
-          Chain.binder((elem) => Traverse.nextSibling(elem).fold(() => Result.error('Replaced element has no next sibling'), Result.value)),
-          Chain.mapper((elem) => Class.has(elem, 'tox-tinymce')),
-          Assertions.cAssertEq(`Replaced element's next sibling has "tox-tinymce" class`, true)
-        ])
-      ], onSuccess, onFailure);
-    },
-    {
-      theme: 'silver',
-      menubar: true,
-      base_url: '/project/tinymce/js/tinymce'
-    },
-    () => {
-      success();
-    },
-    failure
-  );
+  it('Check editor container has tox-tinymce wrapper', () => {
+    const editor = hook.editor();
+    const elem = TinyDom.targetElement(editor);
+    const container = Traverse.nextSibling(elem).getOrDie('Replaced element has no next sibling');
+    const hasToxWrapper = Class.has(container, 'tox-tinymce');
+    assert.isTrue(hasToxWrapper, `Replaced element's next sibling has "tox-tinymce" class`);
+  });
 });

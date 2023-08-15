@@ -1,13 +1,13 @@
 import { FieldSchema } from '@ephox/boulder';
 
-import * as Fields from '../../data/Fields';
 import * as Boxes from '../../alien/Boxes';
+import * as Fields from '../../data/Fields';
 
 export default FieldSchema.optionObjOf('snaps', [
-  FieldSchema.strict('getSnapPoints'),
+  FieldSchema.required('getSnapPoints'),
   Fields.onHandler('onSensor'),
-  FieldSchema.strict('leftAttr'),
-  FieldSchema.strict('topAttr'),
+  FieldSchema.required('leftAttr'),
+  FieldSchema.required('topAttr'),
   FieldSchema.defaulted('lazyViewport', Boxes.win),
   FieldSchema.defaulted('mustSnap', false)
 ]);

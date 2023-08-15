@@ -5,19 +5,21 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Arr, Obj, Option, Type } from '@ephox/katamari';
-import { Body, Element, SelectorFind } from '@ephox/sugar';
+import { Arr, Fun, Obj, Optional, Type } from '@ephox/katamari';
+import { SelectorFind, SugarBody, SugarElement, SugarShadowDom } from '@ephox/sugar';
+
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import Editor from 'tinymce/core/api/Editor';
 import EditorManager from 'tinymce/core/api/EditorManager';
 import { AllowedFormat } from 'tinymce/core/api/fmt/StyleFormat';
+import { ContentLanguage } from 'tinymce/core/api/SettingsTypes';
 
 export interface ToolbarGroupSetting {
   name?: string;
   items: string[];
 }
 
-const getSkinUrl = function (editor: Editor): string {
+const getSkinUrl = (editor: Editor): string => {
   const skin = editor.getParam('skin');
   let skinUrl = editor.getParam('skin_url');
 
@@ -39,13 +41,18 @@ const isSkinDisabled = (editor: Editor) => editor.getParam('skin') === false;
 
 const getHeightSetting = (editor: Editor): string | number => editor.getParam('height', Math.max(editor.getElement().offsetHeight, 200));
 const getWidthSetting = (editor: Editor): string | number => editor.getParam('width', DOMUtils.DOM.getStyle(editor.getElement(), 'width'));
-const getMinWidthSetting = (editor: Editor): Option<number> => Option.from(editor.getParam('min_width')).filter(Type.isNumber);
-const getMinHeightSetting = (editor: Editor): Option<number> => Option.from(editor.getParam('min_height')).filter(Type.isNumber);
-const getMaxWidthSetting = (editor: Editor): Option<number> => Option.from(editor.getParam('max_width')).filter(Type.isNumber);
-const getMaxHeightSetting = (editor: Editor): Option<number> => Option.from(editor.getParam('max_height')).filter(Type.isNumber);
+const getMinWidthSetting = (editor: Editor): Optional<number> => Optional.from(editor.getParam('min_width')).filter(Type.isNumber);
+const getMinHeightSetting = (editor: Editor): Optional<number> => Optional.from(editor.getParam('min_height')).filter(Type.isNumber);
+const getMaxWidthSetting = (editor: Editor): Optional<number> => Optional.from(editor.getParam('max_width')).filter(Type.isNumber);
+const getMaxHeightSetting = (editor: Editor): Optional<number> => Optional.from(editor.getParam('max_height')).filter(Type.isNumber);
 
-const getUserStyleFormats = (editor: Editor): Option<AllowedFormat[]> => Option.from(editor.getParam('style_formats')).filter(Type.isArray);
+const getUserStyleFormats = (editor: Editor): Optional<AllowedFormat[]> => Optional.from(editor.getParam('style_formats')).filter(Type.isArray);
 const isMergeStyleFormats = (editor: Editor): boolean => editor.getParam('style_formats_merge', false, 'boolean');
+const getLineHeightFormats = (editor: Editor): string[] =>
+  editor.getParam('lineheight_formats', '1 1.1 1.2 1.3 1.4 1.5 2', 'string').split(' ');
+
+const getContentLanguages = (editor: Editor): ContentLanguage[] | undefined =>
+  editor.getParam('content_langs', undefined, 'array');
 
 const getRemovedMenuItems = (editor: Editor): string => editor.getParam('removed_menuitems', '');
 const isMenubarEnabled = (editor: Editor): boolean => editor.getParam('menubar', true, 'boolean') !== false;
@@ -60,10 +67,10 @@ const isToolbarEnabled = (editor: Editor): boolean => {
 };
 
 // Convert toolbar<n> into toolbars array
-const getMultipleToolbarsSetting = (editor: Editor): Option<string[]> => {
+const getMultipleToolbarsSetting = (editor: Editor): Optional<string[]> => {
   const toolbars = Arr.range(9, (num) => editor.getParam('toolbar' + (num + 1), false, 'string'));
   const toolbarArray = Arr.filter(toolbars, (toolbar) => typeof toolbar === 'string');
-  return toolbarArray.length > 0 ? Option.some(toolbarArray) : Option.none();
+  return toolbarArray.length > 0 ? Optional.some(toolbarArray) : Optional.none();
 };
 
 // Check if multiple toolbars is enabled
@@ -73,7 +80,7 @@ const isMultipleToolbars = (editor: Editor): boolean => getMultipleToolbarsSetti
     const toolbar = editor.getParam('toolbar', [], 'string[]');
     return toolbar.length > 0;
   },
-  () => true
+  Fun.always
 );
 
 export enum ToolbarMode {
@@ -91,24 +98,45 @@ export enum ToolbarLocation {
   bottom = 'bottom'
 }
 
-const getToolbarGroups = (editor: Editor) => editor.getParam('toolbar_groups', {}, 'object');
+const getToolbarGroups = (editor: Editor) =>
+  editor.getParam('toolbar_groups', {}, 'object');
 
 const getToolbarLocation = (editor: Editor) => editor.getParam('toolbar_location', ToolbarLocation.auto, 'string') as ToolbarLocation;
 const isToolbarLocationBottom = (editor: Editor) => getToolbarLocation(editor) === ToolbarLocation.bottom;
 
 const fixedContainerSelector = (editor): string => editor.getParam('fixed_toolbar_container', '', 'string');
+const fixedToolbarContainerTarget = (editor): HTMLElement | undefined => editor.getParam('fixed_toolbar_container_target');
 
-const fixedContainerElement = (editor): Option<Element> => {
+const isToolbarPersist = (editor): boolean => editor.getParam('toolbar_persist', false, 'boolean');
+
+const fixedContainerTarget = (editor: Editor): Optional<SugarElement> => {
+  if (!editor.inline) {
+    // fixed_toolbar_container(_target) is only available in inline mode
+    return Optional.none();
+  }
+
   const selector = fixedContainerSelector(editor);
-  // If we have a valid selector and are in inline mode, try to get the fixed_toolbar_container
-  return selector.length > 0 && editor.inline ? SelectorFind.descendant(Body.body(), selector) : Option.none();
+  if (selector.length > 0) {
+    // If we have a valid selector
+    return SelectorFind.descendant(SugarBody.body(), selector);
+  }
+
+  const element = fixedToolbarContainerTarget(editor);
+  if (Type.isNonNullable(element)) {
+    // If we have a valid target
+    return Optional.some(SugarElement.fromDom(element));
+  }
+
+  return Optional.none();
 };
 
-const useFixedContainer = (editor): boolean => editor.inline && fixedContainerElement(editor).isSome();
+const useFixedContainer = (editor): boolean => editor.inline && fixedContainerTarget(editor).isSome();
 
-const getUiContainer = (editor): Element => {
-  const fixedContainer = fixedContainerElement(editor);
-  return fixedContainer.getOr(Body.body());
+const getUiContainer = (editor: Editor): SugarElement => {
+  const fixedContainer = fixedContainerTarget(editor);
+  return fixedContainer.getOrThunk(() =>
+    SugarShadowDom.getContentContainer(SugarShadowDom.getRootNode(SugarElement.fromDom(editor.getElement())))
+  );
 };
 
 const isDistractionFree = (editor: Editor) => editor.inline && !isMenubarEnabled(editor) && !isToolbarEnabled(editor) && !isMultipleToolbars(editor);
@@ -118,7 +146,11 @@ const isStickyToolbar = (editor: Editor) => {
   return (isStickyToolbar || editor.inline) && !useFixedContainer(editor) && !isDistractionFree(editor);
 };
 
-const isDraggableModal = (editor: Editor): boolean => editor.getParam('draggable_modal', false, 'boolean');
+const getStickyToolbarOffset = (editor: Editor) =>
+  editor.getParam('toolbar_sticky_offset', 0, 'number');
+
+const isDraggableModal = (editor: Editor): boolean =>
+  editor.getParam('draggable_modal', false, 'boolean');
 
 const getMenus = (editor: Editor) => {
   const menu = editor.getParam('menu');
@@ -168,10 +200,13 @@ export {
   getMaxHeightSetting,
   getUserStyleFormats,
   isMergeStyleFormats,
+  getLineHeightFormats,
+  getContentLanguages,
   getRemovedMenuItems,
   isMenubarEnabled,
   isMultipleToolbars,
   isToolbarEnabled,
+  isToolbarPersist,
   getMultipleToolbarsSetting,
   getUiContainer,
   useFixedContainer,
@@ -179,6 +214,7 @@ export {
   isDraggableModal,
   isDistractionFree,
   isStickyToolbar,
+  getStickyToolbarOffset,
   getToolbarLocation,
   isToolbarLocationBottom,
   getToolbarGroups,

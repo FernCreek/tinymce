@@ -1,56 +1,71 @@
-import { Arr } from '@ephox/katamari';
-import * as Structs from '../api/Structs';
-import * as TableGrid from './TableGrid';
-import { Warehouse } from './Warehouse';
+import { Arr, Fun } from '@ephox/katamari';
+import { SugarElement } from '@ephox/sugar';
+
 import { Generators } from '../api/Generators';
-import { Element } from '@ephox/sugar';
+import * as Structs from '../api/Structs';
+import { Warehouse } from '../api/Warehouse';
+import * as TableGrid from './TableGrid';
 
-const toDetails = function (grid: Structs.RowCells[], comparator: (a: Element, b: Element) => boolean) {
-  const seen = Arr.map(grid, function (row) {
-    return Arr.map(row.cells(), function () {
-      return false;
-    });
-  });
+const toDetails = (grid: Structs.RowCells[], comparator: (a: SugarElement, b: SugarElement) => boolean): Structs.RowDetailNew<Structs.DetailNew>[] => {
+  const seen: boolean[][] = Arr.map(grid, (row) =>
+    Arr.map(row.cells, Fun.never)
+  );
 
-  const updateSeen = function (ri: number, ci: number, rowspan: number, colspan: number) {
-    for (let r = ri; r < ri + rowspan; r++) {
-      for (let c = ci; c < ci + colspan; c++) {
-        seen[r][c] = true;
+  const updateSeen = (rowIndex: number, columnIndex: number, rowspan: number, colspan: number) => {
+    for (let row = rowIndex; row < rowIndex + rowspan; row++) {
+      for (let column = columnIndex; column < columnIndex + colspan; column++) {
+        seen[row][column] = true;
       }
     }
   };
 
-  return Arr.map(grid, function (row, ri) {
-    const details = Arr.bind(row.cells(), function (cell, ci) {
+  return Arr.map(grid, (row, rowIndex) => {
+    const details = Arr.bind(row.cells, (cell, columnIndex) => {
       // if we have seen this one, then skip it.
-      if (seen[ri][ci] === false) {
-        const result = TableGrid.subgrid(grid, ri, ci, comparator);
-        updateSeen(ri, ci, result.rowspan, result.colspan);
-        return [ Structs.detailnew(cell.element(), result.rowspan, result.colspan, cell.isNew()) ];
+      if (seen[rowIndex][columnIndex] === false) {
+        const result = TableGrid.subgrid(grid, rowIndex, columnIndex, comparator);
+        updateSeen(rowIndex, columnIndex, result.rowspan, result.colspan);
+        return [ Structs.detailnew(cell.element, result.rowspan, result.colspan, cell.isNew) ];
       } else {
         return [] as Structs.DetailNew[];
       }
     });
-    return Structs.rowdetails(details, row.section());
+    return Structs.rowdetailnew(row.element, details, row.section, row.isNew);
   });
 };
 
-const toGrid = function (warehouse: Warehouse, generators: Generators, isNew: boolean) {
+const toGrid = (warehouse: Warehouse, generators: Generators, isNew: boolean): Structs.RowCells[] => {
   const grid: Structs.RowCells[] = [];
-  for (let i = 0; i < warehouse.grid.rows(); i++) {
+
+  Arr.each(warehouse.colgroups, (colgroup) => {
+    const colgroupCols: Structs.ElementNew[] = [];
+    // This will add missing cols as well as clamp the number of cols to the max number of actual columns
+    // Note: Spans on cols are unsupported so clamping cols may result in a span on a col element being incorrect
+    for (let columnIndex = 0; columnIndex < warehouse.grid.columns; columnIndex++) {
+      const element = Warehouse.getColumnAt(warehouse, columnIndex)
+        .map((column) => Structs.elementnew(column.element, isNew, false))
+        .getOrThunk(() => Structs.elementnew(generators.colGap(), true, false));
+      colgroupCols.push(element);
+    }
+    grid.push(Structs.rowcells(colgroup.element, colgroupCols, 'colgroup', isNew));
+  });
+
+  for (let rowIndex = 0; rowIndex < warehouse.grid.rows; rowIndex++) {
     const rowCells: Structs.ElementNew[] = [];
-    for (let j = 0; j < warehouse.grid.columns(); j++) {
+    for (let columnIndex = 0; columnIndex < warehouse.grid.columns; columnIndex++) {
       // The element is going to be the element at that position, or a newly generated gap.
-      const element = Warehouse.getAt(warehouse, i, j).map(function (item) {
-        return Structs.elementnew(item.element(), isNew);
-      }).getOrThunk(function () {
-        return Structs.elementnew(generators.gap(), true);
-      });
+      const element = Warehouse.getAt(warehouse, rowIndex, columnIndex).map((item) =>
+        Structs.elementnew(item.element, isNew, item.isLocked)
+      ).getOrThunk(() =>
+        Structs.elementnew(generators.gap(), true, false)
+      );
       rowCells.push(element);
     }
-    const row = Structs.rowcells(rowCells, warehouse.all[i].section());
+    const rowDetail = warehouse.all[rowIndex];
+    const row = Structs.rowcells(rowDetail.element, rowCells, rowDetail.section, isNew);
     grid.push(row);
   }
+
   return grid;
 };
 

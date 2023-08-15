@@ -1,4 +1,5 @@
 import { Fun } from '@ephox/katamari';
+
 import { ZonePosition } from './ZonePosition';
 
 export interface ZoneViewports<E> {
@@ -10,5 +11,5 @@ const anything: ZoneViewports<any> = {
 };
 
 export const ZoneViewports = {
-  anything: Fun.constant(anything) as <E> () => ZoneViewports<E>
+  anything: Fun.constant(anything) as <E>() => ZoneViewports<E>
 };

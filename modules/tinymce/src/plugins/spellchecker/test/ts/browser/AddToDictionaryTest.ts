@@ -1,7 +1,7 @@
 import { Chain, Log, Mouse, Pipeline, Step, UiFinder } from '@ephox/agar';
 import { Assert, UnitTest } from '@ephox/bedrock-client';
-import { TinyApis, TinyLoader, TinyUi } from '@ephox/mcagar';
-import { Body, Element } from '@ephox/sugar';
+import { SugarBody, SugarElement } from '@ephox/sugar';
+import { TinyApis, TinyLoader, TinyUi } from '@ephox/wrap-mcagar';
 
 import SpellcheckerPlugin from 'tinymce/plugins/spellchecker/Plugin';
 import SilverTheme from 'tinymce/themes/silver/Theme';
@@ -13,7 +13,7 @@ UnitTest.asynctest('browser.tinymce.plugins.spellchecker.AddToDictionaryTest', (
 
   const dict = [];
 
-  TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
+  TinyLoader.setupLight((editor, onSuccess, onFailure) => {
     const api = TinyApis(editor);
     const ui = TinyUi(editor);
 
@@ -22,11 +22,11 @@ UnitTest.asynctest('browser.tinymce.plugins.spellchecker.AddToDictionaryTest', (
       api.sSetContent('<p>hello world</p>'),
       ui.sClickOnToolbar('click spellcheck button', '[title="Spellcheck"] > .tox-tbtn'),
       api.sSetCursor([ 0, 0, 0 ], 0),
-      Chain.asStep(Element.fromDom(editor.getBody()), [
+      Chain.asStep(SugarElement.fromDom(editor.getBody()), [
         UiFinder.cFindIn('span:contains("hello")'),
         Mouse.cContextMenu
       ]),
-      Chain.asStep(Body.body(), [
+      Chain.asStep(SugarBody.body(), [
         UiFinder.cWaitFor('wait for context menu', 'div[role="menu"]'),
         UiFinder.cFindIn('.tox-collection__item-label:contains("Add to dictionary")'),
         Mouse.cClick
@@ -39,7 +39,7 @@ UnitTest.asynctest('browser.tinymce.plugins.spellchecker.AddToDictionaryTest', (
     toolbar: 'spellchecker',
     spellchecker_languages: 'English=en,French=fr,German=de',
     base_url: '/project/tinymce/js/tinymce',
-    spellchecker_callback(method, text, success, _failure) {
+    spellchecker_callback: (method, text, success, _failure) => {
       if (method === 'spellcheck') {
         success({ dictionary: dict, words: { hello: [ 'word1' ], world: [ 'word2' ] }});
       } else if (method === 'addToDictionary') {

@@ -5,31 +5,30 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Blob, FileReader, XMLHttpRequest } from '@ephox/dom-globals';
 import Promise from 'tinymce/core/api/util/Promise';
 import Tools from 'tinymce/core/api/util/Tools';
 
-const isValue = function (obj) {
+const isValue = (obj) => {
   return obj !== null && obj !== undefined;
 };
 
-const traverse = function (json, path) {
-  const value = path.reduce(function (result, key) {
+const traverse = (json, path) => {
+  const value = path.reduce((result, key) => {
     return isValue(result) ? result[key] : undefined;
   }, json);
 
   return isValue(value) ? value : null;
 };
 
-const requestUrlAsBlob = function (url: string, headers: Record<string, string>, withCredentials: boolean) {
-  return new Promise<{status: number; blob: Blob}>(function (resolve) {
+const requestUrlAsBlob = (url: string, headers: Record<string, string>, withCredentials: boolean) => {
+  return new Promise<{status: number; blob: Blob}>((resolve) => {
     const xhr = new XMLHttpRequest();
 
-    xhr.onreadystatechange = function () {
+    xhr.onreadystatechange = () => {
       if (xhr.readyState === 4) {
         resolve({
           status: xhr.status,
-          blob: this.response
+          blob: xhr.response
         });
       }
     };
@@ -38,7 +37,7 @@ const requestUrlAsBlob = function (url: string, headers: Record<string, string>,
 
     xhr.withCredentials = withCredentials;
 
-    Tools.each(headers, function (value, key) {
+    Tools.each(headers, (value, key) => {
       xhr.setRequestHeader(key, value);
     });
 
@@ -47,11 +46,11 @@ const requestUrlAsBlob = function (url: string, headers: Record<string, string>,
   });
 };
 
-const readBlob = function (blob) {
-  return new Promise(function (resolve) {
+const readBlob = (blob) => {
+  return new Promise((resolve) => {
     const fr = new FileReader();
 
-    fr.onload = function (e) {
+    fr.onload = (e) => {
       const data = e.target;
       resolve(data.result);
     };
@@ -60,7 +59,7 @@ const readBlob = function (blob) {
   });
 };
 
-const parseJson = function (text) {
+const parseJson = (text) => {
   let json;
 
   try {

@@ -5,21 +5,25 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Element, Node, PredicateFind, SelectorFind } from '@ephox/sugar';
-import * as Settings from '../api/Settings';
+import { Fun } from '@ephox/katamari';
+import { PredicateFind, SelectorFind, SugarElement, SugarNode } from '@ephox/sugar';
+
 import Editor from 'tinymce/core/api/Editor';
 
-const addToEditor = (editor: Editor) => {
+import * as Settings from '../api/Settings';
+
+const addToEditor = (editor: Editor): void => {
   const insertToolbarItems = Settings.getInsertToolbarItems(editor);
   if (insertToolbarItems.trim().length > 0) {
     editor.ui.registry.addContextToolbar('quickblock', {
       predicate: (node) => {
-        const sugarNode = Element.fromDom(node);
+        const sugarNode = SugarElement.fromDom(node);
         const textBlockElementsMap = editor.schema.getTextBlockElements();
-        const isRoot = (elem) => elem.dom() === editor.getBody();
+        const isRoot = (elem: SugarElement<Node>) => elem.dom === editor.getBody();
         return SelectorFind.closest(sugarNode, 'table', isRoot).fold(
-          () => PredicateFind.closest(sugarNode, (elem) => Node.name(elem) in textBlockElementsMap && editor.dom.isEmpty(elem.dom()), isRoot).isSome(),
-          () => false
+          () => PredicateFind.closest(sugarNode, (elem) =>
+            SugarNode.name(elem) in textBlockElementsMap && editor.dom.isEmpty(elem.dom), isRoot).isSome(),
+          Fun.never
         );
       },
       items: insertToolbarItems,

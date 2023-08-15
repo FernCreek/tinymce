@@ -6,9 +6,12 @@
  */
 
 import { Arr } from '@ephox/katamari';
+
+import { Dialog } from 'tinymce/core/api/ui/Ui';
+
 import { ImageDialogInfo, ListItem } from './DialogTypes';
 
-const makeItems = (info: ImageDialogInfo) => {
+const makeItems = (info: ImageDialogInfo): Dialog.BodyComponentSpec[] => {
   const imageUrl = {
     name: 'src',
     type: 'urlinput',
@@ -17,7 +20,7 @@ const makeItems = (info: ImageDialogInfo) => {
   };
   const imageList = info.imageList.map((items) => ({
     name: 'images',
-    type: 'selectbox',
+    type: 'listbox',
     label: 'Image list',
     items
   }));
@@ -55,7 +58,7 @@ const makeItems = (info: ImageDialogInfo) => {
   // TODO: the original listbox supported styled items but bridge does not seem to support this
   const classList = info.classList.map((items): DialogItems => ({
     name: 'classes',
-    type: 'selectbox',
+    type: 'listbox',
     label: 'Class',
     items
   }));
@@ -71,6 +74,8 @@ const makeItems = (info: ImageDialogInfo) => {
     ]
   };
 
+  const getDialogContainerType = (useColumns: boolean) => useColumns ? { type: 'grid', columns: 2 } : { type: 'panel' };
+
   return Arr.flatten<any>([
     [ imageUrl ],
     imageList.toArray(),
@@ -79,8 +84,7 @@ const makeItems = (info: ImageDialogInfo) => {
     info.hasImageTitle ? [ imageTitle ] : [],
     info.hasDimensions ? [ imageDimensions ] : [],
     [{
-      type: 'grid',
-      columns: 2,
+      ...getDialogContainerType(info.classList.isSome() && info.hasImageCaption),
       items: Arr.flatten([
         classList.toArray(),
         info.hasImageCaption ? [ caption ] : []
@@ -89,7 +93,7 @@ const makeItems = (info: ImageDialogInfo) => {
   ]);
 };
 
-const makeTab = (info: ImageDialogInfo) => ({
+const makeTab = (info: ImageDialogInfo): Dialog.TabSpec => ({
   title: 'General',
   name: 'general',
   items: makeItems(info)

@@ -5,14 +5,16 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { FieldSchema, ValueSchema } from '@ephox/boulder';
+import { FieldSchema, StructureSchema } from '@ephox/boulder';
 import { Fun } from '@ephox/katamari';
-import { Element, Traverse } from '@ephox/sugar';
+import { SugarElement, Traverse } from '@ephox/sugar';
 
-export default ValueSchema.objOf([
-  FieldSchema.strictObjOf('editor', [
+const unbindNoop = Fun.constant({ unbind: Fun.noop });
+
+export default StructureSchema.objOf([
+  FieldSchema.requiredObjOf('editor', [
     // Maybe have frame as a method, but I doubt it ... I think we pretty much need a frame
-    FieldSchema.strict('getFrame'),
+    FieldSchema.required('getFrame'),
     FieldSchema.option('getBody'),
     FieldSchema.option('getDoc'),
     FieldSchema.option('getWin'),
@@ -26,34 +28,34 @@ export default ValueSchema.objOf([
     FieldSchema.option('onNodeChanged'),
     FieldSchema.option('getCursorBox'),
 
-    FieldSchema.strict('onDomChanged'),
+    FieldSchema.required('onDomChanged'),
 
     FieldSchema.defaulted('onTouchContent', Fun.noop),
     FieldSchema.defaulted('onTapContent', Fun.noop),
     FieldSchema.defaulted('onTouchToolstrip', Fun.noop),
 
-    FieldSchema.defaulted('onScrollToCursor', Fun.constant({ unbind: Fun.noop })),
-    FieldSchema.defaulted('onScrollToElement', Fun.constant({ unbind: Fun.noop })),
-    FieldSchema.defaulted('onToEditing', Fun.constant({ unbind: Fun.noop })),
-    FieldSchema.defaulted('onToReading', Fun.constant({ unbind: Fun.noop })),
+    FieldSchema.defaulted('onScrollToCursor', unbindNoop),
+    FieldSchema.defaulted('onScrollToElement', unbindNoop),
+    FieldSchema.defaulted('onToEditing', unbindNoop),
+    FieldSchema.defaulted('onToReading', unbindNoop),
     FieldSchema.defaulted('onToolbarScrollStart', Fun.identity)
   ]),
 
-  FieldSchema.strict('socket'),
-  FieldSchema.strict('toolstrip'),
-  FieldSchema.strict('dropup'),
-  FieldSchema.strict('toolbar'),
-  FieldSchema.strict('container'),
-  FieldSchema.strict('alloy'),
-  FieldSchema.state('win', function (spec) {
-    return Traverse.owner(spec.socket).dom().defaultView;
+  FieldSchema.required('socket'),
+  FieldSchema.required('toolstrip'),
+  FieldSchema.required('dropup'),
+  FieldSchema.required('toolbar'),
+  FieldSchema.required('container'),
+  FieldSchema.required('alloy'),
+  FieldSchema.customField('win', (spec) => {
+    return Traverse.owner(spec.socket).dom.defaultView;
   }),
-  FieldSchema.state('body', function (spec) {
-    return Element.fromDom(
-      spec.socket.dom().ownerDocument.body
+  FieldSchema.customField('body', (spec) => {
+    return SugarElement.fromDom(
+      spec.socket.dom.ownerDocument.body
     );
   }),
   FieldSchema.defaulted('translate', Fun.identity),
   FieldSchema.defaulted('setReadOnly', Fun.noop),
-  FieldSchema.defaulted('readOnlyOnInit', Fun.constant(true))
+  FieldSchema.defaulted('readOnlyOnInit', Fun.always)
 ]);

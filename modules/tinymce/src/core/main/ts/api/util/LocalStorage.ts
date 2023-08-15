@@ -5,13 +5,13 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { window, Storage } from '@ephox/dom-globals';
 import * as FakeStorage from './FakeStorage';
 
 /**
  * @class tinymce.util.LocalStorage
  * @static
  * @version 4.0
+ * @private
  * @example
  * tinymce.util.LocalStorage.setItem('key', 'value');
  * var value = tinymce.util.LocalStorage.getItem('key');

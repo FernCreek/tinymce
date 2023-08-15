@@ -1,9 +1,8 @@
-import { console } from '@ephox/dom-globals';
 import { openDemoDialog } from './DemoDialogHelpers';
 
-// tslint:disable:no-console
+/* eslint-disable no-console */
 
-export const createImageDialog = () => {
+export const createImageDialog = (): void => {
   openDemoDialog(
     {
       title: 'Insert/edit image',

@@ -1,9 +1,10 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Gene, TestUniverse, TextGene } from '@ephox/boss';
 import { Arr } from '@ephox/katamari';
+
 import * as LeftBlock from 'ephox/robin/api/general/LeftBlock';
 
-UnitTest.test('LeftBlockTest', function () {
+UnitTest.test('LeftBlockTest', () => {
   const universe = TestUniverse(Gene('root', 'root', [
     TextGene('t0', 'text0'),
     Gene('p1', 'p', [
@@ -17,9 +18,11 @@ UnitTest.test('LeftBlockTest', function () {
     ])
   ]));
 
-  const check = function (expected: string[], id: string, method: (u: TestUniverse, i: Gene) => Gene[]) {
+  const check = (expected: string[], id: string, method: (u: TestUniverse, i: Gene) => Gene[]) => {
     const actual = method(universe, universe.find(universe.get(), id).getOrDie());
-    assert.eq(expected, Arr.map(actual, function (x) { return x.id; }));
+    assert.eq(expected, Arr.map(actual, (x) => {
+      return x.id;
+    }));
   };
 
   check([ 's1-text', 's2-text', 't3' ], 't3', LeftBlock.all);

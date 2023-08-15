@@ -1,11 +1,12 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Gene, TestUniverse, TextGene } from '@ephox/boss';
 import { Arr } from '@ephox/katamari';
+
 import * as Group from 'ephox/phoenix/family/Group';
 import * as Finder from 'ephox/phoenix/test/Finder';
 import * as TestRenders from 'ephox/phoenix/test/TestRenders';
 
-UnitTest.test('GroupTest', function () {
+UnitTest.test('GroupTest', () => {
   const doc = TestUniverse(
     Gene('root', 'root', [
       Gene('1', 'div', [
@@ -28,12 +29,12 @@ UnitTest.test('GroupTest', function () {
     ])
   );
 
-  const check = function (expected: string[][], ids: string[]) {
-    const items = Arr.map(ids, function (id) {
+  const check = (expected: string[][], ids: string[]) => {
+    const items = Arr.map(ids, (id) => {
       return Finder.get(doc, id);
     });
     const actual = Group.group(doc, items);
-    assert.eq(expected, Arr.map(actual, function (xs) {
+    assert.eq(expected, Arr.map(actual, (xs) => {
       return Arr.map(xs, TestRenders.typeditem);
     }));
   };

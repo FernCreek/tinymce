@@ -1,6 +1,6 @@
 import { FocusTools, Keyboard, Keys } from '@ephox/agar';
 import { UnitTest } from '@ephox/bedrock-client';
-import { Arr, Future, Id, Option, Result } from '@ephox/katamari';
+import { Arr, Future, Id, Optional, Result } from '@ephox/katamari';
 
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
 import { Focusing } from 'ephox/alloy/api/behaviour/Focusing';
@@ -22,7 +22,7 @@ UnitTest.asynctest('Browser Test: .ui.typeahead.TypeaheadNoSelectsOverTest', (su
   GuiSetup.setup((store, _doc, _body) => {
     const sink = Sinks.relativeSink();
 
-    const fetch = (_input: AlloyComponent): Future<Option<TieredData>> => {
+    const fetch = (_input: AlloyComponent): Future<Optional<TieredData>> => {
       const future = Future.pure([
         { type: 'item', data: { value: 'alpha', meta: { text: 'Alpha' }}},
         { type: 'item', data: { value: 'beta', meta: { text: 'Beta' }}},
@@ -34,7 +34,7 @@ UnitTest.asynctest('Browser Test: .ui.typeahead.TypeaheadNoSelectsOverTest', (su
           value: Id.generate('single-menu-value'),
           items: Arr.map(items, TestDropdownMenu.renderItem)
         });
-        return Option.some(TieredMenu.singleData('overlord', menu));
+        return Optional.some(TieredMenu.singleData('overlord', menu));
       });
     };
 
@@ -58,7 +58,7 @@ UnitTest.asynctest('Browser Test: .ui.typeahead.TypeaheadNoSelectsOverTest', (su
               }
             },
             fetch,
-            lazySink(c) {
+            lazySink: (c) => {
               TestDropdownMenu.assertLazySinkArgs('input', 'with-selectover', c);
               return Result.value(sink);
             },
@@ -82,7 +82,7 @@ UnitTest.asynctest('Browser Test: .ui.typeahead.TypeaheadNoSelectsOverTest', (su
               }
             },
             fetch,
-            lazySink(c) {
+            lazySink: (c) => {
               TestDropdownMenu.assertLazySinkArgs('input', 'without-selectover', c);
               return Result.value(sink);
             },
@@ -105,7 +105,7 @@ UnitTest.asynctest('Browser Test: .ui.typeahead.TypeaheadNoSelectsOverTest', (su
       const steps = TestTypeaheadSteps(doc, gui, typeahead);
 
       return [
-        FocusTools.sSetFocus('Focusing typeahead with selectover', gui.element(), '.with-selectover'),
+        FocusTools.sSetFocus('Focusing typeahead with selectover', gui.element, '.with-selectover'),
         FocusTools.sSetActiveValue(doc, 'al'),
         steps.sTriggerInputEvent('Simulate typing to show menu with "al"'),
         steps.sWaitForMenu('"Typing" should activate menu'),
@@ -130,7 +130,7 @@ UnitTest.asynctest('Browser Test: .ui.typeahead.TypeaheadNoSelectsOverTest', (su
       const steps = TestTypeaheadSteps(doc, gui, typeahead);
 
       return [
-        FocusTools.sSetFocus('Focusing typeahead without selectover', gui.element(), '.without-selectover'),
+        FocusTools.sSetFocus('Focusing typeahead without selectover', gui.element, '.without-selectover'),
         FocusTools.sSetActiveValue(doc, 'al'),
         steps.sTriggerInputEvent('Simulate typing to show menu with "al"'),
         steps.sWaitForMenu('"Typing" should activate menu'),
@@ -150,12 +150,10 @@ UnitTest.asynctest('Browser Test: .ui.typeahead.TypeaheadNoSelectsOverTest', (su
     return [
       GuiSetup.mAddStyles(doc, [
         '.selected-item { background-color: #cadbee; }'
-      ])
-    ].concat(
-      testWithSelector(),
-      testWithoutSelector()
-    ).concat([
+      ]),
+      ...testWithSelector(),
+      ...testWithoutSelector(),
       GuiSetup.mRemoveStyles
-    ]);
+    ];
   }, success, failure);
 });

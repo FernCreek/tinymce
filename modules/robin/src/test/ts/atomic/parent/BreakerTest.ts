@@ -1,10 +1,11 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Gene, Logger, TestUniverse, TextGene } from '@ephox/boss';
 import { Arr } from '@ephox/katamari';
+
 import { breakPath, breakToRight } from 'ephox/robin/parent/Breaker';
 
-UnitTest.test('BreakerTest', function () {
-  const generator = function () {
+UnitTest.test('BreakerTest', () => {
+  const generator = () => {
     return TestUniverse(Gene('root', 'root', [
       Gene('d1', 'div', [
         TextGene('d1_t1', 'List: '),
@@ -42,13 +43,13 @@ UnitTest.test('BreakerTest', function () {
     ')', Logger.basic(doc1.get()));
 
   const doc2 = generator();
-  const result = breakPath(doc2, doc2.find(doc2.get(), 'li2_text').getOrDie(), function (item) {
+  const result = breakPath(doc2, doc2.find(doc2.get(), 'li2_text').getOrDie(), (item) => {
     return item.name === 'ol';
   }, breakToRight);
 
   assert.eq('ol1', result.first.id);
   assert.eq('clone**<ol1>', result.second.getOrDie().id);
-  assert.eq([ 'li2->clone**<li2>', 'ol1->clone**<ol1>' ], Arr.map(result.splits, function (spl) {
+  assert.eq([ 'li2->clone**<li2>', 'ol1->clone**<ol1>' ], Arr.map(result.splits, (spl) => {
     return spl.first.id + '->' + spl.second.id;
   }));
 });

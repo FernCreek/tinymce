@@ -1,16 +1,17 @@
+import { Regex } from '@ephox/katamari';
+
+import { PRegExp } from './Types';
 import * as Unsafe from './Unsafe';
 
 /** Escapes regex characters in a string */
-const sanitise = function (input: string) {
-  return input.replace(/[-\[\]{}()*+?.,\\\^$|#\s]/g, '\\$&');
-};
+const sanitise = Regex.escape;
 
-const word = function (input: string) {
+const word = (input: string): PRegExp => {
   const value = sanitise(input);
   return Unsafe.word(value);
 };
 
-const token = function (input: string) {
+const token = (input: string): PRegExp => {
   const value = sanitise(input);
   return Unsafe.token(value);
 };

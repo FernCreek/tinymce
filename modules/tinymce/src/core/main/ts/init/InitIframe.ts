@@ -5,8 +5,7 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { document, window } from '@ephox/dom-globals';
-import { Attr, Class, Element } from '@ephox/sugar';
+import { Attribute, Class, SugarElement } from '@ephox/sugar';
 
 import DOMUtils from '../api/dom/DOMUtils';
 import Editor from '../api/Editor';
@@ -18,13 +17,13 @@ import * as InitContentBody from './InitContentBody';
 
 const DOM = DOMUtils.DOM;
 
-const relaxDomain = function (editor: Editor, ifr) {
+const relaxDomain = (editor: Editor, ifr) => {
   // Domain relaxing is required since the user has messed around with document.domain
   // This only applies to IE 11 other browsers including Edge seems to handle document.domain
   if (document.domain !== window.location.hostname && Env.browser.isIE()) {
     const bodyUuid = Uuid.uuid('mce');
 
-    editor[bodyUuid] = function () {
+    editor[bodyUuid] = () => {
       InitContentBody.initContentBody(editor);
     };
 
@@ -41,12 +40,12 @@ const relaxDomain = function (editor: Editor, ifr) {
   return false;
 };
 
-const createIframeElement = function (id: string, title: TranslatedString, height: number, customAttrs: {}) {
-  const iframe = Element.fromTag('iframe');
+const createIframeElement = (id: string, title: TranslatedString, height: number, customAttrs: {}) => {
+  const iframe = SugarElement.fromTag('iframe');
 
-  Attr.setAll(iframe, customAttrs);
+  Attribute.setAll(iframe, customAttrs);
 
-  Attr.setAll(iframe, {
+  Attribute.setAll(iframe, {
     id: id + '_ifr',
     frameBorder: '0',
     allowTransparency: 'true',
@@ -58,7 +57,7 @@ const createIframeElement = function (id: string, title: TranslatedString, heigh
   return iframe;
 };
 
-const getIframeHtml = function (editor: Editor) {
+const getIframeHtml = (editor: Editor) => {
   let iframeHTML = Settings.getDocType(editor) + '<html><head>';
 
   // We only need to override paths if we have to
@@ -71,26 +70,25 @@ const getIframeHtml = function (editor: Editor) {
 
   const bodyId = Settings.getBodyId(editor);
   const bodyClass = Settings.getBodyClass(editor);
+  const translatedAriaText = editor.translate(Settings.getIframeAriaText(editor));
 
   if (Settings.getContentSecurityPolicy(editor)) {
     iframeHTML += '<meta http-equiv="Content-Security-Policy" content="' + Settings.getContentSecurityPolicy(editor) + '" />';
   }
 
-  iframeHTML += '</head><body id="' + bodyId +
-    '" class="mce-content-body ' + bodyClass +
-    '" data-id="' + editor.id + '"><br></body></html>';
+  iframeHTML += '</head>' +
+    `<body id="${bodyId}" class="mce-content-body ${bodyClass}" data-id="${editor.id}" aria-label="${translatedAriaText}">` +
+    '<br>' +
+    '</body></html>';
 
   return iframeHTML;
 };
 
-const createIframe = function (editor: Editor, o) {
-  const title = editor.editorManager.translate(
-    'Rich Text Area. Press ALT-0 for help.'
-  );
+const createIframe = (editor: Editor, o) => {
+  const iframeTitle = editor.translate('Rich Text Area');
+  const ifr = createIframeElement(editor.id, iframeTitle, o.height, Settings.getIframeAttrs(editor)).dom;
 
-  const ifr = createIframeElement(editor.id, title, o.height, Settings.getIframeAttrs(editor)).dom();
-
-  ifr.onload = function () {
+  ifr.onload = () => {
     ifr.onload = null;
     editor.fire('load');
   };
@@ -105,7 +103,7 @@ const createIframe = function (editor: Editor, o) {
   return isDomainRelaxed;
 };
 
-const init = function (editor: Editor, boxInfo) {
+const init = (editor: Editor, boxInfo) => {
   const isDomainRelaxed = createIframe(editor, boxInfo);
 
   if (boxInfo.editorContainer) {

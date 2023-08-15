@@ -1,5 +1,5 @@
 import { Universe } from '@ephox/boss';
-import { Arr, Option } from '@ephox/katamari';
+import { Arr, Optional } from '@ephox/katamari';
 import { Spot, SpotRange } from '@ephox/phoenix';
 import { PositionArray } from '@ephox/polaris';
 
@@ -9,21 +9,21 @@ interface TextdataGet<E> {
 }
 
 export interface Textdata<E> extends TextdataGet<E> {
-  readonly cursor: Option<number>;
+  readonly cursor: Optional<number>;
 }
 
 /**
  * Create a PositionArray of textnodes and returns the array along with the concatenated text.
  */
-const get = function <E, D> (universe: Universe<E, D>, elements: E[]) {
-  const list = PositionArray.generate(elements, function (x, start) {
+const get = <E, D>(universe: Universe<E, D>, elements: E[]): TextdataGet<E> => {
+  const list = PositionArray.generate(elements, (x, start) => {
     return universe.property().isText(x) ?
-      Option.some(Spot.range(x, start, start + universe.property().getText(x).length)) :
-      Option.none<SpotRange<E>>();
+      Optional.some(Spot.range(x, start, start + universe.property().getText(x).length)) :
+      Optional.none<SpotRange<E>>();
   });
 
-  const allText = Arr.foldr(list, function (b, a) {
-    return universe.property().getText(a.element()) + b;
+  const allText = Arr.foldr(list, (b, a) => {
+    return universe.property().getText(a.element) + b;
   }, '');
 
   return {
@@ -32,11 +32,11 @@ const get = function <E, D> (universe: Universe<E, D>, elements: E[]) {
   };
 };
 
-const cursor = function <E, D> (universe: Universe<E, D>, data: TextdataGet<E>, current: E, offset: number): Textdata<E> {
-  const position = PositionArray.find(data.list, function (item) {
-    return universe.eq(item.element(), current);
-  }).map(function (element) {
-    return element.start() + offset;
+const cursor = <E, D>(universe: Universe<E, D>, data: TextdataGet<E>, current: E, offset: number): Textdata<E> => {
+  const position = PositionArray.find(data.list, (item) => {
+    return universe.eq(item.element, current);
+  }).map((element) => {
+    return element.start + offset;
   });
 
   return {
@@ -52,7 +52,7 @@ const cursor = function <E, D> (universe: Universe<E, D>, data: TextdataGet<E>, 
  * - the text found, as a string
  * - the cursor position of 'offset' in the text
  */
-const from = function <E, D> (universe: Universe<E, D>, elements: E[], current: E, offset: number) {
+const from = <E, D>(universe: Universe<E, D>, elements: E[], current: E, offset: number): Textdata<E> => {
   const data = get(universe, elements);
   return cursor(universe, data, current, offset);
 };

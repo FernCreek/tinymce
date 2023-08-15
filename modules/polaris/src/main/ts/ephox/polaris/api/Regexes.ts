@@ -23,21 +23,29 @@
   - colons are only valid when followed directly by // or some text and then @ (TBIO-4867)
   - only include the fragment '#' if it has 1 or more trailing matches
   - only include the query '?' if it has 1 or more trailing matches
+  - allow commas in URL path
+  - exclude trailing comma and period in URL path
+  - allow up to 15 character schemes including all valid characters from the spec https://url.spec.whatwg.org/#url-scheme-string (TINY-5074)
+  - changed instances of 0-9 to be \d (TINY-5074)
+  - reduced duplication (TINY-5074)
+  - allow [*!;:'@$] in the path segment as they are valid characters per the spec: https://url.spec.whatwg.org/#url-path-segment-string (TINY-8069)
 
 (?:
-  (?:[A-Za-z]{3,9}:(?:\/\/))
-  (?:[-.~*+=!&;:'%@?^${}(),\w]+@)?
-  [A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*
-  |
-    (?:www\.
-    |
-      [-;:&=+$,.\w]+@
-    )
-  [A-Za-z0-9-]+
-  (?:\.[A-Za-z0-9-]+)*
+  (?:
+    [A-Za-z][A-Za-z\d.+-]{0,14}:\/\/(?:[-.~*+=!&;:'%@?^${}(),\w]+@)?
+    | www\.
+    | [-;:&=+$,.\w]+@
+  )
+  [A-Za-z\d-]+
+  (?:\.[A-Za-z\d-]+)*
 )
-(?::[0-9]+)?
-(?:\/[-+~=%.()\/\w]*)?
+(?::\d+)?
+(?:
+  \/
+  (?:
+     [-.~*+=!;:'%@$(),\/\w]*[-~*+=%@$()\/\w]
+   )?
+)?
 (?:
   \?
   (?:
@@ -51,10 +59,10 @@
   )
 )?
 */
+
 const link = (): RegExp =>
   // eslint-disable-next-line max-len
-  /(?:(?:[A-Za-z]{3,9}:(?:\/\/))(?:[-.~*+=!&;:'%@?^${}(),\w]+@)?[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*|(?:www\.|[-;:&=+$,.\w]+@)[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*)(?::[0-9]+)?(?:\/[-+~=%.()\/\w]*)?(?:\?(?:[-.~*+=!&;:'%@?^${}(),\/\w]+))?(?:#(?:[-.~*+=!&;:'%@?^${}(),\/\w]+))?/g;
-
+  /(?:[A-Za-z][A-Za-z\d.+-]{0,14}:\/\/(?:[-.~*+=!&;:'%@?^${}(),\w]+@)?|www\.|[-;:&=+$,.\w]+@)[A-Za-z\d-]+(?:\.[A-Za-z\d-]+)*(?::\d+)?(?:\/(?:[-.~*+=!;:'%@$(),\/\w]*[-~*+=%@$()\/\w])?)?(?:\?(?:[-.~*+=!&;:'%@?^${}(),\/\w]+))?(?:#(?:[-.~*+=!&;:'%@?^${}(),\/\w]+))?/g;
 
 const autolink = (): RegExp => {
   /*
@@ -80,7 +88,6 @@ const tokens = (value: string, parameters: string[]): string =>
     }
     return parameters[index];
   });
-
 
 export {
   tokens,

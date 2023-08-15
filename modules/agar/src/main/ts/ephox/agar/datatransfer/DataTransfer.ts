@@ -1,17 +1,20 @@
-import { DataTransfer, Element as DomElement } from '@ephox/dom-globals';
-import { Arr, Id, Option, Type } from '@ephox/katamari';
+import { Arr, Id, Optional, Type } from '@ephox/katamari';
+
 import { createFileList } from '../file/FileList';
 import { getData } from './DataTransferItem';
 import { createDataTransferItemList } from './DataTransferItemList';
 import { isInProtectedMode, isInReadWriteMode, setReadWriteMode } from './Mode';
 
+type DropEffect = DataTransfer['dropEffect'];
+type EffectAllowed = DataTransfer['effectAllowed'];
+
 const imageId = Id.generate('image');
 
-const validDropEffects = [ 'none', 'copy', 'link', 'move' ];
-const validEffectAlloweds = [ 'none', 'copy', 'copyLink', 'copyMove', 'link', 'linkMove', 'move', 'all', 'uninitialized' ];
+const validDropEffects: DropEffect[] = [ 'none', 'copy', 'link', 'move' ];
+const validEffectAlloweds: EffectAllowed[] = [ 'none', 'copy', 'copyLink', 'copyMove', 'link', 'linkMove', 'move', 'all', 'uninitialized' ];
 
 export interface DragImageData {
-  image: DomElement;
+  image: Element;
   x: number;
   y: number;
 }
@@ -21,9 +24,9 @@ const setDragImage = (transfer: DataTransfer, imageData: DragImageData) => {
   dt[imageId] = imageData;
 };
 
-const getDragImage = (transfer: DataTransfer): Option<DragImageData> => {
+const getDragImage = (transfer: DataTransfer): Optional<DragImageData> => {
   const dt: any = transfer;
-  return Option.from(dt[imageId]);
+  return Optional.from(dt[imageId]);
 };
 
 const normalize = (format: string) => {
@@ -39,15 +42,15 @@ const normalize = (format: string) => {
 };
 
 const createDataTransfer = (): DataTransfer => {
-  let dropEffect = 'move';
-  let effectAllowed = 'all';
+  let dropEffect: DropEffect = 'move';
+  let effectAllowed: EffectAllowed = 'all';
 
   const dataTransfer: DataTransfer = {
     get dropEffect() {
       return dropEffect;
     },
 
-    set dropEffect(effect: string) {
+    set dropEffect(effect: DropEffect) {
       if (Arr.contains(validDropEffects, effect)) {
         dropEffect = effect;
       }
@@ -57,7 +60,7 @@ const createDataTransfer = (): DataTransfer => {
       return effectAllowed;
     },
 
-    set effectAllowed(allowed: string) {
+    set effectAllowed(allowed: EffectAllowed) {
       if (Arr.contains(validEffectAlloweds, allowed)) {
         effectAllowed = allowed;
       }
@@ -83,7 +86,7 @@ const createDataTransfer = (): DataTransfer => {
       return types.concat(hasFiles ? [ 'Files' ] : []);
     },
 
-    setDragImage: (image: DomElement, x: number, y: number) => {
+    setDragImage: (image: Element, x: number, y: number) => {
       if (isInReadWriteMode(dataTransfer)) {
         setDragImage(dataTransfer, { image, x, y });
       }
@@ -102,28 +105,23 @@ const createDataTransfer = (): DataTransfer => {
         dataTransfer.clearData(normalize(format));
         items.add(data, normalize(format));
       }
-
-      return true; // Standard says void dom-globals says boolean
     },
 
     clearData: (format?: string) => {
       if (isInReadWriteMode(dataTransfer)) {
-        const normalizedFormat = normalize(format);
-
-        if (Type.isString(normalizedFormat)) {
+        if (Type.isString(format)) {
+          const normalizedFormat = normalize(format);
           Arr.findIndex(Arr.from(items), (item) => item.type === normalizedFormat).each((idx) => {
             items.remove(idx);
           });
         } else {
-          for (let i = items.length; i >= 0; i--) {
+          for (let i = items.length - 1; i >= 0; i--) {
             if (items[i].kind === 'string') {
               items.remove(i);
             }
           }
         }
       }
-
-      return true; // Standard says void dom-globals says boolean
     }
   };
 

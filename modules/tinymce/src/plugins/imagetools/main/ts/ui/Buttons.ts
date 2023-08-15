@@ -5,72 +5,88 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import * as Actions from '../core/Actions';
-import Editor from 'tinymce/core/api/Editor';
+import { Arr } from '@ephox/katamari';
 
-const register = function (editor: Editor) {
+import Editor from 'tinymce/core/api/Editor';
+import { Toolbar } from 'tinymce/core/api/ui/Ui';
+
+import * as Actions from '../core/Actions';
+
+const register = (editor: Editor): void => {
+  let changeHandlers: Array<(isEditableImage: boolean) => void> = [];
+
   const cmd = (command: string) => () => editor.execCommand(command);
+
+  const isEditableImage = () => Actions.getSelectedImage(editor).exists((element) => {
+    return Actions.getEditableImage(editor, element.dom).isSome();
+  });
+
+  const onSetup = (api: Toolbar.ToolbarButtonInstanceApi) => {
+    const handler = (isEditableImage: boolean) => api.setDisabled(!isEditableImage);
+    // Execute the handler to set the initial state
+    handler(isEditableImage());
+    // Register the handler so we can update the state when the selected node changes
+    changeHandlers = changeHandlers.concat([ handler ]);
+    return () => {
+      changeHandlers = Arr.filter(changeHandlers, (h) => h !== handler);
+    };
+  };
+
+  // Listen to NodeChange events and update button states
+  editor.on('NodeChange', () => {
+    const isEditable = isEditableImage();
+    Arr.each(changeHandlers, (handler) => handler(isEditable));
+  });
 
   editor.ui.registry.addButton('rotateleft', {
     tooltip: 'Rotate counterclockwise',
     icon: 'rotate-left',
-    onAction: cmd('mceImageRotateLeft')
+    onAction: cmd('mceImageRotateLeft'),
+    onSetup
   });
 
   editor.ui.registry.addButton('rotateright', {
     tooltip: 'Rotate clockwise',
     icon: 'rotate-right',
-    onAction: cmd('mceImageRotateRight')
+    onAction: cmd('mceImageRotateRight'),
+    onSetup
   });
 
   editor.ui.registry.addButton('flipv', {
     tooltip: 'Flip vertically',
     icon: 'flip-vertically',
-    onAction: cmd('mceImageFlipVertical')
+    onAction: cmd('mceImageFlipVertical'),
+    onSetup
   });
 
   editor.ui.registry.addButton('fliph', {
     tooltip: 'Flip horizontally',
     icon: 'flip-horizontally',
-    onAction: cmd('mceImageFlipHorizontal')
+    onAction: cmd('mceImageFlipHorizontal'),
+    onSetup
   });
 
   editor.ui.registry.addButton('editimage', {
     tooltip: 'Edit image',
     icon: 'edit-image',
     onAction: cmd('mceEditImage'),
-    onSetup: (buttonApi) => {
-      const setDisabled = () => {
-        const elementOpt = Actions.getSelectedImage(editor);
-        elementOpt.each((element) => {
-          const disabled = Actions.getEditableImage(editor, element.dom()).isNone();
-          buttonApi.setDisabled(disabled);
-        });
-      };
-
-      editor.on('NodeChange', setDisabled);
-
-      return () => {
-        editor.off('NodeChange', setDisabled);
-      };
-    }
+    onSetup
   });
 
   editor.ui.registry.addButton('imageoptions', {
     tooltip: 'Image options',
-    icon: 'image-options',
+    icon: 'image',
     onAction: cmd('mceImage')
   });
 
   editor.ui.registry.addContextMenu('imagetools', {
     update: (element) =>
       // since there's no menu item available, this has to be it's own thing
-      Actions.getEditableImage(editor, element).fold(() => [], (_) => [{
+      Actions.getEditableImage(editor, element).map((_) => ({
         text: 'Edit image',
         icon: 'edit-image',
         onAction: cmd('mceEditImage')
-      }])
-
+      })).toArray()
   });
 };
 

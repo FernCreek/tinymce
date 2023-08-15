@@ -5,9 +5,11 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { Dialog } from 'tinymce/core/api/ui/Ui';
+
 import { ImageDialogInfo } from './DialogTypes';
 
-const makeTab = (_info: ImageDialogInfo) => ({
+const makeTab = (_info: ImageDialogInfo): Dialog.TabSpec => ({
   title: 'Advanced',
   name: 'advanced',
   items: [
@@ -39,7 +41,7 @@ const makeTab = (_info: ImageDialogInfo) => ({
           inputMode: 'numeric'
         },
         {
-          type: 'selectbox',
+          type: 'listbox',
           name: 'borderstyle',
           label: 'Border style',
           items: [

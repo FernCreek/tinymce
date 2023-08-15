@@ -1,10 +1,10 @@
-import { FieldSchema, ValueSchema } from '@ephox/boulder';
-import { Fun, Option, Result } from '@ephox/katamari';
+import { FieldSchema, StructureSchema } from '@ephox/boulder';
+import { Fun, Optional, Result } from '@ephox/katamari';
 
-import { ChoiceMenuItemApi, SeparatorMenuItemApi } from '../../api/Menu';
+import { ChoiceMenuItemSpec, SeparatorMenuItemSpec } from '../../api/Menu';
 
 // Temporarily disable separators until things are clearer
-export type ToolbarSplitButtonItemTypes = ChoiceMenuItemApi | SeparatorMenuItemApi;
+export type ToolbarSplitButtonItemTypes = ChoiceMenuItemSpec | SeparatorMenuItemSpec;
 export type SuccessCallback = (menu: ToolbarSplitButtonItemTypes[]) => void;
 export type SelectPredicate = (value: string) => boolean;
 
@@ -12,7 +12,7 @@ export type PresetTypes = 'color' | 'normal' | 'listpreview';
 export type PresetItemTypes = 'color' | 'normal';
 export type ColumnTypes = number | 'auto';
 
-export interface ToolbarSplitButtonApi {
+export interface ToolbarSplitButtonSpec {
   type?: 'splitbutton';
   tooltip?: string;
   icon?: string;
@@ -28,10 +28,10 @@ export interface ToolbarSplitButtonApi {
 
 export interface ToolbarSplitButton {
   type: 'splitbutton';
-  tooltip: Option<string>;
-  icon: Option<string>;
-  text: Option<string>;
-  select: Option<SelectPredicate>;
+  tooltip: Optional<string>;
+  icon: Optional<string>;
+  text: Optional<string>;
+  select: Optional<SelectPredicate>;
   presets: PresetTypes;
   columns: ColumnTypes;
   fetch: (success: SuccessCallback) => void;
@@ -44,27 +44,27 @@ export interface ToolbarSplitButtonInstanceApi {
   isDisabled: () => boolean;
   setDisabled: (state: boolean) => void;
   setIconFill: (id: string, value: string) => void;
-  setIconStroke: (id: string, value: string) => void;
+  setIconStroke: (id: string, value: string) => void; // Deprecated as of TinyMCE 5.8 (see TINY-3551)
   isActive: () => boolean;
   setActive: (state: boolean) => void;
 }
 
-export const splitButtonSchema = ValueSchema.objOf([
-  FieldSchema.strictString('type'),
+export const splitButtonSchema = StructureSchema.objOf([
+  FieldSchema.requiredString('type'),
   FieldSchema.optionString('tooltip'),
   FieldSchema.optionString('icon'),
   FieldSchema.optionString('text'),
   FieldSchema.optionFunction('select'),
-  FieldSchema.strictFunction('fetch'),
+  FieldSchema.requiredFunction('fetch'),
   FieldSchema.defaultedFunction('onSetup', () => Fun.noop),
   // TODO: Validate the allowed presets
   FieldSchema.defaultedStringEnum('presets', 'normal', [ 'normal', 'color', 'listpreview' ]),
   FieldSchema.defaulted('columns', 1),
-  FieldSchema.strictFunction('onAction'),
-  FieldSchema.strictFunction('onItemAction')
+  FieldSchema.requiredFunction('onAction'),
+  FieldSchema.requiredFunction('onItemAction')
 ]);
 
 export const isSplitButtonButton = (spec: any): spec is ToolbarSplitButton => spec.type === 'splitbutton';
 
-export const createSplitButton = (spec: any): Result<ToolbarSplitButton, ValueSchema.SchemaError<any>> =>
-  ValueSchema.asRaw<ToolbarSplitButton>('SplitButton', splitButtonSchema, spec);
+export const createSplitButton = (spec: ToolbarSplitButtonSpec): Result<ToolbarSplitButton, StructureSchema.SchemaError<any>> =>
+  StructureSchema.asRaw<ToolbarSplitButton>('SplitButton', splitButtonSchema, spec);

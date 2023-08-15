@@ -1,5 +1,4 @@
-import { FieldProcessorAdt, FieldSchema } from '@ephox/boulder';
-import { DataTransfer, DragEvent } from '@ephox/dom-globals';
+import { FieldProcessor, FieldSchema } from '@ephox/boulder';
 import { EventArgs } from '@ephox/sugar';
 
 import * as AlloyEvents from '../../api/events/AlloyEvents';
@@ -10,7 +9,7 @@ import * as DataTransfers from './DataTransfers';
 import { DroppingConfig } from './DragnDropTypes';
 import { createDropEventDetails } from './DropEvent';
 
-const schema: FieldProcessorAdt[] = [
+const schema: FieldProcessor[] = [
   FieldSchema.defaultedString('type', 'text/plain'),
   FieldSchema.defaultedStringEnum('dropEffect', 'move', [ 'copy', 'move', 'link', 'none' ]),
   Fields.onHandler('onDrop'),
@@ -18,7 +17,7 @@ const schema: FieldProcessorAdt[] = [
   Fields.onHandler('onDragover'),
   Fields.onHandler('onDragenter'),
   Fields.onHandler('onDragleave'),
-  FieldSchema.state('instance', () => {
+  FieldSchema.customField('instance', () => {
     const exhibit = () => DomModification.nu({ });
 
     // http://www.quirksmode.org/blog/archives/2009/09/the_html5_drag.html

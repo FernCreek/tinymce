@@ -5,29 +5,36 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Types } from '@ephox/bridge';
-import { Arr, Cell, Option, Throttler } from '@ephox/katamari';
+import { Arr, Cell, Optional, Throttler } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
+import { Dialog } from 'tinymce/core/api/ui/Ui';
+
 import { insertEmoticon } from '../core/Actions';
 import { ALL_CATEGORY, EmojiDatabase } from '../core/EmojiDatabase';
 import { emojisFrom } from '../core/Lookup';
 
+interface DialogData {
+  readonly pattern: string;
+  readonly results: Array<{ value: string; icon: string; text: string }>;
+}
+
 const patternName = 'pattern';
 
-const open = function (editor: Editor, database: EmojiDatabase) {
+const open = (editor: Editor, database: EmojiDatabase): void => {
 
-  const initialState = {
+  const initialState: DialogData = {
     pattern: '',
-    results: emojisFrom(database.listAll(), '', Option.some(300))
+    results: emojisFrom(database.listAll(), '', Optional.some(300))
   };
 
   const currentTab = Cell(ALL_CATEGORY);
 
-  const scan = (dialogApi) => {
+  const scan = (dialogApi: Dialog.DialogInstanceApi<DialogData>) => {
     const dialogData = dialogApi.getData();
     const category = currentTab.get();
     const candidates = database.listCategory(category);
-    const results = emojisFrom(candidates, dialogData[patternName], category === ALL_CATEGORY ? Option.some(300) : Option.none());
+    const results = emojisFrom(candidates, dialogData[patternName], category === ALL_CATEGORY ? Optional.some(300) : Optional.none());
     dialogApi.setData({
       results
     });
@@ -37,21 +44,21 @@ const open = function (editor: Editor, database: EmojiDatabase) {
     scan(dialogApi);
   }, 200);
 
-  const searchField: Types.Dialog.BodyComponentApi = {
+  const searchField: Dialog.BodyComponentSpec = {
     label: 'Search',
     type: 'input',
     name: patternName
   };
 
-  const resultsField: Types.Dialog.BodyComponentApi = {
+  const resultsField: Dialog.BodyComponentSpec = {
     type: 'collection',
     name: 'results'
     // TODO TINY-3229 implement collection columns properly
     // columns: 'auto'
   };
 
-  const getInitialState = (): Types.Dialog.DialogApi<typeof initialState> => {
-    const body: Types.Dialog.TabPanelApi = {
+  const getInitialState = (): Dialog.DialogSpec<DialogData> => {
+    const body: Dialog.TabPanelSpec = {
       type: 'tabpanel',
       // All tabs have the same fields.
       tabs: Arr.map(database.listCategories(), (cat) => ({

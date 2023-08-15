@@ -1,5 +1,6 @@
-import { console } from '@ephox/dom-globals';
+import { Failure } from '@ephox/bedrock-common';
 import { Arr, Fun, Result } from '@ephox/katamari';
+import Promise from '@ephox/wrap-promise-polyfill';
 
 import * as AsyncActions from '../pipe/AsyncActions';
 import * as GeneralActions from '../pipe/GeneralActions';
@@ -56,7 +57,7 @@ const op = <T>(fx: (value: T) => void): Chain<T, T> =>
     next(input, logs);
   });
 
-const async = <T, U>(fx: (input: T, next: (v: U) => void, die: (err) => void) => void) =>
+const async = <T, U>(fx: (input: T, next: (v: U) => void, die: (err) => void) => void): Chain<T, U> =>
   on<T, U>((v, n, d, logs) => fx(v, (v) => n(v, logs), (err) => d(err, logs)));
 
 const inject = <T, U>(value: U): Chain<T, U> =>
@@ -185,7 +186,7 @@ const debugging = op(GeneralActions.debug);
 
 const log = <T>(message: string): Chain<T, T> =>
   on((input: T, next: NextFn<T>, die: DieFn, logs: TestLogs) => {
-    // tslint:disable-next-line:no-console
+    // eslint-disable-next-line no-console
     console.log(message);
     next(input, addLogEntry(logs, message));
   });
@@ -198,7 +199,7 @@ const wait = <T>(amount: number): Chain<T, T> =>
     AsyncActions.delay(amount)(() => next(input, logs), die);
   });
 
-const pipeline = (chains: Chain<any, any>[], onSuccess: NextFn<any>, onFailure: DieFn, initLogs?: TestLogs) => {
+const pipeline = (chains: Chain<any, any>[], onSuccess: NextFn<any>, onFailure: DieFn, initLogs?: TestLogs): void => {
   Pipeline.async({}, Arr.map(chains, extract), (output, logs) => {
     onSuccess(output, logs);
   }, onFailure, TestLogs.getOrInit(initLogs));
@@ -213,6 +214,23 @@ const runStepsOnValue = <I, O>(getSteps: (value: I) => Step<I, O>[]): Chain<I, O
 const predicate = <T>(p: (value: T) => boolean): Chain<T, T> =>
   on((input, next, die, logs) =>
     p(input) ? next(input, logs) : die('predicate did not succeed', logs));
+
+const toPromise = <A, B>(c: Chain<A, B>) => (a: A): Promise<B> =>
+  new Promise((resolve, reject) => {
+    c.runChain(a,
+      (b, _logs) => {
+        // TODO: What to do with logs? We lose them.
+        resolve(b);
+      }, (err, logs) => {
+        reject(Failure.prepFailure(err, logs));
+      },
+      TestLogs.init()
+    );
+  });
+
+const fromPromise = <A, B>(f: (a: A) => Promise<B>): Chain<A, B> => Chain.async((input, next, die) => {
+  f(input).then(next, die);
+});
 
 export const Chain = {
   on,
@@ -239,6 +257,9 @@ export const Chain = {
   debugging,
   log,
   label,
+
+  toPromise,
+  fromPromise,
 
   pipeline,
   predicate

@@ -6,7 +6,9 @@
  */
 
 import { Cell } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
+
 import * as Actions from '../core/Actions';
 import { DomTextMatcher } from '../core/DomTextMatcher';
 import * as Settings from './Settings';
@@ -14,28 +16,27 @@ import * as Settings from './Settings';
 type LastSuggestion = Actions.LastSuggestion;
 type Data = Actions.Data;
 
-const get = function (editor: Editor, startedState: Cell<boolean>, lastSuggestionsState: Cell<LastSuggestion>, textMatcherState: Cell<DomTextMatcher>, currentLanguageState: Cell<string>, _url: string) {
-  const getLanguage = function () {
-    return currentLanguageState.get();
-  };
+export interface Api {
+  readonly getTextMatcher: () => DomTextMatcher;
+  readonly getWordCharPattern: () => RegExp;
+  readonly markErrors: (data: Data) => void;
+  readonly getLanguage: () => string;
+}
 
-  const getWordCharPattern = function () {
+const get = (editor: Editor, startedState: Cell<boolean>, lastSuggestionsState: Cell<LastSuggestion>, textMatcherState: Cell<DomTextMatcher>, currentLanguageState: Cell<string>): Api => {
+  const getWordCharPattern = () => {
     return Settings.getSpellcheckerWordcharPattern(editor);
   };
 
-  const markErrors = function (data: Data) {
+  const markErrors = (data: Data) => {
     Actions.markErrors(editor, startedState, textMatcherState, lastSuggestionsState, data);
   };
 
-  const getTextMatcher = function () {
-    return textMatcherState.get();
-  };
-
   return {
-    getTextMatcher,
+    getTextMatcher: textMatcherState.get,
     getWordCharPattern,
     markErrors,
-    getLanguage
+    getLanguage: currentLanguageState.get
   };
 };
 

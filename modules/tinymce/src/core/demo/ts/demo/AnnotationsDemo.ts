@@ -1,16 +1,16 @@
-import { console, document, prompt } from '@ephox/dom-globals';
+import { Fun } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
 
 declare let tinymce: any;
 
-export default function () {
+export default () => {
 
   const button = document.createElement('button');
   button.innerHTML = 'Get all annotations';
   button.addEventListener('click', () => {
-    // tslint:disable no-console
+    // eslint-disable-next-line no-console
     console.log('annotations', tinymce.activeEditor.annotator.getAll('alpha'));
-    // tslint:enable no-console
   });
   document.body.appendChild(button);
 
@@ -25,18 +25,18 @@ export default function () {
     setup: (editor: Editor) => {
       editor.ui.registry.addButton('annotate-alpha', {
         text: 'Annotate',
-        onAction() {
-          const comment = prompt('Comment with?');
+        onAction: () => {
+          const comment = window.prompt('Comment with?');
           editor.annotator.annotate('alpha', {
             comment
           });
           editor.focus();
         },
-        onSetup(btnApi) {
+        onSetup: (btnApi) => {
           editor.annotator.annotationChanged('alpha', (state, _name, _obj) => {
             btnApi.setDisabled(state);
           });
-          return () => {};
+          return Fun.noop;
         }
       });
 
@@ -55,4 +55,4 @@ export default function () {
 
     menubar: false
   });
-}
+};

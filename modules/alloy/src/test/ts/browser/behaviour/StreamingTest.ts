@@ -31,7 +31,7 @@ UnitTest.asynctest('StreamingTest', (success, failure) => {
     GeneralSteps.sequenceRepeat(
       5,
       GeneralSteps.sequence([
-        Mouse.sClickOn(gui.element(), 'input')
+        Mouse.sClickOn(gui.element, 'input')
       ])
     ),
 
@@ -41,7 +41,7 @@ UnitTest.asynctest('StreamingTest', (success, failure) => {
     GeneralSteps.sequenceRepeat(
       5,
       GeneralSteps.sequence([
-        Mouse.sClickOn(gui.element(), 'input')
+        Mouse.sClickOn(gui.element, 'input')
       ])
     ),
     Step.wait(220),
@@ -50,11 +50,11 @@ UnitTest.asynctest('StreamingTest', (success, failure) => {
     // Wait long enough to ensure everything is gone, and then test "cancelling"
     store.sClear,
     Step.wait(220),
-    Mouse.sClickOn(gui.element(), 'input'),
+    Mouse.sClickOn(gui.element, 'input'),
     Step.wait(10),
     Step.sync(() => {
       AlloyTriggers.emit(component, 'cancel.stream');
     }),
     Waiter.sTryUntil('', store.sAssertEq('Event should have been cancelled, so nothing should be in store', [ ]))
-  ], () => { success(); }, failure);
+  ], success, failure);
 });

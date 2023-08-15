@@ -7,35 +7,41 @@
 
 import Editor from 'tinymce/core/api/Editor';
 import DomParser from 'tinymce/core/api/html/DomParser';
-import Serializer from 'tinymce/core/api/html/Serializer';
+import HtmlSerializer from 'tinymce/core/api/html/Serializer';
 import Tools from 'tinymce/core/api/util/Tools';
-import * as Events from '../api/Events';
-import * as WordFilter from './WordFilter';
-import * as Settings from '../api/Settings';
 
-const preProcess = (editor: Editor, html: string) => {
+import * as Events from '../api/Events';
+import * as Settings from '../api/Settings';
+import * as WordFilter from './WordFilter';
+
+interface ProcessResult {
+  readonly content: string;
+  readonly cancelled: boolean;
+}
+
+const preProcess = (editor: Editor, html: string): string => {
   const parser = DomParser({ }, editor.schema);
 
   // Strip meta elements
   parser.addNodeFilter('meta', (nodes) => {
-    Tools.each(nodes, (node) => node.remove());
+    Tools.each(nodes, (node) => {
+      node.remove();
+    });
   });
 
   const fragment = parser.parse(html, { forced_root_block: false, isRootContent: true });
-  return Serializer({ validate: Settings.getValidate(editor) }, editor.schema).serialize(fragment);
+  return HtmlSerializer({ validate: Settings.getValidate(editor) }, editor.schema).serialize(fragment);
 };
 
-const processResult = function (content: string, cancelled: boolean) {
-  return { content, cancelled };
-};
+const processResult = (content: string, cancelled: boolean): ProcessResult => ({ content, cancelled });
 
-const postProcessFilter = function (editor: Editor, html: string, internal: boolean, isWordHtml: boolean) {
+const postProcessFilter = (editor: Editor, html: string, internal: boolean, isWordHtml: boolean): ProcessResult => {
   const tempBody = editor.dom.create('div', { style: 'display:none' }, html);
   const postProcessArgs = Events.firePastePostProcess(editor, tempBody, internal, isWordHtml);
   return processResult(postProcessArgs.node.innerHTML, postProcessArgs.isDefaultPrevented());
 };
 
-const filterContent = function (editor: Editor, content: string, internal: boolean, isWordHtml: boolean) {
+const filterContent = (editor: Editor, content: string, internal: boolean, isWordHtml: boolean): ProcessResult => {
   const preProcessArgs = Events.firePastePreProcess(editor, content, internal, isWordHtml);
 
   // Filter the content to remove potentially dangerous content (eg scripts)
@@ -48,7 +54,7 @@ const filterContent = function (editor: Editor, content: string, internal: boole
   }
 };
 
-const process = function (editor: Editor, html: string, internal: boolean) {
+const process = (editor: Editor, html: string, internal: boolean): ProcessResult => {
   const isWordHtml = WordFilter.isWordContent(html);
   const content = isWordHtml ? WordFilter.preProcess(editor, html) : html;
 

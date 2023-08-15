@@ -5,28 +5,28 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Behaviour, Slider, Toggling, SketchSpec } from '@ephox/alloy';
-import { FieldSchema, ValueSchema } from '@ephox/boulder';
+import { Behaviour, SketchSpec, Slider, Toggling } from '@ephox/alloy';
+import { FieldSchema, StructureSchema } from '@ephox/boulder';
 
 import * as Receivers from '../channels/Receivers';
 import * as Styles from '../style/Styles';
 import * as UiDomFactory from '../util/UiDomFactory';
 
-const schema = ValueSchema.objOfOnly([
-  FieldSchema.strict('getInitialValue'),
-  FieldSchema.strict('onChange'),
-  FieldSchema.strict('category'),
-  FieldSchema.strict('sizes')
+const schema = StructureSchema.objOfOnly([
+  FieldSchema.required('getInitialValue'),
+  FieldSchema.required('onChange'),
+  FieldSchema.required('category'),
+  FieldSchema.required('sizes')
 ]);
 
-const sketch = function (rawSpec): SketchSpec {
-  const spec = ValueSchema.asRawOrDie('SizeSlider', schema, rawSpec);
+const sketch = (rawSpec): SketchSpec => {
+  const spec = StructureSchema.asRawOrDie('SizeSlider', schema, rawSpec);
 
-  const isValidValue = function (valueIndex) {
+  const isValidValue = (valueIndex) => {
     return valueIndex >= 0 && valueIndex < spec.sizes.length;
   };
 
-  const onChange = function (slider, thumb, valueIndex) {
+  const onChange = (slider, thumb, valueIndex) => {
     const index = valueIndex.x();
     if (isValidValue(index)) {
       spec.onChange(index);
@@ -42,10 +42,10 @@ const sketch = function (rawSpec): SketchSpec {
         Styles.resolve('slider-size-container') ]
     },
     onChange,
-    onDragStart(slider, thumb) {
+    onDragStart: (slider, thumb) => {
       Toggling.on(thumb);
     },
-    onDragEnd(slider, thumb) {
+    onDragEnd: (slider, thumb) => {
       Toggling.off(thumb);
     },
     model: {
@@ -53,7 +53,7 @@ const sketch = function (rawSpec): SketchSpec {
       minX: 0,
       maxX: spec.sizes.length - 1,
       getInitialValue: () => ({
-        x: () => spec.getInitialValue()
+        x: spec.getInitialValue()
       })
     },
     stepSize: 1,
@@ -64,14 +64,14 @@ const sketch = function (rawSpec): SketchSpec {
     ]),
 
     components: [
-      Slider.parts().spectrum({
+      Slider.parts.spectrum({
         dom: UiDomFactory.dom('<div class="${prefix}-slider-size-container"></div>'),
         components: [
           UiDomFactory.spec('<div class="${prefix}-slider-size-line"></div>')
         ]
       }),
 
-      Slider.parts().thumb({
+      Slider.parts.thumb({
         dom: UiDomFactory.dom('<div class="${prefix}-slider-thumb"></div>'),
         behaviours: Behaviour.derive([
           Toggling.config({

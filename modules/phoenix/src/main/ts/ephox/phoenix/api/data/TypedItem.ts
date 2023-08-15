@@ -1,5 +1,5 @@
 import { Universe } from '@ephox/boss';
-import { Adt, Fun, Option } from '@ephox/katamari';
+import { Adt, Fun, Optional } from '@ephox/katamari';
 
 type Handler<E, D, U> = (item: E, universe: Universe<E, D>) => U;
 
@@ -21,7 +21,7 @@ interface TypedItemAdt<E, D> {
 
 export interface TypedItem<E, D> extends TypedItemAdt<E, D> {
   isBoundary(): boolean;
-  toText(): Option<E>;
+  toText(): Optional<E>;
   is(other: E): boolean;
   len(): number;
 }
@@ -48,7 +48,7 @@ const one = Fun.constant(1);
 const ext = <E, D>(ti: TypedItemAdt<E, D>): TypedItem<E, D> => ({
   ...ti,
   isBoundary: () => ti.fold(yes, no, no, no),
-  toText: () => ti.fold<Option<E>>(Option.none, Option.none, (i) => Option.some(i), Option.none),
+  toText: () => ti.fold<Optional<E>>(Optional.none, Optional.none, (i) => Optional.some(i), Optional.none),
   is: (other) => ti.fold(no, no, (i, u) => u.eq(i, other), no),
   len: () => ti.fold(zero, one, (i, u) => u.property().getText(i).length, one)
 });
@@ -61,7 +61,7 @@ const boundary = Fun.compose(ext as any, adt.boundary as any) as TypedItemConstr
 const empty = Fun.compose(ext as any, adt.empty as any) as TypedItemConstructor;
 const nonEditable = Fun.compose(ext as any, adt.empty as any) as TypedItemConstructor;
 
-const cata = function <E, D, U> (subject: TypedItem<E, D>, onBoundary: Handler<E, D, U>, onEmpty: Handler<E, D, U>, onText: Handler<E, D, U>, onNonEditable: Handler<E, D, U>) {
+const cata = <E, D, U>(subject: TypedItem<E, D>, onBoundary: Handler<E, D, U>, onEmpty: Handler<E, D, U>, onText: Handler<E, D, U>, onNonEditable: Handler<E, D, U>): U => {
   return subject.fold(onBoundary, onEmpty, onText, onNonEditable);
 };
 

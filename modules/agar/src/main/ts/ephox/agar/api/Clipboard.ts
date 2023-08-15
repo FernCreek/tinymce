@@ -1,89 +1,106 @@
-import { File, DataTransfer } from '@ephox/dom-globals';
-import { Chain } from './Chain';
-import { cFindIn } from './UiFinder';
-import { Body, Element } from '@ephox/sugar';
-import { getWindowFromElement } from '../dragndrop/DndEvents';
-import { createDataTransfer } from '../datatransfer/DataTransfer';
 import { Arr, Obj } from '@ephox/katamari';
-import { createPasteEvent, createCopyEvent, createCutEvent } from '../clipboard/ClipboardEvents';
-import { Step } from './Step';
+import { SugarBody, SugarElement } from '@ephox/sugar';
+
+import { createCopyEvent, createCutEvent, createPasteEvent } from '../clipboard/ClipboardEvents';
+import { createDataTransfer } from '../datatransfer/DataTransfer';
+import { getWindowFromElement } from '../dragndrop/DndEvents';
+import { Chain } from './Chain';
 import * as ChainSequence from './ChainSequence';
+import { Step } from './Step';
+import { cFindIn } from './UiFinder';
 
-const cPasteDataTransfer = (mutator: (dataTransfer: DataTransfer) => void): Chain<Element<any>, Element<any>> =>
-  Chain.op<Element<any>>((target) => {
-    const win = getWindowFromElement(target);
-    const dataTransfer = createDataTransfer();
-    const event = createPasteEvent(win, 0, 0, dataTransfer);
+const pasteDataTransfer = (target: SugarElement<Element>, mutator: (dataTransfer: DataTransfer) => void): void => {
+  const win = getWindowFromElement(target);
+  const dataTransfer = createDataTransfer();
+  const event = createPasteEvent(win, 0, 0, dataTransfer);
 
-    mutator(dataTransfer);
+  mutator(dataTransfer);
 
-    target.dom().dispatchEvent(event);
-  });
+  target.dom.dispatchEvent(event);
+};
 
-const cPasteItems = (items: Record<string, string>): Chain<Element<any>, Element<any>> =>
-  cPasteDataTransfer((dataTransfer) => {
+const pasteItems = (target: SugarElement<Element>, items: Record<string, string>): void =>
+  pasteDataTransfer(target, (dataTransfer) => {
     Obj.each(items, (data, mime) => {
       dataTransfer.setData(mime, data);
     });
   });
 
-const cPasteFiles = (files: File[]): Chain<Element<any>, Element<any>> =>
-  cPasteDataTransfer((dataTransfer) => {
+const pasteFiles = (target: SugarElement<Element>, files: File[]): void =>
+  pasteDataTransfer(target, (dataTransfer) => {
     Arr.each(files, (file) => {
       dataTransfer.items.add(file);
     });
   });
 
+const cPasteDataTransfer = (mutator: (dataTransfer: DataTransfer) => void): Chain<SugarElement<any>, SugarElement<any>> =>
+  Chain.op((target) => pasteDataTransfer(target, mutator));
+
+const cPasteItems = (items: Record<string, string>): Chain<SugarElement<any>, SugarElement<any>> =>
+  Chain.op((target) => pasteItems(target, items));
+
+const cPasteFiles = (files: File[]): Chain<SugarElement<any>, SugarElement<any>> =>
+  Chain.op((target) => pasteFiles(target, files));
+
 const sPasteDataTransfer = <T>(mutator: (dataTransfer: DataTransfer) => void, selector: string): Step<T, T> =>
   Chain.isolate({}, ChainSequence.sequence([
-    Chain.injectThunked(Body.body),
+    Chain.injectThunked(SugarBody.body),
     cFindIn(selector),
     cPasteDataTransfer(mutator)
   ]));
 
 const sPasteItems = <T>(items: Record<string, string>, selector: string): Step<T, T> =>
   Chain.isolate({}, ChainSequence.sequence([
-    Chain.injectThunked(Body.body),
+    Chain.injectThunked(SugarBody.body),
     cFindIn(selector),
     cPasteItems(items)
   ]));
 
 const sPasteFiles = <T>(files: File[], selector: string): Step<T, T> =>
   Chain.isolate({}, ChainSequence.sequence([
-    Chain.injectThunked(Body.body),
+    Chain.injectThunked(SugarBody.body),
     cFindIn(selector),
     cPasteFiles(files)
   ]));
 
-const cCut: Chain<Element<any>, DataTransfer> =
-  Chain.mapper<Element<any>, DataTransfer>((target) => {
-    const win = getWindowFromElement(target);
-    const dataTransfer = createDataTransfer();
-    const event = createCutEvent(win, 0, 0, dataTransfer);
+const cut = (target: SugarElement<Element>): DataTransfer => {
+  const win = getWindowFromElement(target);
+  const dataTransfer = createDataTransfer();
+  const event = createCutEvent(win, 0, 0, dataTransfer);
 
-    target.dom().dispatchEvent(event);
+  target.dom.dispatchEvent(event);
 
-    return dataTransfer;
-  });
+  return dataTransfer;
+};
 
-const cCopy: Chain<Element<any>, DataTransfer> =
-  Chain.mapper<Element, DataTransfer>((target) => {
-    const win = getWindowFromElement(target);
-    const dataTransfer = createDataTransfer();
-    const event = createCopyEvent(win, 0, 0, dataTransfer);
+const copy = (target: SugarElement<Element>): DataTransfer => {
+  const win = getWindowFromElement(target);
+  const dataTransfer = createDataTransfer();
+  const event = createCopyEvent(win, 0, 0, dataTransfer);
 
-    target.dom().dispatchEvent(event);
+  target.dom.dispatchEvent(event);
 
-    return dataTransfer;
-  });
+  return dataTransfer;
+};
+
+const cCut: Chain<SugarElement<any>, DataTransfer> =
+  Chain.mapper(cut);
+
+const cCopy: Chain<SugarElement<any>, DataTransfer> =
+  Chain.mapper(copy);
 
 export {
+  pasteDataTransfer,
+  pasteItems,
+  pasteFiles,
   cPasteDataTransfer,
   cPasteItems,
   cPasteFiles,
   sPasteDataTransfer,
   sPasteItems,
   sPasteFiles,
+  cut,
+  copy,
   cCut,
   cCopy
 };

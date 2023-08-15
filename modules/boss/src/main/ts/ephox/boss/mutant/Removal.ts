@@ -1,33 +1,34 @@
-import { Arr, Option } from '@ephox/katamari';
+import { Arr, Optional } from '@ephox/katamari';
+
 import { Gene } from '../api/Gene';
 import * as Comparator from './Comparator';
 import * as Detach from './Detach';
 import * as Up from './Up';
 
-const unwrap = function (item: Gene) {
-  item.parent.each(function (parent) {
+const unwrap = (item: Gene): void => {
+  item.parent.each((parent) => {
     const children = item.children;
-    Arr.each(children, function (child) {
-      child.parent = Option.some(parent);
+    Arr.each(children, (child) => {
+      child.parent = Optional.some(parent);
     });
 
-    const index = Arr.findIndex(parent.children, function (sibling) {
+    const index = Arr.findIndex(parent.children, (sibling) => {
       return Comparator.eq(sibling, item);
     });
 
-    index.fold(function () {
+    index.fold(() => {
       parent.children = parent.children.concat(children);
-    }, function (ind) {
+    }, (ind) => {
       parent.children = parent.children.slice(0, ind).concat(children).concat(parent.children.slice(ind + 1));
     });
   });
 };
 
-const remove = function (item: Gene) {
+const remove = (item: Gene): void => {
   detach(item);
 };
 
-const detach = function (item: Gene) {
+const detach = (item: Gene): void => {
   Detach.detach(Up.top(item), item);
 };
 

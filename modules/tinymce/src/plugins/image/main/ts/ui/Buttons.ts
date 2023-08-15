@@ -5,23 +5,31 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import Editor from 'tinymce/core/api/Editor';
-import { Dialog } from './Dialog';
-import { isFigure, isImage } from '../core/ImageData';
-import * as Utils from '../core/Utils';
+import { Type } from '@ephox/katamari';
 
-const register = (editor: Editor) => {
+import Editor from 'tinymce/core/api/Editor';
+
+import { isFigure, isImage } from '../core/ImageData';
+import * as ImageSelection from '../core/ImageSelection';
+import * as Utils from '../core/Utils';
+import { Dialog } from './Dialog';
+
+const register = (editor: Editor): void => {
   editor.ui.registry.addToggleButton('image', {
     icon: 'image',
     tooltip: 'Insert/edit image',
-    onAction: Dialog(editor).openLater,
-    onSetup: (buttonApi) => editor.selection.selectorChangedWithUnbind('img:not([data-mce-object],[data-mce-placeholder]),figure.image', buttonApi.setActive).unbind
+    onAction: Dialog(editor).open,
+    onSetup: (buttonApi) => {
+      // Set the initial state and then bind to selection changes to update the state when the selection changes
+      buttonApi.setActive(Type.isNonNullable(ImageSelection.getSelectedImage(editor)));
+      return editor.selection.selectorChangedWithUnbind('img:not([data-mce-object],[data-mce-placeholder]),figure.image', buttonApi.setActive).unbind;
+    }
   });
 
   editor.ui.registry.addMenuItem('image', {
     icon: 'image',
     text: 'Image...',
-    onAction: Dialog(editor).openLater
+    onAction: Dialog(editor).open
   });
 
   editor.ui.registry.addContextMenu('image', {

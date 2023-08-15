@@ -1,13 +1,13 @@
-import { ValueSchema } from '@ephox/boulder';
+import { StructureSchema } from '@ephox/boulder';
 
 import HotspotAnchor from './HotspotAnchor';
 import MakeshiftAnchor from './MakeshiftAnchor';
-import SelectionAnchor from './SelectionAnchor';
 import NodeAnchor from './NodeAnchor';
+import SelectionAnchor from './SelectionAnchor';
 import SubmenuAnchor from './SubmenuAnchor';
 
-export default ValueSchema.choose(
-  'anchor', {
+export default StructureSchema.choose(
+  'type', {
     selection: SelectionAnchor,
     node: NodeAnchor,
     hotspot: HotspotAnchor,

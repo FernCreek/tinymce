@@ -1,6 +1,8 @@
-import { Step } from '../api/Step';
+import { DataType, Http } from '@ephox/jax';
+import Promise from '@ephox/wrap-promise-polyfill';
+
 import { Chain } from '../api/Chain';
-import { Http, DataType } from '@ephox/jax';
+import { Step } from '../api/Step';
 
 const postInfo = (path: string, info: any, die: (err: any) => void, next: (v: {}) => void): void => {
   Http.post({
@@ -11,7 +13,7 @@ const postInfo = (path: string, info: any, die: (err: any) => void, next: (v: {}
     },
     responseType: DataType.JSON
   }).get((res) => {
-    res.fold(die, next);
+    res.fold((e) => die(JSON.stringify(e)), next);
   });
 };
 
@@ -25,7 +27,14 @@ const cPerform = <T> (path: string): Chain<T, T> =>
     postInfo(path, info, die, next);
   });
 
+const pPerform = (path: string, info: any): Promise<{}> => {
+  return new Promise(((resolve, reject) => {
+    postInfo(path, info, reject, resolve);
+  }));
+};
+
 export {
   sPerform,
-  cPerform
+  cPerform,
+  pPerform
 };

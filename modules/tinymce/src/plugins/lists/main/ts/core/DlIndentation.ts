@@ -5,27 +5,32 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import Editor from 'tinymce/core/api/Editor';
-import { Compare, Replication, Element, Traverse } from '@ephox/sugar';
-import * as SplitList from './SplitList';
-import { Indentation } from '../listModel/Indentation';
 import { Arr } from '@ephox/katamari';
+import { Replication, SugarElement, SugarNode, Traverse } from '@ephox/sugar';
 
-const outdentDlItem = (editor: Editor, item: Element): void => {
-  if (Compare.is(item, 'dd')) {
+import Editor from 'tinymce/core/api/Editor';
+
+import { Indentation } from '../listmodel/Indentation';
+import * as SplitList from './SplitList';
+
+const isDescriptionDetail = SugarNode.isTag('dd');
+const isDescriptionTerm = SugarNode.isTag('dt');
+
+const outdentDlItem = (editor: Editor, item: SugarElement<Node>): void => {
+  if (isDescriptionDetail(item)) {
     Replication.mutate(item, 'dt');
-  } else if (Compare.is(item, 'dt')) {
-    Traverse.parent(item).each((dl) => SplitList.splitList(editor, dl.dom(), item.dom()));
+  } else if (isDescriptionTerm(item)) {
+    Traverse.parent(item).each((dl) => SplitList.splitList(editor, dl.dom, item.dom));
   }
 };
 
-const indentDlItem = (item: Element): void => {
-  if (Compare.is(item, 'dt')) {
+const indentDlItem = (item: SugarElement<Node>): void => {
+  if (isDescriptionTerm(item)) {
     Replication.mutate(item, 'dd');
   }
 };
 
-const dlIndentation = (editor: Editor, indentation: Indentation, dlItems: Element[]) => {
+const dlIndentation = (editor: Editor, indentation: Indentation, dlItems: SugarElement<Node>[]): void => {
   if (indentation === Indentation.Indent) {
     Arr.each(dlItems, indentDlItem);
   } else {

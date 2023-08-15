@@ -1,8 +1,8 @@
 import { UnitTest } from '@ephox/bedrock-client';
-import { document } from '@ephox/dom-globals';
 import { Arr } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
-import { DomEvent, Element, Insert, Remove } from '@ephox/sugar';
+import { DomEvent, Insert, Remove, SugarElement } from '@ephox/sugar';
+
 import * as Assertions from 'ephox/agar/api/Assertions';
 import { Chain } from 'ephox/agar/api/Chain';
 import * as GeneralSteps from 'ephox/agar/api/GeneralSteps';
@@ -12,13 +12,13 @@ import * as Touch from 'ephox/agar/api/Touch';
 import * as UiFinder from 'ephox/agar/api/UiFinder';
 
 UnitTest.asynctest('TouchTest', (success, failure) => {
-  const input = Element.fromTag('input');
-  const container = Element.fromTag('container');
+  const input = SugarElement.fromTag('input');
+  const container = SugarElement.fromTag('container');
 
   const platform = PlatformDetection.detect();
 
   // Add to the DOM so focus calls happen
-  Insert.append(Element.fromDom(document.body), container);
+  Insert.append(SugarElement.fromDom(document.body), container);
 
   let repository = [];
 
@@ -40,6 +40,29 @@ UnitTest.asynctest('TouchTest', (success, failure) => {
     // Focus events are not fired until the window has focus: https://bugzilla.mozilla.org/show_bug.cgi?id=566671
     platform.browser.isFirefox() && !document.hasFocus();
 
+  const trueTapEventOrder = (() => {
+    // IE seems to fire input.focus at the end.
+    if (platform.browser.isIE()) {
+      return [
+        'input.touchstart', 'container.touchstart',
+        'input.touchend', 'container.touchend',
+        'input.focus'
+
+      ];
+    } else if (isUnfocusedFirefox()) {
+      return [
+        'input.touchstart', 'container.touchstart',
+        'input.touchend', 'container.touchend'
+      ];
+    } else {
+      return [
+        'input.focus',
+        'input.touchstart', 'container.touchstart',
+        'input.touchend', 'container.touchend'
+      ];
+    }
+  })();
+
   Insert.append(container, input);
 
   Pipeline.async({}, [
@@ -49,20 +72,7 @@ UnitTest.asynctest('TouchTest', (success, failure) => {
 
     runStep(
       'sTrueTapOn (container > input)',
-      // IE seems to fire input.focus at the end.
-      platform.browser.isIE() ? [
-        'input.touchstart', 'container.touchstart',
-        'input.touchend', 'container.touchend',
-        'input.focus'
-
-      ] : (isUnfocusedFirefox() ? [
-        'input.touchstart', 'container.touchstart',
-        'input.touchend', 'container.touchend'
-      ] : [
-        'input.focus',
-        'input.touchstart', 'container.touchstart',
-        'input.touchend', 'container.touchend'
-      ]),
+      trueTapEventOrder,
       Touch.sTrueTapOn(container, 'input')
     ),
 
@@ -106,11 +116,15 @@ UnitTest.asynctest('TouchTest', (success, failure) => {
     )
 
   ], () => {
-    Arr.each(handlers, (h) => { h.unbind(); });
+    Arr.each(handlers, (h) => {
+      h.unbind();
+    });
     Remove.remove(container);
     success();
   }, (err) => {
-    Arr.each(handlers, (h) => { h.unbind(); });
+    Arr.each(handlers, (h) => {
+      h.unbind();
+    });
     failure(err);
   });
 });

@@ -5,16 +5,16 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Toolbar } from '@ephox/bridge';
-import { HTMLAnchorElement } from '@ephox/dom-globals';
-import { Option } from '@ephox/katamari';
-import Editor from 'tinymce/core/api/Editor';
+import { Fun, Optional } from '@ephox/katamari';
 
+import Editor from 'tinymce/core/api/Editor';
+import { InlineContent } from 'tinymce/core/api/ui/Ui';
+
+import * as Settings from '../api/Settings';
 import * as Actions from '../core/Actions';
 import * as Utils from '../core/Utils';
-import * as Settings from '../api/Settings';
 
-const setupButtons = function (editor: Editor) {
+const setupButtons = (editor: Editor): void => {
   editor.ui.registry.addToggleButton('link', {
     icon: 'link',
     tooltip: 'Insert/edit link',
@@ -33,11 +33,11 @@ const setupButtons = function (editor: Editor) {
     icon: 'unlink',
     tooltip: 'Remove link',
     onAction: () => Utils.unlink(editor),
-    onSetup: Actions.toggleEnabledState(editor)
+    onSetup: Actions.toggleUnlinkState(editor)
   });
 };
 
-const setupMenuItems = function (editor: Editor) {
+const setupMenuItems = (editor: Editor): void => {
   editor.ui.registry.addMenuItem('openlink', {
     text: 'Open link',
     icon: 'new-tab',
@@ -56,11 +56,11 @@ const setupMenuItems = function (editor: Editor) {
     icon: 'unlink',
     text: 'Remove link',
     onAction: () => Utils.unlink(editor),
-    onSetup: Actions.toggleEnabledState(editor)
+    onSetup: Actions.toggleUnlinkState(editor)
   });
 };
 
-const setupContextMenu = function (editor: Editor) {
+const setupContextMenu = (editor: Editor): void => {
   const inLink = 'link unlink openlink';
   const noLink = 'link';
   editor.ui.registry.addContextMenu('link', {
@@ -68,15 +68,30 @@ const setupContextMenu = function (editor: Editor) {
   });
 };
 
-const setupContextToolbars = function (editor: Editor) {
-  const collapseSelectionToEnd = function (editor: Editor) {
+const setupContextToolbars = (editor: Editor): void => {
+  const collapseSelectionToEnd = (editor: Editor) => {
     editor.selection.collapse(false);
   };
 
-  const onSetupLink = (buttonApi: Toolbar.ContextButtonInstanceApi) => {
+  const onSetupLink = (buttonApi: InlineContent.ContextFormButtonInstanceApi) => {
     const node = editor.selection.getNode();
     buttonApi.setDisabled(!Utils.getAnchorElement(editor, node));
-    return () => { };
+    return Fun.noop;
+  };
+
+  /*
+   * if we're editing a link, don't change the text.
+   * if anything other than text is selected, don't change the text.
+   */
+  const getLinkText = (value: string) => {
+    const anchor = Utils.getAnchorElement(editor);
+    const onlyText = Utils.isOnlyTextSelected(editor);
+    if (!anchor && onlyText) {
+      const text = Utils.getAnchorText(editor.selection, anchor);
+      return Optional.some(text.length > 0 ? text : value);
+    } else {
+      return Optional.none();
+    }
   };
 
   editor.ui.registry.addContextForm('quicklink', {
@@ -105,28 +120,19 @@ const setupContextToolbars = function (editor: Editor) {
           return Actions.toggleActiveState(editor)(buttonApi);
         },
         onAction: (formApi) => {
-          const anchor = Utils.getAnchorElement(editor);
           const value = formApi.getValue();
-          if (!anchor) {
-            const attachState = { href: value, attach: () => { } };
-            const onlyText = Utils.isOnlyTextSelected(editor.selection.getContent());
-            const text: Option<string> = onlyText ? Option.some(Utils.getAnchorText(editor.selection, anchor)).filter((t) => t.length > 0).or(Option.from(value)) : Option.none();
-            Utils.link(editor, attachState, {
-              href: value,
-              text,
-              title: Option.none(),
-              rel: Option.none(),
-              target: Option.none(),
-              class: Option.none()
-            });
-            formApi.hide();
-          } else {
-            editor.undoManager.transact(() => {
-              editor.dom.setAttrib(anchor, 'href', value);
-              collapseSelectionToEnd(editor);
-              formApi.hide();
-            });
-          }
+          const text = getLinkText(value);
+          const attachState = { href: value, attach: Fun.noop };
+          Utils.link(editor, attachState, {
+            href: value,
+            text,
+            title: Optional.none(),
+            rel: Optional.none(),
+            target: Optional.none(),
+            class: Optional.none()
+          });
+          collapseSelectionToEnd(editor);
+          formApi.hide();
         }
       },
       {

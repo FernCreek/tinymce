@@ -5,8 +5,8 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Element, Node } from '@ephox/dom-globals';
 import { Arr, Fun } from '@ephox/katamari';
+
 import * as NodeType from '../dom/NodeType';
 import * as ArrUtils from '../util/ArrUtils';
 import * as CaretCandidate from './CaretCandidate';
@@ -14,8 +14,8 @@ import CaretPosition from './CaretPosition';
 import { findNode, isBackwards, isForwards } from './CaretUtils';
 
 export interface CaretWalker {
-  next(caretPosition: CaretPosition): CaretPosition;
-  prev(caretPosition: CaretPosition): CaretPosition;
+  next: (caretPosition: CaretPosition | null) => CaretPosition | null;
+  prev: (caretPosition: CaretPosition | null) => CaretPosition | null;
 }
 
 /**
@@ -47,7 +47,7 @@ const isAtomic = CaretCandidate.isAtomic;
 const isEditableCaretCandidate = CaretCandidate.isEditableCaretCandidate;
 
 const getParents = (node: Node, root: Node): Node[] => {
-  const parents = [];
+  const parents: Node[] = [];
 
   while (node && node !== root) {
     parents.push(node);
@@ -57,7 +57,7 @@ const getParents = (node: Node, root: Node): Node[] => {
   return parents;
 };
 
-const nodeAtIndex = (container: Node, offset: number): Node => {
+const nodeAtIndex = (container: Node, offset: number): Node | null => {
   if (container.hasChildNodes() && offset < container.childNodes.length) {
     return container.childNodes[offset];
   }
@@ -97,7 +97,7 @@ const getCaretCandidatePosition = (direction: HDirection, node: Node): CaretPosi
   return CaretPosition.before(node);
 };
 
-const moveForwardFromBr = (root: Element, nextNode: Node) => {
+const moveForwardFromBr = (root: Element, nextNode: Node): CaretPosition | null => {
   const nextSibling = nextNode.nextSibling;
 
   if (nextSibling && isCaretCandidate(nextSibling)) {
@@ -111,9 +111,11 @@ const moveForwardFromBr = (root: Element, nextNode: Node) => {
   }
 };
 
-const findCaretPosition = (direction: HDirection, startPos: CaretPosition, root: Node): CaretPosition => {
-  let node, nextNode, innerNode;
-  let caretPosition;
+const findCaretPosition = (direction: HDirection, startPos: CaretPosition | null, root: Node): CaretPosition | null => {
+  let node: Node;
+  let nextNode: Node;
+  let innerNode: Node;
+  let caretPosition: CaretPosition;
 
   if (!isElement(root) || !startPos) {
     return null;
@@ -194,7 +196,7 @@ const findCaretPosition = (direction: HDirection, startPos: CaretPosition, root:
   }
 
   if ((isForwards(direction) && caretPosition.isAtEnd()) || (isBackwards(direction) && caretPosition.isAtStart())) {
-    node = findNode(node, direction, Fun.constant(true), root, true);
+    node = findNode(node, direction, Fun.always, root, true);
     if (isEditableCaretCandidate(node, root)) {
       return getCaretCandidatePosition(direction, node);
     }
@@ -230,7 +232,7 @@ export const CaretWalker = (root: Node): CaretWalker => ({
      * @param {tinymce.caret.CaretPosition} caretPosition Caret position to start from.
      * @return {tinymce.caret.CaretPosition} CaretPosition or null if no position was found.
      */
-  next(caretPosition: CaretPosition): CaretPosition {
+  next: (caretPosition: CaretPosition | null): CaretPosition | null => {
     return findCaretPosition(HDirection.Forwards, caretPosition, root);
   },
 
@@ -243,7 +245,7 @@ export const CaretWalker = (root: Node): CaretWalker => ({
      * @param {tinymce.caret.CaretPosition} caretPosition Caret position to start from.
      * @return {tinymce.caret.CaretPosition} CaretPosition or null if no position was found.
      */
-  prev(caretPosition: CaretPosition): CaretPosition {
+  prev: (caretPosition: CaretPosition | null): CaretPosition | null => {
     return findCaretPosition(HDirection.Backwards, caretPosition, root);
   }
 });

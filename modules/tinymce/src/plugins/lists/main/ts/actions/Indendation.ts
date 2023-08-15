@@ -6,17 +6,19 @@
  */
 
 import { Arr } from '@ephox/katamari';
-import { Element } from '@ephox/sugar';
+import { SugarElement } from '@ephox/sugar';
+
 import Editor from 'tinymce/core/api/Editor';
-import { Indentation } from '../listModel/Indentation';
-import { listIndentation } from '../listModel/ListsIndendation';
+
 import { dlIndentation } from '../core/DlIndentation';
-import * as Range from '../core/Range';
+import * as Range from '../core/RangeUtils';
 import * as Selection from '../core/Selection';
+import { Indentation } from '../listmodel/Indentation';
+import { listIndentation } from '../listmodel/ListsIndendation';
 
 const selectionIndentation = (editor: Editor, indentation: Indentation): boolean => {
-  const lists = Arr.map(Selection.getSelectedListRoots(editor), Element.fromDom);
-  const dlItems = Arr.map(Selection.getSelectedDlItems(editor), Element.fromDom);
+  const lists = Arr.map(Selection.getSelectedListRoots(editor), SugarElement.fromDom);
+  const dlItems = Arr.map(Selection.getSelectedDlItems(editor), SugarElement.fromDom);
   let isHandled = false;
 
   if (lists.length || dlItems.length) {

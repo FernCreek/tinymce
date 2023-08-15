@@ -1,6 +1,8 @@
-import { Chain, GeneralSteps, Step } from '@ephox/agar';
-import { document, Event, File, HTMLInputElement, Window } from '@ephox/dom-globals';
-import { Cell, Option } from '@ephox/katamari';
+import { Singleton } from '@ephox/katamari';
+
+import { Chain } from '../api/Chain';
+import * as GeneralSteps from '../api/GeneralSteps';
+import { Step } from '../api/Step';
 import { createFileList } from './FileList';
 
 interface Props {
@@ -8,7 +10,7 @@ interface Props {
   click: () => void;
 }
 
-const inputPrototypeState = Cell(Option.none<Props>());
+const inputPrototypeState = Singleton.value<Props>();
 
 const createChangeEvent = (win: Window): Event => {
   const event: any = document.createEvent('CustomEvent');
@@ -30,10 +32,11 @@ const createChangeEvent = (win: Window): Event => {
 const cPatchInputElement = (files: File[]) => Chain.op<any>(() => {
   const currentProps = {
     files: Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'files'),
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     click: HTMLInputElement.prototype.click
   };
 
-  inputPrototypeState.set(Option.some(currentProps));
+  inputPrototypeState.set(currentProps);
 
   Object.defineProperty(HTMLInputElement.prototype, 'files', {
     get: () => createFileList(files)
@@ -45,7 +48,7 @@ const cPatchInputElement = (files: File[]) => Chain.op<any>(() => {
 });
 
 const cUnpatchInputElement = Chain.op<any>(() => {
-  inputPrototypeState.get().each((props) => {
+  inputPrototypeState.on((props) => {
     Object.defineProperty(HTMLInputElement.prototype, 'files', props.files);
     HTMLInputElement.prototype.click = props.click;
   });
@@ -63,7 +66,11 @@ const cRunOnPatchedFileInput = (files: File[], chain: Chain<any, any>): Chain<an
   cUnpatchInputElement
 ]);
 
+const pRunOnPatchedFileInput = (files: File[], action: () => Promise<void>): Promise<void > =>
+  Chain.toPromise(cRunOnPatchedFileInput(files, Chain.fromPromise(action)))(undefined);
+
 export {
   sRunOnPatchedFileInput,
-  cRunOnPatchedFileInput
+  cRunOnPatchedFileInput,
+  pRunOnPatchedFileInput
 };

@@ -1,11 +1,12 @@
 import { Assert, UnitTest } from '@ephox/bedrock-client';
 import { Gene, TestUniverse, TextGene, Universe } from '@ephox/boss';
-import { Arr, Option } from '@ephox/katamari';
+import { Arr, Optional } from '@ephox/katamari';
+
 import * as Look from 'ephox/robin/api/general/Look';
 import * as Parent from 'ephox/robin/api/general/Parent';
 import * as Structure from 'ephox/robin/api/general/Structure';
 
-UnitTest.test('BlockTest', function () {
+UnitTest.test('BlockTest', () => {
   const doc = TestUniverse(Gene('root', 'root', [
     Gene('d1', 'div', [
       TextGene('d1_t1', 'List: '),
@@ -31,18 +32,18 @@ UnitTest.test('BlockTest', function () {
     ])
   ]));
 
-  const check = function (expected: Option<string>, ids: string[], look: (universe: Universe<Gene, undefined>, item: Gene) => Option<Gene>) {
-    const items = Arr.map(ids, function (id) {
+  const check = (expected: Optional<string>, ids: string[], look: (universe: Universe<Gene, undefined>, item: Gene) => Optional<Gene>) => {
+    const items = Arr.map(ids, (id) => {
       return doc.find(doc.get(), id).getOrDie();
     });
     const actual = Parent.sharedOne(doc, look, items);
-    Assert.eq('Checking parent :: Option', expected.getOr('none'), actual.getOr(Gene('none', 'none')).id);
+    Assert.eq('Checking parent :: Optional', expected.getOr('none'), actual.getOr(Gene('none', 'none')).id);
   };
 
-  check(Option.some('ol1'), [ 'li2' ], Look.selector(doc, 'ol'));
-  check(Option.some('ol1'), [ 'li2', 'li3', 'li4_text' ], Look.selector(doc, 'ol'));
-  check(Option.none(), [ 'li2', 'li5' ], Look.selector(doc, 'ol'));
+  check(Optional.some('ol1'), [ 'li2' ], Look.selector(doc, 'ol'));
+  check(Optional.some('ol1'), [ 'li2', 'li3', 'li4_text' ], Look.selector(doc, 'ol'));
+  check(Optional.none(), [ 'li2', 'li5' ], Look.selector(doc, 'ol'));
 
-  check(Option.some('ol1'), [ 'li2', 'li4' ], Look.predicate(doc, (item: Gene) => Structure.isBlock(doc, item)));
-  check(Option.some('d1'), [ 'li1_text', 'li5_text' ], Look.exact(doc, Gene('d1', 'div')));
+  check(Optional.some('ol1'), [ 'li2', 'li4' ], Look.predicate(doc, (item: Gene) => Structure.isBlock(doc, item)));
+  check(Optional.some('d1'), [ 'li1_text', 'li5_text' ], Look.exact(doc, Gene('d1', 'div')));
 });

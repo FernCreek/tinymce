@@ -1,6 +1,6 @@
-import { FieldSchema, ValueSchema } from '@ephox/boulder';
-import { Fun, Option } from '@ephox/katamari';
-import { Element } from '@ephox/sugar';
+import { FieldSchema, StructureSchema } from '@ephox/boulder';
+import { Fun, Optional } from '@ephox/katamari';
+import { SugarElement } from '@ephox/sugar';
 
 import { NamedConfiguredBehaviour } from '../api/behaviour/Behaviour';
 import { Receiving } from '../api/behaviour/Receiving';
@@ -9,24 +9,24 @@ import { AlloyComponent } from '../api/component/ComponentApi';
 import * as AlloyTriggers from '../api/events/AlloyTriggers';
 import * as SystemEvents from '../api/events/SystemEvents';
 import * as Channels from '../api/messages/Channels';
-import { ReceivingConfig, ReceivingConfigSpec } from '../behaviour/receiving/ReceivingTypes';
+import { ReceivingChannelSpec, ReceivingConfig, ReceivingConfigSpec } from '../behaviour/receiving/ReceivingTypes';
 
 interface DismissalReceivingDetail {
-  isExtraPart: (sandbox: AlloyComponent, target: () => Element) => boolean;
-  fireEventInstead: Option<{
+  isExtraPart: (sandbox: AlloyComponent, target: SugarElement) => boolean;
+  fireEventInstead: Optional<{
     event: string;
   }>;
 }
 
 export interface DismissalReceivingSpec {
-  isExtraPart?: (sandbox: AlloyComponent, target: () => Element) => boolean;
+  isExtraPart?: (sandbox: AlloyComponent, target: SugarElement) => boolean;
   fireEventInstead?: {
     event?: string;
   };
 }
 
-const schema = ValueSchema.objOfOnly([
-  FieldSchema.defaulted('isExtraPart', Fun.constant(false)),
+const schema = StructureSchema.objOfOnly([
+  FieldSchema.defaulted('isExtraPart', Fun.never),
   FieldSchema.optionObjOf('fireEventInstead', [
     FieldSchema.defaulted('event', SystemEvents.dismissRequested())
   ])
@@ -39,14 +39,14 @@ const receivingConfig = (rawSpec: DismissalReceivingSpec): NamedConfiguredBehavi
   });
 };
 
-const receivingChannel = (rawSpec: DismissalReceivingSpec) => {
-  const detail: DismissalReceivingDetail = ValueSchema.asRawOrDie('Dismissal', schema, rawSpec);
+const receivingChannel = (rawSpec: DismissalReceivingSpec): Record<string, ReceivingChannelSpec> => {
+  const detail: DismissalReceivingDetail = StructureSchema.asRawOrDie('Dismissal', schema, rawSpec);
   return {
     [Channels.dismissPopups()]: {
-      schema: ValueSchema.objOfOnly([
-        FieldSchema.strict('target')
+      schema: StructureSchema.objOfOnly([
+        FieldSchema.required('target')
       ]),
-      onReceive(sandbox: AlloyComponent, data: { target: () => Element }) {
+      onReceive: (sandbox: AlloyComponent, data: { target: SugarElement }) => {
         if (Sandboxing.isOpen(sandbox)) {
           const isPart = Sandboxing.isPartOf(sandbox, data.target) || detail.isExtraPart(sandbox, data.target);
           if (!isPart) {

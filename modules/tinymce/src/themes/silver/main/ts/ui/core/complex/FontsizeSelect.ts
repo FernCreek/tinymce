@@ -6,8 +6,10 @@
  */
 
 import { AlloyComponent, AlloyTriggers } from '@ephox/alloy';
-import { Arr, Fun, Obj, Option } from '@ephox/katamari';
+import { Arr, Fun, Obj, Optional } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
+
 import { UiFactoryBackstage } from '../../../backstage/Backstage';
 import { updateMenuText } from '../../dropdown/CommonDropdown';
 import { createMenuItems, createSelectButton, FormatterFormatItem, SelectSpec } from './BespokeSelect';
@@ -27,6 +29,17 @@ const legacyFontSizes: Record<string, string> = {
   '36pt': '7'
 };
 
+// Note: 'xx-small', 'x-small' and 'large' are rounded up to nearest whole pt
+const keywordFontSizes: Record<string, string> = {
+  'xx-small': '7pt',
+  'x-small': '8pt',
+  'small': '10pt',
+  'medium': '12pt',
+  'large': '14pt',
+  'x-large': '18pt',
+  'xx-large': '24pt'
+};
+
 const round = (number: number, precision: number) => {
   const factor = Math.pow(10, precision);
   return Math.round(number * factor) / factor;
@@ -36,15 +49,16 @@ const toPt = (fontSize: string, precision?: number): string => {
   if (/[0-9.]+px$/.test(fontSize)) {
     // Round to the nearest 0.5
     return round(parseInt(fontSize, 10) * 72 / 96, precision || 0) + 'pt';
+  } else {
+    return Obj.get(keywordFontSizes, fontSize).getOr(fontSize);
   }
-  return fontSize;
 };
 
 const toLegacy = (fontSize: string): string => Obj.get(legacyFontSizes, fontSize).getOr('');
 
 const getSpec = (editor: Editor): SelectSpec => {
   const getMatchingValue = () => {
-    let matchOpt = Option.none<{ title: string; format: string }>();
+    let matchOpt = Optional.none<{ title: string; format: string }>();
     const items = dataset.data;
 
     const fontSize = editor.queryCommandValue('FontSize');
@@ -60,14 +74,14 @@ const getSpec = (editor: Editor): SelectSpec => {
     return { matchOpt, size: fontSize };
   };
 
-  const isSelectedFor = (item: string) => (valueOpt: Option<{ format: string; title: string }>) => valueOpt.exists((value) => value.format === item);
+  const isSelectedFor = (item: string) => (valueOpt: Optional<{ format: string; title: string }>) => valueOpt.exists((value) => value.format === item);
 
   const getCurrentValue = () => {
     const { matchOpt } = getMatchingValue();
     return matchOpt;
   };
 
-  const getPreviewFor: FormatRegister.GetPreviewForType = Fun.constant(Fun.constant(Option.none()));
+  const getPreviewFor: FormatRegister.GetPreviewForType = Fun.constant(Optional.none);
 
   const onAction = (rawItem: FormatterFormatItem) => () => {
     editor.undoManager.transact(() => {
@@ -79,30 +93,26 @@ const getSpec = (editor: Editor): SelectSpec => {
   const updateSelectMenuText = (comp: AlloyComponent) => {
     const { matchOpt, size } = getMatchingValue();
 
-    const text = matchOpt.fold(() => size, (match) => match.title);
+    const text = matchOpt.fold(Fun.constant(size), (match) => match.title);
     AlloyTriggers.emitWith(comp, updateMenuText, {
       text
     });
   };
 
-  const nodeChangeHandler = Option.some((comp: AlloyComponent) => () => updateSelectMenuText(comp));
-
-  const setInitialValue = Option.some((comp: AlloyComponent) => updateSelectMenuText(comp));
-
   const dataset = buildBasicSettingsDataset(editor, 'fontsize_formats', defaultFontsizeFormats, Delimiter.Space);
 
   return {
     tooltip: 'Font sizes',
-    icon: Option.none(),
+    text: Optional.some('12pt'),
+    icon: Optional.none(),
     isSelectedFor,
     getPreviewFor,
     getCurrentValue,
     onAction,
-    setInitialValue,
-    nodeChangeHandler,
+    updateText: updateSelectMenuText,
     dataset,
     shouldHide: false,
-    isInvalid: () => false
+    isInvalid: Fun.never
   };
 };
 

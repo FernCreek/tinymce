@@ -1,9 +1,10 @@
-import { Option } from '@ephox/katamari';
+import { Optional } from '@ephox/katamari';
 import { Direction, Gather } from '@ephox/phoenix';
+
 import * as WordUtil from '../util/WordUtil';
 
 export interface WordWalking extends Direction {
-  slicer: (text: string) => Option<[number, number]>;
+  slicer: (text: string) => Optional<[number, number]>;
 }
 
 const walkers = Gather.walkers();
@@ -11,16 +12,16 @@ const walkers = Gather.walkers();
 const left = walkers.left();
 const right = walkers.right();
 
-const breakToLeft = function (text: string) {
-  return WordUtil.leftBreak(text).map(function (index) {
-    return [ index + 1, text.length ] as [number, number];
+const breakToLeft = (text: string): Optional<[number, number]> => {
+  return WordUtil.leftBreak(text).map((index) => {
+    return [ index + 1, text.length ];
   });
 };
 
-const breakToRight = function (text: string) {
+const breakToRight = (text: string): Optional<[number, number]> => {
   // Will need to generalise the word breaks.
-  return WordUtil.rightBreak(text).map(function (index) {
-    return [ 0, index ] as [number, number];
+  return WordUtil.rightBreak(text).map((index) => {
+    return [ 0, index ];
   });
 };
 

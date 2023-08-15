@@ -1,7 +1,7 @@
-import { Cell, Option } from '@ephox/katamari';
+import { Singleton } from '@ephox/katamari';
 
-import { nuState } from '../common/BehaviourState';
 import { FlatgridState, GeneralKeyingConfig } from '../../keying/KeyingModeTypes';
+import { nuState, Stateless } from '../common/BehaviourState';
 
 interface RowsCols {
   readonly numRows: number;
@@ -9,12 +9,10 @@ interface RowsCols {
 }
 
 const flatgrid = (): FlatgridState => {
-  const dimensions = Cell(Option.none<RowsCols>());
+  const dimensions = Singleton.value<RowsCols>();
 
   const setGridSize = (numRows: number, numColumns: number) => {
-    dimensions.set(
-      Option.some({ numRows, numColumns })
-    );
+    dimensions.set({ numRows, numColumns });
   };
 
   const getNumRows = () => dimensions.get().map((d) => d.numRows);
@@ -35,7 +33,8 @@ const flatgrid = (): FlatgridState => {
   });
 };
 
-const init = (spec: GeneralKeyingConfig) => spec.state(spec);
+const init = (spec: GeneralKeyingConfig): Stateless | FlatgridState =>
+  spec.state(spec);
 
 export {
   flatgrid,

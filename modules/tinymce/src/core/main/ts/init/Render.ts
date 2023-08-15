@@ -5,13 +5,14 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Element as DomElement, HTMLFormElement, window } from '@ephox/dom-globals';
-import { Arr, Fun, Option, Options, Type } from '@ephox/katamari';
-import { Attr, Element } from '@ephox/sugar';
+import { Arr, Fun, Obj, Optional, Optionals, Type } from '@ephox/katamari';
+import { Attribute, SugarElement } from '@ephox/sugar';
+
 import { UrlObject } from '../api/AddOnManager';
 import DOMUtils from '../api/dom/DOMUtils';
 import EventUtils from '../api/dom/EventUtils';
 import ScriptLoader from '../api/dom/ScriptLoader';
+import StyleSheetLoader from '../api/dom/StyleSheetLoader';
 import Editor from '../api/Editor';
 import Env from '../api/Env';
 import IconManager from '../api/IconManager';
@@ -23,14 +24,13 @@ import I18n from '../api/util/I18n';
 import Tools from '../api/util/Tools';
 import WindowManager from '../api/WindowManager';
 import * as NodeType from '../dom/NodeType';
+import * as StyleSheetLoaderRegistry from '../dom/StyleSheetLoaderRegistry';
 import * as ErrorReporter from '../ErrorReporter';
 import * as Init from './Init';
-import { StyleSheetLoader } from '../api/dom/StyleSheetLoader';
-import * as StyleSheetLoaderRegistry from '../dom/StyleSheetLoaderRegistry';
 
 const DOM = DOMUtils.DOM;
 
-const hasSkipLoadPrefix = function (name) {
+const hasSkipLoadPrefix = (name) => {
   return name.charAt(0) === '-';
 };
 
@@ -47,11 +47,11 @@ const loadLanguage = (scriptLoader, editor: Editor) => {
   }
 };
 
-const loadTheme = function (scriptLoader: ScriptLoader, editor: Editor, suffix, callback) {
+const loadTheme = (scriptLoader: ScriptLoader, editor: Editor, suffix, callback) => {
   const theme = Settings.getTheme(editor);
 
   if (Type.isString(theme)) {
-    if (!hasSkipLoadPrefix(theme) && !ThemeManager.urls.hasOwnProperty(theme)) {
+    if (!hasSkipLoadPrefix(theme) && !Obj.has(ThemeManager.urls, theme)) {
       const themeUrl = Settings.getThemeUrl(editor);
 
       if (themeUrl) {
@@ -61,7 +61,7 @@ const loadTheme = function (scriptLoader: ScriptLoader, editor: Editor, suffix, 
       }
     }
 
-    scriptLoader.loadQueue(function () {
+    scriptLoader.loadQueue(() => {
       ThemeManager.waitFor(theme, callback);
     });
   } else {
@@ -71,28 +71,28 @@ const loadTheme = function (scriptLoader: ScriptLoader, editor: Editor, suffix, 
 
 interface UrlMeta {
   url: string;
-  name: Option<string>;
+  name: Optional<string>;
 }
 
-const getIconsUrlMetaFromUrl = (editor: Editor): Option<UrlMeta> => Option.from(Settings.getIconsUrl(editor))
+const getIconsUrlMetaFromUrl = (editor: Editor): Optional<UrlMeta> => Optional.from(Settings.getIconsUrl(editor))
   .filter((url) => url.length > 0)
   .map((url) => ({
     url,
-    name: Option.none()
+    name: Optional.none()
   }));
 
-const getIconsUrlMetaFromName = (editor: Editor, name: string | undefined, suffix: string): Option<UrlMeta> => Option.from(name)
+const getIconsUrlMetaFromName = (editor: Editor, name: string | undefined, suffix: string): Optional<UrlMeta> => Optional.from(name)
   .filter((name) => name.length > 0 && !IconManager.has(name))
   .map((name) => ({
     url: `${editor.editorManager.baseURL}/icons/${name}/icons${suffix}.js`,
-    name: Option.some(name)
+    name: Optional.some(name)
   }));
 
 const loadIcons = (scriptLoader: ScriptLoader, editor: Editor, suffix: string) => {
   const defaultIconsUrl = getIconsUrlMetaFromName(editor, 'default', suffix);
   const customIconsUrl = getIconsUrlMetaFromUrl(editor).orThunk(() => getIconsUrlMetaFromName(editor, Settings.getIconPackName(editor), ''));
 
-  Arr.each(Options.cat([ defaultIconsUrl, customIconsUrl ]), (urlMeta) => {
+  Arr.each(Optionals.cat([ defaultIconsUrl, customIconsUrl ]), (urlMeta) => {
     scriptLoader.add(urlMeta.url, Fun.noop, undefined, () => {
       ErrorReporter.iconsLoadError(editor, urlMeta.url, urlMeta.name.getOrUndefined());
     });
@@ -117,7 +117,7 @@ const loadPlugins = (editor: Editor, suffix: string) => {
 
         const dependencies = PluginManager.dependencies(plugin);
 
-        Tools.each(dependencies, function (depPlugin) {
+        Tools.each(dependencies, (depPlugin) => {
           const defaultSettings = {
             prefix: 'plugins/',
             resource: depPlugin,
@@ -144,19 +144,19 @@ const loadPlugins = (editor: Editor, suffix: string) => {
   });
 };
 
-const loadScripts = function (editor: Editor, suffix: string) {
+const loadScripts = (editor: Editor, suffix: string) => {
   const scriptLoader = ScriptLoader.ScriptLoader;
 
-  loadTheme(scriptLoader, editor, suffix, function () {
+  loadTheme(scriptLoader, editor, suffix, () => {
     loadLanguage(scriptLoader, editor);
     loadIcons(scriptLoader, editor, suffix);
     loadPlugins(editor, suffix);
 
-    scriptLoader.loadQueue(function () {
+    scriptLoader.loadQueue(() => {
       if (!editor.removed) {
         Init.init(editor);
       }
-    }, editor, function () {
+    }, editor, () => {
       if (!editor.removed) {
         Init.init(editor);
       }
@@ -164,19 +164,19 @@ const loadScripts = function (editor: Editor, suffix: string) {
   });
 };
 
-const getStyleSheetLoader = (element: Element<DomElement>, editor: Editor): StyleSheetLoader =>
+const getStyleSheetLoader = (element: SugarElement<Element>, editor: Editor): StyleSheetLoader =>
   StyleSheetLoaderRegistry.instance.forElement(element, {
     contentCssCors: Settings.hasContentCssCors(editor),
     referrerPolicy: Settings.getReferrerPolicy(editor)
   });
 
-const render = function (editor: Editor) {
+const render = (editor: Editor) => {
   const id = editor.id;
 
   // The user might have bundled multiple language packs so we need to switch the active code to the user specified language
   I18n.setCode(Settings.getLanguageCode(editor));
 
-  const readyHandler = function () {
+  const readyHandler = () => {
     DOM.unbind(window, 'ready', readyHandler);
     editor.render();
   };
@@ -198,13 +198,13 @@ const render = function (editor: Editor) {
   }
 
   // snapshot the element we're going to render to
-  const element = Element.fromDom(editor.getElement());
-  const snapshot = Attr.clone(element);
+  const element = SugarElement.fromDom(editor.getElement());
+  const snapshot = Attribute.clone(element);
   editor.on('remove', () => {
-    Arr.eachr(element.dom().attributes, (attr) =>
-      Attr.remove(element, attr.name)
+    Arr.eachr(element.dom.attributes, (attr) =>
+      Attribute.remove(element, attr.name)
     );
-    Attr.setAll(element, snapshot);
+    Attribute.setAll(element, snapshot);
   });
 
   editor.ui.styleSheetLoader = getStyleSheetLoader(element, editor);
@@ -229,21 +229,21 @@ const render = function (editor: Editor) {
     }
 
     // Pass submit/reset from form to editor instance
-    editor.formEventDelegate = function (e) {
+    editor.formEventDelegate = (e) => {
       editor.fire(e.type, e);
     };
 
     DOM.bind(form, 'submit reset', editor.formEventDelegate);
 
     // Reset contents in editor when the form is reset
-    editor.on('reset', function () {
+    editor.on('reset', () => {
       editor.resetContent();
     });
 
     // Check page uses id="submit" or name="submit" for it's submit button
     if (Settings.shouldPatchSubmit(editor) && !form.submit.nodeType && !form.submit.length && !form._mceOldSubmit) {
       form._mceOldSubmit = form.submit;
-      form.submit = function () {
+      form.submit = () => {
         editor.editorManager.triggerSave();
         editor.setDirty(false);
 
@@ -256,7 +256,7 @@ const render = function (editor: Editor) {
   editor.notificationManager = NotificationManager(editor);
 
   if (Settings.isEncodingXml(editor)) {
-    editor.on('GetContent', function (e) {
+    editor.on('GetContent', (e) => {
       if (e.save) {
         e.content = DOM.encode(e.content);
       }
@@ -264,7 +264,7 @@ const render = function (editor: Editor) {
   }
 
   if (Settings.shouldAddFormSubmitTrigger(editor)) {
-    editor.on('submit', function () {
+    editor.on('submit', () => {
       if (editor.initialized) {
         editor.save();
       }
@@ -272,7 +272,7 @@ const render = function (editor: Editor) {
   }
 
   if (Settings.shouldAddUnloadTrigger(editor)) {
-    editor._beforeUnload = function () {
+    editor._beforeUnload = () => {
       if (editor.initialized && !editor.destroyed && !editor.isHidden()) {
         editor.save({ format: 'raw', no_events: true, set_dirty: false });
       }

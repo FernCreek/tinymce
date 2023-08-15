@@ -6,12 +6,12 @@
  */
 
 import { SimpleSpec } from '@ephox/alloy';
-import { Types } from '@ephox/bridge';
+import { Dialog } from '@ephox/bridge';
 import { Arr } from '@ephox/katamari';
-import { UiFactoryBackstageShared } from '../../backstage/Backstage';
-import { Omit } from '../Omit';
 
-type GridSpec = Omit<Types.Grid.Grid, 'type'>;
+import { UiFactoryBackstageShared } from '../../backstage/Backstage';
+
+type GridSpec = Omit<Dialog.Grid, 'type'>;
 
 export const renderGrid = (spec: GridSpec, backstage: UiFactoryBackstageShared): SimpleSpec => ({
   dom: {

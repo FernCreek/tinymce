@@ -1,23 +1,22 @@
-/* tslint:disable:no-console */
-import { console } from '@ephox/dom-globals';
-import { Element } from '@ephox/sugar';
+/* eslint-disable no-console */
+import { SugarElement } from '@ephox/sugar';
 
 import Editor from 'tinymce/core/api/Editor';
 
 // import ButtonSetupDemo from './ButtonSetupDemo';
 declare let tinymce: any;
 
-export default function () {
+export default () => {
   const makeSidebar = (ed: Editor, name: string, background: string, width: number) => {
     ed.ui.registry.addSidebar(name, {
       icon: 'comment',
       tooltip: 'Tooltip for ' + name,
       onSetup: (api) => {
         console.log('onSetup ' + name);
-        const box = Element.fromHtml('<div style="width: ' + width + 'px; background: ' + background + ';"></div>');
-        api.element().appendChild(box.dom());
+        const box = SugarElement.fromHtml('<div style="width: ' + width + 'px; background: ' + background + ';"></div>');
+        api.element().appendChild(box.dom);
         return () => {
-          api.element().removeChild(box.dom());
+          api.element().removeChild(box.dom);
         };
       },
       onShow: (_api) => {
@@ -41,10 +40,10 @@ export default function () {
     // statusbar: false,
     resize: 'both',
 
-    setup(ed: Editor) {
+    setup: (ed: Editor) => {
       makeSidebar(ed, 'sidebar1', 'green', 200);
       makeSidebar(ed, 'sidebar2', 'red', 300);
       makeSidebar(ed, 'sidebar3', 'blue', 150);
     }
   });
-}
+};

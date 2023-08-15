@@ -5,26 +5,24 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-const getDateFormat = function (editor) {
-  return editor.getParam('insertdatetime_dateformat', editor.translate('%Y-%m-%d'));
-};
+import Editor from 'tinymce/core/api/Editor';
 
-const getTimeFormat = function (editor) {
-  return editor.getParam('insertdatetime_timeformat', editor.translate('%H:%M:%S'));
-};
+const getDateFormat = (editor: Editor): string =>
+  editor.getParam('insertdatetime_dateformat', editor.translate('%Y-%m-%d'));
 
-const getFormats = function (editor) {
-  return editor.getParam('insertdatetime_formats', [ '%H:%M:%S', '%Y-%m-%d', '%I:%M:%S %p', '%D' ]);
-};
+const getTimeFormat = (editor: Editor): string =>
+  editor.getParam('insertdatetime_timeformat', editor.translate('%H:%M:%S'));
 
-const getDefaultDateTime = function (editor) {
+const getFormats = (editor: Editor): string[] =>
+  editor.getParam('insertdatetime_formats', [ '%H:%M:%S', '%Y-%m-%d', '%I:%M:%S %p', '%D' ]);
+
+const getDefaultDateTime = (editor: Editor): string => {
   const formats = getFormats(editor);
   return formats.length > 0 ? formats[0] : getTimeFormat(editor);
 };
 
-const shouldInsertTimeElement = function (editor) {
-  return editor.getParam('insertdatetime_element', false);
-};
+const shouldInsertTimeElement = (editor: Editor): boolean =>
+  editor.getParam('insertdatetime_element', false);
 
 export {
   getDateFormat,

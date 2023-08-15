@@ -1,45 +1,47 @@
-import { Logger, Step, Waiter } from '@ephox/agar';
+import { Waiter } from '@ephox/agar';
 import { Cell } from '@ephox/katamari';
-import { Image } from '@ephox/dom-globals';
-import { Assert } from '@ephox/bedrock-client';
+import { assert } from 'chai';
 
-const sExecCommand = function (editor, cmd, value?) {
-  return Logger.t(`Execute ${cmd}`, Step.sync(function () {
-    editor.execCommand(cmd, false, value);
-  }));
-};
+import Editor from 'tinymce/core/api/Editor';
+import { UploadResult } from 'tinymce/core/api/EditorUpload';
+import { BlobInfo } from 'tinymce/core/api/file/BlobCache';
+import PromisePolyfill from 'tinymce/core/api/util/Promise';
+import { UploadHandler } from 'tinymce/core/file/Uploader';
 
-const sLoadImage = function (editor, url, size?) {
-  return Logger.t(`Load image ${url}`, Step.async(function (done) {
+export interface StateContainer {
+  readonly get: () => null | { blobInfo: BlobInfo };
+  readonly handler: (url: string) => UploadHandler;
+  readonly resetState: () => void;
+  readonly pWaitForState: () => Promise<void>;
+}
+
+const pLoadImage = (editor: Editor, url: string, size?: { width: number; height: number }): Promise<void> =>
+  new PromisePolyfill((resolve, reject) => {
     const img = new Image();
 
-    img.onload = function () {
+    img.onload = () => {
       editor.setContent(`<p><img src="${url}" ${size ? `width="${size.width}" height="${size.height}"` : ''} /></p>`);
       editor.focus();
-      done();
+      resolve();
     };
 
+    img.onerror = (e) => reject(e);
+
     img.src = url;
-  }));
-};
+  });
 
-const sUploadImages = function (editor) {
-  return Logger.t('Upload images', Step.async(function (done) {
-    editor.uploadImages(done);
-  }));
-};
+const pUploadImages = (editor: Editor): Promise<UploadResult[]> => editor.uploadImages();
 
-const sWaitForBlobImage = function (editor) {
-  return Waiter.sTryUntil('Did not find a blobimage', Step.sync(function () {
-    Assert.eq('Should be one blob image', true, editor.dom.select('img[src^=blob]').length === 1);
-  }), 10, 3000);
-};
+const pWaitForBlobImage = (editor: Editor) =>
+  Waiter.pTryUntil('Did not find a blobimage', () => {
+    assert.lengthOf(editor.dom.select('img[src^=blob]'), 1, 'Should be one blob image');
+  });
 
-const createStateContainer = function () {
+const createStateContainer = (): StateContainer => {
   const state = Cell(null);
 
-  const handler = function (url) {
-    return function (blobInfo, success) {
+  const handler = (url: string) => {
+    return (blobInfo, success) => {
       state.set({
         blobInfo
       });
@@ -48,28 +50,23 @@ const createStateContainer = function () {
     };
   };
 
-  const sResetState = Logger.t('Reset state',
-    Step.sync(function () {
-      state.set(null);
-    })
-  );
+  const resetState = () => state.set(null);
 
-  const sWaitForState = Waiter.sTryUntil('Did not get a state change', Step.sync(function () {
-    Assert.eq('Should be true when we have the state', true, state.get() !== null);
-  }), 10, 3000);
+  const pWaitForState = () => Waiter.pTryUntil('Did not get a state change', () => {
+    assert.isNotNull(state.get(), 'Should have the state');
+  });
 
   return {
     get: state.get,
     handler,
-    sResetState,
-    sWaitForState
+    resetState,
+    pWaitForState
   };
 };
 
 export {
-  sExecCommand,
-  sLoadImage,
-  sUploadImages,
-  sWaitForBlobImage,
+  pLoadImage,
+  pUploadImages,
+  pWaitForBlobImage,
   createStateContainer
 };

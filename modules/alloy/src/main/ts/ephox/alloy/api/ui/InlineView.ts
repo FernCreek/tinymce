@@ -1,14 +1,12 @@
 import { FieldSchema } from '@ephox/boulder';
-import { Arr, Fun, Option } from '@ephox/katamari';
-import { Element } from '@ephox/sugar';
+import { Arr, Fun, Optional } from '@ephox/katamari';
+import { SugarElement } from '@ephox/sugar';
+
 import * as Boxes from '../../alien/Boxes';
 import * as ComponentStructure from '../../alien/ComponentStructure';
-import { AlloyComponent } from '../../api/component/ComponentApi';
-import { AlloySpec, SketchSpec } from '../../api/component/SpecTypes';
-import * as SystemEvents from '../../api/events/SystemEvents';
+import { PlacementSpec } from '../../behaviour/positioning/PositioningTypes';
 import * as Fields from '../../data/Fields';
 import * as Layout from '../../positioning/layout/Layout';
-import { AnchorSpec } from '../../positioning/mode/Anchoring';
 import * as Dismissal from '../../sandbox/Dismissal';
 import * as Reposition from '../../sandbox/Reposition';
 import { InlineMenuSpec, InlineViewApis, InlineViewDetail, InlineViewSketcher, InlineViewSpec } from '../../ui/types/InlineViewTypes';
@@ -17,15 +15,18 @@ import { Receiving } from '../behaviour/Receiving';
 import { Representing } from '../behaviour/Representing';
 import { Sandboxing } from '../behaviour/Sandboxing';
 import { LazySink } from '../component/CommonTypes';
+import { AlloyComponent } from '../component/ComponentApi';
 import * as SketchBehaviours from '../component/SketchBehaviours';
+import { AlloySpec, SketchSpec } from '../component/SpecTypes';
+import * as SystemEvents from '../events/SystemEvents';
 import * as Sketcher from './Sketcher';
 import { tieredMenu as TieredMenu } from './TieredMenu';
 import { SingleSketchFactory } from './UiSketcher';
 
 interface InlineViewPositionState {
   mode: 'position';
-  anchor: AnchorSpec;
-  getBounds: () => Option<Boxes.Bounds>;
+  config: PlacementSpec;
+  getBounds: () => Optional<Boxes.Bounds>;
 }
 
 interface InlineViewMenuState {
@@ -35,7 +36,7 @@ interface InlineViewMenuState {
 
 type InlineViewState = InlineViewMenuState | InlineViewPositionState;
 
-const makeMenu = (detail: InlineViewDetail, menuSandbox: AlloyComponent, anchor: AnchorSpec, menuSpec: InlineMenuSpec, getBounds: () => Option<Boxes.Bounds>) => {
+const makeMenu = (detail: InlineViewDetail, menuSandbox: AlloyComponent, placementSpec: PlacementSpec, menuSpec: InlineMenuSpec, getBounds: () => Optional<Boxes.Bounds>) => {
   const lazySink: () => ReturnType<LazySink> = () => detail.lazySink(menuSandbox);
 
   const layouts = menuSpec.type === 'horizontal' ? { layouts: {
@@ -55,43 +56,47 @@ const makeMenu = (detail: InlineViewDetail, menuSandbox: AlloyComponent, anchor:
     markers: menuSpec.menu.markers,
     highlightImmediately: menuSpec.menu.highlightImmediately,
 
-    onEscape() {
+    onEscape: () => {
       // Note for the future: this should possibly also call detail.onHide
       Sandboxing.close(menuSandbox);
       detail.onEscape.map((handler) => handler(menuSandbox));
-      return Option.some<boolean>(true);
+      return Optional.some<boolean>(true);
     },
 
-    onExecute() {
-      return Option.some<boolean>(true);
+    onExecute: () => {
+      return Optional.some<boolean>(true);
     },
 
-    onOpenMenu(tmenu, menu) {
-      Positioning.positionWithinBounds(lazySink().getOrDie(), anchor, menu, getBounds());
+    onOpenMenu: (tmenu, menu) => {
+      Positioning.positionWithinBounds(lazySink().getOrDie(), menu, placementSpec, getBounds());
     },
 
-    onOpenSubmenu(tmenu, item, submenu, triggeringPaths) {
+    onOpenSubmenu: (tmenu, item, submenu, triggeringPaths) => {
       const sink = lazySink().getOrDie();
-      Positioning.position(sink, {
-        anchor: 'submenu',
-        item,
-        ...getSubmenuLayouts(triggeringPaths)
-      }, submenu);
+      Positioning.position(sink, submenu, {
+        anchor: {
+          type: 'submenu',
+          item,
+          ...getSubmenuLayouts(triggeringPaths)
+        }
+      });
     },
 
-    onRepositionMenu(tmenu, primaryMenu, submenuTriggers) {
+    onRepositionMenu: (tmenu, primaryMenu, submenuTriggers) => {
       const sink = lazySink().getOrDie();
-      Positioning.positionWithinBounds(sink, anchor, primaryMenu, getBounds());
+      Positioning.positionWithinBounds(sink, primaryMenu, placementSpec, getBounds());
       Arr.each(submenuTriggers, (st) => {
         const submenuLayouts = getSubmenuLayouts(st.triggeringPath);
-        Positioning.position(sink, { anchor: 'submenu', item: st.triggeringItem, ...submenuLayouts }, st.triggeredMenu);
+        Positioning.position(sink, st.triggeredMenu, {
+          anchor: { type: 'submenu', item: st.triggeringItem, ...submenuLayouts }
+        });
       });
     }
   });
 };
 
 const factory: SingleSketchFactory<InlineViewDetail, InlineViewSpec> = (detail: InlineViewDetail, spec): SketchSpec => {
-  const isPartOfRelated = (sandbox: AlloyComponent, queryElem: Element) => {
+  const isPartOfRelated = (sandbox: AlloyComponent, queryElem: SugarElement) => {
     const related = detail.getRelated(sandbox);
     return related.exists((rel) => ComponentStructure.isPartOf(rel, queryElem));
   };
@@ -100,52 +105,58 @@ const factory: SingleSketchFactory<InlineViewDetail, InlineViewSpec> = (detail: 
     // Keep the same location, and just change the content.
     Sandboxing.setContent(sandbox, thing);
   };
-  const showAt = (sandbox: AlloyComponent, anchor: AnchorSpec, thing: AlloySpec) => {
-    showWithin(sandbox, anchor, thing, Option.none());
+
+  const showAt = (sandbox: AlloyComponent, thing: AlloySpec, placementSpec: PlacementSpec) => {
+    showWithin(sandbox, thing, placementSpec, Optional.none());
   };
-  const showWithin = (sandbox: AlloyComponent, anchor: AnchorSpec, thing: AlloySpec, boxElement: Option<Element>) => {
-    showWithinBounds(sandbox, anchor, thing, () => boxElement.map((elem) => Boxes.box(elem)));
+
+  const showWithin = (sandbox: AlloyComponent, thing: AlloySpec, placementSpec: PlacementSpec, boxElement: Optional<SugarElement>) => {
+    showWithinBounds(sandbox, thing, placementSpec, () => boxElement.map((elem) => Boxes.box(elem)));
   };
-  const showWithinBounds = (sandbox: AlloyComponent, anchor: AnchorSpec, thing: AlloySpec, getBounds: () => Option<Boxes.Bounds>) => {
+
+  const showWithinBounds = (sandbox: AlloyComponent, thing: AlloySpec, placementSpec: PlacementSpec, getBounds: () => Optional<Boxes.Bounds>) => {
     const sink = detail.lazySink(sandbox).getOrDie();
-    Sandboxing.openWhileCloaked(sandbox, thing, () => Positioning.positionWithinBounds(sink, anchor, sandbox, getBounds()));
-    Representing.setValue(sandbox, Option.some({
+    Sandboxing.openWhileCloaked(sandbox, thing, () => Positioning.positionWithinBounds(sink, sandbox, placementSpec, getBounds()));
+    Representing.setValue(sandbox, Optional.some({
       mode: 'position',
-      anchor,
+      config: placementSpec,
       getBounds
     }));
   };
+
   // TODO AP-191 write a test for showMenuAt
-  const showMenuAt = (sandbox: AlloyComponent, anchor: AnchorSpec, menuSpec: InlineMenuSpec) => {
-    showMenuWithinBounds(sandbox, anchor, menuSpec, () => Option.none());
+  const showMenuAt = (sandbox: AlloyComponent, placementSpec: PlacementSpec, menuSpec: InlineMenuSpec) => {
+    showMenuWithinBounds(sandbox, placementSpec, menuSpec, Optional.none);
   };
-  const showMenuWithinBounds = (sandbox: AlloyComponent, anchor: AnchorSpec, menuSpec: InlineMenuSpec, getBounds: () => Option<Boxes.Bounds>) => {
-    const menu = makeMenu(detail, sandbox, anchor, menuSpec, getBounds);
+
+  const showMenuWithinBounds = (sandbox: AlloyComponent, placementSpec: PlacementSpec, menuSpec: InlineMenuSpec, getBounds: () => Optional<Boxes.Bounds>) => {
+    const menu = makeMenu(detail, sandbox, placementSpec, menuSpec, getBounds);
     Sandboxing.open(sandbox, menu);
-    Representing.setValue(sandbox, Option.some({
+    Representing.setValue(sandbox, Optional.some({
       mode: 'menu',
       menu
     }));
   };
+
   const hide = (sandbox: AlloyComponent) => {
     if (Sandboxing.isOpen(sandbox)) {
-      Representing.setValue(sandbox, Option.none());
+      Representing.setValue(sandbox, Optional.none());
       Sandboxing.close(sandbox);
     }
   };
-  const getContent = (sandbox: AlloyComponent): Option<AlloyComponent> => Sandboxing.getState(sandbox);
+
+  const getContent = (sandbox: AlloyComponent): Optional<AlloyComponent> => Sandboxing.getState(sandbox);
+
   const reposition = (sandbox: AlloyComponent) => {
     if (Sandboxing.isOpen(sandbox)) {
       Representing.getValue(sandbox).each((state: InlineViewState) => {
         switch (state.mode) {
           case 'menu':
-            Sandboxing.getState(sandbox).each((tmenu) => {
-              TieredMenu.repositionMenus(tmenu);
-            });
+            Sandboxing.getState(sandbox).each(TieredMenu.repositionMenus);
             break;
           case 'position':
             const sink = detail.lazySink(sandbox).getOrDie();
-            Positioning.positionWithinBounds(sink, state.anchor, sandbox, state.getBounds());
+            Positioning.positionWithinBounds(sink, sandbox, state.config, state.getBounds());
             break;
         }
       });
@@ -172,23 +183,23 @@ const factory: SingleSketchFactory<InlineViewDetail, InlineViewSpec> = (detail: 
       detail.inlineBehaviours,
       [
         Sandboxing.config({
-          isPartOf(sandbox, data, queryElem) {
+          isPartOf: (sandbox, data, queryElem) => {
             return ComponentStructure.isPartOf(data, queryElem) || isPartOfRelated(sandbox, queryElem);
           },
-          getAttachPoint(sandbox) {
+          getAttachPoint: (sandbox) => {
             return detail.lazySink(sandbox).getOrDie();
           },
-          onOpen(sandbox) {
+          onOpen: (sandbox) => {
             detail.onShow(sandbox);
           },
-          onClose(sandbox) {
+          onClose: (sandbox) => {
             detail.onHide(sandbox);
           }
         }),
         Representing.config({
           store: {
             mode: 'memory',
-            initialValue: Option.none()
+            initialValue: Optional.none()
           }
         }),
         Receiving.config({
@@ -214,7 +225,7 @@ const factory: SingleSketchFactory<InlineViewDetail, InlineViewSpec> = (detail: 
 const InlineView: InlineViewSketcher = Sketcher.single<InlineViewSpec, InlineViewDetail, InlineViewApis>({
   name: 'InlineView',
   configFields: [
-    FieldSchema.strict('lazySink'),
+    FieldSchema.required('lazySink'),
     Fields.onHandler('onShow'),
     Fields.onHandler('onHide'),
     FieldSchema.optionFunction('onEscape'),
@@ -225,9 +236,9 @@ const InlineView: InlineViewSketcher = Sketcher.single<InlineViewSpec, InlineVie
     FieldSchema.optionObjOf('fireRepositionEventInstead', [
       FieldSchema.defaulted('event', SystemEvents.repositionRequested())
     ]),
-    FieldSchema.defaulted('getRelated', Option.none),
+    FieldSchema.defaulted('getRelated', Optional.none),
     FieldSchema.defaulted('isExtraPart', Fun.never),
-    FieldSchema.defaulted('eventOrder', Option.none)
+    FieldSchema.defaulted('eventOrder', Optional.none)
   ],
   factory,
   apis: {

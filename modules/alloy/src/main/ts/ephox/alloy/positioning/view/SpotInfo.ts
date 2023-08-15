@@ -1,15 +1,18 @@
-import { Fun } from '@ephox/katamari';
 import { BubbleInstance } from '../layout/Bubble';
 import { DirectionAdt } from '../layout/Direction';
 import { BoundsRestriction } from '../layout/LayoutBounds';
+import { Placement } from '../layout/Placement';
 
 export interface SpotInfo {
-  readonly x: () => number;
-  readonly y: () => number;
-  readonly bubble: () => BubbleInstance;
-  readonly direction: () => DirectionAdt;
-  readonly label: () => string;
-  readonly boundsRestriction: () => BoundsRestriction;
+  readonly x: number;
+  readonly y: number;
+  readonly bubble: BubbleInstance;
+  readonly direction: DirectionAdt;
+  readonly label: string;
+  readonly restriction: BoundsRestriction;
+  readonly placement: Placement;
+  // This flag will pretend that this spot fits within the bounds, no matter whether it does or not
+  readonly alwaysFit: boolean;
 }
 
 const nu = (
@@ -17,15 +20,19 @@ const nu = (
   y: number,
   bubble: BubbleInstance,
   direction: DirectionAdt,
+  placement: Placement,
   boundsRestriction: BoundsRestriction,
-  label: string
+  labelPrefix: string,
+  alwaysFit: boolean = false
 ): SpotInfo => ({
-  x: Fun.constant(x),
-  y: Fun.constant(y),
-  bubble: Fun.constant(bubble),
-  direction: Fun.constant(direction),
-  boundsRestriction: Fun.constant(boundsRestriction),
-  label: Fun.constant(label)
+  x,
+  y,
+  bubble,
+  direction,
+  placement,
+  restriction: boundsRestriction,
+  label: `${labelPrefix}-${placement}`,
+  alwaysFit
 });
 
 export {

@@ -1,4 +1,4 @@
-import { ApproxStructure, Assertions, GeneralSteps, Logger, Step, Waiter } from '@ephox/agar';
+import { ApproxStructure, Assertions, GeneralSteps, Logger, PhantomSkipper, Step, Waiter } from '@ephox/agar';
 import { UnitTest } from '@ephox/bedrock-client';
 import { Class, Css, Traverse } from '@ephox/sugar';
 
@@ -7,12 +7,13 @@ import { Sliding } from 'ephox/alloy/api/behaviour/Sliding';
 import * as GuiFactory from 'ephox/alloy/api/component/GuiFactory';
 import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
 import { Container } from 'ephox/alloy/api/ui/Container';
-import * as PhantomSkipper from 'ephox/alloy/test/PhantomSkipper';
 
 UnitTest.asynctest('SlidingTest', (success, failure) => {
 
   // Seems to have stopped working on phantomjs
-  if (PhantomSkipper.skip()) { return success(); }
+  if (PhantomSkipper.detect()) {
+    return success();
+  }
 
   const slidingStyles = [
     '.test-sliding-closed { visibility: hidden; opacity: 0; }',
@@ -65,11 +66,11 @@ UnitTest.asynctest('SlidingTest', (success, failure) => {
   ), (doc, _body, _gui, component, store) => {
 
     const sIsNotGrowing = Step.sync(() => {
-      Assertions.assertEq('Ensuring stopped growing', false, Class.has(component.element(), 'test-sliding-width-growing'));
+      Assertions.assertEq('Ensuring stopped growing', false, Class.has(component.element, 'test-sliding-width-growing'));
     });
 
     const sIsNotShrinking = Step.sync(() => {
-      Assertions.assertEq('Ensuring stopped shrinking', false, Class.has(component.element(), 'test-sliding-width-shrinking'));
+      Assertions.assertEq('Ensuring stopped shrinking', false, Class.has(component.element, 'test-sliding-width-shrinking'));
     });
 
     const sGrowingSteps = (label: string) => Logger.t(
@@ -89,7 +90,7 @@ UnitTest.asynctest('SlidingTest', (success, failure) => {
               width: str.is('300px')
             }
           })),
-          component.element()
+          component.element
         ),
 
         Waiter.sTryUntil(
@@ -125,7 +126,7 @@ UnitTest.asynctest('SlidingTest', (success, failure) => {
               width: str.is('0px')
             }
           })),
-          component.element()
+          component.element
         ),
 
         Waiter.sTryUntil(
@@ -154,7 +155,7 @@ UnitTest.asynctest('SlidingTest', (success, failure) => {
             arr.has('test-sliding-closed')
           ]
         })),
-        component.element()
+        component.element
       ),
 
       store.sClear,
@@ -208,7 +209,7 @@ UnitTest.asynctest('SlidingTest', (success, failure) => {
             width: str.is('0px')
           }
         })),
-        component.element()
+        component.element
       ),
       Step.sync(() => {
         Assertions.assertEq('Checking hasGrown = false (immediateShrink)', false, Sliding.hasGrown(component));
@@ -216,7 +217,7 @@ UnitTest.asynctest('SlidingTest', (success, failure) => {
       store.sClear,
       Step.sync(() => {
         // test firing a transitionend inside
-        Traverse.firstChild(component.element()).each((child) => {
+        Traverse.firstChild(component.element).each((child) => {
           Css.set(child, 'width', '10px');
         });
       }),
@@ -242,5 +243,5 @@ UnitTest.asynctest('SlidingTest', (success, failure) => {
 
       GuiSetup.mRemoveStyles
     ];
-  }, () => { success(); }, failure);
+  }, success, failure);
 });

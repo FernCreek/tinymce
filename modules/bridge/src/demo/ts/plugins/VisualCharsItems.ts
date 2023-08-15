@@ -1,11 +1,13 @@
-import { getDemoRegistry } from './../buttons/DemoRegistry';
+import { Fun } from '@ephox/katamari';
+
+import { getDemoRegistry } from '../buttons/DemoRegistry';
 
 const editor = {
   on: (_s, _f) => { },
-  isDirty: () => true
+  isDirty: Fun.always
 };
 
-export const registerVisualCharsItems = () => {
+export const registerVisualCharsItems = (): void => {
   getDemoRegistry().addToggleButton('visualchars', {
     type: 'togglebutton',
     disabled: false,
@@ -13,7 +15,7 @@ export const registerVisualCharsItems = () => {
       editor.on('VisualChars', (e) => {
         buttonApi.setActive(e);
       });
-      return () => { };
+      return Fun.noop;
     },
     onAction: (_buttonApi) => {
       // toggles visual chars

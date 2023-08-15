@@ -7,17 +7,18 @@
 
 import { ItemTypes, ItemWidget, Menu as AlloyMenu, MenuTypes } from '@ephox/alloy';
 import { Menu } from '@ephox/bridge';
-import { Id } from '@ephox/katamari';
+import { Fun, Id } from '@ephox/katamari';
 
 import { UiFactoryBackstage } from 'tinymce/themes/silver/backstage/Backstage';
 import * as ColorSwatch from 'tinymce/themes/silver/ui/core/color/ColorSwatch';
+
 import { createPartialChoiceMenu } from '../../menu/MenuChoice';
 import { deriveMenuMovement } from '../../menu/MenuMovement';
 import * as MenuParts from '../../menu/MenuParts';
 import ItemResponse from '../ItemResponse';
 
-export function renderColorSwatchItem(spec: Menu.FancyMenuItem, backstage: UiFactoryBackstage): ItemTypes.WidgetItemSpec {
-  const items = ColorSwatch.getColors(backstage.colorinput.getColors(), backstage.colorinput.hasCustomColors());
+export const renderColorSwatchItem = (spec: Menu.ColorSwatchMenuItem, backstage: UiFactoryBackstage): ItemTypes.WidgetItemSpec => {
+  const items = getColorItems(spec, backstage);
   const columns = backstage.colorinput.getColorCols();
   const presets = 'color';
 
@@ -30,7 +31,7 @@ export function renderColorSwatchItem(spec: Menu.FancyMenuItem, backstage: UiFac
     columns,
     presets,
     ItemResponse.CLOSE_ON_EXECUTE,
-    () => false,
+    Fun.never,
     backstage.shared.providers
   );
 
@@ -49,7 +50,15 @@ export function renderColorSwatchItem(spec: Menu.FancyMenuItem, backstage: UiFac
     },
     autofocus: true,
     components: [
-      ItemWidget.parts().widget(AlloyMenu.sketch(widgetSpec))
+      ItemWidget.parts.widget(AlloyMenu.sketch(widgetSpec))
     ]
   };
-}
+};
+
+const getColorItems = (spec: Menu.ColorSwatchMenuItem, backstage: UiFactoryBackstage): Menu.ChoiceMenuItemSpec[] => {
+  const useCustomColors = spec.initData.allowCustomColors && backstage.colorinput.hasCustomColors();
+  return spec.initData.colors.fold(
+    () => ColorSwatch.getColors(backstage.colorinput.getColors(), useCustomColors),
+    (colors) => colors.concat(ColorSwatch.getAdditionalColors(useCustomColors))
+  );
+};

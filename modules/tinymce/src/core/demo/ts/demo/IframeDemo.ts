@@ -1,11 +1,10 @@
-/* tslint:disable:no-console */
-import { console } from '@ephox/dom-globals';
+/* eslint-disable no-console */
 import { Merger } from '@ephox/katamari';
-import { Element } from '@ephox/sugar';
+import { SugarElement } from '@ephox/sugar';
 
 declare let tinymce: any;
 
-export default function () {
+export default () => {
 
   const makeSidebar = (ed, name: string, background: string, width: number) => {
     ed.ui.registry.addSidebar(name, {
@@ -13,10 +12,10 @@ export default function () {
       tooltip: 'Tooltip for ' + name,
       onSetup: (api) => {
         console.log('onSetup ' + name);
-        const box = Element.fromHtml('<div style="width: ' + width + 'px; background: ' + background + ';"></div>');
-        api.element().appendChild(box.dom());
+        const box = SugarElement.fromHtml('<div style="width: ' + width + 'px; background: ' + background + ';"></div>');
+        api.element().appendChild(box.dom);
         return () => {
-          api.element().removeChild(box.dom());
+          api.element().removeChild(box.dom);
         };
       },
       onShow: (_api) => {
@@ -32,7 +31,7 @@ export default function () {
     skin_url: '../../../../js/tinymce/skins/ui/oxide',
     content_css: '../../../../js/tinymce/skins/content/default/content.css',
     selector: 'textarea',
-    setup(ed) {
+    setup: (ed) => {
       makeSidebar(ed, 'sidebar1', 'green', 200);
     },
     plugins: [
@@ -45,4 +44,4 @@ export default function () {
 
   tinymce.init(settings);
   tinymce.init(Merger.deepMerge(settings, { inline: true, selector: 'div.tinymce' }));
-}
+};

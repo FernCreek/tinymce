@@ -1,41 +1,32 @@
-import { Assertions, Chain, FocusTools, GeneralSteps, Guard, Logger, Mouse, Step, UiControls, UiFinder, Waiter } from '@ephox/agar';
-import { document, Event, localStorage } from '@ephox/dom-globals';
+import { FocusTools, Mouse, UiControls, UiFinder, Waiter } from '@ephox/agar';
 import { Obj, Type } from '@ephox/katamari';
-import { TinyApis, TinyDom, TinyUi } from '@ephox/mcagar';
-import { Body, Element, Value } from '@ephox/sugar';
+import { Attribute, Class, SugarBody, SugarDocument, SugarElement, Traverse, Value } from '@ephox/sugar';
+import { TinyAssertions, TinyUiActions } from '@ephox/wrap-mcagar';
+import { assert } from 'chai';
 
-const doc = TinyDom.fromDom(document);
+import Editor from 'tinymce/core/api/Editor';
+
+const doc = SugarDocument.getDocument();
 
 const selectors = {
   href: 'label.tox-label:contains(URL) + div>div>input.tox-textfield',
   text: 'label.tox-label:contains(Text to display) + input.tox-textfield',
   title: 'label.tox-label:contains(Title) + input.tox-textfield',
-  target: 'label.tox-label:contains(Open link in...) + div.tox-selectfield>select',
-  linklist: 'label.tox-label:contains(Link list) + div.tox-selectfield>select'
+  target: 'label.tox-label:contains(Open link in...) + div.tox-listboxfield > .tox-listbox',
+  linklist: 'label.tox-label:contains(Link list) + div.tox-listboxfield > .tox-listbox'
 };
 
-const sOpenLinkDialog = (ui: TinyUi) => Logger.t('Open link dialog', GeneralSteps.sequence([
-  ui.sClickOnToolbar('Click toolbar button', 'button'),
-  UiFinder.sWaitForVisible('wait for link dialog', TinyDom.fromDom(document.body), '[role="dialog"]')
-]));
+const pOpenLinkDialog = async (editor: Editor) => {
+  TinyUiActions.clickOnToolbar(editor, '[aria-label="Insert/edit link"]');
+  await TinyUiActions.pWaitForDialog(editor);
+};
 
-const sClickOnDialog = (label: string, selector: string) => Logger.t('Click on dialog', GeneralSteps.sequence([
-  UiFinder.sWaitForVisible('Waiting for item to appear', TinyDom.fromDom(document.body), '[role="dialog"]:not(.tox-confirm-dialog) ' + selector),
-  Mouse.sClickOn(TinyDom.fromDom(document.body), '[role="dialog"]:not(.tox-confirm-dialog) ' + selector)
-]));
+const clickOnConfirmDialog = (editor: Editor, state: boolean) => {
+  TinyUiActions.clickOnUi(editor, '[role="dialog"].tox-confirm-dialog button:contains("' + (state ? 'Yes' : 'No') + '")');
+};
 
-const sClickOnConfirmDialog = (label: string, state: boolean) => Logger.t('Click on confirm dialog', GeneralSteps.sequence([
-  Mouse.sClickOn(TinyDom.fromDom(document.body), '[role="dialog"].tox-confirm-dialog button:contains("' + (state ? 'Yes' : 'No') + '")'),
-  Waiter.sTryUntil(
-    'Waiting for confirm dialog to go away',
-    UiFinder.sNotExists(TinyDom.fromDom(document.body), '.tox-confirm-dialog'),
-    100,
-    1000
-  )
-]));
-
-const fireEvent = (elem: Element, event: string) => {
-  let evt;
+const fireEvent = (elem: SugarElement, event: string) => {
+  let evt: Event;
   if (Type.isFunction(Event)) {
     evt = new Event(event, {
       bubbles: true,
@@ -45,159 +36,108 @@ const fireEvent = (elem: Element, event: string) => {
     evt = document.createEvent('Event');
     evt.initEvent(event, true, true);
   }
-  elem.dom().dispatchEvent(evt);
+  elem.dom.dispatchEvent(evt);
 };
 
-const cFireEvent = (event: string) => Chain.control(
-  Chain.op((elem: Element) => {
-    fireEvent(elem, event);
-  }),
-  Guard.addLogging('Fire event')
-);
+const getInput = (selector: string) =>
+  UiFinder.findIn(SugarBody.body(), selector).getOrDie();
 
-const cGetInput = (selector: string) => Chain.control(
-  Chain.fromChains([
-    Chain.inject(Body.body()),
-    UiFinder.cFindIn(selector)
-  ]),
-  Guard.addLogging('Get input')
-);
+const assertInputValue = (label: string, selector: string, expected: string | boolean): void => {
+  const input = getInput(selector);
+  if (input.dom.type === 'checkbox') {
+    assert.equal(input.dom.checked, expected, `The input value for ${label} should be: ${expected}`);
+  } else if (Class.has(input, 'tox-listbox')) {
+    assert.equal(Attribute.get(input, 'data-value'), expected, `The input value for ${label} should be: ${expected}`);
+  } else {
+    assert.equal(Value.get(input), expected, `The input value for ${label} should be: ${expected}`);
+  }
+};
 
-const sAssertInputValue = (label, selector, expected) => Logger.t(label,
-  Chain.asStep({}, [
-    cGetInput(selector),
-    Chain.op((element) => {
-      if (element.dom().type === 'checkbox') {
-        Assertions.assertEq(`The input value for ${label} should be: `, expected, element.dom().checked);
-        return;
-      }
-      Assertions.assertEq(`The input value for ${label} should be: `, expected, Value.get(element));
-    })
-  ]),
-);
-
-const sAssertDialogContents = (expected: Record<string, any>) => {
-  const steps = [ sWaitForUi('Wait for dialog to appear', 'div[role="dialog"]') ];
+const assertDialogContents = (expected: Record<string, any>) => {
   Obj.mapToArray(selectors, (value, key) => {
     if (Obj.has(expected, key)) {
-      steps.push(sAssertInputValue(key, value, expected[key]));
+      assertInputValue(key, value, expected[key]);
     }
   });
-  return GeneralSteps.sequence(steps);
 };
 
-const sWaitForUi = (label: string, selector: string) => Logger.t('Wait for UI', Waiter.sTryUntil(
-  label,
-  UiFinder.sWaitForVisible('Waiting', TinyDom.fromDom(document.body), selector),
-  100,
-  1000
-));
-
-const sInsertLink = function (ui: TinyUi, url: string) {
-  return Logger.t('Insert link', GeneralSteps.sequence([
-    sOpenLinkDialog(ui),
-    FocusTools.sSetActiveValue(doc, url),
-    sClickSave
-  ]));
+const pInsertLink = async (editor: Editor, url: string) => {
+  await pOpenLinkDialog(editor);
+  FocusTools.setActiveValue(doc, url);
+  await pClickSave(editor);
 };
 
-const sAssertContentPresence = (api: TinyApis, presence: Record<string, number>) => Logger.t('Assert content presence', Waiter.sTryUntil(
-  'Waiting for content to have expected presence',
-  api.sAssertContentPresence(presence),
-  100,
-  1000
-));
+const pAssertContentPresence = (editor: Editor, presence: Record<string, number>) =>
+  Waiter.pTryUntil('Waiting for content to have expected presence', () => TinyAssertions.assertContentPresence(editor, presence));
 
-const sWaitForDialogClose = Logger.t('Wait for dialog to close', Waiter.sTryUntil(
+const pWaitForDialogClose = () => Waiter.pTryUntil(
   'Waiting for dialog to go away',
-  UiFinder.sNotExists(TinyDom.fromDom(document.body), '[role="dialog"]:not(.tox-confirm-dialog)'),
-  100,
-  1000
-));
+  () => UiFinder.notExists(SugarBody.body(), '[role="dialog"]:not(.tox-confirm-dialog)')
+);
 
-const sWaitForConfirmClose = Logger.t('Wait to confirm close', Waiter.sTryUntil(
+const pWaitForConfirmClose = () => Waiter.pTryUntil(
   'Waiting for confirm dialog to go away',
-  UiFinder.sNotExists(TinyDom.fromDom(document.body), '[role="dialog"].tox-confirm-dialog'),
-  100,
-  1000
-));
-
-const sClickSave = Logger.t('Click Save', GeneralSteps.sequence([
-  sClickOnDialog('click save button', 'button:contains("Save")'),
-  sWaitForDialogClose
-]));
-
-const sClickCancel = Logger.t('Click Cancel', GeneralSteps.sequence([
-  sClickOnDialog('click cancel button', 'button:contains("Cancel")'),
-  sWaitForDialogClose
-]));
-
-const sClickConfirmYes = Logger.t('Click confirm yes', GeneralSteps.sequence([
-  sClickOnConfirmDialog('click "Yes"', true),
-  sWaitForConfirmClose
-]));
-
-const sClickConfirmNo = Logger.t('Click confirm no', GeneralSteps.sequence([
-  sClickOnConfirmDialog('click "No"', false),
-  sWaitForConfirmClose
-]));
-
-const cGetDialog = Chain.control(
-  Chain.fromChains([
-    Chain.inject(TinyDom.fromDom(document.body)),
-    Chain.control(
-      UiFinder.cFindIn('[role="dialog"]'),
-      Guard.tryUntil('Waiting for dialog', 100, 1000)
-    )
-  ]),
-  Guard.addLogging('Get dialog')
+  () => UiFinder.notExists(SugarBody.body(), '[role="dialog"].tox-confirm-dialog')
 );
 
-const cFindInDialog = (selector) => Chain.control(
-  Chain.fromChains([
-    Chain.inject(TinyDom.fromDom(document.body)),
-    Chain.control(
-      UiFinder.cFindIn('[role="dialog"]'),
-      Guard.tryUntil('Waiting for dialog', 100, 1000)
-    ),
-    UiFinder.cFindIn(selector)
-  ]),
-  Guard.addLogging('Find in dialog')
-);
+const pClickSave = async (editor: Editor) => {
+  TinyUiActions.submitDialog(editor);
+  await pWaitForDialogClose();
+};
 
-const sClearHistory = Step.sync(() => {
+const pClickCancel = async (editor: Editor) => {
+  TinyUiActions.cancelDialog(editor);
+  await pWaitForDialogClose();
+};
+
+const pClickConfirmYes = async (editor: Editor) => {
+  clickOnConfirmDialog(editor, true);
+  await pWaitForConfirmClose();
+};
+
+const pClickConfirmNo = async (editor: Editor) => {
+  clickOnConfirmDialog(editor, false);
+  await pWaitForConfirmClose();
+};
+
+const pFindInDialog = async (editor: Editor, selector: string) => {
+  const dialog = await TinyUiActions.pWaitForDialog(editor);
+  return UiFinder.findIn(dialog, selector).getOrDie();
+};
+
+const clearHistory = () => {
   localStorage.removeItem('tinymce-url-history');
-});
+};
 
-const sSetHtmlSelectValue = (group: string, newValue) => Logger.t('Set html select value', Chain.asStep({ }, [
-  cFindInDialog('label:contains("' + group + '") + .tox-selectfield select'),
-  UiControls.cSetValue(newValue),
-  cFireEvent('change')
-]));
+const pSetListBoxItem = async (editor: Editor, group: string, itemText: string) => {
+  const element = await pFindInDialog(editor, 'label:contains("' + group + '") + .tox-listboxfield .tox-listbox');
+  Mouse.click(element);
+  const list = await UiFinder.pWaitForVisible('Wait for list to open', SugarBody.body(), '.tox-menu.tox-collection--list');
+  const item = UiFinder.findIn(list, '.tox-collection__item-label:contains(' + itemText + ')').getOrDie();
+  const parent = Traverse.parent(item).getOrDie('Failed to find parent');
+  Mouse.click(parent);
+};
 
-const sSetInputFieldValue = (group: string, newValue: string) => Logger.t('Set input field value', Chain.asStep({ }, [
-  cFindInDialog('label:contains("' + group + '") + input'),
-  UiControls.cSetValue(newValue),
-  cFireEvent('input')
-]));
+const pSetInputFieldValue = async (editor: Editor, group: string, newValue: string) => {
+  const element = await pFindInDialog(editor, 'label:contains("' + group + '") + input');
+  UiControls.setValue(element, newValue);
+  fireEvent(element, 'input');
+};
 
 export const TestLinkUi = {
-  sAssertContentPresence,
-  sOpenLinkDialog,
-  sClickOnDialog,
-  sClickOnConfirmDialog,
-  cGetDialog,
-  cFireEvent,
-  cFindInDialog,
-  sAssertDialogContents,
-  sWaitForUi,
-  sClickSave,
-  sClickCancel,
-  sClickConfirmYes,
-  sClickConfirmNo,
-  sInsertLink,
+  assertInputValue,
+  pAssertContentPresence,
+  pOpenLinkDialog,
   fireEvent,
-  sClearHistory,
-  sSetHtmlSelectValue,
-  sSetInputFieldValue
+  pFindInDialog,
+  assertDialogContents,
+  pClickSave,
+  pClickCancel,
+  pWaitForDialogClose,
+  pClickConfirmYes,
+  pClickConfirmNo,
+  pInsertLink,
+  clearHistory,
+  pSetListBoxItem,
+  pSetInputFieldValue
 };

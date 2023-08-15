@@ -5,17 +5,17 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import Node from './Node';
+import AstNode, { Attributes } from './Node';
 import Schema from './Schema';
 import Writer, { WriterSettings } from './Writer';
 
-export interface SerializerSettings extends WriterSettings {
+export interface HtmlSerializerSettings extends WriterSettings {
   inner?: boolean;
   validate?: boolean;
 }
 
-interface Serializer {
-  serialize (node: Node): string;
+interface HtmlSerializer {
+  serialize: (node: AstNode) => string;
 }
 
 /**
@@ -28,7 +28,7 @@ interface Serializer {
  * @version 3.4
  */
 
-const Serializer = function (settings?: SerializerSettings, schema = Schema()) {
+const HtmlSerializer = (settings?: HtmlSerializerSettings, schema = Schema()): HtmlSerializer => {
   const writer = Writer(settings);
 
   settings = settings || {};
@@ -43,37 +43,37 @@ const Serializer = function (settings?: SerializerSettings, schema = Schema()) {
    * @param {tinymce.html.Node} node Node instance to serialize.
    * @return {String} String with HTML based on DOM tree.
    */
-  const serialize = (node: Node): string => {
+  const serialize = (node: AstNode): string => {
     const validate = settings.validate;
 
-    const handlers = {
+    const handlers: Record<number, (node: AstNode) => void> = {
       // #text
-      3(node) {
+      3: (node) => {
         writer.text(node.value, node.raw);
       },
 
       // #comment
-      8(node) {
+      8: (node) => {
         writer.comment(node.value);
       },
 
       // Processing instruction
-      7(node) {
+      7: (node) => {
         writer.pi(node.name, node.value);
       },
 
       // Doctype
-      10(node) {
+      10: (node) => {
         writer.doctype(node.value);
       },
 
       // CDATA
-      4(node) {
+      4: (node) => {
         writer.cdata(node.value);
       },
 
       // Document fragment
-      11(node) {
+      11: (node) => {
         if ((node = node.firstChild)) {
           do {
             walk(node);
@@ -84,37 +84,36 @@ const Serializer = function (settings?: SerializerSettings, schema = Schema()) {
 
     writer.reset();
 
-    const walk = function (node: Node) {
+    const walk = (node: AstNode) => {
       const handler = handlers[node.type];
-      let name, isEmpty, attrs, attrName, attrValue, sortedAttrs, i, l, elementRule;
 
       if (!handler) {
-        name = node.name;
-        isEmpty = node.shortEnded;
-        attrs = node.attributes;
+        const name = node.name;
+        const isEmpty = node.shortEnded;
+        let attrs = node.attributes;
 
         // Sort attributes
         if (validate && attrs && attrs.length > 1) {
-          sortedAttrs = [];
-          sortedAttrs.map = {};
+          const sortedAttrs = [] as Attributes;
+          (sortedAttrs as any).map = {};
 
-          elementRule = schema.getElementRule(node.name);
+          const elementRule = schema.getElementRule(node.name);
           if (elementRule) {
-            for (i = 0, l = elementRule.attributesOrder.length; i < l; i++) {
-              attrName = elementRule.attributesOrder[i];
+            for (let i = 0, l = elementRule.attributesOrder.length; i < l; i++) {
+              const attrName = elementRule.attributesOrder[i];
 
               if (attrName in attrs.map) {
-                attrValue = attrs.map[attrName];
+                const attrValue = attrs.map[attrName];
                 sortedAttrs.map[attrName] = attrValue;
                 sortedAttrs.push({ name: attrName, value: attrValue });
               }
             }
 
-            for (i = 0, l = attrs.length; i < l; i++) {
-              attrName = attrs[i].name;
+            for (let i = 0, l = attrs.length; i < l; i++) {
+              const attrName = attrs[i].name;
 
               if (!(attrName in sortedAttrs.map)) {
-                attrValue = attrs.map[attrName];
+                const attrValue = attrs.map[attrName];
                 sortedAttrs.map[attrName] = attrValue;
                 sortedAttrs.push({ name: attrName, value: attrValue });
               }
@@ -155,4 +154,4 @@ const Serializer = function (settings?: SerializerSettings, schema = Schema()) {
   };
 };
 
-export default Serializer;
+export default HtmlSerializer;

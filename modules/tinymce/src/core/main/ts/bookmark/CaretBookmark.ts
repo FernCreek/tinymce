@@ -5,8 +5,8 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Node } from '@ephox/dom-globals';
 import { Fun } from '@ephox/katamari';
+
 import DOMUtils from '../api/dom/DOMUtils';
 import CaretPosition from '../caret/CaretPosition';
 import * as NodeType from '../dom/NodeType';
@@ -50,7 +50,7 @@ const getChildNodes = (node: Node): Node[] => {
     return [];
   }
 
-  return ArrUtils.reduce(node.childNodes, function (result, node) {
+  return ArrUtils.reduce(node.childNodes, (result, node) => {
     if (isBogus(node) && node.nodeName !== 'BR') {
       result = result.concat(getChildNodes(node));
     } else {
@@ -76,12 +76,12 @@ const normalizedTextOffset = (node: Node, offset: number): number => {
 const equal = (a) => (b) => a === b;
 
 const normalizedNodeIndex = (node: Node): number => {
-  let nodes, index;
+  let nodes: Node[], index: number;
 
   nodes = getChildNodes(normalizedParent(node));
   index = ArrUtils.findIndex(nodes, equal(node), node);
   nodes = nodes.slice(0, index + 1);
-  const numTextFragments = ArrUtils.reduce(nodes, function (result, node, i) {
+  const numTextFragments = ArrUtils.reduce(nodes, (result, node, i) => {
     if (isText(node) && isText(nodes[i - 1])) {
       result++;
     }
@@ -95,7 +95,7 @@ const normalizedNodeIndex = (node: Node): number => {
   return index - numTextFragments;
 };
 
-const createPathItem = function (node) {
+const createPathItem = (node) => {
   let name;
 
   if (isText(node)) {
@@ -107,7 +107,7 @@ const createPathItem = function (node) {
   return name + '[' + normalizedNodeIndex(node) + ']';
 };
 
-const parentsUntil = function (root: Node, node: Node, predicate?): Node[] {
+const parentsUntil = (root: Node, node: Node, predicate?): Node[] => {
   const parents = [];
 
   for (node = node.parentNode; node !== root; node = node.parentNode) {
@@ -145,7 +145,7 @@ const create = (root: Node, caretPosition: CaretPosition): string => {
   path.push(createPathItem(container));
   parents = parentsUntil(root, container);
   parents = ArrUtils.filter(parents, Fun.not(NodeType.isBogus));
-  path = path.concat(ArrUtils.map(parents, function (node) {
+  path = path.concat(ArrUtils.map(parents, (node) => {
     return createPathItem(node);
   }));
 
@@ -155,7 +155,7 @@ const create = (root: Node, caretPosition: CaretPosition): string => {
 const resolvePathItem = (node: Node, name: string, index: number): Node => {
   let nodes = getChildNodes(node);
 
-  nodes = ArrUtils.filter(nodes, function (node, index) {
+  nodes = ArrUtils.filter(nodes, (node, index) => {
     return !isText(node) || !isText(nodes[index - 1]);
   });
 
@@ -192,7 +192,7 @@ const findTextPosition = (container: Node, offset: number): CaretPosition => {
   return CaretPosition(container, offset);
 };
 
-const resolve = (root: Node, path: string): CaretPosition => {
+const resolve = (root: Node, path: string): CaretPosition | null => {
   let offset;
 
   if (!path) {
@@ -203,17 +203,17 @@ const resolve = (root: Node, path: string): CaretPosition => {
   const paths = parts[0].split('/');
   offset = parts.length > 1 ? parts[1] : 'before';
 
-  const container = ArrUtils.reduce(paths, function (result, value) {
-    value = /([\w\-\(\)]+)\[([0-9]+)\]/.exec(value);
-    if (!value) {
+  const container = ArrUtils.reduce(paths, (result, value) => {
+    const match = /([\w\-\(\)]+)\[([0-9]+)\]/.exec(value);
+    if (!match) {
       return null;
     }
 
-    if (value[1] === 'text()') {
-      value[1] = '#text';
+    if (match[1] === 'text()') {
+      match[1] = '#text';
     }
 
-    return resolvePathItem(result, value[1], parseInt(value[2], 10));
+    return resolvePathItem(result, match[1], parseInt(match[2], 10));
   }, root);
 
   if (!container) {

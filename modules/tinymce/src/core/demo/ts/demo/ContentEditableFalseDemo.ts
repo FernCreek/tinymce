@@ -1,13 +1,12 @@
-// tslint:disable:no-console
-import { console } from '@ephox/dom-globals';
+/* eslint-disable no-console */
 import Editor from 'tinymce/core/api/Editor';
 
 declare const window: any;
 declare let tinymce: any;
 
-export default function () {
+export default () => {
 
-  const paintClientRect = function (rect, color, id) {
+  const paintClientRect = (rect, color, id) => {
     const editor: Editor = tinymce.activeEditor;
     const $ = editor.$;
     let rectDiv;
@@ -36,13 +35,13 @@ export default function () {
     });
   };
 
-  const paintClientRects = function (rects, color) {
-    tinymce.util.Tools.each(rects, function (rect, index) {
+  const paintClientRects = (rects, color) => {
+    tinymce.util.Tools.each(rects, (rect, index) => {
       paintClientRect(rect, color, color + index);
     });
   };
 
-  const logPos = function (caretPosition) {
+  const logPos = (caretPosition) => {
     const container = caretPosition.container(),
       offset = caretPosition.offset();
 
@@ -84,4 +83,4 @@ export default function () {
   });
 
   window.tinymce = tinymce;
-}
+};

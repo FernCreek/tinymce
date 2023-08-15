@@ -5,7 +5,26 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-const urls = [
+import { Arr } from '@ephox/katamari';
+
+export const enum PluginType {
+  Premium = 'premium',
+  OpenSource = 'opensource'
+}
+
+interface PartialPluginUrl {
+  readonly key: string;
+  readonly name: string;
+  readonly type?: PluginType;
+  readonly slug?: string;
+}
+
+export interface PluginUrl extends PartialPluginUrl {
+  readonly type: PluginType;
+  readonly slug: string;
+}
+
+const urls = Arr.map<PartialPluginUrl, PluginUrl>([
   { key: 'advlist', name: 'Advanced List' },
   { key: 'anchor', name: 'Anchor' },
   { key: 'autolink', name: 'Autolink' },
@@ -36,6 +55,7 @@ const urls = [
   { key: 'paste', name: 'Paste' },
   { key: 'preview', name: 'Preview' },
   { key: 'print', name: 'Print' },
+  { key: 'quickbars', name: 'Quick Toolbars' },
   { key: 'save', name: 'Save' },
   { key: 'searchreplace', name: 'Search and Replace' },
   { key: 'spellchecker', name: 'Spell Checker' },
@@ -49,23 +69,30 @@ const urls = [
   { key: 'visualchars', name: 'Visual Characters' },
   { key: 'wordcount', name: 'Word Count' },
   // TODO: Add other premium plugins when they are included in the website
-  { key: 'advcode', name: 'Advanced Code Editor*' },
-  { key: 'formatpainter', name: 'Format Painter*' },
-  { key: 'powerpaste', name: 'PowerPaste*' },
-  { key: 'tinydrive', name: 'Tiny Drive*', slug: 'drive' },
-  { key: 'tinymcespellchecker', name: 'Spell Checker Pro*' },
-  { key: 'a11ychecker', name: 'Accessibility Checker*' },
-  { key: 'linkchecker', name: 'Link Checker*' },
-  { key: 'mentions', name: 'Mentions*' },
-  { key: 'mediaembed', name: 'Enhanced Media Embed*' },
-  { key: 'checklist', name: 'Checklist*' },
-  { key: 'casechange', name: 'Case Change*' },
-  { key: 'permanentpen', name: 'Permanent Pen*' },
-  { key: 'pageembed', name: 'Page Embed*' },
-  { key: 'tinycomments', name: 'Tiny Comments*', slug: 'comments' },
-  { key: 'advtable', name: 'Advanced Tables*' },
-  { key: 'autocorrect', name: 'Autocorrect*' }
-];
+  { key: 'a11ychecker', name: 'Accessibility Checker', type: PluginType.Premium },
+  { key: 'advcode', name: 'Advanced Code Editor', type: PluginType.Premium },
+  { key: 'advtable', name: 'Advanced Tables', type: PluginType.Premium },
+  { key: 'autocorrect', name: 'Autocorrect', type: PluginType.Premium },
+  { key: 'casechange', name: 'Case Change', type: PluginType.Premium },
+  { key: 'checklist', name: 'Checklist', type: PluginType.Premium },
+  { key: 'export', name: 'Export', type: PluginType.Premium },
+  { key: 'mediaembed', name: 'Enhanced Media Embed', type: PluginType.Premium },
+  { key: 'formatpainter', name: 'Format Painter', type: PluginType.Premium },
+  { key: 'linkchecker', name: 'Link Checker', type: PluginType.Premium },
+  { key: 'mentions', name: 'Mentions', type: PluginType.Premium },
+  { key: 'pageembed', name: 'Page Embed', type: PluginType.Premium },
+  { key: 'permanentpen', name: 'Permanent Pen', type: PluginType.Premium },
+  { key: 'powerpaste', name: 'PowerPaste', type: PluginType.Premium },
+  { key: 'rtc', name: 'Real-Time Collaboration', type: PluginType.Premium },
+  { key: 'tinymcespellchecker', name: 'Spell Checker Pro', type: PluginType.Premium },
+  { key: 'tinycomments', name: 'Tiny Comments', type: PluginType.Premium, slug: 'comments' },
+  { key: 'tinydrive', name: 'Tiny Drive', type: PluginType.Premium }
+], (item) => ({
+  ...item,
+  // Set the defaults/fallbacks for the plugin urls
+  type: item.type || PluginType.OpenSource,
+  slug: item.slug || item.key
+}));
 
 export {
   urls

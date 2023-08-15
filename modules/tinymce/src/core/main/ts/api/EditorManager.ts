@@ -5,8 +5,8 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { BeforeUnloadEvent, document, HTMLElement, HTMLFormElement, Window } from '@ephox/dom-globals';
 import { Arr, Obj, Type } from '@ephox/katamari';
+
 import * as ErrorReporter from '../ErrorReporter';
 import * as FocusController from '../focus/FocusController';
 import AddOnManager from './AddOnManager';
@@ -16,7 +16,7 @@ import Editor from './Editor';
 import Env from './Env';
 import { EditorManagerEventMap } from './EventTypes';
 import { RawEditorSettings } from './SettingsTypes';
-import I18n from './util/I18n';
+import I18n, { TranslatedString, Untranslated } from './util/I18n';
 import Observable from './util/Observable';
 import Promise from './util/Promise';
 import Tools from './util/Tools';
@@ -24,15 +24,17 @@ import URI from './util/URI';
 
 declare const window: Window & { tinymce: any; tinyMCEPreInit: any };
 
+// NOTE: the class tag is commented out for the include in `modules/tinymce/tools/docs/tinymce.js`
 /**
  * This class used as a factory for manager for tinymce.Editor instances.
  *
  * @example
  * tinymce.EditorManager.init({});
  *
- * @class tinymce.EditorManager
+ * /@class tinymce.EditorManager
  * @mixes tinymce.util.Observable
  * @static
+ * @private
  */
 
 const DOM = DOMUtils.DOM;
@@ -42,15 +44,15 @@ let beforeUnloadDelegate: (e: BeforeUnloadEvent) => any;
 const legacyEditors = [];
 let editors = [];
 
-const isValidLegacyKey = function (id) {
+const isValidLegacyKey = (id) => {
   // In theory we could filter out any editor id:s that clash
   // with array prototype items but that could break existing integrations
   return id !== 'length';
 };
 
-const globalEventDelegate = function (e) {
+const globalEventDelegate = (e) => {
   const type = e.type;
-  each(EditorManager.get(), function (editor) {
+  each(EditorManager.get(), (editor) => {
     switch (type) {
       case 'scroll':
         editor.fire('ScrollWindow', e);
@@ -62,7 +64,7 @@ const globalEventDelegate = function (e) {
   });
 };
 
-const toggleGlobalEvents = function (state) {
+const toggleGlobalEvents = (state) => {
   if (state !== boundGlobalEvents) {
     if (state) {
       DomQuery(window).on('resize scroll', globalEventDelegate);
@@ -74,7 +76,7 @@ const toggleGlobalEvents = function (state) {
   }
 };
 
-const removeEditorFromList = function (targetEditor: Editor) {
+const removeEditorFromList = (targetEditor: Editor) => {
   const oldEditors = editors;
 
   delete legacyEditors[targetEditor.id];
@@ -85,7 +87,7 @@ const removeEditorFromList = function (targetEditor: Editor) {
     }
   }
 
-  editors = Arr.filter(editors, function (editor) {
+  editors = Arr.filter(editors, (editor) => {
     return targetEditor !== editor;
   });
 
@@ -102,7 +104,7 @@ const removeEditorFromList = function (targetEditor: Editor) {
   return oldEditors.length !== editors.length;
 };
 
-const purgeDestroyedEditor = function (editor) {
+const purgeDestroyedEditor = (editor) => {
   // User has manually destroyed the editor lets clean up the mess
   if (editor && editor.initialized && !(editor.getContainer() || editor.getBody()).parentNode) {
     removeEditorFromList(editor);
@@ -131,21 +133,21 @@ interface EditorManager extends Observable<EditorManagerEventMap> {
   i18n: I18n;
   suffix: string;
 
-  add (editor: Editor): Editor;
-  addI18n (code: string, item: Record<string, string>): void;
-  createEditor (id: string, settings: RawEditorSettings): Editor;
-  execCommand (cmd: string, ui: boolean, value: any): boolean;
-  get (): Editor[];
-  get (id: number | string): Editor;
-  init (settings: RawEditorSettings): Promise<Editor[]>;
-  overrideDefaults (defaultSettings: Partial<RawEditorSettings>): void;
-  remove (): void;
-  remove (selector: string | Editor): Editor | void;
-  setActive (editor: Editor): void;
-  setup (): void;
-  translate (text: string): string;
-  triggerSave (): void;
-  _setBaseUrl (baseUrl: string): void;
+  add (this: EditorManager, editor: Editor): Editor;
+  addI18n: (code: string, item: Record<string, string>) => void;
+  createEditor (this: EditorManager, id: string, settings: RawEditorSettings): Editor;
+  execCommand (this: EditorManager, cmd: string, ui: boolean, value: any): boolean;
+  get (this: EditorManager): Editor[];
+  get (this: EditorManager, id: number | string): Editor;
+  init (this: EditorManager, settings: RawEditorSettings): Promise<Editor[]>;
+  overrideDefaults (this: EditorManager, defaultSettings: Partial<RawEditorSettings>): void;
+  remove (this: EditorManager): void;
+  remove (this: EditorManager, selector: string | Editor): Editor | void;
+  setActive (this: EditorManager, editor: Editor): void;
+  setup (this: EditorManager): void;
+  translate: (text: Untranslated) => TranslatedString;
+  triggerSave: () => void;
+  _setBaseUrl (this: EditorManager, baseUrl: string): void;
 }
 
 const isQuirksMode = document.compatMode !== 'CSS1Compat';
@@ -161,7 +163,10 @@ const EditorManager: EditorManager = {
 
   /**
    * Dom query instance.
+   * <br>
+   * <em>Deprecated in TinyMCE 5.10 and has been marked for removal in TinyMCE 6.0.</em>
    *
+   * @deprecated
    * @property $
    * @type tinymce.dom.DomQuery
    */
@@ -192,10 +197,13 @@ const EditorManager: EditorManager = {
   releaseDate: '@@releaseDate@@',
 
   /**
-   * Collection of editor instances. Deprecated use tinymce.get() instead.
+   * Collection of editor instances.
+   * <br>
+   * <em>Deprecated in TinyMCE 4.7 and has been marked for removal in TinyMCE 6.0</em> - Use tinymce.get() instead.
    *
    * @property editors
    * @type Object
+   * @deprecated
    */
   editors: legacyEditors,
 
@@ -271,7 +279,7 @@ const EditorManager: EditorManager = {
       // We didn't find any baseURL by looking at the script elements
       // Try to use the document.currentScript as a fallback
       if (!baseURL && document.currentScript) {
-        const src = (<any> document.currentScript).src;
+        const src = (document.currentScript as HTMLScriptElement).src;
 
         if (src.indexOf('.min') !== -1) {
           suffix = '.min';
@@ -387,17 +395,17 @@ const EditorManager: EditorManager = {
       return id;
     };
 
-    const execCallback = function (name) {
+    const execCallback = (name: string) => {
       const callback = settings[name];
 
       if (!callback) {
         return;
       }
 
-      return callback.apply(self, Array.prototype.slice.call(arguments, 2));
+      return callback.apply(self, []);
     };
 
-    const hasClass = function (elm, className) {
+    const hasClass = (elm, className) => {
       return className.constructor === RegExp ? className.test(elm.className) : DOM.hasClass(elm, className);
     };
 
@@ -419,7 +427,7 @@ const EditorManager: EditorManager = {
       }
 
       if (settings.types) {
-        each(settings.types, function (type) {
+        each(settings.types, (type) => {
           targets = targets.concat(DOM.select(type.selector));
         });
 
@@ -436,14 +444,14 @@ const EditorManager: EditorManager = {
           const l = settings.elements || '';
 
           if (l.length > 0) {
-            each(explode(l), function (id) {
+            each(explode(l), (id) => {
               const elm = DOM.get(id);
 
               if (elm) {
                 targets.push(elm);
               } else {
-                each(document.forms, function (f: HTMLFormElement) {
-                  each(f.elements, function (e: HTMLFormElement) {
+                each(document.forms, (f: HTMLFormElement) => {
+                  each(f.elements, (e: HTMLFormElement) => {
                     if (e.name === id) {
                       id = 'mce_editor_' + instanceCounter++;
                       DOM.setAttrib(e, 'id', id);
@@ -458,7 +466,7 @@ const EditorManager: EditorManager = {
 
         case 'textareas':
         case 'specific_textareas':
-          each(DOM.select('textarea'), function (elm) {
+          each(DOM.select('textarea'), (elm) => {
             if (settings.editor_deselector && hasClass(elm, settings.editor_deselector)) {
               return;
             }
@@ -473,20 +481,20 @@ const EditorManager: EditorManager = {
       return targets;
     };
 
-    let provideResults = function (editors) {
+    let provideResults = (editors) => {
       result = editors;
     };
 
-    const initEditors = function () {
+    const initEditors = () => {
       let initCount = 0;
       const editors = [];
       let targets: HTMLElement[];
 
-      const createEditor = function (id: string, settings: RawEditorSettings, targetElm: HTMLElement) {
+      const createEditor = (id: string, settings: RawEditorSettings, targetElm: HTMLElement) => {
         const editor: Editor = new Editor(id, settings, self);
         editors.push(editor);
 
-        editor.on('init', function () {
+        editor.on('init', () => {
           if (++initCount === targets.length) {
             provideResults(editors);
           }
@@ -503,8 +511,8 @@ const EditorManager: EditorManager = {
 
       // TODO: Deprecate this one
       if (settings.types) {
-        each(settings.types, function (type) {
-          Tools.each(targets, function (elm: HTMLElement) {
+        each(settings.types, (type) => {
+          Tools.each(targets, (elm: HTMLElement) => {
             if (DOM.is(elm, type.selector)) {
               createEditor(createId(elm), extend({}, settings, type), elm);
               return false;
@@ -517,18 +525,18 @@ const EditorManager: EditorManager = {
         return;
       }
 
-      Tools.each(targets, function (elm) {
+      Tools.each(targets, (elm) => {
         purgeDestroyedEditor(self.get(elm.id));
       });
 
-      targets = Tools.grep(targets, function (elm) {
+      targets = Tools.grep(targets, (elm) => {
         return !self.get(elm.id);
       });
 
       if (targets.length === 0) {
         provideResults([]);
       } else {
-        each(targets, function (elm) {
+        each(targets, (elm) => {
           if (isInvalidInlineTarget(settings, elm)) {
             ErrorReporter.initError('Could not initialize inline editor on invalid inline target element', elm);
           } else {
@@ -541,11 +549,11 @@ const EditorManager: EditorManager = {
     self.settings = settings;
     DOM.bind(window, 'ready', initEditors);
 
-    return new Promise(function (resolve) {
+    return new Promise((resolve) => {
       if (result) {
         resolve(result);
       } else {
-        provideResults = function (editors) {
+        provideResults = (editors) => {
           resolve(editors);
         };
       }
@@ -574,11 +582,12 @@ const EditorManager: EditorManager = {
    *    ed.windowManager.alert('Hello world!');
    * });
    */
+  // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
   get(id?: number | string) {
     if (arguments.length === 0) {
       return editors.slice(0);
     } else if (Type.isString(id)) {
-      return Arr.find(editors, function (editor) {
+      return Arr.find(editors, (editor) => {
         return editor.id === id;
       }).getOr(null);
     } else if (Type.isNumber(id)) {
@@ -626,7 +635,7 @@ const EditorManager: EditorManager = {
     self.fire('AddEditor', { editor });
 
     if (!beforeUnloadDelegate) {
-      beforeUnloadDelegate = function (e) {
+      beforeUnloadDelegate = (e) => {
         const event = self.fire('BeforeUnload');
         if (event.returnValue) {
           // browsers are all a little bit special about this: https://developer.mozilla.org/en-US/docs/Web/API/BeforeUnloadEvent
@@ -689,7 +698,7 @@ const EditorManager: EditorManager = {
 
     // Remove editors by selector
     if (Type.isString(selector)) {
-      each(DOM.select(selector), function (elm) {
+      each(DOM.select(selector), (elm) => {
         editor = self.get(elm.id);
 
         if (editor) {
@@ -753,7 +762,7 @@ const EditorManager: EditorManager = {
 
       case 'mceToggleEditor':
         if (!editor) {
-          self.execCommand('mceAddEditor', 0, value);
+          self.execCommand('mceAddEditor', false, value);
           return true;
         }
 
@@ -782,8 +791,8 @@ const EditorManager: EditorManager = {
    * // Saves all contents
    * tinyMCE.triggerSave();
    */
-  triggerSave() {
-    each(editors, function (editor) {
+  triggerSave: () => {
+    each(editors, (editor) => {
       editor.save();
     });
   },
@@ -795,7 +804,7 @@ const EditorManager: EditorManager = {
    * @param {String} code Optional language code.
    * @param {Object} items Name/value object with translations.
    */
-  addI18n(code, items) {
+  addI18n: (code, items) => {
     I18n.add(code, items);
   },
 
@@ -806,7 +815,7 @@ const EditorManager: EditorManager = {
    * @param {String/Array/Object} text String to translate
    * @return {String} Translated string.
    */
-  translate(text) {
+  translate: (text) => {
     return I18n.translate(text);
   },
 

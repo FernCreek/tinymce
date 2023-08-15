@@ -8,7 +8,6 @@
 import * as CaretFinder from '../caret/CaretFinder';
 import CaretPosition from '../caret/CaretPosition';
 import * as CaretUtils from '../caret/CaretUtils';
-import { Node, Range, document } from '@ephox/dom-globals';
 
 const createRange = (sc: Node, so: number, ec: Node, eo: number): Range => {
   const rng = document.createRange();
@@ -30,7 +29,7 @@ const normalizeBlockSelectionRange = (rng: Range): Range => {
   const rootNode = rng.commonAncestorContainer;
 
   return CaretFinder.fromPosition(false, rootNode, endPos)
-    .map(function (newEndPos) {
+    .map((newEndPos) => {
       if (!CaretUtils.isInSameBlock(startPos, endPos, rootNode) && CaretUtils.isInSameBlock(startPos, newEndPos, rootNode)) {
         return createRange(startPos.container(), startPos.offset(), newEndPos.container(), newEndPos.offset());
       } else {

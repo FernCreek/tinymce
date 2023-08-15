@@ -7,24 +7,34 @@
 
 import { AddEventsBehaviour, AlloyComponent, AlloyEvents, Behaviour, GuiFactory, InlineView, Sandboxing, SystemEvents } from '@ephox/alloy';
 import { Menu } from '@ephox/bridge';
-import { Element as DomElement, PointerEvent } from '@ephox/dom-globals';
-import { Arr, Fun, Obj, Result, Type } from '@ephox/katamari';
+import { Arr, Fun, Obj, Result, Strings, Type } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
+import { SelectorExists, SugarElement } from '@ephox/sugar';
+
 import Editor from 'tinymce/core/api/Editor';
 import { UiFactoryBackstage } from 'tinymce/themes/silver/backstage/Backstage';
+
+import { AnchorType } from './Coords';
 import * as DesktopContextMenu from './platform/DesktopContextMenu';
 import * as MobileContextMenu from './platform/MobileContextMenu';
 import * as Settings from './Settings';
 
-type MenuItem = string | Menu.MenuItemApi | Menu.NestedMenuItemApi | Menu.SeparatorMenuItemApi;
+type MenuItem = string | Menu.MenuItemSpec | Menu.NestedMenuItemSpec | Menu.SeparatorMenuItemSpec;
 
 const isSeparator = (item: MenuItem): boolean => Type.isString(item) ? item === '|' : item.type === 'separator';
 
-const separator: Menu.SeparatorMenuItemApi = {
+const separator: Menu.SeparatorMenuItemSpec = {
   type: 'separator'
 };
 
-const makeContextItem = (item: string | Menu.ContextMenuItem | Menu.SeparatorMenuItemApi | Menu.ContextSubMenu): MenuItem => {
+const makeContextItem = (item: string | Menu.ContextMenuItem | Menu.SeparatorMenuItemSpec | Menu.ContextSubMenu): MenuItem => {
+  const commonMenuItem = (item: Menu.ContextMenuItem | Menu.ContextSubMenu) => ({
+    text: item.text,
+    icon: item.icon,
+    disabled: item.disabled,
+    shortcut: item.shortcut,
+  });
+
   if (Type.isString(item)) {
     return item;
   } else {
@@ -34,8 +44,7 @@ const makeContextItem = (item: string | Menu.ContextMenuItem | Menu.SeparatorMen
       case 'submenu':
         return {
           type: 'nestedmenuitem',
-          text: item.text,
-          icon: item.icon,
+          ...commonMenuItem(item),
           getSubmenuItems: () => {
             const items = item.getSubmenuItems();
             if (Type.isString(items)) {
@@ -49,8 +58,7 @@ const makeContextItem = (item: string | Menu.ContextMenuItem | Menu.SeparatorMen
         // case 'item', or anything else really
         return {
           type: 'menuitem',
-          text: item.text,
-          icon: item.icon,
+          ...commonMenuItem(item),
           // disconnect the function from the menu item API bridge defines
           onAction: Fun.noarg(item.onAction)
         };
@@ -73,23 +81,21 @@ const addContextMenuGroup = (xs: Array<MenuItem>, groupItems: Array<MenuItem>) =
   return xs.concat(before).concat(groupItems).concat([ separator ]);
 };
 
-const generateContextMenu = (contextMenus: Record<string, Menu.ContextMenuApi>, menuConfig: string[], selectedElement: DomElement) => {
+const generateContextMenu = (contextMenus: Record<string, Menu.ContextMenuApi>, menuConfig: string[], selectedElement: Element) => {
   const sections = Arr.foldl(menuConfig, (acc, name) => {
     // Either read and convert the list of items out of the plugin, or assume it's a standard menu item reference
-    if (Obj.has(contextMenus, name)) {
-      const items = contextMenus[name].update(selectedElement);
+    return Obj.get(contextMenus, name.toLowerCase()).map((menu) => {
+      const items = menu.update(selectedElement);
       if (Type.isString(items)) {
         return addContextMenuGroup(acc, items.split(' '));
       } else if (items.length > 0) {
-        // TODO: Should we add a ValueSchema check here?
+        // TODO: Should we add a StructureSchema check here?
         const allItems = Arr.map(items, makeContextItem);
         return addContextMenuGroup(acc, allItems);
       } else {
         return acc;
       }
-    } else {
-      return acc.concat([ name ]);
-    }
+    }).getOrThunk(() => acc.concat([ name ]));
   }, []);
 
   // Strip off any trailing separator
@@ -110,6 +116,21 @@ export const isTriggeredByKeyboard = (editor: Editor, e: PointerEvent) =>
   // IE/Edge: button = 2, pointerType = "" & target = body
   // Safari: N/A (Mac's don't expose a contextmenu keyboard shortcut)
   e.type !== 'longpress' && (e.button !== 2 || e.target === editor.getBody() && e.pointerType === '');
+
+const getSelectedElement = (editor: Editor, e: PointerEvent) =>
+  isTriggeredByKeyboard(editor, e) ? editor.selection.getStart(true) : e.target as Element;
+
+const getAnchorType = (editor: Editor, e: PointerEvent): AnchorType => {
+  const selector = Settings.getAvoidOverlapSelector(editor);
+  const anchorType = isTriggeredByKeyboard(editor, e) ? 'selection' : 'point';
+  if (Strings.isNotEmpty(selector)) {
+    const target = getSelectedElement(editor, e);
+    const selectorExists = SelectorExists.closest(SugarElement.fromDom(target), selector);
+    return selectorExists ? 'node' : anchorType;
+  } else {
+    return anchorType;
+  }
+};
 
 export const setup = (editor: Editor, lazySink: () => Result<AlloyComponent, Error>, backstage: UiFactoryBackstage) => {
   const detection = PlatformDetection.detect();
@@ -133,7 +154,7 @@ export const setup = (editor: Editor, lazySink: () => Result<AlloyComponent, Err
           })
         ])
       ])
-    }),
+    })
   );
 
   const hideContextMenu = (_e) => InlineView.hide(contextmenu);
@@ -148,11 +169,11 @@ export const setup = (editor: Editor, lazySink: () => Result<AlloyComponent, Err
       return;
     }
 
-    const isTriggeredByKeyboardEvent = isTriggeredByKeyboard(editor, e);
+    const anchorType = getAnchorType(editor, e);
 
     const buildMenu = () => {
       // Use the event target element for touch events, otherwise fallback to the current selection
-      const selectedElement = isTriggeredByKeyboardEvent ? editor.selection.getStart(true) : e.target as DomElement;
+      const selectedElement = getSelectedElement(editor, e);
 
       const registry = editor.ui.registry.getAll();
       const menuConfig = Settings.getContextMenu(editor);
@@ -160,7 +181,7 @@ export const setup = (editor: Editor, lazySink: () => Result<AlloyComponent, Err
     };
 
     const initAndShow = isTouch() ? MobileContextMenu.initAndShow : DesktopContextMenu.initAndShow;
-    initAndShow(editor, e, buildMenu, backstage, contextmenu, isTriggeredByKeyboardEvent);
+    initAndShow(editor, e, buildMenu, backstage, contextmenu, anchorType);
   };
 
   editor.on('init', () => {

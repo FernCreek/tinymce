@@ -5,10 +5,10 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { HTMLElement, Node, Range } from '@ephox/dom-globals';
-import { Option } from '@ephox/katamari';
+import { Optional } from '@ephox/katamari';
+
 import DOMUtils from '../api/dom/DOMUtils';
-import TreeWalker from '../api/dom/TreeWalker';
+import DomTreeWalker from '../api/dom/TreeWalker';
 import * as CaretContainer from '../caret/CaretContainer';
 import { CaretPosition } from '../caret/CaretPosition';
 import * as NodeType from '../dom/NodeType';
@@ -29,7 +29,7 @@ const findParent = (node: Node, rootNode: Node, predicate: (node: Node) => boole
 
 const hasParent = (node: Node, rootNode: Node, predicate: (node: Node) => boolean) => findParent(node, rootNode, predicate) !== null;
 
-const hasParentWithName = (node: Node, rootNode: Node, name: string) => hasParent(node, rootNode, function (node) {
+const hasParentWithName = (node: Node, rootNode: Node, name: string) => hasParent(node, rootNode, (node) => {
   return node.nodeName === name;
 });
 
@@ -40,7 +40,7 @@ const isTableCell = (node: Node) => node && /^(TD|TH|CAPTION)$/.test(node.nodeNa
 const isCeFalseCaretContainer = (node: Node, rootNode: Node) => CaretContainer.isCaretContainer(node) && hasParent(node, rootNode, isCaretNode) === false;
 
 const hasBrBeforeAfter = (dom: DOMUtils, node: Node, left: boolean) => {
-  const walker = new TreeWalker(node, dom.getParent(node.parentNode, dom.isBlock) || dom.getRoot());
+  const walker = new DomTreeWalker(node, dom.getParent(node.parentNode, dom.isBlock) || dom.getRoot());
 
   while ((node = walker[left ? 'prev' : 'next']())) {
     if (NodeType.isBr(node)) {
@@ -65,7 +65,7 @@ const hasContentEditableFalseParent = (body: HTMLElement, node: Node) => {
 
 // Walks the dom left/right to find a suitable text node to move the endpoint into
 // It will only walk within the current parent block or body and will stop if it hits a block or a BR/IMG
-const findTextNodeRelative = (dom: DOMUtils, isAfterNode: boolean, collapsed: boolean, left: boolean, startNode: Node): Option<CaretPosition> => {
+const findTextNodeRelative = (dom: DOMUtils, isAfterNode: boolean, collapsed: boolean, left: boolean, startNode: Node): Optional<CaretPosition> => {
   let lastInlineElement;
   const body = dom.getRoot();
   let node;
@@ -76,29 +76,29 @@ const findTextNodeRelative = (dom: DOMUtils, isAfterNode: boolean, collapsed: bo
   // Lean left before the BR element if it's the only BR within a block element. Gecko bug: #6680
   // This: <p><br>|</p> becomes <p>|<br></p>
   if (left && NodeType.isBr(startNode) && isAfterNode && dom.isEmpty(parentBlockContainer)) {
-    return Option.some(CaretPosition(startNode.parentNode, dom.nodeIndex(startNode)));
+    return Optional.some(CaretPosition(startNode.parentNode, dom.nodeIndex(startNode)));
   }
 
   // Walk left until we hit a text node we can move to or a block/br/img
-  const walker = new TreeWalker(startNode, parentBlockContainer);
+  const walker = new DomTreeWalker(startNode, parentBlockContainer);
   while ((node = walker[left ? 'prev' : 'next']())) {
     // Break if we hit a non content editable node
     if (dom.getContentEditableParent(node) === 'false' || isCeFalseCaretContainer(node, body)) {
-      return Option.none();
+      return Optional.none();
     }
 
     // Found text node that has a length
     if (NodeType.isText(node) && node.nodeValue.length > 0) {
       if (hasParentWithName(node, body, 'A') === false) {
-        return Option.some(CaretPosition(node, left ? node.nodeValue.length : 0));
+        return Optional.some(CaretPosition(node, left ? node.nodeValue.length : 0));
       }
 
-      return Option.none();
+      return Optional.none();
     }
 
     // Break if we find a block or a BR/IMG/INPUT etc
     if (dom.isBlock(node) || nonEmptyElementsMap[node.nodeName.toLowerCase()]) {
-      return Option.none();
+      return Optional.none();
     }
 
     lastInlineElement = node;
@@ -106,13 +106,13 @@ const findTextNodeRelative = (dom: DOMUtils, isAfterNode: boolean, collapsed: bo
 
   // Only fetch the last inline element when in caret mode for now
   if (collapsed && lastInlineElement) {
-    return Option.some(CaretPosition(lastInlineElement, 0));
+    return Optional.some(CaretPosition(lastInlineElement, 0));
   }
 
-  return Option.none();
+  return Optional.none();
 };
 
-const normalizeEndPoint = (dom: DOMUtils, collapsed: boolean, start: boolean, rng: Range): Option<CaretPosition> => {
+const normalizeEndPoint = (dom: DOMUtils, collapsed: boolean, start: boolean, rng: Range): Optional<CaretPosition> => {
   let container, offset;
   const body = dom.getRoot();
   let node;
@@ -125,7 +125,7 @@ const normalizeEndPoint = (dom: DOMUtils, collapsed: boolean, start: boolean, rn
   directionLeft = start;
 
   if (CaretContainer.isCaretContainer(container)) {
-    return Option.none();
+    return Optional.none();
   }
 
   if (NodeType.isElement(container) && offset > container.childNodes.length - 1) {
@@ -145,11 +145,11 @@ const normalizeEndPoint = (dom: DOMUtils, collapsed: boolean, start: boolean, rn
       node = container.childNodes[offset > 0 ? offset - 1 : 0];
       if (node) {
         if (CaretContainer.isCaretContainer(node)) {
-          return Option.none();
+          return Optional.none();
         }
 
         if (nonEmptyElementsMap[node.nodeName] || isTable(node)) {
-          return Option.none();
+          return Optional.none();
         }
       }
     }
@@ -162,18 +162,18 @@ const normalizeEndPoint = (dom: DOMUtils, collapsed: boolean, start: boolean, rn
 
       // Don't normalize non collapsed selections like <p>[a</p><table></table>]
       if (!collapsed && container === body.lastChild && isTable(container)) {
-        return Option.none();
+        return Optional.none();
       }
 
       if (hasContentEditableFalseParent(body, container) || CaretContainer.isCaretContainer(container)) {
-        return Option.none();
+        return Optional.none();
       }
 
       // Don't walk into elements that doesn't have any child nodes like a IMG
       if (container.hasChildNodes() && isTable(container) === false) {
         // Walk the DOM to find a text node to place the caret at or a BR
         node = container;
-        const walker = new TreeWalker(container, body);
+        const walker = new DomTreeWalker(container, body);
 
         do {
           if (NodeType.isContentEditableFalse(node) || CaretContainer.isCaretContainer(node)) {
@@ -213,7 +213,7 @@ const normalizeEndPoint = (dom: DOMUtils, collapsed: boolean, start: boolean, rn
     // Becomes: <b>x|</b><i>x</i>
     // Seems that only gecko has issues with this
     if (NodeType.isText(container) && offset === 0) {
-      findTextNodeRelative(dom, isAfterNode, collapsed, true, container).each(function (pos) {
+      findTextNodeRelative(dom, isAfterNode, collapsed, true, container).each((pos) => {
         container = pos.container();
         offset = pos.offset();
         normalized = true;
@@ -236,7 +236,7 @@ const normalizeEndPoint = (dom: DOMUtils, collapsed: boolean, start: boolean, rn
 
       if (node && NodeType.isBr(node) && !isPrevNode(node, 'A') &&
         !hasBrBeforeAfter(dom, node, false) && !hasBrBeforeAfter(dom, node, true)) {
-        findTextNodeRelative(dom, isAfterNode, collapsed, true, node).each(function (pos) {
+        findTextNodeRelative(dom, isAfterNode, collapsed, true, node).each((pos) => {
           container = pos.container();
           offset = pos.offset();
           normalized = true;
@@ -249,21 +249,21 @@ const normalizeEndPoint = (dom: DOMUtils, collapsed: boolean, start: boolean, rn
   // So this: x[<b>x]</b>
   // Becomes: x<b>[x]</b>
   if (directionLeft && !collapsed && NodeType.isText(container) && offset === container.nodeValue.length) {
-    findTextNodeRelative(dom, isAfterNode, collapsed, false, container).each(function (pos) {
+    findTextNodeRelative(dom, isAfterNode, collapsed, false, container).each((pos) => {
       container = pos.container();
       offset = pos.offset();
       normalized = true;
     });
   }
 
-  return normalized ? Option.some(CaretPosition(container, offset)) : Option.none();
+  return normalized ? Optional.some(CaretPosition(container, offset)) : Optional.none();
 };
 
-const normalize = (dom: DOMUtils, rng: Range): Option<Range> => {
+const normalize = (dom: DOMUtils, rng: Range): Optional<Range> => {
   const collapsed = rng.collapsed, normRng = rng.cloneRange();
   const startPos = CaretPosition.fromRangeStart(rng);
 
-  normalizeEndPoint(dom, collapsed, true, normRng).each(function (pos) {
+  normalizeEndPoint(dom, collapsed, true, normRng).each((pos) => {
     // #TINY-1595: Do not move the caret to previous line
     if (!collapsed || !CaretPosition.isAbove(startPos, pos)) {
       normRng.setStart(pos.container(), pos.offset());
@@ -271,7 +271,7 @@ const normalize = (dom: DOMUtils, rng: Range): Option<Range> => {
   });
 
   if (!collapsed) {
-    normalizeEndPoint(dom, collapsed, false, normRng).each(function (pos) {
+    normalizeEndPoint(dom, collapsed, false, normRng).each((pos) => {
       normRng.setEnd(pos.container(), pos.offset());
     });
   }
@@ -281,7 +281,7 @@ const normalize = (dom: DOMUtils, rng: Range): Option<Range> => {
     normRng.collapse(true);
   }
 
-  return RangeCompare.isEq(rng, normRng) ? Option.none() : Option.some(normRng);
+  return RangeCompare.isEq(rng, normRng) ? Optional.none() : Optional.some(normRng);
 };
 
 export {

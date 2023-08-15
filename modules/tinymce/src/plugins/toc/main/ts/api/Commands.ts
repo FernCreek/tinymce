@@ -5,14 +5,16 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import Editor from 'tinymce/core/api/Editor';
+
 import * as Toc from '../core/Toc';
 
-const register = function (editor) {
-  editor.addCommand('mceInsertToc', function () {
+const register = (editor: Editor): void => {
+  editor.addCommand('mceInsertToc', () => {
     Toc.insertToc(editor);
   });
 
-  editor.addCommand('mceUpdateToc', function () {
+  editor.addCommand('mceUpdateToc', () => {
     Toc.updateToc(editor);
   });
 };

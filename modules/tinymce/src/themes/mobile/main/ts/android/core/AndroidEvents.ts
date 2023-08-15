@@ -8,10 +8,10 @@
 import { Toggling } from '@ephox/alloy';
 import { Arr, Fun } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
-import { Compare, DomEvent, Element, Focus, Node, Traverse } from '@ephox/sugar';
+import { Compare, DomEvent, Focus, SimRange, SugarElement, SugarNode, Traverse } from '@ephox/sugar';
 
+import { PlatformEditor } from '../../ios/core/PlatformEditor';
 import * as TappingEvent from '../../util/TappingEvent';
-import { HTMLInputElement } from '@ephox/dom-globals';
 
 const isAndroid6 = PlatformDetection.detect().os.version.major >= 6;
 /*
@@ -26,53 +26,53 @@ const isAndroid6 = PlatformDetection.detect().os.version.major >= 6;
   an input or textarea
 
 */
-const initEvents = function (editorApi, toolstrip, alloy) {
+const initEvents = (editorApi: PlatformEditor, toolstrip, alloy) => {
 
   const tapping = TappingEvent.monitor(editorApi);
   const outerDoc = Traverse.owner(toolstrip);
 
-  const isRanged = function (sel) {
-    return !Compare.eq(sel.start(), sel.finish()) || sel.soffset() !== sel.foffset();
+  const isRanged = (sel: SimRange) => {
+    return !Compare.eq(sel.start, sel.finish) || sel.soffset !== sel.foffset;
   };
 
-  const hasRangeInUi = function () {
-    return Focus.active(outerDoc).filter(function (input) {
-      return Node.name(input) === 'input';
-    }).exists(function (input: Element<HTMLInputElement>) {
-      return input.dom().selectionStart !== input.dom().selectionEnd;
+  const hasRangeInUi = () => {
+    return Focus.active(outerDoc).filter((input) => {
+      return SugarNode.name(input) === 'input';
+    }).exists((input: SugarElement<HTMLInputElement>) => {
+      return input.dom.selectionStart !== input.dom.selectionEnd;
     });
   };
 
-  const updateMargin = function () {
-    const rangeInContent = editorApi.doc().dom().hasFocus() && editorApi.getSelection().exists(isRanged);
+  const updateMargin = () => {
+    const rangeInContent = editorApi.doc.dom.hasFocus() && editorApi.getSelection().exists(isRanged);
     alloy.getByDom(toolstrip).each((rangeInContent || hasRangeInUi()) === true ? Toggling.on : Toggling.off);
   };
 
   const listeners = [
-    DomEvent.bind(editorApi.body(), 'touchstart', function (evt) {
+    DomEvent.bind(editorApi.body, 'touchstart', (evt) => {
       editorApi.onTouchContent();
       tapping.fireTouchstart(evt);
     }),
     tapping.onTouchmove(),
     tapping.onTouchend(),
 
-    DomEvent.bind(toolstrip, 'touchstart', function (_evt) {
+    DomEvent.bind(toolstrip, 'touchstart', (_evt) => {
       editorApi.onTouchToolstrip();
     }),
 
-    editorApi.onToReading(function () {
-      Focus.blur(editorApi.body());
+    editorApi.onToReading(() => {
+      Focus.blur(editorApi.body);
     }),
     editorApi.onToEditing(Fun.noop),
 
     // Scroll to cursor and update the iframe height
-    editorApi.onScrollToCursor(function (tinyEvent) {
+    editorApi.onScrollToCursor((tinyEvent) => {
       tinyEvent.preventDefault();
-      editorApi.getCursorBox().each(function (bounds) {
-        const cWin = editorApi.win();
+      editorApi.getCursorBox().each((bounds) => {
+        const cWin = editorApi.win;
         // The goal here is to shift as little as required.
-        const isOutside = bounds.top() > cWin.innerHeight || bounds.bottom() > cWin.innerHeight;
-        const cScrollBy = isOutside ? bounds.bottom() - cWin.innerHeight + 50 /* EXTRA_SPACING*/ : 0;
+        const isOutside = bounds.top > cWin.innerHeight || bounds.bottom > cWin.innerHeight;
+        const cScrollBy = isOutside ? bounds.bottom - cWin.innerHeight + 50 /* EXTRA_SPACING*/ : 0;
         if (cScrollBy !== 0) {
           cWin.scrollTo(cWin.pageXOffset, cWin.pageYOffset + cScrollBy);
         }
@@ -80,16 +80,16 @@ const initEvents = function (editorApi, toolstrip, alloy) {
     })
   ].concat(
     isAndroid6 === true ? [ ] : [
-      DomEvent.bind(Element.fromDom(editorApi.win()), 'blur', function () {
+      DomEvent.bind(SugarElement.fromDom(editorApi.win), 'blur', () => {
         alloy.getByDom(toolstrip).each(Toggling.off);
       }),
       DomEvent.bind(outerDoc, 'select', updateMargin),
-      DomEvent.bind(editorApi.doc(), 'selectionchange', updateMargin)
+      DomEvent.bind(editorApi.doc, 'selectionchange', updateMargin)
     ]
   );
 
-  const destroy = function () {
-    Arr.each(listeners, function (l) {
+  const destroy = () => {
+    Arr.each(listeners, (l) => {
       l.unbind();
     });
   };

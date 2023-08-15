@@ -1,24 +1,24 @@
 {
   "name": "@ephox/katamari",
-  "version": "6.1.2",
+  "version": "8.1.1",
   "description": "Basic data type library",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tinymce/tinymce"
+    "url": "https://github.com/tinymce/tinymce.git",
+    "directory": "modules/katamari"
   },
   "scripts": {
     "prepublishOnly": "tsc -b",
-    "test": "bedrock-auto -b phantomjs -d src/test/ts",
+    "test": "bedrock-auto -b chrome-headless -d src/test/ts",
     "test-manual": "bedrock -d src/test/ts",
     "lint": "eslint --config ../../.eslintrc.json src/**/*.ts"
   },
-  "author": "Ephox Corporation",
+  "author": "Tiny Technologies, Inc",
   "license": "Apache-2.0",
   "dependencies": {
     "@ephox/dispute": "^1.0.3",
-    "@ephox/dom-globals": "^1.1.2",
     "@ephox/wrap-promise-polyfill": "^2.2.0",
-    "tslib": "^1.9.3"
+    "tslib": "^2.0.0"
   },
   "files": [
     "lib/main",
@@ -26,9 +26,9 @@
     "lib/test",
     "src",
     "tsconfig.json",
-    "readme.md",
+    "README.md",
     "LEGAL.txt",
-    "CHANGELOG.txt",
+    "CHANGELOG.md",
     "LICENSE.txt"
   ],
   "main": "./lib/main/ts/ephox/katamari/api/Main.js",

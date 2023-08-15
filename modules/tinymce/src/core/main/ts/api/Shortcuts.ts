@@ -5,7 +5,6 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { KeyboardEvent } from '@ephox/dom-globals';
 import Editor from './Editor';
 import Env from './Env';
 import Tools from './util/Tools';
@@ -53,14 +52,18 @@ const keyCodeLookup = {
 const modifierNames = Tools.makeMap('alt,ctrl,shift,meta,access');
 
 interface Shortcut {
+  id: string;
+  access: boolean;
   ctrl: boolean;
   shift: boolean;
   meta: boolean;
   alt: boolean;
   keyCode: number;
   charCode: number;
-  subpatterns?: Shortcut[];
-  desc?: string;
+  subpatterns: Shortcut[];
+  desc: string;
+  cmdFunc: () => void;
+  scope: any;
 }
 
 export interface ShortcutsConstructor {
@@ -68,6 +71,62 @@ export interface ShortcutsConstructor {
 
   new (editor: Editor): Shortcuts;
 }
+
+type CommandFunc = string | [string, boolean, any] | (() => void);
+
+const parseShortcut = (pattern: string): Shortcut => {
+  let key;
+  const shortcut: any = {};
+
+  // Parse modifiers and keys ctrl+alt+b for example
+  each(explode(pattern.toLowerCase(), '+'), (value) => {
+    if (value in modifierNames) {
+      shortcut[value] = true;
+    } else {
+      // Allow numeric keycodes like ctrl+219 for ctrl+[
+      if (/^[0-9]{2,}$/.test(value)) {
+        shortcut.keyCode = parseInt(value, 10);
+      } else {
+        shortcut.charCode = value.charCodeAt(0);
+        shortcut.keyCode = keyCodeLookup[value] || value.toUpperCase().charCodeAt(0);
+      }
+    }
+  });
+
+  // Generate unique id for modifier combination and set default state for unused modifiers
+  const id = [ shortcut.keyCode ];
+  for (key in modifierNames) {
+    if (shortcut[key]) {
+      id.push(key);
+    } else {
+      shortcut[key] = false;
+    }
+  }
+  shortcut.id = id.join(',');
+
+  // Handle special access modifier differently depending on Mac/Win
+  if (shortcut.access) {
+    shortcut.alt = true;
+
+    if (Env.mac) {
+      shortcut.ctrl = true;
+    } else {
+      shortcut.shift = true;
+    }
+  }
+
+  // Handle special meta modifier differently depending on Mac/Win
+  if (shortcut.meta) {
+    if (Env.mac) {
+      shortcut.meta = true;
+    } else {
+      shortcut.ctrl = true;
+      shortcut.meta = false;
+    }
+  }
+
+  return shortcut;
+};
 
 class Shortcuts {
   private readonly editor: Editor;
@@ -78,9 +137,9 @@ class Shortcuts {
     this.editor = editor;
     const self = this;
 
-    editor.on('keyup keypress keydown', function (e) {
+    editor.on('keyup keypress keydown', (e) => {
       if ((self.hasModifier(e) || self.isFunctionKey(e)) && !e.isDefaultPrevented()) {
-        each(self.shortcuts, function (shortcut) {
+        each(self.shortcuts, (shortcut) => {
           if (self.matchShortcut(e, shortcut)) {
             self.pendingPatterns = shortcut.subpatterns.slice(0);
 
@@ -115,23 +174,12 @@ class Shortcuts {
    * @param {Object} scope Optional scope to execute the function in.
    * @return {Boolean} true/false state if the shortcut was added or not.
    */
-  public add(pattern: string, desc: string, cmdFunc: string | any[] | Function, scope?: {}): boolean {
+  public add(pattern: string, desc: string, cmdFunc: CommandFunc, scope?: any): boolean {
     const self = this;
+    const func = self.normalizeCommandFunc(cmdFunc);
 
-    const cmd = cmdFunc;
-
-    if (typeof cmd === 'string') {
-      cmdFunc = function () {
-        self.editor.execCommand(cmd, false, null);
-      };
-    } else if (Tools.isArray(cmd)) {
-      cmdFunc = function () {
-        self.editor.execCommand(cmd[0], cmd[1], cmd[2]);
-      };
-    }
-
-    each(explode(Tools.trim(pattern)), function (pattern) {
-      const shortcut = self.createShortcut(pattern, desc, cmdFunc, scope);
+    each(explode(Tools.trim(pattern)), (pattern) => {
+      const shortcut = self.createShortcut(pattern, desc, func, scope);
       self.shortcuts[shortcut.id] = shortcut;
     });
 
@@ -156,62 +204,25 @@ class Shortcuts {
     return false;
   }
 
-  private parseShortcut(pattern: string): Shortcut {
-    let key;
-    const shortcut: any = {};
+  private normalizeCommandFunc(cmdFunc: CommandFunc): () => void {
+    const self = this;
+    const cmd = cmdFunc;
 
-    // Parse modifiers and keys ctrl+alt+b for example
-    each(explode(pattern.toLowerCase(), '+'), function (value) {
-      if (value in modifierNames) {
-        shortcut[value] = true;
-      } else {
-        // Allow numeric keycodes like ctrl+219 for ctrl+[
-        if (/^[0-9]{2,}$/.test(value)) {
-          shortcut.keyCode = parseInt(value, 10);
-        } else {
-          shortcut.charCode = value.charCodeAt(0);
-          shortcut.keyCode = keyCodeLookup[value] || value.toUpperCase().charCodeAt(0);
-        }
-      }
-    });
-
-    // Generate unique id for modifier combination and set default state for unused modifiers
-    const id = [ shortcut.keyCode ];
-    for (key in modifierNames) {
-      if (shortcut[key]) {
-        id.push(key);
-      } else {
-        shortcut[key] = false;
-      }
+    if (typeof cmd === 'string') {
+      return () => {
+        self.editor.execCommand(cmd, false, null);
+      };
+    } else if (Tools.isArray(cmd)) {
+      return () => {
+        self.editor.execCommand(cmd[0], cmd[1], cmd[2]);
+      };
+    } else {
+      return cmd;
     }
-    shortcut.id = id.join(',');
-
-    // Handle special access modifier differently depending on Mac/Win
-    if (shortcut.access) {
-      shortcut.alt = true;
-
-      if (Env.mac) {
-        shortcut.ctrl = true;
-      } else {
-        shortcut.shift = true;
-      }
-    }
-
-    // Handle special meta modifier differently depending on Mac/Win
-    if (shortcut.meta) {
-      if (Env.mac) {
-        shortcut.meta = true;
-      } else {
-        shortcut.ctrl = true;
-        shortcut.meta = false;
-      }
-    }
-
-    return shortcut;
   }
 
-  private createShortcut(pattern: string, desc?: string, cmdFunc?, scope?) {
-    const shortcuts = Tools.map(explode(pattern, '>'), this.parseShortcut);
+  private createShortcut(pattern: string, desc?: string, cmdFunc?: () => void, scope?): Shortcut {
+    const shortcuts = Tools.map(explode(pattern, '>'), parseShortcut);
     shortcuts[shortcuts.length - 1] = Tools.extend(shortcuts[shortcuts.length - 1], {
       func: cmdFunc,
       scope: scope || this.editor

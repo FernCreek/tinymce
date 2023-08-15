@@ -5,23 +5,27 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Menu } from '@ephox/bridge';
-import { Node } from '@ephox/sugar';
+import { Selections } from '@ephox/darwin';
+import { Fun } from '@ephox/katamari';
+import { SugarNode } from '@ephox/sugar';
+
 import Editor from 'tinymce/core/api/Editor';
-import * as InsertTable from '../actions/InsertTable';
-import { hasTableGrid } from '../api/Settings';
+import { Menu } from 'tinymce/core/api/ui/Ui';
+
+import { getCellClassList, getTableBorderStyles, getTableBorderWidths, getTableBackgroundColorMap, getTableBorderColorMap, getTableClassList, hasTableGrid } from '../api/Settings';
 import { Clipboard } from '../core/Clipboard';
-import { SelectionTargets } from '../selection/SelectionTargets';
+import { SelectionTargets, LockedDisable } from '../selection/SelectionTargets';
+import { verticalAlignValues } from './CellAlignValues';
+import { applyTableCellStyle, changeColumnHeader, changeRowHeader, filterNoneItem, buildColorMenu, buildMenuItems } from './UiUtils';
 
-const addMenuItems = (editor: Editor, selectionTargets: SelectionTargets, clipboard: Clipboard) => {
-  const cmd = (command) => () => editor.execCommand(command);
+const addMenuItems = (editor: Editor, selections: Selections, selectionTargets: SelectionTargets, clipboard: Clipboard): void => {
+  const cmd = (command: string) => () => editor.execCommand(command);
 
-  const insertTableAction = ({ numRows, numColumns }) => {
-    editor.undoManager.transact(function () {
-      InsertTable.insert(editor, numColumns, numRows, 0, 0);
+  const insertTableAction = (data: { numRows: number; numColumns: number }) => {
+    editor.execCommand('mceInsertTable', false, {
+      rows: data.numRows,
+      columns: data.numColumns
     });
-
-    editor.addVisual();
   };
 
   const tableProperties = {
@@ -87,61 +91,60 @@ const addMenuItems = (editor: Editor, selectionTargets: SelectionTargets, clipbo
     onSetup: selectionTargets.onSetupPasteable(clipboard.getRows)
   });
 
-  const row: Menu.NestedMenuItemApi = {
+  const row: Menu.NestedMenuItemSpec = {
     type: 'nestedmenuitem',
     text: 'Row',
-    getSubmenuItems: () => 'tableinsertrowbefore tableinsertrowafter tabledeleterow tablerowprops | tablecutrow tablecopyrow tablepasterowbefore tablepasterowafter'
+    getSubmenuItems: Fun.constant('tableinsertrowbefore tableinsertrowafter tabledeleterow tablerowprops | tablecutrow tablecopyrow tablepasterowbefore tablepasterowafter')
   };
 
   editor.ui.registry.addMenuItem('tableinsertcolumnbefore', {
     text: 'Insert column before',
     icon: 'table-insert-column-before',
     onAction: cmd('mceTableInsertColBefore'),
-    onSetup: selectionTargets.onSetupCellOrRow
+    onSetup: selectionTargets.onSetupColumn(LockedDisable.onFirst)
   });
   editor.ui.registry.addMenuItem('tableinsertcolumnafter', {
     text: 'Insert column after',
     icon: 'table-insert-column-after',
     onAction: cmd('mceTableInsertColAfter'),
-    onSetup: selectionTargets.onSetupCellOrRow
+    onSetup: selectionTargets.onSetupColumn(LockedDisable.onLast)
   });
   editor.ui.registry.addMenuItem('tabledeletecolumn', {
     text: 'Delete column',
     icon: 'table-delete-column',
     onAction: cmd('mceTableDeleteCol'),
-    onSetup: selectionTargets.onSetupCellOrRow
+    onSetup: selectionTargets.onSetupColumn(LockedDisable.onAny)
   });
 
   editor.ui.registry.addMenuItem('tablecutcolumn', {
     text: 'Cut column',
     icon: 'cut-column',
     onAction: cmd('mceTableCutCol'),
-    onSetup: selectionTargets.onSetupCellOrRow
+    onSetup: selectionTargets.onSetupColumn(LockedDisable.onAny)
   });
   editor.ui.registry.addMenuItem('tablecopycolumn', {
     text: 'Copy column',
     icon: 'duplicate-column',
     onAction: cmd('mceTableCopyCol'),
-    onSetup: selectionTargets.onSetupCellOrRow
+    onSetup: selectionTargets.onSetupColumn(LockedDisable.onAny)
   });
   editor.ui.registry.addMenuItem('tablepastecolumnbefore', {
     text: 'Paste column before',
     icon: 'paste-column-before',
     onAction: cmd('mceTablePasteColBefore'),
-    onSetup: selectionTargets.onSetupPasteable(clipboard.getColumns)
+    onSetup: selectionTargets.onSetupPasteableColumn(clipboard.getColumns, LockedDisable.onFirst)
   });
   editor.ui.registry.addMenuItem('tablepastecolumnafter', {
     text: 'Paste column after',
     icon: 'paste-column-after',
     onAction: cmd('mceTablePasteColAfter'),
-    onSetup: selectionTargets.onSetupPasteable(clipboard.getColumns)
+    onSetup: selectionTargets.onSetupPasteableColumn(clipboard.getColumns, LockedDisable.onLast)
   });
 
-  const column: Menu.NestedMenuItemApi = {
+  const column: Menu.NestedMenuItemSpec = {
     type: 'nestedmenuitem',
     text: 'Column',
-    // TODO: Add the column cut/copy/paste menu items in TinyMCE 5.5 or whenever we are able to get them translated
-    getSubmenuItems: () => 'tableinsertcolumnbefore tableinsertcolumnafter tabledeletecolumn' // | tablecutcolumn tablecopycolumn tablepastecolumnbefore tablepastecolumnafter'
+    getSubmenuItems: Fun.constant('tableinsertcolumnbefore tableinsertcolumnafter tabledeletecolumn | tablecutcolumn tablecopycolumn tablepastecolumnbefore tablepastecolumnafter')
   };
 
   editor.ui.registry.addMenuItem('tablecellprops', {
@@ -163,10 +166,10 @@ const addMenuItems = (editor: Editor, selectionTargets: SelectionTargets, clipbo
     onSetup: selectionTargets.onSetupUnmergeable
   });
 
-  const cell: Menu.NestedMenuItemApi = {
+  const cell: Menu.NestedMenuItemSpec = {
     type: 'nestedmenuitem',
     text: 'Cell',
-    getSubmenuItems: () => 'tablecellprops tablemergecells tablesplitcells'
+    getSubmenuItems: Fun.constant('tablecellprops tablemergecells tablesplitcells')
   };
 
   if (hasTableGrid(editor) === false) {
@@ -203,15 +206,121 @@ const addMenuItems = (editor: Editor, selectionTargets: SelectionTargets, clipbo
       // context menu fires before node change, so check the selection here first
       selectionTargets.resetTargets();
       // ignoring element since it's monitored elsewhere
-      return selectionTargets.targets().fold(() => '', (targets) => {
+      return selectionTargets.targets().fold(Fun.constant(''), (targets) => {
         // If clicking in a caption, then we shouldn't show the cell/row/column options
-        if (Node.name(targets.element()) === 'caption') {
+        if (SugarNode.name(targets.element) === 'caption') {
           return 'tableprops deletetable';
         } else {
           return 'cell row column | advtablesort | tableprops deletetable';
         }
       });
     }
+  });
+
+  const tableClassList = filterNoneItem(getTableClassList(editor));
+  if (tableClassList.length !== 0) {
+    editor.ui.registry.addNestedMenuItem('tableclass', {
+      icon: 'table-classes',
+      text: 'Table styles',
+      getSubmenuItems: () => buildMenuItems(
+        editor,
+        selections,
+        tableClassList,
+        'tableclass',
+        (value) => editor.execCommand('mceTableToggleClass', false, value)
+      ),
+      onSetup: selectionTargets.onSetupTable
+    });
+  }
+
+  const tableCellClassList = filterNoneItem(getCellClassList(editor));
+  if (tableCellClassList.length !== 0) {
+    editor.ui.registry.addNestedMenuItem('tablecellclass', {
+      icon: 'table-cell-classes',
+      text: 'Cell styles',
+      getSubmenuItems: () => buildMenuItems(
+        editor,
+        selections,
+        tableCellClassList,
+        'tablecellclass',
+        (value) => editor.execCommand('mceTableCellToggleClass', false, value)
+      ),
+      onSetup: selectionTargets.onSetupCellOrRow
+    });
+  }
+
+  editor.ui.registry.addNestedMenuItem('tablecellvalign', {
+    icon: 'vertical-align',
+    text: 'Vertical align',
+    getSubmenuItems: () => buildMenuItems(
+      editor,
+      selections,
+      verticalAlignValues,
+      'tablecellverticalalign',
+      applyTableCellStyle(editor, 'vertical-align')
+    ),
+    onSetup: selectionTargets.onSetupCellOrRow
+  });
+
+  editor.ui.registry.addNestedMenuItem('tablecellborderwidth', {
+    icon: 'border-width',
+    text: 'Border width',
+    getSubmenuItems: () => buildMenuItems(
+      editor,
+      selections,
+      getTableBorderWidths(editor),
+      'tablecellborderwidth',
+      applyTableCellStyle(editor, 'border-width')
+    ),
+    onSetup: selectionTargets.onSetupCellOrRow
+  });
+
+  editor.ui.registry.addNestedMenuItem('tablecellborderstyle', {
+    icon: 'border-style',
+    text: 'Border style',
+    getSubmenuItems: () => buildMenuItems(
+      editor,
+      selections,
+      getTableBorderStyles(editor),
+      'tablecellborderstyle',
+      applyTableCellStyle(editor, 'border-style')
+    ),
+    onSetup: selectionTargets.onSetupCellOrRow
+  });
+
+  editor.ui.registry.addToggleMenuItem('tablecaption', {
+    icon: 'table-caption',
+    text: 'Table caption',
+    onAction: cmd('mceTableToggleCaption'),
+    onSetup: selectionTargets.onSetupTableWithCaption
+  });
+
+  editor.ui.registry.addNestedMenuItem('tablecellbackgroundcolor', {
+    icon: 'cell-background-color',
+    text: 'Background color',
+    getSubmenuItems: () => buildColorMenu(editor, getTableBackgroundColorMap(editor), 'background-color'),
+    onSetup: selectionTargets.onSetupCellOrRow
+  });
+
+  editor.ui.registry.addNestedMenuItem('tablecellbordercolor', {
+    icon: 'cell-border-color',
+    text: 'Border color',
+    getSubmenuItems: () => buildColorMenu(editor, getTableBorderColorMap(editor), 'border-color'),
+    onSetup: selectionTargets.onSetupCellOrRow
+  });
+
+  editor.ui.registry.addToggleMenuItem('tablerowheader', {
+    text: 'Row header',
+    icon: 'table-top-header',
+    onAction: changeRowHeader(editor),
+    onSetup: selectionTargets.onSetupTableRowHeaders
+  });
+
+  editor.ui.registry.addToggleMenuItem('tablecolheader', {
+    text: 'Column header',
+    icon: 'table-left-header',
+    onAction: changeColumnHeader(editor),
+    onSetup: selectionTargets.onSetupTableColumnHeaders
   });
 };
 

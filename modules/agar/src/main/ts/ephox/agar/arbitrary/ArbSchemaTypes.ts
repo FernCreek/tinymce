@@ -1,10 +1,12 @@
 import { Merger, Obj } from '@ephox/katamari';
-import { Attr, Css, InsertAll, Truncate } from '@ephox/sugar';
+import { Attribute, Css, InsertAll, Truncate } from '@ephox/sugar';
 import Jsc from '@ephox/wrap-jsverify';
 
 import * as ArbChildrenSchema from './ArbChildrenSchema';
 import * as ArbNodes from './ArbNodes';
 import { WeightedChoice } from './WeightedChoice';
+
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 
 const toTags = (detail) =>
   Obj.mapToArray(detail.tags, (v, k) => Merger.deepMerge(v, { tag: k }));
@@ -29,7 +31,7 @@ const addDecorations = (detail, element) => {
   const attrDecorator = detail.attributes !== undefined ? detail.attributes : Jsc.constant({}).generator;
   const styleDecorator = detail.styles !== undefined ? detail.styles : Jsc.constant({}).generator;
   return attrDecorator.flatMap((attrs) => {
-    Attr.setAll(element, attrs);
+    Attribute.setAll(element, attrs);
     return styleDecorator.map((styles) => {
       Css.setAll(element, styles);
       return element;
@@ -41,7 +43,7 @@ const makeTag = (choice) => {
   const element = ArbNodes.elementOf(choice.tag);
   const attributes = choice.attributes !== undefined ? choice.attributes : {};
   const styles = choice.styles !== undefined ? choice.styles : {};
-  Attr.setAll(element, attributes);
+  Attribute.setAll(element, attributes);
   Css.setAll(element, styles);
   return element;
 };

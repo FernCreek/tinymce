@@ -1,9 +1,9 @@
 import { UnitTest } from '@ephox/bedrock-client';
-import { Blob, XMLHttpRequest } from '@ephox/dom-globals';
 import { Obj } from '@ephox/katamari';
+import Promise from '@ephox/wrap-promise-polyfill';
+
+import * as JPEGMeta from 'ephox/imagetools/meta/JPEGMeta';
 import * as Assertion from 'ephox/imagetools/test/Assertion';
-import { JPEGMeta } from 'ephox/imagetools/api/Main';
-import { Promise } from 'ephox/imagetools/util/Promise';
 
 const problematiJPEGs: Record<string, any>[] = [
   {
@@ -80,8 +80,8 @@ const problematiJPEGs: Record<string, any>[] = [
   }
 ];
 
-const urlToBlob = function (url: string): Promise<Blob> {
-  return new Promise(function (resolve, reject) {
+const urlToBlob = (url: string): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.responseType = 'blob';
     xhr.open('get', '/project/@ephox/imagetools/src/test/resources/' + url);
@@ -92,20 +92,20 @@ const urlToBlob = function (url: string): Promise<Blob> {
         reject(`${url} cannot be loaded.`);
       }
     };
-    xhr.onerror = function () {
+    xhr.onerror = () => {
       reject(`${url} cannot be loaded.`);
     };
     xhr.send();
   });
 };
 
-UnitTest.asynctest('ExifReaderTest', function (success, failure) {
+UnitTest.asynctest('ExifReaderTest', (success, failure) => {
 
-  const promises = problematiJPEGs.map(function (jpeg) {
-    return urlToBlob(jpeg.path).then(JPEGMeta.extractFrom).then(function (meta: any) {
+  const promises = problematiJPEGs.map((jpeg) => {
+    return urlToBlob(jpeg.path).then(JPEGMeta.extractFrom).then((meta: any) => {
       if (jpeg.expect) {
-        Obj.each(jpeg.expect, function (info, type) {
-          Obj.each(info, function (value, key) {
+        Obj.each(jpeg.expect, (info, type) => {
+          Obj.each(info, (value, key) => {
             Assertion.assertEq(value, meta[type][key], `Testing for ${key} on ${jpeg.path}`);
           });
         });

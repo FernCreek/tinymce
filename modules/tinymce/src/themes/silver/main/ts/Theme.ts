@@ -6,7 +6,9 @@
  */
 
 import { Fun } from '@ephox/katamari';
+
 import ThemeManager, { Theme } from 'tinymce/core/api/ThemeManager';
+
 import NotificationManagerImpl from './alien/NotificationManagerImpl';
 import { Autocompleter } from './Autocompleter';
 import * as Render from './Render';
@@ -14,7 +16,7 @@ import * as WindowManager from './ui/dialog/WindowManager';
 
 type RenderInfo = Render.RenderInfo;
 
-export default function () {
+export default () => {
   ThemeManager.add('silver', (editor): Theme => {
     const { uiMothership, backstage, renderUI, getUi }: RenderInfo = Render.setup(editor);
 
@@ -30,4 +32,4 @@ export default function () {
       ui: getUi()
     };
   });
-}
+};

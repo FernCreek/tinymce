@@ -1,4 +1,4 @@
-import { ApproxStructure, Assertions, GeneralSteps, Step, StructAssert } from '@ephox/agar';
+import { ApproxStructure, Assertions, GeneralSteps, PhantomSkipper, Step, StructAssert } from '@ephox/agar';
 import { UnitTest } from '@ephox/bedrock-client';
 import { Arr, Result } from '@ephox/katamari';
 import { Css } from '@ephox/sugar';
@@ -8,14 +8,15 @@ import * as Memento from 'ephox/alloy/api/component/Memento';
 import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
 import { Button } from 'ephox/alloy/api/ui/Button';
 import { SplitFloatingToolbar } from 'ephox/alloy/api/ui/SplitFloatingToolbar';
-import * as PhantomSkipper from 'ephox/alloy/test/PhantomSkipper';
 import * as Sinks from 'ephox/alloy/test/Sinks';
 import * as TestPartialToolbarGroup from 'ephox/alloy/test/toolbar/TestPartialToolbarGroup';
 
 UnitTest.asynctest('SplitFloatingToolbarTest', (success, failure) => {
   // Tests requiring 'flex' do not currently work on phantom. Use the remote to see how it is
   // viewed as an invalid value.
-  if (PhantomSkipper.skip()) { return success(); }
+  if (PhantomSkipper.detect()) {
+    return success();
+  }
 
   const sinkComp = Sinks.relativeSink();
 
@@ -28,7 +29,7 @@ UnitTest.asynctest('SplitFloatingToolbarTest', (success, failure) => {
   }));
 
   GuiSetup.setup((_store, _doc, _body) => {
-    const pPrimary = SplitFloatingToolbar.parts().primary({
+    const pPrimary = SplitFloatingToolbar.parts.primary({
       dom: {
         tag: 'div',
         classes: [ 'test-toolbar-primary' ]
@@ -46,7 +47,7 @@ UnitTest.asynctest('SplitFloatingToolbarTest', (success, failure) => {
             outline: '2px solid blue'
           }
         },
-        lazySink(_comp) {
+        lazySink: (_comp) => {
           return Result.value(sinkComp);
         },
         components: [
@@ -89,7 +90,7 @@ UnitTest.asynctest('SplitFloatingToolbarTest', (success, failure) => {
     });
 
     const sResetWidth = (px: string) => Step.sync(() => {
-      Css.set(component.element(), 'width', px);
+      Css.set(component.element, 'width', px);
       SplitFloatingToolbar.refresh(component);
     });
 
@@ -136,7 +137,7 @@ UnitTest.asynctest('SplitFloatingToolbarTest', (success, failure) => {
             })
           ]
         })),
-        component.element()
+        component.element
       ),
       Assertions.sAssertStructure(
         label,
@@ -155,9 +156,17 @@ UnitTest.asynctest('SplitFloatingToolbarTest', (success, failure) => {
             })
           ]
         })),
-        sinkComp.element()
+        sinkComp.element
       )
     ]);
+
+    const sAssertSplitFloatingToolbarToggleState = (expected: boolean) => Step.sync(() => {
+      Assertions.assertEq('Expected split floating toolbar toggle state to be ' + expected, expected, SplitFloatingToolbar.isOpen(component));
+    });
+
+    const sToggleSplitFloatingToolbar = () => Step.sync(() => {
+      SplitFloatingToolbar.toggle(component);
+    });
 
     return [
       GuiSetup.mAddStyles(doc, [
@@ -169,6 +178,8 @@ UnitTest.asynctest('SplitFloatingToolbarTest', (success, failure) => {
         '.test-split-toolbar button.more-button { width: 50px; }'
       ]),
 
+      sAssertSplitFloatingToolbarToggleState(false),
+
       Step.sync(() => {
         const groups = TestPartialToolbarGroup.createGroups([
           { items: Arr.map([{ text: 'A' }, { text: 'B' }], makeButton) },
@@ -178,6 +189,8 @@ UnitTest.asynctest('SplitFloatingToolbarTest', (success, failure) => {
         SplitFloatingToolbar.setGroups(component, groups);
         SplitFloatingToolbar.toggle(component);
       }),
+
+      sAssertSplitFloatingToolbarToggleState(true),
 
       sAssertGroups('width=400px (1 +)', [ group1, oGroup ], [ group2, group3 ]),
 
@@ -203,7 +216,13 @@ UnitTest.asynctest('SplitFloatingToolbarTest', (success, failure) => {
       sResetWidth('400px'),
       sAssertGroups('width=400px (1 +)', [ group1, oGroup ], [ group2, group3 ]),
 
+      sToggleSplitFloatingToolbar(),
+      sAssertSplitFloatingToolbarToggleState(false),
+
+      sToggleSplitFloatingToolbar(),
+      sAssertSplitFloatingToolbarToggleState(true),
+
       GuiSetup.mRemoveStyles
     ];
-  }, () => { success(); }, failure);
+  }, success, failure);
 });

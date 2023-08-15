@@ -1,35 +1,36 @@
 import { DomUniverse } from '@ephox/boss';
-import { Option } from '@ephox/katamari';
-import { Element } from '@ephox/sugar';
+import { Optional } from '@ephox/katamari';
+import { SugarElement } from '@ephox/sugar';
+
 import { BrokenPath, LeftRight } from '../../parent/Breaker';
 import * as Parent from '../general/Parent';
 
 const universe = DomUniverse();
 
-const sharedOne = function (look: (e: Element) => Option<Element>, elements: Element[]) {
-  return Parent.sharedOne(universe, function (_universe, element) {
+const sharedOne = (look: (e: SugarElement) => Optional<SugarElement>, elements: SugarElement[]): Optional<SugarElement> => {
+  return Parent.sharedOne(universe, (_universe, element) => {
     return look(element);
   }, elements);
 };
 
-const subset = function (start: Element, finish: Element) {
+const subset = (start: SugarElement, finish: SugarElement): Optional<SugarElement[]> => {
   return Parent.subset(universe, start, finish);
 };
 
-const ancestors = function (start: Element, finish: Element, isRoot?: (x: Element) => boolean) {
+const ancestors = (start: SugarElement, finish: SugarElement, isRoot?: (x: SugarElement) => boolean): Parent.AncestorsFnResult<SugarElement> => {
   return Parent.ancestors(universe, start, finish, isRoot);
 };
 
-const breakToLeft = function (parent: Element, child: Element) {
+const breakToLeft = (parent: SugarElement, child: SugarElement): Optional<LeftRight<SugarElement>> => {
   return Parent.breakToLeft(universe, parent, child);
 };
 
-const breakToRight = function (parent: Element, child: Element) {
+const breakToRight = (parent: SugarElement, child: SugarElement): Optional<LeftRight<SugarElement>> => {
   return Parent.breakToRight(universe, parent, child);
 };
 
-const breakPath = function (child: Element, isTop: (e: Element) => boolean, breaker: (parent: Element, child: Element) => Option<LeftRight<Element>>): BrokenPath<Element> {
-  return Parent.breakPath(universe, child, isTop, function (u, p, c) {
+const breakPath = (child: SugarElement, isTop: (e: SugarElement) => boolean, breaker: (parent: SugarElement, child: SugarElement) => Optional<LeftRight<SugarElement>>): BrokenPath<SugarElement> => {
+  return Parent.breakPath(universe, child, isTop, (u, p, c) => {
     return breaker(p, c);
   });
 };

@@ -5,12 +5,12 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { HTMLImageElement } from '@ephox/dom-globals';
-import { Arr, Fun, Strings, Type } from '@ephox/katamari';
+import { Arr, Fun, Obj, Strings, Type } from '@ephox/katamari';
+
 import { UploadHandler } from '../file/Uploader';
 import DOMUtils from './dom/DOMUtils';
 import Editor from './Editor';
-import { ReferrerPolicy } from './SettingsTypes';
+import Env from './Env';
 import I18n from './util/I18n';
 import Tools from './util/Tools';
 
@@ -23,7 +23,7 @@ const getBodySetting = (editor: Editor, name: string, defaultValue: string) => {
 
   if (value.indexOf('=') !== -1) {
     const bodyObj = editor.getParam(name, '', 'hash');
-    return bodyObj.hasOwnProperty(editor.id) ? bodyObj[editor.id] : defaultValue;
+    return Obj.get(bodyObj, editor.id).getOr(defaultValue);
   } else {
     return value;
   }
@@ -73,7 +73,7 @@ const getFontStyleValues = (editor: Editor): string[] => Tools.explode(editor.ge
 
 const getFontSizeClasses = (editor: Editor): string[] => Tools.explode(editor.getParam('font_size_classes', ''));
 
-const getImagesDataImgFilter = (editor: Editor): (imgElm: HTMLImageElement) => boolean => editor.getParam('images_dataimg_filter', Fun.constant(true), 'function');
+const getImagesDataImgFilter = (editor: Editor): (imgElm: HTMLImageElement) => boolean => editor.getParam('images_dataimg_filter', Fun.always, 'function');
 
 const isAutomaticUploadsEnabled = (editor: Editor): boolean => editor.getParam('automatic_uploads', true, 'boolean');
 
@@ -119,11 +119,24 @@ const getContentCss = (editor: Editor): string[] => {
   }
 };
 
+const getFontCss = (editor: Editor): string[] => {
+  const fontCss = editor.getParam('font_css', []);
+
+  return Type.isArray(fontCss) ? fontCss : Arr.map(fontCss.split(','), Strings.trim);
+};
+
 const getDirectionality = (editor: Editor): string | undefined => editor.getParam('directionality', I18n.isRtl() ? 'rtl' : undefined);
 
 const getInlineBoundarySelector = (editor: Editor): string => editor.getParam('inline_boundaries_selector', 'a[href],code,.mce-annotation', 'string');
 
-const getObjectResizing = (editor: Editor) => editor.getParam('object_resizing');
+const getObjectResizing = (editor: Editor): string | false => {
+  const selector = editor.getParam('object_resizing');
+  if (selector === false || Env.iOS) {
+    return false;
+  } else {
+    return Type.isString(selector) ? selector : 'table,img,figure.image,div,video,iframe';
+  }
+};
 
 const getResizeImgProportional = (editor: Editor): boolean => editor.getParam('resize_img_proportional', true, 'boolean');
 
@@ -153,6 +166,8 @@ const getPreviewStyles = (editor: Editor): string => {
   }
 };
 
+const canFormatEmptyLines = (editor: Editor) => editor.getParam('format_empty_lines', false, 'boolean');
+
 const getCustomUiSelector = (editor: Editor): string => editor.getParam('custom_ui_selector', '', 'string');
 
 const getThemeUrl = (editor: Editor): string => editor.getParam('theme_url');
@@ -179,11 +194,19 @@ const isReadOnly = (editor: Editor): boolean => editor.getParam('readonly');
 
 const hasContentCssCors = (editor: Editor): boolean => editor.getParam('content_css_cors');
 
-const getPlugins = (editor: Editor) => editor.getParam('plugins');
+const getPlugins = (editor: Editor): string => editor.getParam('plugins', '', 'string');
 
 const getExternalPlugins = (editor: Editor) => editor.getParam('external_plugins');
 
 const shouldBlockUnsupportedDrop = (editor: Editor) => editor.getParam('block_unsupported_drop', true, 'boolean');
+
+const isVisualAidsEnabled = (editor: Editor) => editor.getParam('visual', true, 'boolean');
+
+const getVisualAidsTableClass = (editor: Editor) => editor.getParam('visual_table_class', 'mce-item-table', 'string');
+
+const getVisualAidsAnchorClass = (editor: Editor) => editor.getParam('visual_anchor_class', 'mce-item-anchor', 'string');
+
+const getIframeAriaText = (editor: Editor) => editor.getParam('iframe_aria_text', 'Rich Text Area. Press ALT-0 for help.', 'string');
 
 export {
   getIframeAttrs,
@@ -230,6 +253,7 @@ export {
   isInlineBoundariesEnabled,
   getFormats,
   getPreviewStyles,
+  canFormatEmptyLines,
   getCustomUiSelector,
   getThemeUrl,
   isInline,
@@ -245,5 +269,10 @@ export {
   hasContentCssCors,
   getPlugins,
   getExternalPlugins,
-  shouldBlockUnsupportedDrop
+  shouldBlockUnsupportedDrop,
+  isVisualAidsEnabled,
+  getVisualAidsTableClass,
+  getFontCss,
+  getVisualAidsAnchorClass,
+  getIframeAriaText
 };

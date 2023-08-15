@@ -1,9 +1,10 @@
 import { Assertions, Logger, Pipeline, Step, TestLogs } from '@ephox/agar';
 import { Assert, UnitTest } from '@ephox/bedrock-client';
+import { SugarShadowDom } from '@ephox/sugar';
+
 import { Editor } from 'ephox/mcagar/alien/EditorTypes';
-import * as TinyLoader from 'ephox/mcagar/api/TinyLoader';
-import { TinyUi } from 'ephox/mcagar/api/TinyUi';
-import { ShadowDom } from '@ephox/sugar';
+import * as TinyLoader from 'ephox/mcagar/api/pipeline/TinyLoader';
+import { TinyUi } from 'ephox/mcagar/api/pipeline/TinyUi';
 
 UnitTest.asynctest('TinyLoaderTest', (success, failure) => {
   let clickedOn = false;
@@ -44,9 +45,11 @@ UnitTest.asynctest('TinyLoader.setupInBodyAndShadowRoot passes logs through', (s
   TinyLoader.setupInBodyAndShadowRoot((_editor, onSuccess, _onFailure) => {
     calls++;
     onSuccess('call' + calls, TestLogs.single('log' + calls));
-  }, {}, (v, logs) => {
+  }, {
+    base_url: '/project/tinymce/js/tinymce'
+  }, (v, logs) => {
     try {
-      if (ShadowDom.isSupported()) {
+      if (SugarShadowDom.isSupported()) {
         Assert.eq('Value should come from second call', 'call2', v);
         Assert.eq('Logs should be concatenated', TestLogs.addLogEntry(TestLogs.single('log1'), 'log2'), logs);
       } else {
@@ -55,7 +58,7 @@ UnitTest.asynctest('TinyLoader.setupInBodyAndShadowRoot passes logs through', (s
         Assert.eq('Logs should just be from the first call', TestLogs.single('log1'), logs);
       }
       success();
-    } catch (e) {
+    } catch (e: any) {
       failure(e);
     }
   }, failure);

@@ -5,17 +5,18 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Types } from '@ephox/bridge';
-import { File, URL } from '@ephox/dom-globals';
-import { Arr, Merger, Option, Type } from '@ephox/katamari';
+import { Arr, Merger, Optional, Strings, Type } from '@ephox/katamari';
 
 import Editor from 'tinymce/core/api/Editor';
 import { BlobInfo } from 'tinymce/core/api/file/BlobCache';
 import { StyleMap } from 'tinymce/core/api/html/Styles';
+import { Dialog as DialogType } from 'tinymce/core/api/ui/Ui';
+import ImageUploader, { UploadResult } from 'tinymce/core/api/util/ImageUploader';
+import Promise from 'tinymce/core/api/util/Promise';
+
 import { getStyleValue, ImageData } from '../core/ImageData';
 import { normalizeCss as doNormalizeCss } from '../core/ImageSelection';
 import { ListUtils } from '../core/ListUtils';
-import Uploader from '../core/Uploader';
 import * as Utils from '../core/Utils';
 import { AdvTab } from './AdvTab';
 import { collect } from './DialogInfo';
@@ -24,32 +25,33 @@ import { MainTab } from './MainTab';
 import { UploadTab } from './UploadTab';
 
 interface ChangeEvent {
-  name: string;
+  readonly name: string;
 }
 
 interface Size {
-  width: string;
-  height: string;
+  readonly width: string;
+  readonly height: string;
 }
 
 interface Helpers {
-  onSubmit: (info: ImageDialogInfo) => (api: API) => void;
-  imageSize: (url: string) => Promise<Size>;
-  addToBlobCache: (blobInfo: BlobInfo) => void;
-  createBlobCache: (file: File, blobUri: string, dataUrl: string) => BlobInfo;
-  alertErr: (message: string) => void;
-  normalizeCss: (cssText: string) => string;
-  parseStyle: (cssText: string) => StyleMap;
-  serializeStyle: (stylesArg: StyleMap, name?: string) => string;
+  readonly onSubmit: (info: ImageDialogInfo) => (api: API) => void;
+  readonly imageSize: (url: string) => Promise<Size>;
+  readonly addToBlobCache: (blobInfo: BlobInfo) => void;
+  readonly createBlobCache: (file: File, blobUri: string, dataUrl: string) => BlobInfo;
+  readonly alertErr: (message: string) => void;
+  readonly normalizeCss: (cssText: string) => string;
+  readonly parseStyle: (cssText: string) => StyleMap;
+  readonly serializeStyle: (stylesArg: StyleMap, name?: string) => string;
+  readonly uploadImage: (blobInfo: BlobInfo) => Promise<UploadResult>;
 }
 
 interface ImageDialogState {
-  prevImage: Option<ListValue>;
+  prevImage: Optional<ListValue>;
   prevAlt: string;
   open: boolean;
 }
 
-const createState = (info: ImageDialogInfo) => ({
+const createState = (info: ImageDialogInfo): ImageDialogState => ({
   prevImage: ListUtils.findEntry(info.imageList, info.image.src),
   prevAlt: info.image.alt,
   open: true
@@ -94,17 +96,17 @@ const toImageData = (data: ImageDialogData, removeEmptyAlt: boolean): ImageData 
   isDecorative: data.isDecorative
 });
 
-const addPrependUrl2 = (info: ImageDialogInfo, srcURL: string): Option<string> => {
+const addPrependUrl2 = (info: ImageDialogInfo, srcURL: string): Optional<string> => {
   // Add the prependURL
   if (!/^(?:[a-zA-Z]+:)?\/\//.test(srcURL)) {
     return info.prependURL.bind((prependUrl) => {
       if (srcURL.substring(0, prependUrl.length) !== prependUrl) {
-        return Option.some(prependUrl + srcURL);
+        return Optional.some(prependUrl + srcURL);
       }
-      return Option.none();
+      return Optional.none();
     });
   }
-  return Option.none();
+  return Optional.none();
 };
 
 const addPrependUrl = (info: ImageDialogInfo, api: API) => {
@@ -161,7 +163,7 @@ const formFillFromMeta2 = (info: ImageDialogInfo, data: ImageDialogData, meta: I
   }
 };
 
-const formFillFromMeta = (info: ImageDialogInfo, api: API) => {
+const formFillFromMeta = (info: ImageDialogInfo, api: API): void => {
   const data = api.getData();
   const meta = data.src.meta;
   if (meta !== undefined) {
@@ -171,34 +173,42 @@ const formFillFromMeta = (info: ImageDialogInfo, api: API) => {
   }
 };
 
-const calculateImageSize = (helpers: Helpers, info: ImageDialogInfo, state: ImageDialogState, api: API) => {
+const calculateImageSize = (helpers: Helpers, info: ImageDialogInfo, state: ImageDialogState, api: API): void => {
   const data = api.getData();
   const url = data.src.value;
   const meta = data.src.meta || {};
+
   if (!meta.width && !meta.height && info.hasDimensions) {
-    helpers.imageSize(url).then((size) => {
-      if (state.open) {
-        api.setData({ dimensions: size });
-      }
-    });
+    if (Strings.isNotEmpty(url)) {
+      helpers.imageSize(url)
+        .then((size) => {
+          if (state.open) {
+            api.setData({ dimensions: size });
+          }
+        })
+        // eslint-disable-next-line no-console
+        .catch((e) => console.error(e));
+    } else {
+      api.setData({ dimensions: { width: '', height: '' }});
+    }
   }
 };
 
-const updateImagesDropdown = (info: ImageDialogInfo, state: ImageDialogState, api: API) => {
+const updateImagesDropdown = (info: ImageDialogInfo, state: ImageDialogState, api: API): void => {
   const data = api.getData();
   const image = ListUtils.findEntry(info.imageList, data.src.value);
   state.prevImage = image;
   api.setData({ images: image.map((entry) => entry.value).getOr('') });
 };
 
-const changeSrc = (helpers: Helpers, info: ImageDialogInfo, state: ImageDialogState, api: API) => {
+const changeSrc = (helpers: Helpers, info: ImageDialogInfo, state: ImageDialogState, api: API): void => {
   addPrependUrl(info, api);
   formFillFromMeta(info, api);
   calculateImageSize(helpers, info, state, api);
   updateImagesDropdown(info, state, api);
 };
 
-const changeImages = (helpers: Helpers, info: ImageDialogInfo, state: ImageDialogState, api: API) => {
+const changeImages = (helpers: Helpers, info: ImageDialogInfo, state: ImageDialogState, api: API): void => {
   const data = api.getData();
   const image = ListUtils.findEntry(info.imageList, data.images);
   image.each((img) => {
@@ -218,22 +228,23 @@ const changeImages = (helpers: Helpers, info: ImageDialogInfo, state: ImageDialo
 };
 
 const calcVSpace = (css: StyleMap): string => {
-  const matchingTopBottom = css['margin-top'] && css['margin-bottom'] &&
-    css['margin-top'] === css['margin-bottom'];
+  const matchingTopBottom = css['margin-top'] && css['margin-bottom'] && css['margin-top'] === css['margin-bottom'];
   return matchingTopBottom ? Utils.removePixelSuffix(String(css['margin-top'])) : '';
 };
 
 const calcHSpace = (css: StyleMap): string => {
-  const matchingLeftRight = css['margin-right'] && css['margin-left'] &&
-    css['margin-right'] === css['margin-left'];
+  const matchingLeftRight = css['margin-right'] && css['margin-left'] && css['margin-right'] === css['margin-left'];
   return matchingLeftRight ? Utils.removePixelSuffix(String(css['margin-right'])) : '';
 };
 
-const calcBorderWidth = (css: StyleMap): string => css['border-width'] ? Utils.removePixelSuffix(String(css['border-width'])) : '';
+const calcBorderWidth = (css: StyleMap): string =>
+  css['border-width'] ? Utils.removePixelSuffix(String(css['border-width'])) : '';
 
-const calcBorderStyle = (css: StyleMap): string => css['border-style'] ? String(css['border-style']) : '';
+const calcBorderStyle = (css: StyleMap): string =>
+  css['border-style'] ? String(css['border-style']) : '';
 
-const calcStyle = (parseStyle: Helpers['parseStyle'], serializeStyle: Helpers['serializeStyle'], css: StyleMap): string => serializeStyle(parseStyle(serializeStyle(css)));
+const calcStyle = (parseStyle: Helpers['parseStyle'], serializeStyle: Helpers['serializeStyle'], css: StyleMap): string =>
+  serializeStyle(parseStyle(serializeStyle(css)));
 
 const changeStyle2 = (parseStyle: Helpers['parseStyle'], serializeStyle: Helpers['serializeStyle'], data: ImageDialogData): ImageDialogData => {
   const css = Utils.mergeMargins(parseStyle(data.style));
@@ -250,19 +261,19 @@ const changeStyle2 = (parseStyle: Helpers['parseStyle'], serializeStyle: Helpers
   return dataCopy;
 };
 
-const changeStyle = (helpers: Helpers, api: API) => {
+const changeStyle = (helpers: Helpers, api: API): void => {
   const data = api.getData();
   const newData = changeStyle2(helpers.parseStyle, helpers.serializeStyle, data);
   api.setData(newData);
 };
 
-const changeAStyle = (helpers: Helpers, info: ImageDialogInfo, api: API) => {
+const changeAStyle = (helpers: Helpers, info: ImageDialogInfo, api: API): void => {
   const data: ImageDialogData = Merger.deepMerge(fromImageData(info.image), api.getData());
   const style = getStyleValue(helpers.normalizeCss, toImageData(data, false));
   api.setData({ style });
 };
 
-const changeFileInput = (helpers: Helpers, info: ImageDialogInfo, state: ImageDialogState, api: API) => {
+const changeFileInput = (helpers: Helpers, info: ImageDialogInfo, state: ImageDialogState, api: API): void => {
   const data = api.getData();
   api.block('Uploading image'); // What msg do we pass to the lock?
   Arr.head(data.fileinput)
@@ -270,14 +281,6 @@ const changeFileInput = (helpers: Helpers, info: ImageDialogInfo, state: ImageDi
       api.unblock();
     }, (file) => {
       const blobUri: string = URL.createObjectURL(file);
-
-      const uploader = Uploader({
-        url: info.url,
-        basePath: info.basePath,
-        credentials: info.credentials,
-        handler: info.handler
-      });
-
       const finalize = () => {
         api.unblock();
         URL.revokeObjectURL(blobUri);
@@ -292,8 +295,8 @@ const changeFileInput = (helpers: Helpers, info: ImageDialogInfo, state: ImageDi
       Utils.blobToDataUri(file).then((dataUrl) => {
         const blobInfo = helpers.createBlobCache(file, blobUri, dataUrl);
         if (info.automaticUploads) {
-          uploader.upload(blobInfo).then((url: string) => {
-            updateSrcAndSwitchTab(url);
+          helpers.uploadImage(blobInfo).then((result) => {
+            updateSrcAndSwitchTab(result.url);
             finalize();
           }).catch((err) => {
             finalize();
@@ -308,7 +311,7 @@ const changeFileInput = (helpers: Helpers, info: ImageDialogInfo, state: ImageDi
     });
 };
 
-const changeHandler = (helpers: Helpers, info: ImageDialogInfo, state: ImageDialogState) => (api: API, evt: ChangeEvent) => {
+const changeHandler = (helpers: Helpers, info: ImageDialogInfo, state: ImageDialogState) => (api: API, evt: ChangeEvent): void => {
   if (evt.name === 'src') {
     changeSrc(helpers, info, state, api);
   } else if (evt.name === 'images') {
@@ -331,13 +334,13 @@ const changeHandler = (helpers: Helpers, info: ImageDialogInfo, state: ImageDial
   }
 };
 
-const closeHandler = (state: ImageDialogState) => () => {
+const closeHandler = (state: ImageDialogState) => (): void => {
   state.open = false;
 };
 
-const makeDialogBody = (info: ImageDialogInfo) => {
+const makeDialogBody = (info: ImageDialogInfo): DialogType.TabPanelSpec | DialogType.PanelSpec => {
   if (info.hasAdvTab || info.hasUploadUrl || info.hasUploadHandler) {
-    const tabPanel: Types.Dialog.TabPanelApi = {
+    const tabPanel: DialogType.TabPanelSpec = {
       type: 'tabpanel',
       tabs: Arr.flatten([
         [ MainTab.makeTab(info) ],
@@ -347,7 +350,7 @@ const makeDialogBody = (info: ImageDialogInfo) => {
     };
     return tabPanel;
   } else {
-    const panel: Types.Dialog.PanelApi = {
+    const panel: DialogType.PanelSpec = {
       type: 'panel',
       items: MainTab.makeItems(info)
     };
@@ -355,7 +358,7 @@ const makeDialogBody = (info: ImageDialogInfo) => {
   }
 };
 
-const makeDialog = (helpers: Helpers) => (info: ImageDialogInfo): Types.Dialog.DialogApi<ImageDialogData> => {
+const makeDialog = (helpers: Helpers) => (info: ImageDialogInfo): DialogType.DialogSpec<ImageDialogData> => {
   const state = createState(info);
   return {
     title: 'Insert/Edit Image',
@@ -381,7 +384,7 @@ const makeDialog = (helpers: Helpers) => (info: ImageDialogInfo): Types.Dialog.D
   };
 };
 
-const submitHandler = (editor: Editor) => (info: ImageDialogInfo) => (api: API) => {
+const submitHandler = (editor: Editor) => (info: ImageDialogInfo) => (api: API): void => {
   const data: ImageDialogData = Merger.deepMerge(fromImageData(info.image), api.getData());
 
   editor.execCommand('mceUpdateImage', false, toImageData(data, info.hasAccessibilityOptions));
@@ -390,33 +393,56 @@ const submitHandler = (editor: Editor) => (info: ImageDialogInfo) => (api: API) 
   api.close();
 };
 
-const imageSize = (editor: Editor) => (url: string): Promise<Size> => Utils.getImageSize(editor.documentBaseURI.toAbsolute(url)).then((dimensions) => ({
-  width: String(dimensions.width),
-  height: String(dimensions.height)
-}));
+const imageSize = (editor: Editor) => (url: string): Promise<Size> => {
+  // If the URL isn't safe then don't attempt to load it to get the sizes
+  if (!Utils.isSafeImageUrl(editor, url)) {
+    return Promise.resolve({ width: '', height: '' });
+  } else {
+    return Utils.getImageSize(editor.documentBaseURI.toAbsolute(url)).then((dimensions) => ({
+      width: String(dimensions.width),
+      height: String(dimensions.height)
+    }));
+  }
+};
 
-const createBlobCache = (editor: Editor) => (file: File, blobUri: string, dataUrl: string): BlobInfo => editor.editorUpload.blobCache.create({
-  blob: file,
-  blobUri,
-  name: file.name ? file.name.replace(/\.[^\.]+$/, '') : null,
-  base64: dataUrl.split(',')[ 1 ]
-});
+const createBlobCache = (editor: Editor) => (file: File, blobUri: string, dataUrl: string): BlobInfo =>
+  editor.editorUpload.blobCache.create({
+    blob: file,
+    blobUri,
+    name: file.name ? file.name.replace(/\.[^\.]+$/, '') : null,
+    filename: file.name,
+    base64: dataUrl.split(',')[ 1 ]
+  });
 
-const addToBlobCache = (editor: Editor) => (blobInfo: BlobInfo) => {
+const addToBlobCache = (editor: Editor) => (blobInfo: BlobInfo): void => {
   editor.editorUpload.blobCache.add(blobInfo);
 };
 
-const alertErr = (editor: Editor) => (message: string) => {
+const alertErr = (editor: Editor) => (message: string): void => {
   editor.windowManager.alert(message);
 };
 
-const normalizeCss = (editor: Editor) => (cssText: string) => doNormalizeCss(editor, cssText);
+const normalizeCss = (editor: Editor) => (cssText: string): string =>
+  doNormalizeCss(editor, cssText);
 
-const parseStyle = (editor: Editor) => (cssText: string): StyleMap => editor.dom.parseStyle(cssText);
+const parseStyle = (editor: Editor) => (cssText: string): StyleMap =>
+  editor.dom.parseStyle(cssText);
 
-const serializeStyle = (editor: Editor) => (stylesArg: StyleMap, name?: string): string => editor.dom.serializeStyle(stylesArg, name);
+const serializeStyle = (editor: Editor) => (stylesArg: StyleMap, name?: string): string =>
+  editor.dom.serializeStyle(stylesArg, name);
 
-export const Dialog = (editor: Editor) => {
+const uploadImage = (editor: Editor) => (blobInfo: BlobInfo): Promise<UploadResult> =>
+  ImageUploader(editor).upload([ blobInfo ], false).then((results) => {
+    if (results.length === 0) {
+      return Promise.reject('Failed to upload image');
+    } else if (results[0].status === false) {
+      return Promise.reject(results[0].error.message);
+    } else {
+      return results[0];
+    }
+  });
+
+export const Dialog = (editor: Editor): { open: () => void } => {
   const helpers: Helpers = {
     onSubmit: submitHandler(editor),
     imageSize: imageSize(editor),
@@ -425,14 +451,15 @@ export const Dialog = (editor: Editor) => {
     alertErr: alertErr(editor),
     normalizeCss: normalizeCss(editor),
     parseStyle: parseStyle(editor),
-    serializeStyle: serializeStyle(editor)
+    serializeStyle: serializeStyle(editor),
+    uploadImage: uploadImage(editor)
   };
-  const open = () => collect(editor).then(makeDialog(helpers)).then((spec) => editor.windowManager.open(spec));
-  const openLater = () => {
-    open();
+  const open = () => {
+    collect(editor)
+      .then(makeDialog(helpers))
+      .then(editor.windowManager.open);
   };
   return {
-    open,
-    openLater
+    open
   };
 };

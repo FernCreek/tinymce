@@ -1,4 +1,4 @@
-import { FieldProcessorAdt, FieldSchema } from '@ephox/boulder';
+import { FieldProcessor, FieldSchema } from '@ephox/boulder';
 
 import * as AddEventsBehaviour from '../../api/behaviour/AddEventsBehaviour';
 import { Focusing } from '../../api/behaviour/Focusing';
@@ -22,7 +22,7 @@ const builder = (detail: NormalItemDetail): AlloySpec => ({
     // INVESTIGATE: If more efficient, destructure attributes out
     ...detail.domModification,
     attributes: {
-      'role':  detail.toggling.isSome() ? 'menuitemcheckbox' : 'menuitem',
+      'role': detail.toggling.isSome() ? 'menuitemcheckbox' : 'menuitem',
       ...detail.domModification.attributes,
       'aria-haspopup': detail.hasSubmenu,
       ...(detail.hasSubmenu ? { 'aria-expanded': false } : {})
@@ -46,7 +46,7 @@ const builder = (detail: NormalItemDetail): AlloySpec => ({
         // focusable outer container ... often the body. If we prevent
         // mouseDown ... that doesn't happen. But only tested on Chrome/FF.
         stopMousedown: detail.ignoreFocus,
-        onFocus(component) {
+        onFocus: (component) => {
           ItemEvents.onFocus(component);
         }
       }),
@@ -74,10 +74,10 @@ const builder = (detail: NormalItemDetail): AlloySpec => ({
   eventOrder: detail.eventOrder
 });
 
-const schema: FieldProcessorAdt[] = [
-  FieldSchema.strict('data'),
-  FieldSchema.strict('components'),
-  FieldSchema.strict('dom'),
+const schema: FieldProcessor[] = [
+  FieldSchema.required('data'),
+  FieldSchema.required('components'),
+  FieldSchema.required('dom'),
   FieldSchema.defaulted('hasSubmenu', false),
 
   FieldSchema.option('toggling'),

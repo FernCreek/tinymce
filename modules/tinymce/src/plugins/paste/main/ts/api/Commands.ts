@@ -5,16 +5,17 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import * as Actions from '../core/Actions';
 import Editor from 'tinymce/core/api/Editor';
-import { Clipboard } from '../api/Clipboard';
 
-const register = function (editor: Editor, clipboard: Clipboard) {
-  editor.addCommand('mceTogglePlainTextPaste', function () {
+import * as Actions from '../core/Actions';
+import { Clipboard } from './Clipboard';
+
+const register = (editor: Editor, clipboard: Clipboard): void => {
+  editor.addCommand('mceTogglePlainTextPaste', () => {
     Actions.togglePlainTextPaste(editor, clipboard);
   });
 
-  editor.addCommand('mceInsertClipboardContent', function (ui, value) {
+  editor.addCommand('mceInsertClipboardContent', (ui, value) => {
     if (value.content) {
       clipboard.pasteHtml(value.content, value.internal);
     }

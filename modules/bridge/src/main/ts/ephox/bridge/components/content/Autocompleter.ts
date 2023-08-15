@@ -1,12 +1,12 @@
-import { FieldSchema, ValueSchema } from '@ephox/boulder';
-import { Range } from '@ephox/dom-globals';
-import { Option, Result } from '@ephox/katamari';
+import { FieldSchema, StructureSchema, ValueType } from '@ephox/boulder';
+import { Optional, Result } from '@ephox/katamari';
 
-import { SeparatorMenuItem, SeparatorMenuItemApi, separatorMenuItemSchema } from '../menu/SeparatorMenuItem';
-import { ColumnTypes } from '../toolbar/ToolbarSplitButton';
+import { CardMenuItemSpec } from '../menu/CardMenuItem';
+import { SeparatorMenuItem, separatorMenuItemSchema, SeparatorMenuItemSpec } from '../menu/SeparatorMenuItem';
 
-export type SeparatorItemApi = SeparatorMenuItemApi;
-export interface AutocompleterItemApi {
+export type ColumnTypes = number | 'auto';
+export type SeparatorItemSpec = SeparatorMenuItemSpec;
+export interface AutocompleterItemSpec {
   type?: 'autocompleteitem';
   value: string;
   text?: string;
@@ -14,28 +14,29 @@ export interface AutocompleterItemApi {
   meta?: Record<string, any>;
 }
 
-export type AutocompleterContents = SeparatorItemApi | AutocompleterItemApi;
+export type AutocompleterContents = SeparatorItemSpec | AutocompleterItemSpec | CardMenuItemSpec;
 
 export type SeparatorItem = SeparatorMenuItem;
 export interface AutocompleterItem {
   type: 'autocompleteitem';
   value: string;
-  text: Option<string>;
-  icon: Option<string>;
+  text: Optional<string>;
+  icon: Optional<string>;
   active: boolean;
   disabled: boolean;
   meta: Record<string, any>;
 }
 
-export interface AutocompleterApi {
+export interface AutocompleterSpec {
   type?: 'autocompleter';
   ch: string;
   minChars?: number;
   columns?: ColumnTypes;
   matches?: (rng: Range, text: string, pattern: string) => boolean;
   fetch: (pattern: string, maxResults: number, fetchOptions: Record<string, any>) => Promise<AutocompleterContents[]>;
-  onAction: (autocompleterApi: AutocompleterInstanceApi, rng, value: string, meta: Record<string, any>) => void;
+  onAction: (autocompleterApi: AutocompleterInstanceApi, rng: Range, value: string, meta: Record<string, any>) => void;
   maxResults?: number;
+  highlightOn?: string[];
 }
 
 export interface AutocompleterInstanceApi {
@@ -48,36 +49,41 @@ export interface Autocompleter {
   ch: string;
   minChars: number;
   columns: ColumnTypes;
-  matches: Option<(rng: Range, text: string, pattern: string) => boolean>;
+  matches: Optional<(rng: Range, text: string, pattern: string) => boolean>;
   fetch: (pattern: string, maxResults: number, fetchOptions: Record<string, any>) => Promise<AutocompleterContents[]>;
-  onAction: (autocompleterApi: AutocompleterInstanceApi, rng, value: string, meta: Record<string, any>) => void;
+  onAction: (autocompleterApi: AutocompleterInstanceApi, rng: Range, value: string, meta: Record<string, any>) => void;
   maxResults: number;
+  highlightOn: string[];
 }
 
-const autocompleterItemSchema = ValueSchema.objOf([
+const autocompleterItemSchema = StructureSchema.objOf([
   // Currently, autocomplete items don't support configuring type, active, disabled, meta
-  FieldSchema.state('type', () => 'autocompleteitem'),
-  FieldSchema.state('active', () => false),
-  FieldSchema.state('disabled', () => false),
+  FieldSchema.defaulted('type', 'autocompleteitem'),
+  FieldSchema.defaulted('active', false),
+  FieldSchema.defaulted('disabled', false),
   FieldSchema.defaulted('meta', {}),
-  FieldSchema.strictString('value'),
+  FieldSchema.requiredString('value'),
   FieldSchema.optionString('text'),
   FieldSchema.optionString('icon')
 ]);
 
-const autocompleterSchema = ValueSchema.objOf([
-  FieldSchema.strictString('type'),
-  FieldSchema.strictString('ch'),
+const autocompleterSchema = StructureSchema.objOf([
+  FieldSchema.requiredString('type'),
+  FieldSchema.requiredString('ch'),
   FieldSchema.defaultedNumber('minChars', 1),
   FieldSchema.defaulted('columns', 1),
   FieldSchema.defaultedNumber('maxResults', 10),
   FieldSchema.optionFunction('matches'),
-  FieldSchema.strictFunction('fetch'),
-  FieldSchema.strictFunction('onAction')
+  FieldSchema.requiredFunction('fetch'),
+  FieldSchema.requiredFunction('onAction'),
+  FieldSchema.defaultedArrayOf('highlightOn', [], ValueType.string)
 ]);
 
-export const createSeparatorItem = (spec: SeparatorItemApi): Result<SeparatorItem, ValueSchema.SchemaError<any>> => ValueSchema.asRaw('Autocompleter.Separator', separatorMenuItemSchema, spec);
+export const createSeparatorItem = (spec: SeparatorItemSpec): Result<SeparatorItem, StructureSchema.SchemaError<any>> =>
+  StructureSchema.asRaw('Autocompleter.Separator', separatorMenuItemSchema, spec);
 
-export const createAutocompleterItem = (spec: AutocompleterItemApi): Result<AutocompleterItem, ValueSchema.SchemaError<any>> => ValueSchema.asRaw<AutocompleterItem>('Autocompleter.Item', autocompleterItemSchema, spec);
+export const createAutocompleterItem = (spec: AutocompleterItemSpec): Result<AutocompleterItem, StructureSchema.SchemaError<any>> =>
+  StructureSchema.asRaw<AutocompleterItem>('Autocompleter.Item', autocompleterItemSchema, spec);
 
-export const createAutocompleter = (spec: AutocompleterApi): Result<Autocompleter, ValueSchema.SchemaError<any>> => ValueSchema.asRaw<Autocompleter>('Autocompleter', autocompleterSchema, spec);
+export const createAutocompleter = (spec: AutocompleterSpec): Result<Autocompleter, StructureSchema.SchemaError<any>> =>
+  StructureSchema.asRaw<Autocompleter>('Autocompleter', autocompleterSchema, spec);

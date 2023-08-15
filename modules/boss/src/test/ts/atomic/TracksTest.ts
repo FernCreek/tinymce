@@ -1,9 +1,10 @@
-import * as Tracks from 'ephox/boss/mutant/Tracks';
-import { Option } from '@ephox/katamari';
-import { UnitTest, assert } from '@ephox/bedrock-client';
-import { Gene } from 'ephox/boss/api/Gene';
+import { assert, UnitTest } from '@ephox/bedrock-client';
+import { Optional } from '@ephox/katamari';
 
-UnitTest.test('TracksTest', function () {
+import { Gene } from 'ephox/boss/api/Gene';
+import * as Tracks from 'ephox/boss/mutant/Tracks';
+
+UnitTest.test('TracksTest', () => {
   const family = Gene('A', '.', [
     Gene('B', '.'),
     Gene('C', '.', [
@@ -14,7 +15,7 @@ UnitTest.test('TracksTest', function () {
     ])
   ]);
 
-  const result = Tracks.track(family, Option.some(Gene('parent', '.')));
+  const result = Tracks.track(family, Optional.some(Gene('parent', '.')));
 
   const a = result;
   const b = result.children[0];
@@ -23,7 +24,7 @@ UnitTest.test('TracksTest', function () {
   const e = result.children[1].children[0].children[0];
   const f = result.children[1].children[1];
 
-  const p = function (item: Gene) {
+  const p = (item: Gene) => {
     return item.parent.getOrDie('Expected to have parent').id;
   };
 

@@ -1,11 +1,13 @@
-import { getDemoRegistry } from './../buttons/DemoRegistry';
+import { Fun } from '@ephox/katamari';
+
+import { getDemoRegistry } from '../buttons/DemoRegistry';
 
 const editor = {
   on: (_s, _f) => { },
-  isDirty: () => true
+  isDirty: Fun.always
 };
 
-export const registerTocItems = () => {
+export const registerTocItems = (): void => {
   getDemoRegistry().addButton('toc', {
     type: 'button',
     disabled: false,
@@ -13,7 +15,7 @@ export const registerTocItems = () => {
       editor.on('LoadContent SetContent change', (e) => {
         buttonApi.setDisabled(e);
       });
-      return () => { };
+      return Fun.noop;
     },
     onAction: (_buttonApi) => {
       // insert Table of contents

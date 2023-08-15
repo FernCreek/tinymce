@@ -1,17 +1,30 @@
-import { LegacyUnit } from '@ephox/mcagar';
-import { Pipeline } from '@ephox/agar';
+import { context, describe, it } from '@ephox/bedrock-client';
+import { Global } from '@ephox/katamari';
+import { assert } from 'chai';
+
 import Tools from 'tinymce/core/api/util/Tools';
-import { UnitTest } from '@ephox/bedrock-client';
 
-UnitTest.asynctest('browser.tinymce.core.util.ToolsTest', function (success, failure) {
-  const suite = LegacyUnit.createSuite();
-
-  suite.test('extend', function () {
-    LegacyUnit.deepEqual({ a: 1, b: 2, c: 3 }, Tools.extend({ a: 1 }, { b: 2 }, { c: 3 }));
-    LegacyUnit.deepEqual({ a: 1, c: 3 }, Tools.extend({ a: 1 }, null, { c: 3 }));
+describe('browser.tinymce.core.util.ToolsTest', () => {
+  it('extend', () => {
+    assert.deepEqual({ a: 1, b: 2, c: 3 }, Tools.extend({ a: 1 }, { b: 2 }, { c: 3 }));
+    assert.deepEqual({ a: 1, c: 3 }, Tools.extend({ a: 1 }, null, { c: 3 }));
   });
 
-  Pipeline.async({}, suite.toSteps({}), function () {
-    success();
-  }, failure);
+  context('create', () => {
+    it('TINY-7358: Multiple calls to create should create different objects', () => {
+      // eslint-disable-next-line @tinymce/prefer-fun
+      Tools.create('tinymce.temp.class1', { init: () => 'obj1' });
+      // eslint-disable-next-line @tinymce/prefer-fun
+      Tools.create('tinymce.temp.class2', { init: () => 'obj2' });
+
+      const instance1 = new Global.tinymce.temp.class1();
+      const instance2 = new Global.tinymce.temp.class2();
+
+      assert.equal(instance1.init(), 'obj1');
+      assert.equal(instance2.init(), 'obj2');
+
+      // Cleanup
+      delete Global.tinymce.temp;
+    });
+  });
 });

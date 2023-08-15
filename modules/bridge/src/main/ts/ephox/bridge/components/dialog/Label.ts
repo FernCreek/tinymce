@@ -1,10 +1,11 @@
-import { BodyComponentApi, BodyComponent } from './BodyComponent';
-import { FieldSchema, FieldProcessorAdt } from '@ephox/boulder';
+import { FieldProcessor, FieldSchema } from '@ephox/boulder';
 
-export interface LabelApi {
+import { BodyComponent, BodyComponentSpec } from './BodyComponent';
+
+export interface LabelSpec {
   type: 'label';
   label: string;
-  items: BodyComponentApi[];
+  items: BodyComponentSpec[];
 }
 
 export interface Label {
@@ -13,8 +14,8 @@ export interface Label {
   items: BodyComponent[];
 }
 
-export const createLabelFields = (itemsField: FieldProcessorAdt) => [
-  FieldSchema.strictString('type'),
-  FieldSchema.strictString('label'),
+export const createLabelFields = (itemsField: FieldProcessor): FieldProcessor[] => [
+  FieldSchema.requiredString('type'),
+  FieldSchema.requiredString('label'),
   itemsField
 ];

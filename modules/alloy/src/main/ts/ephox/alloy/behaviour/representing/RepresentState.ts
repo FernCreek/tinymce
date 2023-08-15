@@ -1,8 +1,10 @@
-import { Arr, Cell, Obj, Option } from '@ephox/katamari';
+import { Arr, Cell, Fun, Obj, Optional } from '@ephox/katamari';
 
 import { ItemDataTuple } from '../../ui/types/ItemTypes';
 import { nuState } from '../common/BehaviourState';
-import { DatasetRepresentingState, ManualRepresentingState, MemoryRepresentingState, RepresentingConfig } from './RepresentingTypes';
+import {
+  DatasetRepresentingState, ManualRepresentingState, MemoryRepresentingState, RepresentingConfig, RepresentingState
+} from './RepresentingTypes';
 
 const memory = (): MemoryRepresentingState => {
   const data = Cell<any>(null);
@@ -28,9 +30,7 @@ const memory = (): MemoryRepresentingState => {
 };
 
 const manual = (): ManualRepresentingState => {
-  const readState = () => {
-
-  };
+  const readState = Fun.noop;
 
   return nuState({
     readState
@@ -54,7 +54,7 @@ const dataset = (): DatasetRepresentingState => {
 
   // itemString can be matching value or text.
   // TODO: type problem - impossible to correctly return value when type parameter only exists in return type
-  const lookup = <T extends ItemDataTuple>(itemString: string): Option<T> => Obj.get<any, string>(dataByValue.get(), itemString).orThunk(() => Obj.get<any, string>(dataByText.get(), itemString));
+  const lookup = <T extends ItemDataTuple>(itemString: string): Optional<T> => Obj.get<any, string>(dataByValue.get(), itemString).orThunk(() => Obj.get<any, string>(dataByText.get(), itemString));
 
   const update = <T extends ItemDataTuple>(items: T[]): void => {
     const currentDataByValue = dataByValue.get();
@@ -88,7 +88,8 @@ const dataset = (): DatasetRepresentingState => {
   });
 };
 
-const init = (spec: RepresentingConfig) => spec.store.manager.state(spec);
+const init = (spec: RepresentingConfig): RepresentingState =>
+  spec.store.manager.state(spec);
 
 export {
   memory,

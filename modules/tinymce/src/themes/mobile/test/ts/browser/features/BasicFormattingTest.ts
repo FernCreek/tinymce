@@ -2,41 +2,41 @@ import { GeneralSteps, Pipeline } from '@ephox/agar';
 import { TestHelpers } from '@ephox/alloy';
 import { UnitTest } from '@ephox/bedrock-client';
 import { PlatformDetection } from '@ephox/sand';
-import { Body, Traverse } from '@ephox/sugar';
+import { SugarBody, Traverse } from '@ephox/sugar';
 
 import * as TestTheme from '../../module/test/theme/TestTheme';
 import * as TestUi from '../../module/test/ui/TestUi';
 
-UnitTest.asynctest('Browser Test: features.BasicFormattingTest', function (success, failure) {
+UnitTest.asynctest('Browser Test: features.BasicFormattingTest', (success, failure) => {
   const browser = PlatformDetection.detect().browser;
 
   /* This test is going to create a toolbar with bold, italic, underline in it */
-  const body = Body.body();
+  const body = SugarBody.body();
 
   TestTheme.setup({
     container: body,
     items: [ 'bold', 'italic', 'underline' ]
   }, success, failure).use(
-    function (realm, apis, toolbar, socket, buttons, onSuccess, onFailure) {
+    (realm, apis, toolbar, socket, buttons, onSuccess, onFailure) => {
 
       const sSetS1 = apis.sSetSelection([ 0, 0 ], 'n'.length, [ 0, 0 ], 'n'.length);
       const sSetS2 = apis.sSetSelection([ 0, 1, 0 ], 'for'.length, [ 0, 1, 0 ], 'for'.length);
 
-      const sCheckComponent = function (label, state) {
-        return function (memento) {
+      const sCheckComponent = (label, state) => {
+        return (memento) => {
           return TestUi.sWaitForToggledState(label, state, realm, memento);
         };
       };
 
-      const sTestFormatter = function (openTag, closeTag, name) {
-        const sCheckS1 = function (situation) {
+      const sTestFormatter = (openTag, closeTag, name) => {
+        const sCheckS1 = (situation) => {
           return GeneralSteps.sequence([
             sSetS1,
             sCheckComponent(situation, false)(buttons[name])
           ]);
         };
 
-        const sCheckS2 = function (situation) {
+        const sCheckS2 = (situation) => {
           return GeneralSteps.sequence([
             sSetS2,
             sCheckComponent(situation, true)(buttons[name])

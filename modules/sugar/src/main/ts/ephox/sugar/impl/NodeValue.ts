@@ -1,23 +1,29 @@
-import { Node } from '@ephox/dom-globals';
-import { Option } from '@ephox/katamari';
-import Element from '../api/node/Element';
+import { Optional } from '@ephox/katamari';
 
-export default (is: (e: Element<Node>) => boolean, name: string) => {
-  const get = (element: Element): string => {
+import { SugarElement } from '../api/node/SugarElement';
+
+export interface NodeValue {
+  readonly get: (element: SugarElement<Node>) => string;
+  readonly getOption: (element: SugarElement<Node>) => Optional<string>;
+  readonly set: (element: SugarElement<Node>, value: string) => void;
+}
+
+export const NodeValue = (is: (e: SugarElement<Node>) => boolean, name: string): NodeValue => {
+  const get = (element: SugarElement<Node>): string => {
     if (!is(element)) {
       throw new Error('Can only get ' + name + ' value of a ' + name + ' node');
     }
     return getOption(element).getOr('');
   };
 
-  const getOption = (element: Element<Node>): Option<string> =>
-    is(element) ? Option.from(element.dom().nodeValue) : Option.none<string>();
+  const getOption = (element: SugarElement<Node>): Optional<string> =>
+    is(element) ? Optional.from(element.dom.nodeValue) : Optional.none<string>();
 
-  const set = (element: Element<Node>, value: string): void => {
+  const set = (element: SugarElement<Node>, value: string): void => {
     if (!is(element)) {
       throw new Error('Can only set raw ' + name + ' value of a ' + name + ' node');
     }
-    element.dom().nodeValue = value;
+    element.dom.nodeValue = value;
   };
 
   return {

@@ -1,4 +1,4 @@
-import { ApproxStructure, Assertions, Step, Waiter } from '@ephox/agar';
+import { ApproxStructure, Assertions, PhantomSkipper, Step, Waiter } from '@ephox/agar';
 import { UnitTest } from '@ephox/bedrock-client';
 import { Css } from '@ephox/sugar';
 
@@ -6,11 +6,12 @@ import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
 import { Transitioning } from 'ephox/alloy/api/behaviour/Transitioning';
 import * as GuiFactory from 'ephox/alloy/api/component/GuiFactory';
 import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
-import * as PhantomSkipper from 'ephox/alloy/test/PhantomSkipper';
 
 UnitTest.asynctest('TransitioningTest', (success, failure) => {
 
-  if (PhantomSkipper.skip()) { return success(); }
+  if (PhantomSkipper.detect()) {
+    return success();
+  }
 
   GuiSetup.setup((store, _doc, _body) => GuiFactory.build({
     dom: {
@@ -27,10 +28,10 @@ UnitTest.asynctest('TransitioningTest', (success, failure) => {
             transitionClass: 'transitioning'
           }
         }),
-        onTransition(_comp, route) {
+        onTransition: (_comp, route) => {
           store.adder(route.start + '->' + route.destination)();
         },
-        onFinish(_comp, finishState) {
+        onFinish: (_comp, finishState) => {
           store.adder('finish: ' + finishState)();
         }
       })
@@ -44,7 +45,7 @@ UnitTest.asynctest('TransitioningTest', (success, failure) => {
       '[data-transitioning-state="gamma"], div[data-transitioning-state="beta"]:not(.transitioning), div[data-transitioning-destination="beta"] { opacity: 0.2 }'
     ]),
     Step.sync(() => {
-      Css.reflow(component.element());
+      Css.reflow(component.element);
     }),
     Assertions.sAssertStructure(
       'Checking initial state',
@@ -54,7 +55,7 @@ UnitTest.asynctest('TransitioningTest', (success, failure) => {
           'data-transitioning-destination': str.none()
         }
       })),
-      component.element()
+      component.element
     ),
     store.sAssertEq('Checking initial state is empty', [ ]),
     Step.sync(() => {
@@ -71,7 +72,7 @@ UnitTest.asynctest('TransitioningTest', (success, failure) => {
           'data-transitioning-destination': str.none()
         }
       })),
-      component.element()
+      component.element
     ),
     store.sClear,
     Step.wait(0),
@@ -86,7 +87,7 @@ UnitTest.asynctest('TransitioningTest', (success, failure) => {
           'data-transitioning-destination': str.is('beta')
         }
       })),
-      component.element()
+      component.element
     ),
     Waiter.sTryUntil(
       'Waiting until state gets to beta',
@@ -106,5 +107,5 @@ UnitTest.asynctest('TransitioningTest', (success, failure) => {
         'beta->alpha'
       ])
     )
-  ], () => { success(); }, failure);
+  ], success, failure);
 });

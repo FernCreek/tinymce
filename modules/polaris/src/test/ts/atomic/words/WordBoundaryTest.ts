@@ -1,13 +1,14 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
+
 import * as StringMapper from 'ephox/polaris/words/StringMapper';
 import * as WordBoundary from 'ephox/polaris/words/WordBoundary';
 
-UnitTest.test('Words.WordBoundaryTest', function () {
-  const iwb = function (str: string, index: number) {
+UnitTest.test('Words.WordBoundaryTest', () => {
+  const iwb = (str: string, index: number) => {
     return WordBoundary.isWordBoundary(StringMapper.classify(str.split('')), index);
   };
 
-  const testWordBoundary = function () {
+  const testWordBoundary = () => {
     // should not break between most characters
     assert.eq(false, iwb('abc', 1));
     assert.eq(false, iwb('åäö', 1));

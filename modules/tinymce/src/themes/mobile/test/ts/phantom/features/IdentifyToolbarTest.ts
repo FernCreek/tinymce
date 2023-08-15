@@ -1,9 +1,10 @@
 import { Assertions } from '@ephox/agar';
-import * as Features from 'tinymce/themes/mobile/features/Features';
 import { UnitTest } from '@ephox/bedrock-client';
 
-UnitTest.test('features.IdentifyToolbarTest', function () {
-  const check = function (label: string, expected: string[], input: string | string[] | string[][] | undefined) {
+import * as Features from 'tinymce/themes/mobile/features/Features';
+
+UnitTest.test('features.IdentifyToolbarTest', () => {
+  const check = (label: string, expected: string[], input: string | string[] | string[][] | undefined) => {
     const dummyEditor = {
       getParam: (_name: string, defaultValue: any) => input !== undefined ? input : defaultValue
     };

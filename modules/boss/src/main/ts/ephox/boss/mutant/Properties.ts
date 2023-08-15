@@ -1,52 +1,67 @@
-import TagBoundaries from '../common/TagBoundaries';
-import { Arr, Option } from '@ephox/katamari';
-import { Gene } from '../api/Gene';
+import { Arr, Obj, Optional } from '@ephox/katamari';
 
-const children = function (item: Gene) {
+import { Gene } from '../api/Gene';
+import TagBoundaries from '../common/TagBoundaries';
+
+// Warning: not exhaustive
+export const enum GeneTypes {
+  Text = 'TEXT_GENE',
+  Comment = 'COMMENT_GENE',
+  Special = 'SPECIAL_GENE'
+}
+
+const children = (item: Gene): Gene[] => {
   return item.children;
 };
 
-const name = function (item: Gene) {
+const name = (item: Gene): string => {
   return item.name;
 };
 
-const parent = function (item: Gene): Option<Gene> {
+const parent = (item: Gene): Optional<Gene> => {
   return item.parent;
 };
 
-const document = function (_item: Gene) {
+const document = (_item: Gene): undefined => {
   return undefined; // currently the test universe does not have documents
 };
 
-const isText = function (item: Gene) {
-  return item.name === 'TEXT_GENE';
+const isText = (item: Gene): boolean => {
+  return item.name === GeneTypes.Text;
 };
 
-const isComment = function (item: Gene) {
-  return item.name === 'COMMENT_GENE';
+const isComment = (item: Gene): boolean => {
+  return item.name === GeneTypes.Comment;
 };
 
-const isElement = function (item: Gene) {
-  return item.name !== undefined && item.name !== 'TEXT_GENE' && item.name !== 'COMMENT_GENE';
+const isElement = (item: Gene): boolean => {
+  return item.name !== undefined && item.name !== GeneTypes.Text && item.name !== GeneTypes.Comment;
 };
 
-const getText = function (item: Gene) {
-  return Option.from(item.text).getOrDie('Text not available on this node');
+const isSpecial = (item: Gene): boolean => {
+  return item.name === GeneTypes.Special;
 };
 
-const setText = function (item: Gene, value: string | undefined) {
+const getLanguage = (item: Gene): Optional<string> =>
+  Obj.get(item.attrs, 'lang');
+
+const getText = (item: Gene): string => {
+  return Optional.from(item.text).getOrDie('Text not available on this node');
+};
+
+const setText = (item: Gene, value: string | undefined): void => {
   item.text = value;
 };
 
-const isEmptyTag = function (item: Gene) {
+const isEmptyTag = (item: Gene): boolean => {
   return Arr.contains([ 'br', 'img', 'hr' ], item.name);
 };
 
-const isBoundary = function (item: Gene) {
+const isBoundary = (item: Gene): boolean => {
   return Arr.contains(TagBoundaries, item.name);
 };
 
-const isNonEditable = function (item: Gene) {
+const isNonEditable = (item: Gene): boolean => {
   return isElement(item) && item.attrs.contenteditable === 'false';
 };
 
@@ -58,6 +73,8 @@ export {
   isText,
   isComment,
   isElement,
+  isSpecial,
+  getLanguage,
   getText,
   setText,
   isEmptyTag,

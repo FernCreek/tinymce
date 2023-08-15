@@ -7,18 +7,21 @@ import { applyPositionCss, PositionCss } from '../../positioning/view/PositionCs
 import * as Dockables from './Dockables';
 import { DockingConfig, DockingMode, DockingState } from './DockingTypes';
 
-const morphToStatic = (component: AlloyComponent, config: DockingConfig): void => {
-  Arr.each([ 'left', 'right', 'top', 'bottom', 'position' ], (prop) => Css.remove(component.element(), prop));
+const morphToStatic = (component: AlloyComponent, config: DockingConfig, state: DockingState): void => {
+  state.setDocked(false);
+  Arr.each([ 'left', 'right', 'top', 'bottom', 'position' ], (prop) => Css.remove(component.element, prop));
   config.onUndocked(component);
 };
 
-const morphToCoord = (component: AlloyComponent, config: DockingConfig, position: PositionCss): void => {
-  applyPositionCss(component.element(), position);
-  const method = position.position() === 'fixed' ? config.onDocked : config.onUndocked;
+const morphToCoord = (component: AlloyComponent, config: DockingConfig, state: DockingState, position: PositionCss): void => {
+  const isDocked = position.position === 'fixed';
+  state.setDocked(isDocked);
+  applyPositionCss(component.element, position);
+  const method = isDocked ? config.onDocked : config.onUndocked;
   method(component);
 };
 
-const updateVisibility = (component: AlloyComponent, config: DockingConfig, state: DockingState, viewport: Boxes.Bounds, morphToDocked: boolean = false) => {
+const updateVisibility = (component: AlloyComponent, config: DockingConfig, state: DockingState, viewport: Boxes.Bounds, morphToDocked: boolean = false): void => {
   config.contextual.each((contextInfo) => {
     // Make the dockable component disappear if the context is outside the viewport
     contextInfo.lazyContext(component).each((box) => {
@@ -30,7 +33,7 @@ const updateVisibility = (component: AlloyComponent, config: DockingConfig, stat
         // the fadeout class and don't worry about transitioning, as the context
         // would never have been in view while docked
         if (morphToDocked && !isVisible) {
-          Classes.add(component.element(), [ contextInfo.fadeOutClass ]);
+          Classes.add(component.element, [ contextInfo.fadeOutClass ]);
           contextInfo.onHide(component);
         } else {
           const method = isVisible ? Dockables.appear : Dockables.disappear;
@@ -41,7 +44,7 @@ const updateVisibility = (component: AlloyComponent, config: DockingConfig, stat
   });
 };
 
-const refreshInternal = (component: AlloyComponent, config: DockingConfig, state: DockingState) => {
+const refreshInternal = (component: AlloyComponent, config: DockingConfig, state: DockingState): void => {
   // Absolute coordinates (considers scroll)
   const viewport = config.lazyViewport(component);
   // If docked then check if we need to hide/show the component
@@ -51,28 +54,26 @@ const refreshInternal = (component: AlloyComponent, config: DockingConfig, state
   }
 
   Dockables.getMorph(component, viewport, state).each((morph) => {
-    // Toggle the docked state
-    state.setDocked(!isDocked);
     // Apply the morph result
     morph.fold(
-      () => morphToStatic(component, config),
-      (position) => morphToCoord(component, config, position),
+      () => morphToStatic(component, config, state),
+      (position) => morphToCoord(component, config, state, position),
       (position) => {
         updateVisibility(component, config, state, viewport, true);
-        morphToCoord(component, config, position);
-      },
+        morphToCoord(component, config, state, position);
+      }
     );
   });
 };
 
-const resetInternal = (component: AlloyComponent, config: DockingConfig, state: DockingState) => {
+const resetInternal = (component: AlloyComponent, config: DockingConfig, state: DockingState): void => {
   // Morph back to the original position
-  const elem = component.element();
+  const elem = component.element;
   state.setDocked(false);
   Dockables.getMorphToOriginal(component, state).each((morph) => {
     morph.fold(
-      () => morphToStatic(component, config),
-      (position) => morphToCoord(component, config, position),
+      () => morphToStatic(component, config, state),
+      (position) => morphToCoord(component, config, state, position),
       Fun.noop
     );
   });
@@ -88,7 +89,7 @@ const resetInternal = (component: AlloyComponent, config: DockingConfig, state: 
   refresh(component, config, state);
 };
 
-const refresh = (component: AlloyComponent, config: DockingConfig, state: DockingState) => {
+const refresh = (component: AlloyComponent, config: DockingConfig, state: DockingState): void => {
   // Ensure the component is attached to the document/world, if not then do nothing as we can't
   // check if the component should be docked or not when in a detached state
   if (component.getSystem().isConnected()) {
@@ -96,7 +97,7 @@ const refresh = (component: AlloyComponent, config: DockingConfig, state: Dockin
   }
 };
 
-const reset = (component: AlloyComponent, config: DockingConfig, state: DockingState) => {
+const reset = (component: AlloyComponent, config: DockingConfig, state: DockingState): void => {
   // If the component is not docked then there's no need to reset the state,
   // so only reset when docked
   if (state.isDocked()) {
@@ -104,10 +105,13 @@ const reset = (component: AlloyComponent, config: DockingConfig, state: DockingS
   }
 };
 
-const isDocked = (component: AlloyComponent, config: DockingConfig, state: DockingState) => state.isDocked();
+const isDocked = (component: AlloyComponent, config: DockingConfig, state: DockingState): boolean =>
+  state.isDocked();
 
-const setModes = (component: AlloyComponent, config: DockingConfig, state: DockingState, modes: DockingMode[]) => state.setModes(modes);
+const setModes = (component: AlloyComponent, config: DockingConfig, state: DockingState, modes: DockingMode[]): void =>
+  state.setModes(modes);
 
-const getModes = (component: AlloyComponent, config: DockingConfig, state: DockingState) => state.getModes();
+const getModes = (component: AlloyComponent, config: DockingConfig, state: DockingState): DockingMode[] =>
+  state.getModes();
 
 export { refresh, reset, isDocked, getModes, setModes };

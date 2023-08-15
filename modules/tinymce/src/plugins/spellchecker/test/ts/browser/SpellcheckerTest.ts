@@ -1,23 +1,23 @@
 import { Log, Pipeline, Step } from '@ephox/agar';
 import { Assert, UnitTest } from '@ephox/bedrock-client';
-import { TinyLoader, TinyUi } from '@ephox/mcagar';
+import { TinyLoader, TinyUi } from '@ephox/wrap-mcagar';
 
 import * as Settings from 'tinymce/plugins/spellchecker/api/Settings';
 import SpellcheckerPlugin from 'tinymce/plugins/spellchecker/Plugin';
 import SilverTheme from 'tinymce/themes/silver/Theme';
 
-UnitTest.asynctest('browser.tinymce.plugins.spellchecker.SpellcheckerTest', function (success, failure) {
+UnitTest.asynctest('browser.tinymce.plugins.spellchecker.SpellcheckerTest', (success, failure) => {
 
   SilverTheme();
   SpellcheckerPlugin();
 
-  const sTestDefaultLanguage = function (editor) {
-    return Step.sync(function () {
+  const sTestDefaultLanguage = (editor) => {
+    return Step.sync(() => {
       Assert.eq('should be same', Settings.getLanguage(editor), 'en');
     });
   };
 
-  TinyLoader.setup(function (editor, onSuccess, onFailure) {
+  TinyLoader.setup((editor, onSuccess, onFailure) => {
     const ui = TinyUi(editor);
     Pipeline.async({}, Log.steps('TBA', 'Spellchecker: default settings', [
       sTestDefaultLanguage(editor),

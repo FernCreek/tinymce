@@ -5,15 +5,16 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Fun, Option, Unicode } from '@ephox/katamari';
-import { Element } from '@ephox/sugar';
-import TreeWalker from '../api/dom/TreeWalker';
+import { Fun, Optional, Unicode } from '@ephox/katamari';
+import { SugarElement } from '@ephox/sugar';
+
+import DomTreeWalker from '../api/dom/TreeWalker';
 import Editor from '../api/Editor';
 import * as ElementType from '../dom/ElementType';
 import * as NodeType from '../dom/NodeType';
 import * as ScrollIntoView from '../dom/ScrollIntoView';
 
-const firstNonWhiteSpaceNodeSibling = function (node) {
+const firstNonWhiteSpaceNodeSibling = (node) => {
   while (node) {
     if (node.nodeType === 1 || (node.nodeType === 3 && node.data && /[\r\n\s]/.test(node.data))) {
       return node;
@@ -23,7 +24,7 @@ const firstNonWhiteSpaceNodeSibling = function (node) {
   }
 };
 
-const moveToCaretPosition = function (editor: Editor, root) {
+const moveToCaretPosition = (editor: Editor, root) => {
   let node, lastNode = root;
   const dom = editor.dom;
   const moveCaretBeforeOnEnterElementsMap = editor.schema.getMoveCaretBeforeOnEnterElements();
@@ -44,7 +45,7 @@ const moveToCaretPosition = function (editor: Editor, root) {
   root.normalize();
 
   if (root.hasChildNodes()) {
-    const walker = new TreeWalker(root, root);
+    const walker = new DomTreeWalker(root, root);
 
     while ((node = walker.current())) {
       if (NodeType.isText(node)) {
@@ -86,7 +87,7 @@ const moveToCaretPosition = function (editor: Editor, root) {
   ScrollIntoView.scrollRangeIntoView(editor, rng);
 };
 
-const getEditableRoot = function (dom, node) {
+const getEditableRoot = (dom, node) => {
   const root = dom.getRoot();
   let parent, editableRoot;
 
@@ -103,22 +104,22 @@ const getEditableRoot = function (dom, node) {
   return parent !== root ? editableRoot : root;
 };
 
-const getParentBlock = function (editor: Editor) {
-  return Option.from(editor.dom.getParent(editor.selection.getStart(true), editor.dom.isBlock));
+const getParentBlock = (editor: Editor) => {
+  return Optional.from(editor.dom.getParent(editor.selection.getStart(true), editor.dom.isBlock));
 };
 
-const getParentBlockName = function (editor: Editor) {
+const getParentBlockName = (editor: Editor) => {
   return getParentBlock(editor).fold(
     Fun.constant(''),
-    function (parentBlock) {
+    (parentBlock) => {
       return parentBlock.nodeName.toUpperCase();
     }
   );
 };
 
-const isListItemParentBlock = function (editor: Editor) {
-  return getParentBlock(editor).filter(function (elm) {
-    return ElementType.isListItem(Element.fromDom(elm));
+const isListItemParentBlock = (editor: Editor) => {
+  return getParentBlock(editor).filter((elm) => {
+    return ElementType.isListItem(SugarElement.fromDom(elm));
   }).isSome();
 };
 

@@ -1,10 +1,11 @@
 {
   "name": "@ephox/boss",
   "description": "Generic wrapper to document models - DomUniverse vs TestUniverse",
-  "version": "3.1.9",
+  "version": "5.0.4",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tinymce/tinymce"
+    "url": "https://github.com/tinymce/tinymce.git",
+    "directory": "modules/boss"
   },
   "files": [
     "lib/main",
@@ -12,19 +13,18 @@
     "lib/test",
     "src",
     "tsconfig.json",
-    "readme.md",
+    "README.md",
     "LEGAL.txt",
     "CHANGELOG.txt",
     "LICENSE.txt"
   ],
   "dependencies": {
-    "@ephox/dom-globals": "^1.1.2",
-    "@ephox/katamari": "^6.1.2",
-    "@ephox/sugar": "^6.1.3",
-    "tslib": "^1.9.3"
+    "@ephox/katamari": "^8.1.1",
+    "@ephox/sugar": "^8.1.2",
+    "tslib": "^2.0.0"
   },
   "devDependencies": {
-    "@ephox/katamari-assertions": "^1.0.9"
+    "@ephox/katamari-assertions": "^3.0.3"
   },
   "scripts": {
     "prepublishOnly": "tsc -b",
@@ -32,7 +32,7 @@
     "test-manual": "bedrock -d src/test/ts",
     "lint": "eslint --config ../../.eslintrc.json src/**/*.ts"
   },
-  "author": "Ephox Corporation",
+  "author": "Tiny Technologies, Inc",
   "license": "Apache-2.0",
   "main": "./lib/main/ts/ephox/boss/api/Main.js",
   "module": "./lib/main/ts/ephox/boss/api/Main.js",

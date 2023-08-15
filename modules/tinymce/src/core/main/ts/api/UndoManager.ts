@@ -5,21 +5,21 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Event } from '@ephox/dom-globals';
-import { Cell, Option } from '@ephox/katamari';
+import { Cell, Singleton } from '@ephox/katamari';
+
 import { Bookmark } from '../bookmark/BookmarkTypes';
-import { addKeyboardShortcuts, registerEvents } from '../undo/Setup';
-import { UndoManager, Locks, Index, UndoLevel } from '../undo/UndoManagerTypes';
-import Editor from './Editor';
 import * as Rtc from '../Rtc';
+import { addKeyboardShortcuts, registerEvents } from '../undo/Setup';
+import { Index, Locks, UndoLevel, UndoManager } from '../undo/UndoManagerTypes';
+import Editor from './Editor';
 
 /**
  * This class handles the undo/redo history levels for the editor. Since the built-in undo/redo has major drawbacks a custom one was needed.
  *
  * @class tinymce.UndoManager
  */
-const UndoManager = function (editor: Editor): UndoManager {
-  let beforeBookmark: Cell<Option<Bookmark>> = Cell(Option.none());
+const UndoManager = (editor: Editor): UndoManager => {
+  let beforeBookmark = Singleton.value<Bookmark>();
   let locks: Locks = Cell(0);
   let index: Index = Cell(0);
 
@@ -67,7 +67,7 @@ const UndoManager = function (editor: Editor): UndoManager {
      *
      * @method beforeChange
      */
-    beforeChange() {
+    beforeChange: () => {
       Rtc.beforeChange(editor, locks, beforeBookmark);
     },
 
@@ -79,7 +79,7 @@ const UndoManager = function (editor: Editor): UndoManager {
      * @param {DOMEvent} event Optional event responsible for the creation of the undo level.
      * @return {Object} Undo level that got added or null it a level wasn't needed.
      */
-    add(level?: UndoLevel, event?: Event): UndoLevel {
+    add: (level?: UndoLevel, event?: Event): UndoLevel => {
       return Rtc.addUndoLevel(editor, undoManager, index, locks, beforeBookmark, level, event);
     },
 
@@ -89,7 +89,7 @@ const UndoManager = function (editor: Editor): UndoManager {
      * @method undo
      * @return {Object} Undo level or null if no undo was performed.
      */
-    undo(): UndoLevel {
+    undo: (): UndoLevel => {
       return Rtc.undo(editor, undoManager, locks, index);
     },
 
@@ -99,7 +99,7 @@ const UndoManager = function (editor: Editor): UndoManager {
      * @method redo
      * @return {Object} Redo level or null if no redo was performed.
      */
-    redo(): UndoLevel {
+    redo: (): UndoLevel => {
       return Rtc.redo(editor, index, undoManager.data);
     },
 
@@ -108,7 +108,7 @@ const UndoManager = function (editor: Editor): UndoManager {
      *
      * @method clear
      */
-    clear() {
+    clear: () => {
       Rtc.clear(editor, undoManager, index);
     },
 
@@ -117,7 +117,7 @@ const UndoManager = function (editor: Editor): UndoManager {
      *
      * @method reset
      */
-    reset() {
+    reset: () => {
       Rtc.reset(editor, undoManager);
     },
 
@@ -127,7 +127,7 @@ const UndoManager = function (editor: Editor): UndoManager {
      * @method hasUndo
      * @return {Boolean} true/false if the undo manager has any undo levels.
      */
-    hasUndo() {
+    hasUndo: () => {
       return Rtc.hasUndo(editor, undoManager, index);
     },
 
@@ -137,7 +137,7 @@ const UndoManager = function (editor: Editor): UndoManager {
      * @method hasRedo
      * @return {Boolean} true/false if the undo manager has any redo levels.
      */
-    hasRedo() {
+    hasRedo: () => {
       return Rtc.hasRedo(editor, undoManager, index);
     },
 
@@ -151,7 +151,7 @@ const UndoManager = function (editor: Editor): UndoManager {
      * @param {function} callback Function that gets executed and has dom manipulation logic in it.
      * @return {Object} Undo level that got added or null it a level wasn't needed.
      */
-    transact(callback: () => void): UndoLevel {
+    transact: (callback: () => void): UndoLevel => {
       return Rtc.transact(editor, undoManager, locks, callback);
     },
 
@@ -163,7 +163,7 @@ const UndoManager = function (editor: Editor): UndoManager {
      * @method ignore
      * @param {function} callback Function that gets executed and has dom manipulation logic in it.
      */
-    ignore(callback: () => void) {
+    ignore: (callback: () => void) => {
       Rtc.ignore(editor, locks, callback);
     },
 
@@ -176,7 +176,7 @@ const UndoManager = function (editor: Editor): UndoManager {
      * @param {function} callback1 Function that does mutation but gets stored as a "hidden" extra undo level.
      * @param {function} callback2 Function that does mutation but gets displayed to the user.
      */
-    extra(callback1: () => void, callback2: () => void) {
+    extra: (callback1: () => void, callback2: () => void) => {
       Rtc.extra(editor, undoManager, index, callback1, callback2);
     }
   };

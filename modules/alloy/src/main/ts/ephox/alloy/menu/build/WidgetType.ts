@@ -1,22 +1,22 @@
 import { FieldSchema } from '@ephox/boulder';
-import { Option } from '@ephox/katamari';
+import { Optional } from '@ephox/katamari';
 
 import * as EditableFields from '../../alien/EditableFields';
 import * as Behaviour from '../../api/behaviour/Behaviour';
 import { Focusing } from '../../api/behaviour/Focusing';
 import { Keying } from '../../api/behaviour/Keying';
 import { Representing } from '../../api/behaviour/Representing';
+import { AlloyComponent } from '../../api/component/ComponentApi';
+import { SketchBehaviours } from '../../api/component/SketchBehaviours';
 import * as AlloyEvents from '../../api/events/AlloyEvents';
 import * as NativeEvents from '../../api/events/NativeEvents';
 import * as SystemEvents from '../../api/events/SystemEvents';
 import * as Fields from '../../data/Fields';
+import { NativeSimulatedEvent } from '../../events/SimulatedEvent';
 import * as AlloyParts from '../../parts/AlloyParts';
+import { WidgetItemDetail } from '../../ui/types/ItemTypes';
 import * as ItemEvents from '../util/ItemEvents';
 import * as WidgetParts from './WidgetParts';
-import { NativeSimulatedEvent } from '../../events/SimulatedEvent';
-import { AlloyComponent } from '../../api/component/ComponentApi';
-import { WidgetItemDetail } from '../../ui/types/ItemTypes';
-import { SketchBehaviours } from '../../api/component/SketchBehaviours';
 
 const builder = (detail: WidgetItemDetail) => {
   const subs = AlloyParts.substitutes(WidgetParts.owner(), detail, WidgetParts.parts());
@@ -27,12 +27,12 @@ const builder = (detail: WidgetItemDetail) => {
     return widget;
   });
 
-  const onHorizontalArrow = (component: AlloyComponent, simulatedEvent: NativeSimulatedEvent): Option<boolean> => EditableFields.inside(simulatedEvent.event().target()) ? Option.none<boolean>() : (() => {
+  const onHorizontalArrow = (component: AlloyComponent, simulatedEvent: NativeSimulatedEvent): Optional<boolean> => EditableFields.inside(simulatedEvent.event.target) ? Optional.none<boolean>() : (() => {
     if (detail.autofocus) {
-      simulatedEvent.setSource(component.element());
-      return Option.none<boolean>();
+      simulatedEvent.setSource(component.element);
+      return Optional.none<boolean>();
     } else {
-      return Option.none<boolean>();
+      return Optional.none<boolean>();
     }
   })();
 
@@ -50,7 +50,11 @@ const builder = (detail: WidgetItemDetail) => {
       AlloyEvents.run(NativeEvents.mouseover(), ItemEvents.onHover),
 
       AlloyEvents.run(SystemEvents.focusItem(), (component, _simulatedEvent) => {
-        if (detail.autofocus) { focusWidget(component); } else { Focusing.focus(component); }
+        if (detail.autofocus) {
+          focusWidget(component);
+        } else {
+          Focusing.focus(component);
+        }
       })
     ]),
     behaviours: SketchBehaviours.augment(
@@ -65,7 +69,7 @@ const builder = (detail: WidgetItemDetail) => {
         Focusing.config({
           ignore: detail.ignoreFocus,
           // What about stopMousedown from ItemType?
-          onFocus(component) {
+          onFocus: (component) => {
             ItemEvents.onFocus(component);
           }
         }),
@@ -77,19 +81,19 @@ const builder = (detail: WidgetItemDetail) => {
           } : Behaviour.revoke(),
           onLeft: onHorizontalArrow,
           onRight: onHorizontalArrow,
-          onEscape(component, simulatedEvent) {
+          onEscape: (component, simulatedEvent) => {
             // If the outer list item didn't have focus,
             // then focus it (i.e. escape the inner widget). Only do if not autofocusing
             // Autofocusing should treat the widget like it is the only item, so it should
             // let its outer menu handle escape
-            if (! Focusing.isFocused(component) && !detail.autofocus) {
+            if (!Focusing.isFocused(component) && !detail.autofocus) {
               Focusing.focus(component);
-              return Option.some<boolean>(true);
+              return Optional.some<boolean>(true);
             } else if (detail.autofocus) {
-              simulatedEvent.setSource(component.element());
-              return Option.none<boolean>();
+              simulatedEvent.setSource(component.element);
+              return Optional.none<boolean>();
             } else {
-              return Option.none<boolean>();
+              return Optional.none<boolean>();
             }
           }
         })
@@ -99,10 +103,10 @@ const builder = (detail: WidgetItemDetail) => {
 };
 
 const schema = [
-  FieldSchema.strict('uid'),
-  FieldSchema.strict('data'),
-  FieldSchema.strict('components'),
-  FieldSchema.strict('dom'),
+  FieldSchema.required('uid'),
+  FieldSchema.required('data'),
+  FieldSchema.required('components'),
+  FieldSchema.required('dom'),
   FieldSchema.defaulted('autofocus', false),
   FieldSchema.defaulted('ignoreFocus', false),
 

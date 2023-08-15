@@ -1,19 +1,18 @@
-import * as Arr from 'ephox/katamari/api/Arr';
-import { Assert, UnitTest } from '@ephox/bedrock-client';
-import { Option } from 'ephox/katamari/api/Option';
-import { tOption } from 'ephox/katamari/api/OptionInstances';
-import { Testable } from '@ephox/dispute';
+import { describe, it } from '@ephox/bedrock-client';
 import fc from 'fast-check';
 
-const { tNumber } = Testable;
+import * as Arr from 'ephox/katamari/api/Arr';
+import { assertNone, assertSome } from 'ephox/katamari/test/AssertOptional';
 
-UnitTest.test('Arr.last: empty', () => {
-  Assert.eq('empty', Option.none<number>(), Arr.last<number>([]), tOption(tNumber));
-});
+describe('atomic.katamari.api.arr.ArrLastTest', () => {
+  it('returns none when empty', () => {
+    assertNone(Arr.last<number>([]));
+  });
 
-UnitTest.test('Arr.last: nonEmpty', () => {
-  fc.assert(fc.property(fc.array(fc.integer()), fc.integer(), (init, last) => {
-    const arr = init.concat([ last ]);
-    Assert.eq('nonEmpty', Option.some(last), Arr.last(arr), tOption(tNumber));
-  }));
+  it('returns last element when non-empty', () => {
+    fc.assert(fc.property(fc.array(fc.integer()), fc.integer(), (init, last) => {
+      const arr = init.concat([ last ]);
+      assertSome(Arr.last(arr), last);
+    }));
+  });
 });

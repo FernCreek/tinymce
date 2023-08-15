@@ -1,5 +1,6 @@
+import { GeneTypes } from '../mutant/Properties';
 import { Gene } from './Gene';
 
-export const CommentGene = function (id: string, text: string) {
-  return Gene(id, 'COMMENT_GENE', [], {}, {}, text);
+export const CommentGene = (id: string, text: string): Gene => {
+  return Gene(id, GeneTypes.Comment, [], {}, {}, text);
 };

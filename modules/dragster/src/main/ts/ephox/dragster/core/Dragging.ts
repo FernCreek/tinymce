@@ -1,32 +1,42 @@
 import { Throttler } from '@ephox/katamari';
-import { Event, Events, Bindable } from '@ephox/porkbun';
-import { DragMode, DragApi, DragMutation } from '../api/DragApis';
-import Movement from '../detect/Movement';
+import { Bindable, Event, Events } from '@ephox/porkbun';
+import { EventArgs, SugarElement } from '@ephox/sugar';
+
+import { DragApi, DragMode, DragMutation } from '../api/DragApis';
 import { BlockerOptions } from '../detect/Blocker';
-import { Element, EventArgs } from '@ephox/sugar';
+import { Movement } from '../detect/Movement';
 
 interface DragActionEvents {
-  registry: {
+  readonly registry: {
     start: Bindable<{}>;
     stop: Bindable<{}>;
   };
-  trigger: {
+  readonly trigger: {
     start: () => void;
     stop: () => void;
   };
 }
 
-const setup = function (mutation: DragMutation, mode: DragMode, settings: Partial<BlockerOptions>) {
+export interface Dragging {
+  readonly element: () => SugarElement<HTMLElement>;
+  readonly go: (parent: SugarElement<Node>) => void;
+  readonly on: () => void;
+  readonly off: () => void;
+  readonly destroy: () => void;
+  readonly events: DragActionEvents['registry'];
+}
+
+const setup = (mutation: DragMutation, mode: DragMode, settings: Partial<BlockerOptions>): Dragging => {
   let active = false;
 
-  const events = Events.create({
+  const events: DragActionEvents = Events.create({
     start: Event([]),
     stop: Event([])
-  }) as DragActionEvents;
+  });
 
   const movement = Movement();
 
-  const drop = function () {
+  const drop = () => {
     sink.stop();
     if (movement.isOn()) {
       movement.off();
@@ -36,32 +46,32 @@ const setup = function (mutation: DragMutation, mode: DragMode, settings: Partia
 
   const throttledDrop = Throttler.last(drop, 200);
 
-  const go = function (parent: Element) {
+  const go = (parent: SugarElement<Node>) => {
     sink.start(parent);
     movement.on();
     events.trigger.start();
   };
 
-  const mousemove = function (event: EventArgs) {
+  const mousemove = (event: EventArgs) => {
     throttledDrop.cancel();
     movement.onEvent(event, mode);
   };
 
-  movement.events.move.bind(function (event) {
-    mode.mutate(mutation, event.info());
+  movement.events.move.bind((event) => {
+    mode.mutate(mutation, event.info);
   });
 
-  const on = function () {
+  const on = () => {
     active = true;
   };
 
-  const off = function () {
+  const off = () => {
     active = false;
     // acivate some events here?
   };
 
-  const runIfActive = function <F extends (...args: any[]) => any> (f: F) {
-    return function (...args: Parameters<F>) {
+  const runIfActive = <F extends (...args: any[]) => any> (f: F) => {
+    return (...args: Parameters<F>) => {
       if (active) {
         f.apply(null, args);
       }
@@ -77,7 +87,7 @@ const setup = function (mutation: DragMutation, mode: DragMode, settings: Partia
     delayDrop: runIfActive(throttledDrop.throttle)
   }), settings);
 
-  const destroy = function () {
+  const destroy = () => {
     sink.destroy();
   };
 

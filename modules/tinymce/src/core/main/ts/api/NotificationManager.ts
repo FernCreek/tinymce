@@ -5,9 +5,9 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Element, HTMLElement } from '@ephox/dom-globals';
-import { Arr, Option } from '@ephox/katamari';
-import { Element as SugarElement, Focus } from '@ephox/sugar';
+import { Arr, Fun, Optional } from '@ephox/katamari';
+import { Focus, SugarElement } from '@ephox/sugar';
+
 import * as EditorView from '../EditorView';
 import { NotificationManagerImpl } from '../ui/NotificationManagerImpl';
 import Editor from './Editor';
@@ -15,10 +15,10 @@ import * as Settings from './Settings';
 import Delay from './util/Delay';
 
 export interface NotificationManagerImpl {
-  open (spec: NotificationSpec, closeCallback?: () => void): NotificationApi;
-  close <T extends NotificationApi>(notification: T): void;
-  reposition <T extends NotificationApi>(notifications: T[]): void;
-  getArgs <T extends NotificationApi>(notification: T): NotificationSpec;
+  open: (spec: NotificationSpec, closeCallback?: () => void) => NotificationApi;
+  close: <T extends NotificationApi>(notification: T) => void;
+  reposition: <T extends NotificationApi>(notifications: T[]) => void;
+  getArgs: <T extends NotificationApi>(notification: T) => NotificationSpec;
 }
 
 export interface NotificationSpec {
@@ -60,54 +60,59 @@ interface NotificationManager {
  * });
  */
 
-function NotificationManager(editor: Editor): NotificationManager {
+const NotificationManager = (editor: Editor): NotificationManager => {
   const notifications: NotificationApi[] = [];
 
-  const getImplementation = function (): NotificationManagerImpl {
+  const getImplementation = (): NotificationManagerImpl => {
     const theme = editor.theme;
     return theme && theme.getNotificationManagerImpl ? theme.getNotificationManagerImpl() : NotificationManagerImpl();
   };
 
-  const getTopNotification = function (): Option<NotificationApi> {
-    return Option.from(notifications[0]);
+  const getTopNotification = (): Optional<NotificationApi> => {
+    return Optional.from(notifications[0]);
   };
 
-  const isEqual = function (a: NotificationSpec, b: NotificationSpec) {
+  const isEqual = (a: NotificationSpec, b: NotificationSpec) => {
     return a.type === b.type && a.text === b.text && !a.progressBar && !a.timeout && !b.progressBar && !b.timeout;
   };
 
-  const reposition = function () {
+  const reposition = () => {
     if (notifications.length > 0) {
       getImplementation().reposition(notifications);
     }
   };
 
-  const addNotification = function (notification: NotificationApi) {
+  const addNotification = (notification: NotificationApi) => {
     notifications.push(notification);
   };
 
-  const closeNotification = function (notification: NotificationApi) {
-    Arr.findIndex(notifications, function (otherNotification) {
+  const closeNotification = (notification: NotificationApi) => {
+    Arr.findIndex(notifications, (otherNotification) => {
       return otherNotification === notification;
-    }).each(function (index) {
+    }).each((index) => {
       // Mutate here since third party might have stored away the window array
       // TODO: Consider breaking this api
       notifications.splice(index, 1);
     });
   };
 
-  const open = function (spec: NotificationSpec) {
+  const open = (spec: NotificationSpec, fireEvent: boolean = true) => {
     // Never open notification if editor has been removed.
     if (editor.removed || !EditorView.isEditorAttachedToDom(editor)) {
       return;
     }
 
-    return Arr.find(notifications, function (notification) {
+    // fire event to allow notification spec to be mutated before display
+    if (fireEvent) {
+      editor.fire('BeforeOpenNotification', { notification: spec });
+    }
+
+    return Arr.find(notifications, (notification) => {
       return isEqual(getImplementation().getArgs(notification), spec);
-    }).getOrThunk(function () {
+    }).getOrThunk(() => {
       editor.editorManager.setActive(editor);
 
-      const notification = getImplementation().open(spec, function () {
+      const notification = getImplementation().open(spec, () => {
         closeNotification(notification);
         reposition();
         // Move focus back to editor when the last notification is closed,
@@ -120,43 +125,49 @@ function NotificationManager(editor: Editor): NotificationManager {
 
       addNotification(notification);
       reposition();
+
+      // Ensure notification is not passed by reference to prevent mutation
+      editor.fire('OpenNotification', { notification: { ...notification }});
       return notification;
     });
   };
 
-  const close = function () {
-    getTopNotification().each(function (notification) {
+  const close = () => {
+    getTopNotification().each((notification) => {
       getImplementation().close(notification);
       closeNotification(notification);
       reposition();
     });
   };
 
-  const getNotifications = function (): NotificationApi[] {
-    return notifications;
-  };
+  const getNotifications = Fun.constant(notifications);
 
-  const registerEvents = function (editor: Editor) {
-    editor.on('SkinLoaded', function () {
+  const registerEvents = (editor: Editor) => {
+    editor.on('SkinLoaded', () => {
       const serviceMessage = Settings.getServiceMessage(editor);
 
       if (serviceMessage) {
+        // Ensure we pass false for fireEvent so that service message cannot be altered.
         open({
           text: serviceMessage,
           type: 'warning',
           timeout: 0
-        });
+        }, false);
       }
+
+      // Ensure the notifications are repositioned once the skin has loaded, as otherwise
+      // any notifications rendered before then may have wrapped and been in the wrong place
+      reposition();
     });
 
     // NodeChange is needed for inline mode and autoresize as the positioning is done
     // from the bottom up, which changes when the content in the editor changes.
-    editor.on('ResizeEditor ResizeWindow NodeChange', function () {
+    editor.on('show ResizeEditor ResizeWindow NodeChange', () => {
       Delay.requestAnimationFrame(reposition);
     });
 
-    editor.on('remove', function () {
-      Arr.each(notifications.slice(), function (notification) {
+    editor.on('remove', () => {
+      Arr.each(notifications.slice(), (notification) => {
         getImplementation().close(notification);
       });
     });
@@ -190,6 +201,6 @@ function NotificationManager(editor: Editor): NotificationManager {
      */
     getNotifications
   };
-}
+};
 
 export default NotificationManager;

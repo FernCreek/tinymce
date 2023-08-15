@@ -5,18 +5,17 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Node, Range } from '@ephox/dom-globals';
 import { Cell, Fun } from '@ephox/katamari';
+
 import * as CaretFormat from '../fmt/CaretFormat';
 import * as FormatChanged from '../fmt/FormatChanged';
 import { FormatRegistry } from '../fmt/FormatRegistry';
-import * as MatchFormat from '../fmt/MatchFormat';
+import { Format, FormatVars } from '../fmt/FormatTypes';
 import * as Preview from '../fmt/Preview';
 import * as FormatShortcuts from '../keyboard/FormatShortcuts';
 import * as Rtc from '../Rtc';
 import { RangeLikeObject } from '../selection/RangeTypes';
 import Editor from './Editor';
-import { Format, FormatVars } from './fmt/Format';
 
 /**
  * Text formatter engine class. This class is used to apply formats like bold, italic, font size
@@ -34,18 +33,19 @@ import { Format, FormatVars } from './fmt/Format';
  */
 
 interface Formatter extends FormatRegistry {
-  apply (name: string, vars?: FormatVars, node?: Node | RangeLikeObject): void;
-  remove (name: string, vars?: FormatVars, node?: Node | Range, similar?: boolean): void;
-  toggle (name: string, vars?: FormatVars, node?: Node): void;
-  match (name: string, vars?: FormatVars, node?: Node): boolean;
-  matchAll (names: string[], vars?: FormatVars): string[];
-  matchNode (node: Node, name: string, vars?: FormatVars, similar?: boolean): boolean;
-  canApply (name: string): boolean;
-  formatChanged (names: string, callback: FormatChanged.FormatChangeCallback, similar?: boolean): { unbind: () => void };
-  getCssText (format: string | Format): string;
+  apply: (name: string, vars?: FormatVars, node?: Node | RangeLikeObject) => void;
+  remove: (name: string, vars?: FormatVars, node?: Node | Range, similar?: boolean) => void;
+  toggle: (name: string, vars?: FormatVars, node?: Node) => void;
+  match: (name: string, vars?: FormatVars, node?: Node, similar?: boolean) => boolean;
+  closest: (names: string[]) => string | null;
+  matchAll: (names: string[], vars?: FormatVars) => string[];
+  matchNode: (node: Node, name: string, vars?: FormatVars, similar?: boolean) => Format | undefined;
+  canApply: (name: string) => boolean;
+  formatChanged: (names: string, callback: FormatChanged.FormatChangeCallback, similar?: boolean, vars?: FormatVars) => { unbind: () => void };
+  getCssText: (format: string | Format) => string;
 }
 
-const Formatter = function (editor: Editor): Formatter {
+const Formatter = (editor: Editor): Formatter => {
   const formats = FormatRegistry(editor);
   const formatChangeState = Cell(null);
 
@@ -132,9 +132,21 @@ const Formatter = function (editor: Editor): Formatter {
      * @param {String} name Name of format to match.
      * @param {Object} vars Optional list of variables to replace before checking it.
      * @param {Node} node Optional node to check.
+     * @param {Boolean} similar Optional argument to specify that similar formats should be checked instead of only exact formats.
      * @return {boolean} true/false if the specified selection/node matches the format.
      */
-    match: Fun.curry(MatchFormat.match, editor),
+    match: (name, vars?, node?, similar?) => Rtc.matchFormat(editor, name, vars, node, similar),
+
+    /**
+     * Finds the closest matching format from a set of formats for the current selection.
+     * <br>
+     * <em>Added in TinyMCE 5.6</em>
+     *
+     * @method closest
+     * @param {Array} names Format names to check for.
+     * @return {String} The closest matching format name or null.
+     */
+    closest: (names) => Rtc.closestFormat(editor, names),
 
     /**
      * Matches the current selection against the array of formats and returns a new array with matching formats.
@@ -144,7 +156,7 @@ const Formatter = function (editor: Editor): Formatter {
      * @param {Object} vars Optional list of variables to replace before checking it.
      * @return {Array} Array with matched formats.
      */
-    matchAll: Fun.curry(MatchFormat.matchAll, editor),
+    matchAll: (names, vars?) => Rtc.matchAllFormats(editor, names, vars),
 
     /**
      * Return true/false if the specified node has the specified format.
@@ -156,7 +168,7 @@ const Formatter = function (editor: Editor): Formatter {
      * @param {Boolean} similar Match format that has similar properties.
      * @return {Object} Returns the format object it matches or undefined if it doesn't match.
      */
-    matchNode: Fun.curry(MatchFormat.matchNode, editor),
+    matchNode: (node, name, vars?, similar?) => Rtc.matchNodeFormat(editor, node, name, vars, similar),
 
     /**
      * Returns true/false if the specified format can be applied to the current selection or not. It
@@ -166,7 +178,7 @@ const Formatter = function (editor: Editor): Formatter {
      * @param {String} name Name of format to check.
      * @return {boolean} true/false if the specified format can be applied to the current selection/node.
      */
-    canApply: Fun.curry(MatchFormat.canApply, editor),
+    canApply: (name) => Rtc.canApplyFormat(editor, name),
 
     /**
      * Executes the specified callback when the current selection matches the formats or not.
@@ -175,8 +187,9 @@ const Formatter = function (editor: Editor): Formatter {
      * @param {String} formats Comma separated list of formats to check for.
      * @param {function} callback Callback with state and args when the format is changed/toggled on/off.
      * @param {Boolean} similar True/false state if the match should handle similar or exact formats.
+     * @param {Object} vars Restrict the format being watched to only match if the variables applied are equal to vars.
      */
-    formatChanged: Fun.curry(FormatChanged.formatChanged, editor, formatChangeState),
+    formatChanged: (formats: string, callback: FormatChanged.FormatChangeCallback, similar?: boolean, vars?: FormatVars) => Rtc.formatChanged(editor, formatChangeState, formats, callback, similar, vars),
 
     /**
      * Returns a preview css text for the specified format.

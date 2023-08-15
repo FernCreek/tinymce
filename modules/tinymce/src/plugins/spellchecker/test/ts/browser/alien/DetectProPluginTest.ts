@@ -1,15 +1,17 @@
 import { Assertions } from '@ephox/agar';
+import { UnitTest } from '@ephox/bedrock-client';
+import { Fun } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
 import EditorManager from 'tinymce/core/api/EditorManager';
 import PluginManager from 'tinymce/core/api/PluginManager';
 import * as DetectProPlugin from 'tinymce/plugins/spellchecker/alien/DetectProPlugin';
-import { UnitTest } from '@ephox/bedrock-client';
 
 UnitTest.test(
   'browser.tinymce.plugins.spellchecker.alien.DetectProPluginTest',
-  function () {
+  () => {
     // Fake loading of tinymcespellchecker
-    PluginManager.add('tinymcespellchecker', function () { });
+    PluginManager.add('tinymcespellchecker', Fun.noop);
 
     Assertions.assertEq('Should not have pro plugin', false, DetectProPlugin.hasProPlugin(new Editor('id', { plugins: 'paste' }, EditorManager)));
     Assertions.assertEq('Should not have pro plugin', false, DetectProPlugin.hasProPlugin(new Editor('id', { plugins: '' }, EditorManager)));

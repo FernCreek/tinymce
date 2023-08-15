@@ -5,13 +5,13 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Event, Node } from '@ephox/dom-globals';
 import { Obj } from '@ephox/katamari';
-import { isReadOnly, preventReadOnlyEvents } from '../mode/Readonly';
+
+import { isReadOnly, processReadonlyEvents } from '../mode/Readonly';
 import DOMUtils from './dom/DOMUtils';
 import Editor from './Editor';
-import * as Settings from './Settings';
 import { EditorEventMap } from './EventTypes';
+import * as Settings from './Settings';
 import Observable from './util/Observable';
 import Tools from './util/Tools';
 
@@ -20,6 +20,7 @@ import Tools from './util/Tools';
  *
  * @mixin tinymce.EditorObservable
  * @extends tinymce.util.Observable
+ * @private
  */
 
 const DOM = DOMUtils.DOM;
@@ -35,7 +36,7 @@ let customEventRootDelegates;
  * @param {String} eventName Name of the event for example "click".
  * @return {Element/Document} HTML Element or document target to bind on.
  */
-const getEventTarget = function (editor: Editor, eventName: string): Node {
+const getEventTarget = (editor: Editor, eventName: string): Node => {
   if (eventName === 'selectionchange') {
     return editor.getDoc();
   }
@@ -66,7 +67,7 @@ const fireEvent = (editor: Editor, eventName: string, e: Event) => {
   if (isListening(editor)) {
     editor.fire(eventName, e);
   } else if (isReadOnly(editor)) {
-    preventReadOnlyEvents(editor, e);
+    processReadonlyEvents(editor, e);
   }
 };
 
@@ -78,7 +79,7 @@ const fireEvent = (editor: Editor, eventName: string, e: Event) => {
  * @param {tinymce.Editor} editor Editor instance to get event target from.
  * @param {String} eventName Name of the event for example "click".
  */
-const bindEventDelegate = function (editor: Editor, eventName: string) {
+const bindEventDelegate = (editor: Editor, eventName: string) => {
   let delegate;
 
   if (!editor.delegates) {
@@ -94,7 +95,7 @@ const bindEventDelegate = function (editor: Editor, eventName: string) {
   if (Settings.getEventRoot(editor)) {
     if (!customEventRootDelegates) {
       customEventRootDelegates = {};
-      editor.editorManager.on('removeEditor', function () {
+      editor.editorManager.on('removeEditor', () => {
         if (!editor.editorManager.activeEditor) {
           if (customEventRootDelegates) {
             Obj.each(customEventRootDelegates, (_value, name) => {
@@ -111,7 +112,7 @@ const bindEventDelegate = function (editor: Editor, eventName: string) {
       return;
     }
 
-    delegate = function (e) {
+    delegate = (e) => {
       const target = e.target;
       const editors = editor.editorManager.get();
       let i = editors.length;
@@ -128,7 +129,7 @@ const bindEventDelegate = function (editor: Editor, eventName: string) {
     customEventRootDelegates[eventName] = delegate;
     DOM.bind(eventRootElm, eventName, delegate);
   } else {
-    delegate = function (e) {
+    delegate = (e) => {
       fireEvent(editor, eventName, e);
     };
 
@@ -138,9 +139,9 @@ const bindEventDelegate = function (editor: Editor, eventName: string) {
 };
 
 interface EditorObservable extends Observable<EditorEventMap> {
-  bindPendingEventDelegates (): void;
-  toggleNativeEvent (name: string, state: boolean);
-  unbindAllNativeEvents (): void;
+  bindPendingEventDelegates (this: Editor): void;
+  toggleNativeEvent (this: Editor, name: string, state: boolean);
+  unbindAllNativeEvents (this: Editor): void;
 }
 
 const EditorObservable: EditorObservable = {
@@ -154,7 +155,7 @@ const EditorObservable: EditorObservable = {
   bindPendingEventDelegates() {
     const self = this;
 
-    Tools.each(self._pendingNativeEvents, function (name) {
+    Tools.each(self._pendingNativeEvents, (name) => {
       bindEventDelegate(self, name);
     });
   },
@@ -170,6 +171,11 @@ const EditorObservable: EditorObservable = {
 
     // Never bind focus/blur since the FocusManager fakes those
     if (name === 'focus' || name === 'blur') {
+      return;
+    }
+
+    // If the editor has been removed, `unbindAllNativeEvents` has already deleted all native event delegates
+    if (self.removed) {
       return;
     }
 

@@ -1,7 +1,7 @@
 import { UnitTest } from '@ephox/bedrock-client';
-import { setTimeout } from '@ephox/dom-globals';
-import { Pipeline } from 'ephox/agar/api/Pipeline';
+
 import { Chain } from 'ephox/agar/api/Chain';
+import { Pipeline } from 'ephox/agar/api/Pipeline';
 import * as Waiter from 'ephox/agar/api/Waiter';
 import * as StepAssertions from 'ephox/agar/test/StepAssertions';
 
@@ -44,8 +44,8 @@ UnitTest.asynctest('WaiterChainTest', (success, failure) => {
   const makeDelayChain = (label: string, timeout: number, delay: number) =>
     Waiter.cTimeout(
       label + ': Waiter timeout',
-      Chain.on(function (_value, next, die, logs) {
-        setTimeout(function () {
+      Chain.on((_value, next, die, logs) => {
+        setTimeout(() => {
           next(_value, logs);
         }, delay);
       }), timeout);
@@ -82,7 +82,5 @@ UnitTest.asynctest('WaiterChainTest', (success, failure) => {
       makeDelayChain('not enough time', 50, 500)
     )
 
-  ], () => {
-    success();
-  }, failure);
+  ], success, failure);
 });

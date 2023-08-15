@@ -6,28 +6,29 @@
  */
 
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
+import Editor from 'tinymce/core/api/Editor';
 import Tools from 'tinymce/core/api/util/Tools';
+
 import * as NodeType from './NodeType';
 import { createTextBlock } from './TextBlock';
 
 const DOM = DOMUtils.DOM;
 
-const splitList = function (editor, ul, li, newBlock?, liStyle?) {
-  let tmpRng, fragment, bookmarks;
-  const removeAndKeepBookmarks = function (targetNode) {
-    Tools.each(bookmarks, function (node) {
+const splitList = (editor: Editor, list: Node, li: Node, newBlock?): void => {
+  const removeAndKeepBookmarks = (targetNode: Node) => {
+    Tools.each(bookmarks, (node) => {
       targetNode.parentNode.insertBefore(node, li.parentNode);
     });
 
     DOM.remove(targetNode);
   };
 
-  bookmarks = DOM.select('span[data-mce-type="bookmark"]', ul);
-  newBlock = newBlock || createTextBlock(editor, li);
-  tmpRng = DOM.createRng();
+  const bookmarks = DOM.select('span[data-mce-type="bookmark"]', list);
+  const newBlock = newBlock || createTextBlock(editor, li);
+  const tmpRng = DOM.createRng();
   tmpRng.setStartAfter(li);
-  tmpRng.setEndAfter(ul);
-  fragment = tmpRng.extractContents();
+  tmpRng.setEndAfter(list);
+  const fragment = tmpRng.extractContents();
 
   for (let node = fragment.firstChild; node; node = node.firstChild) {
     if (node.nodeName === 'LI' && editor.dom.isEmpty(node)) {
@@ -37,7 +38,7 @@ const splitList = function (editor, ul, li, newBlock?, liStyle?) {
   }
 
   if (!editor.dom.isEmpty(fragment)) {
-    DOM.insertAfter(fragment, ul);
+    DOM.insertAfter(fragment, list);
   }
 
   if (newBlock.childNodes) {
@@ -48,7 +49,7 @@ const splitList = function (editor, ul, li, newBlock?, liStyle?) {
     });
   }
 
-  DOM.insertAfter(newBlock, ul);
+  DOM.insertAfter(newBlock, list);
 
   if (NodeType.isEmpty(editor.dom, li.parentNode)) {
     removeAndKeepBookmarks(li.parentNode);
@@ -56,8 +57,8 @@ const splitList = function (editor, ul, li, newBlock?, liStyle?) {
 
   DOM.remove(li);
 
-  if (NodeType.isEmpty(editor.dom, ul)) {
-    DOM.remove(ul);
+  if (NodeType.isEmpty(editor.dom, list)) {
+    DOM.remove(list);
   }
 };
 

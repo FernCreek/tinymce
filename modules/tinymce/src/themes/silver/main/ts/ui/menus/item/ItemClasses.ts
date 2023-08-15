@@ -5,14 +5,14 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Types } from '@ephox/bridge';
+import { Toolbar } from '@ephox/bridge';
 import { Obj } from '@ephox/katamari';
 
 const navClass = 'tox-menu-nav__js';
 const selectableClass = 'tox-collection__item';
 const colorClass = 'tox-swatch';
 
-const presetClasses: { [K in Types.PresetTypes]?: string } = {
+const presetClasses: { [K in Toolbar.PresetTypes]?: string } = {
   normal: navClass,
   color: colorClass
 };
@@ -26,9 +26,17 @@ const accessoryClass = 'tox-collection__item-accessory';
 const caretClass = 'tox-collection__item-caret';
 const checkmarkClass = 'tox-collection__item-checkmark';
 const activeClass = 'tox-collection__item--active';
-const iconClassRtl = 'tox-collection__item-icon-rtl';
 
-const classForPreset = (presets: Types.PresetTypes): string => Obj.get(presetClasses, presets).getOr(navClass);
+const containerClass = 'tox-collection__item-container';
+const containerColumnClass = 'tox-collection__item-container--column';
+const containerRowClass = 'tox-collection__item-container--row';
+const containerAlignRightClass = 'tox-collection__item-container--align-right';
+const containerAlignLeftClass = 'tox-collection__item-container--align-left';
+const containerValignTopClass = 'tox-collection__item-container--valign-top';
+const containerValignMiddleClass = 'tox-collection__item-container--valign-middle';
+const containerValignBottomClass = 'tox-collection__item-container--valign-bottom';
+
+const classForPreset = (presets: Toolbar.PresetTypes): string => Obj.get(presetClasses, presets).getOr(navClass);
 
 export {
   classForPreset,
@@ -45,5 +53,12 @@ export {
   accessoryClass,
   caretClass,
   checkmarkClass,
-  iconClassRtl
+  containerClass,
+  containerColumnClass,
+  containerRowClass,
+  containerAlignRightClass,
+  containerAlignLeftClass,
+  containerValignTopClass,
+  containerValignMiddleClass,
+  containerValignBottomClass
 };

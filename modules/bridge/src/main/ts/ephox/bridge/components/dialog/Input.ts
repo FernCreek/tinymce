@@ -1,8 +1,9 @@
-import { FieldSchema, ValueSchema } from '@ephox/boulder';
-import { Option, Result } from '@ephox/katamari';
-import { FormComponentWithLabelApi, FormComponentWithLabel, formComponentWithLabelFields } from './FormComponent';
+import { FieldSchema, StructureSchema, ValueType } from '@ephox/boulder';
+import { Optional, Result } from '@ephox/katamari';
 
-export interface InputApi extends FormComponentWithLabelApi {
+import { FormComponentWithLabel, formComponentWithLabelFields, FormComponentWithLabelSpec } from './FormComponent';
+
+export interface InputSpec extends FormComponentWithLabelSpec {
   type: 'input';
   inputMode?: string;
   placeholder?: string;
@@ -12,8 +13,8 @@ export interface InputApi extends FormComponentWithLabelApi {
 
 export interface Input extends FormComponentWithLabel {
   type: 'input';
-  inputMode: Option<string>;
-  placeholder: Option<string>;
+  inputMode: Optional<string>;
+  placeholder: Optional<string>;
   maximized: boolean;
   disabled: boolean;
 }
@@ -25,8 +26,9 @@ const inputFields = formComponentWithLabelFields.concat([
   FieldSchema.defaultedBoolean('disabled', false)
 ]);
 
-export const inputSchema = ValueSchema.objOf(inputFields);
+export const inputSchema = StructureSchema.objOf(inputFields);
 
-export const inputDataProcessor = ValueSchema.string;
+export const inputDataProcessor = ValueType.string;
 
-export const createInput = (spec: InputApi): Result<Input, ValueSchema.SchemaError<any>> => ValueSchema.asRaw<Input>('input', inputSchema, spec);
+export const createInput = (spec: InputSpec): Result<Input, StructureSchema.SchemaError<any>> =>
+  StructureSchema.asRaw<Input>('input', inputSchema, spec);

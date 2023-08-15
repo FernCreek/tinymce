@@ -6,9 +6,17 @@
  */
 
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
-import * as Range from './Range';
+
+import * as Range from './RangeUtils';
 
 const DOM = DOMUtils.DOM;
+
+interface Bookmark {
+  startContainer: Node;
+  startOffset: number;
+  endContainer?: Node;
+  endOffset?: number;
+}
 
 /**
  * Returns a range bookmark. This will convert indexed bookmarks into temporary span elements with
@@ -21,17 +29,15 @@ const DOM = DOMUtils.DOM;
  * @param  {DOMRange} rng DOM Range to get bookmark on.
  * @return {Object} Bookmark object.
  */
-const createBookmark = function (rng) {
-  const bookmark = {};
+const createBookmark = (rng: Range): Bookmark => {
+  const bookmark: Partial<Bookmark> = {};
 
-  const setupEndPoint = function (start?) {
-    let offsetNode, container, offset;
-
-    container = rng[start ? 'startContainer' : 'endContainer'];
-    offset = rng[start ? 'startOffset' : 'endOffset'];
+  const setupEndPoint = (start?: boolean) => {
+    let container = rng[start ? 'startContainer' : 'endContainer'];
+    let offset = rng[start ? 'startOffset' : 'endOffset'];
 
     if (container.nodeType === 1) {
-      offsetNode = DOM.create('span', { 'data-mce-type': 'bookmark' });
+      const offsetNode = DOM.create('span', { 'data-mce-type': 'bookmark' });
 
       if (container.hasChildNodes()) {
         offset = Math.min(offset, container.childNodes.length - 1);
@@ -59,14 +65,14 @@ const createBookmark = function (rng) {
     setupEndPoint();
   }
 
-  return bookmark;
+  return bookmark as Bookmark;
 };
 
-const resolveBookmark = function (bookmark) {
-  function restoreEndPoint(start?) {
-    let container, offset, node;
+const resolveBookmark = (bookmark: Bookmark): Range => {
+  const restoreEndPoint = (start?: boolean) => {
+    let node: Node;
 
-    const nodeIndex = function (container) {
+    const nodeIndex = (container: Node): number => {
       let node = container.parentNode.firstChild, idx = 0;
 
       while (node) {
@@ -75,7 +81,7 @@ const resolveBookmark = function (bookmark) {
         }
 
         // Skip data-mce-type=bookmark nodes
-        if (node.nodeType !== 1 || node.getAttribute('data-mce-type') !== 'bookmark') {
+        if (node.nodeType !== 1 || (node as Element).getAttribute('data-mce-type') !== 'bookmark') {
           idx++;
         }
 
@@ -85,8 +91,8 @@ const resolveBookmark = function (bookmark) {
       return -1;
     };
 
-    container = node = bookmark[start ? 'startContainer' : 'endContainer'];
-    offset = bookmark[start ? 'startOffset' : 'endOffset'];
+    let container = node = bookmark[start ? 'startContainer' : 'endContainer'];
+    let offset = bookmark[start ? 'startOffset' : 'endOffset'];
 
     if (!container) {
       return;
@@ -104,7 +110,7 @@ const resolveBookmark = function (bookmark) {
 
     bookmark[start ? 'startContainer' : 'endContainer'] = container;
     bookmark[start ? 'startOffset' : 'endOffset'] = offset;
-  }
+  };
 
   restoreEndPoint(true);
   restoreEndPoint();

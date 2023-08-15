@@ -1,11 +1,39 @@
-import { Attachment, GuiFactory, DomFactory, Behaviour, Positioning, Gui } from '@ephox/alloy';
-import { Fun } from '@ephox/katamari';
-import { Body, Class } from '@ephox/sugar';
-import { document } from '@ephox/dom-globals';
-import TestBackstage from './TestBackstage';
-import Editor from 'tinymce/core/api/Editor';
+import { Attachment, Behaviour, DomFactory, Gui, GuiFactory, Positioning } from '@ephox/alloy';
+import { after, before } from '@ephox/bedrock-client';
+import { Fun, Obj, Optional } from '@ephox/katamari';
+import { Class, SugarBody, SugarElement } from '@ephox/sugar';
 
-export default () => {
+import Editor from 'tinymce/core/api/Editor';
+import { UiFactoryBackstage, UiFactoryBackstageShared } from 'tinymce/themes/silver/backstage/Backstage';
+
+import TestBackstage from './TestBackstage';
+
+export interface TestExtras {
+  readonly backstage: UiFactoryBackstage;
+  readonly shared: UiFactoryBackstageShared;
+  readonly extras: {
+    readonly editor: Editor;
+    readonly backstage: UiFactoryBackstage;
+  };
+  readonly destroy: () => void;
+  readonly uiMothership: Gui.GuiSystem;
+  readonly mockEditor: Editor;
+  readonly sink: SugarElement<HTMLDivElement>;
+}
+
+interface BddTestExtras {
+  readonly backstage: () => UiFactoryBackstage;
+  readonly shared: () => UiFactoryBackstageShared;
+  readonly extras: () => {
+    readonly editor: Editor;
+    readonly backstage: UiFactoryBackstage;
+  };
+  readonly uiMothership: () => Gui.GuiSystem;
+  readonly mockEditor: () => Editor;
+  readonly sink: () => SugarElement<HTMLDivElement>;
+}
+
+export const TestExtras = (): TestExtras => {
 
   const oldSink = document.querySelectorAll('.mce-silver-sink');
   if (oldSink.length > 0) {
@@ -22,7 +50,7 @@ export default () => {
   });
 
   const uiMothership = Gui.create();
-  Class.add(uiMothership.element(), 'tox');
+  Class.add(uiMothership.element, 'tox');
 
   const backstage = TestBackstage(sink);
   const settings = {};
@@ -40,7 +68,7 @@ export default () => {
   };
 
   uiMothership.add(sink);
-  Attachment.attachSystem(Body.body(), uiMothership);
+  Attachment.attachSystem(SugarBody.body(), uiMothership);
 
   const destroy = () => {
     uiMothership.remove(sink);
@@ -53,6 +81,35 @@ export default () => {
     extras,
     destroy,
     uiMothership,
-    mockEditor
+    mockEditor,
+    sink: sink.element
   };
 };
+
+export const bddSetup = (): BddTestExtras => {
+  let helpers: Optional<TestExtras> = Optional.none();
+
+  before(() => {
+    helpers = Optional.some(TestExtras());
+  });
+
+  after(() => {
+    helpers.each((h) => h.destroy());
+    helpers = Optional.none();
+  });
+
+  const get = <K extends keyof BddTestExtras>(name: K) => (): TestExtras[K] => helpers
+    .bind((h) => Obj.get(h, name))
+    .getOrDie('The setup hooks have not run yet');
+
+  return {
+    backstage: get('backstage'),
+    shared: get('shared'),
+    extras: get('extras'),
+    uiMothership: get('uiMothership'),
+    mockEditor: get('mockEditor'),
+    sink: get('sink')
+  };
+};
+
+export default TestExtras;

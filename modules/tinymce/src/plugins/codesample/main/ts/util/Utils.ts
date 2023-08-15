@@ -5,17 +5,15 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Element } from '@ephox/dom-globals';
-
-function isCodeSample(elm: Element) {
+const isCodeSample = (elm: Element | null): boolean => {
   return elm && elm.nodeName === 'PRE' && elm.className.indexOf('language-') !== -1;
-}
+};
 
-function trimArg<T>(predicateFn: (a: T) => boolean) {
-  return function (arg1: any, arg2: T) {
+const trimArg = <T>(predicateFn: (a: T) => boolean) => {
+  return (arg1: unknown, arg2: T): boolean => {
     return predicateFn(arg2);
   };
-}
+};
 
 export {
   isCodeSample,

@@ -1,18 +1,19 @@
-import { console } from '@ephox/dom-globals';
 import { Thunk } from '@ephox/katamari';
 import Jsc from '@ephox/wrap-jsverify';
 
 import { Step } from '../api/Step';
 import { TestLogs } from '../api/TestLogs';
 
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+
 const logNoPromises = Thunk.cached(() => {
-  // tslint:disable-next-line:no-console
+  // eslint-disable-next-line no-console
   console.warn('No native promise support on browser to run async property tests. Skipping!');
 });
 
 const fakePromise = (): PromiseLike<true> => {
   const self = {
-    then(fs: (result: any) => void) {
+    then: (fs: (result: any) => void) => {
       logNoPromises();
       fs(true);
       return self;
@@ -24,7 +25,7 @@ const fakePromise = (): PromiseLike<true> => {
 
 const stepToPromise = <T, U>(step: Step<T, U>) =>
   (input: T): PromiseLike<true> =>
-    // tslint:disable-next-line:no-unimported-promise
+    // eslint-disable-next-line @tinymce/no-unimported-promise
     typeof Promise !== 'undefined' ? new Promise<true>((resolve, reject) => {
       step.runStep(input, () => {
         resolve(true);

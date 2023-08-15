@@ -1,9 +1,10 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Gene, TestUniverse, TextGene } from '@ephox/boss';
+
 import * as Fractures from 'ephox/robin/clumps/Fractures';
 
-UnitTest.test('FracturesTest', function () {
-  const regen = function () {
+UnitTest.test('FracturesTest', () => {
+  const regen = () => {
     return TestUniverse(Gene('root', 'root', [
       Gene('a', 'span', [
         Gene('aa', 'span', [
@@ -36,22 +37,22 @@ UnitTest.test('FracturesTest', function () {
     ]));
   };
 
-  const isRoot = function (item: Gene) {
+  const isRoot = (item: Gene) => {
     return item.name === 'root';
   };
 
-  const check = function (expected: string, startId: string, finishId: string, doc: TestUniverse = regen()) {
+  const check = (expected: string, startId: string, finishId: string, doc: TestUniverse = regen()) => {
     const start = doc.find(doc.get(), startId).getOrDie();
     const finish = doc.find(doc.get(), finishId).getOrDie();
     const actual = Fractures.fracture(doc, isRoot, start, finish);
-    actual.each(function (act) {
+    actual.each((act) => {
       const wrapper = doc.create().nu('bold');
       if (act.length > 0) {
         doc.insert().before(act[0], wrapper);
         doc.insert().appendAll(wrapper, act);
       }
     });
-    assert.eq(expected, doc.shortlog(function (item) {
+    assert.eq(expected, doc.shortlog((item) => {
       return doc.property().isText(item) ? '"' + item.text + '"' : item.name;
     }));
   };

@@ -1,6 +1,6 @@
 import { Assertions, GeneralSteps, Logger, Step, UiFinder, Waiter } from '@ephox/agar';
 import { UnitTest } from '@ephox/bedrock-client';
-import { Option, Result } from '@ephox/katamari';
+import { Optional, Result } from '@ephox/katamari';
 
 import * as AddEventsBehaviour from 'ephox/alloy/api/behaviour/AddEventsBehaviour';
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
@@ -23,12 +23,12 @@ UnitTest.asynctest('InlineViewDismissTest', (success, failure) => {
           classes: [ 'test-inline' ]
         },
 
-        lazySink() {
+        lazySink: () => {
           return Result.value(component);
         },
 
-        getRelated() {
-          return Option.some(related);
+        getRelated: () => {
+          return Optional.some(related);
         },
 
         fireDismissalEventInstead: {
@@ -62,7 +62,7 @@ UnitTest.asynctest('InlineViewDismissTest', (success, failure) => {
       GeneralSteps.sequence([
         Waiter.sTryUntil(
           'Test inline should not be DOM',
-          UiFinder.sExists(gui.element(), '.test-inline')
+          UiFinder.sExists(gui.element, '.test-inline')
         ),
         Step.sync(() => {
           Assertions.assertEq('Checking isOpen API', true, InlineView.isOpen(inline));
@@ -75,7 +75,7 @@ UnitTest.asynctest('InlineViewDismissTest', (success, failure) => {
       GeneralSteps.sequence([
         Waiter.sTryUntil(
           'Test inline should not be in DOM',
-          UiFinder.sNotExists(gui.element(), '.test-inline')
+          UiFinder.sNotExists(gui.element, '.test-inline')
         ),
         Step.sync(() => {
           Assertions.assertEq('Checking isOpen API', false, InlineView.isOpen(inline));
@@ -84,16 +84,18 @@ UnitTest.asynctest('InlineViewDismissTest', (success, failure) => {
     );
 
     return [
-      UiFinder.sNotExists(gui.element(), '.test-inline'),
+      UiFinder.sNotExists(gui.element, '.test-inline'),
       Step.sync(() => {
-        InlineView.showAt(inline, {
-          anchor: 'selection',
-          root: gui.element()
-        }, Container.sketch({
+        InlineView.showAt(inline, Container.sketch({
           dom: {
             innerHtml: 'Inner HTML'
           }
-        }));
+        }), {
+          anchor: {
+            type: 'selection',
+            root: gui.element
+          }
+        });
       }),
       sCheckOpen('After show'),
 
@@ -106,14 +108,16 @@ UnitTest.asynctest('InlineViewDismissTest', (success, failure) => {
       Logger.t(
         'Show inline view again with different content',
         Step.sync(() => {
-          InlineView.showAt(inline, {
-            anchor: 'selection',
-            root: gui.element()
-          }, Container.sketch({
+          InlineView.showAt(inline, Container.sketch({
             components: [
               Button.sketch({ uid: 'bold-button', dom: { tag: 'button', innerHtml: 'B', classes: [ 'bold-button' ] }, action: store.adder('bold') })
             ]
-          }));
+          }), {
+            anchor: {
+              type: 'selection',
+              root: gui.element
+            }
+          });
         })
       ),
 
@@ -132,7 +136,7 @@ UnitTest.asynctest('InlineViewDismissTest', (success, failure) => {
       TestBroadcasts.sDismiss(
         'related element: should not close',
         gui,
-        related.element()
+        related.element
       ),
       sCheckOpen('The inline view should not have fired dismiss event when broadcasting on related'),
       store.sAssertEq('Broadcasting on related element should not fire dismiss event', [ ]),
@@ -140,12 +144,12 @@ UnitTest.asynctest('InlineViewDismissTest', (success, failure) => {
       TestBroadcasts.sDismiss(
         'outer gui element: should close',
         gui,
-        gui.element()
+        gui.element
       ),
 
       sCheckOpen('Dialog should stay open, because we are firing an event instead of dismissing automatically'),
       store.sAssertEq('Broadcasting on outer element SHOULD fire dismiss event', [ 'test-dismiss-fired' ])
 
     ];
-  }, () => { success(); }, failure);
+  }, success, failure);
 });

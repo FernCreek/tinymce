@@ -1,53 +1,59 @@
-import { LegacyUnit } from '@ephox/mcagar';
-import { Pipeline } from '@ephox/agar';
+import { describe, it } from '@ephox/bedrock-client';
+import { assert } from 'chai';
+
 import CaretPosition from 'tinymce/core/caret/CaretPosition';
-import ViewBlock from '../../module/test/ViewBlock';
-import { UnitTest } from '@ephox/bedrock-client';
-import { isAfterContentEditableFalse, isBeforeContentEditableFalse } from 'tinymce/core/caret/CaretPositionPredicates';
+import { isAfterContentEditableFalse, isBeforeContentEditableFalse, isEmptyText } from 'tinymce/core/caret/CaretPositionPredicates';
+import { ZWSP } from 'tinymce/core/text/Zwsp';
 
-UnitTest.asynctest('browser.tinymce.core.CaretPositiionPredicateTest', (success, failure) => {
-  const suite = LegacyUnit.createSuite();
-  const viewBlock = ViewBlock();
+import * as ViewBlock from '../../module/test/ViewBlock';
 
-  const getRoot = () => viewBlock.get();
+describe('browser.tinymce.core.CaretPositionPredicateTest', () => {
+  const viewBlock = ViewBlock.bddSetup();
 
-  const setupHtml = (html) => {
-    viewBlock.update(html);
-  };
+  const getRoot = viewBlock.get;
+  const setupHtml = viewBlock.update;
 
-  suite.test('isBeforeContentEditableFalse', () => {
+  it('TBA: isBeforeContentEditableFalse', () => {
     setupHtml(
       '<span contentEditable="false"></span>' +
       '<span contentEditable="false"></span>a'
     );
 
-    LegacyUnit.strictEqual(isBeforeContentEditableFalse(CaretPosition(getRoot(), 0)), true);
-    LegacyUnit.strictEqual(isBeforeContentEditableFalse(CaretPosition(getRoot(), 1)), true);
-    LegacyUnit.strictEqual(isBeforeContentEditableFalse(CaretPosition(getRoot(), 2)), false);
-    LegacyUnit.strictEqual(isBeforeContentEditableFalse(CaretPosition(getRoot(), 3)), false);
+    assert.isTrue(isBeforeContentEditableFalse(CaretPosition(getRoot(), 0)));
+    assert.isTrue(isBeforeContentEditableFalse(CaretPosition(getRoot(), 1)));
+    assert.isFalse(isBeforeContentEditableFalse(CaretPosition(getRoot(), 2)));
+    assert.isFalse(isBeforeContentEditableFalse(CaretPosition(getRoot(), 3)));
   });
 
-  suite.test('isBeforeContentEditableFalse/isAfterContentEditableFalse on bogus all element', () => {
+  it('TBA: isBeforeContentEditableFalse/isAfterContentEditableFalse on bogus all element', () => {
     setupHtml('<input><p contentEditable="false" data-mce-bogus="all"></p><input>');
-    LegacyUnit.strictEqual(isBeforeContentEditableFalse(CaretPosition(getRoot(), 1)), false);
-    LegacyUnit.strictEqual(isAfterContentEditableFalse(CaretPosition(getRoot(), 2)), false);
+    assert.isFalse(isBeforeContentEditableFalse(CaretPosition(getRoot(), 1)));
+    assert.isFalse(isAfterContentEditableFalse(CaretPosition(getRoot(), 2)));
   });
 
-  suite.test('isAfterContentEditableFalse', () => {
+  it('TBA: isAfterContentEditableFalse', () => {
     setupHtml(
       '<span contentEditable="false"></span>' +
       '<span contentEditable="false"></span>a'
     );
 
-    LegacyUnit.strictEqual(isAfterContentEditableFalse(CaretPosition(getRoot(), 0)), false);
-    LegacyUnit.strictEqual(isAfterContentEditableFalse(CaretPosition(getRoot(), 1)), true);
-    LegacyUnit.strictEqual(isAfterContentEditableFalse(CaretPosition(getRoot(), 2)), true);
-    LegacyUnit.strictEqual(isAfterContentEditableFalse(CaretPosition(getRoot(), 3)), false);
+    assert.isFalse(isAfterContentEditableFalse(CaretPosition(getRoot(), 0)));
+    assert.isTrue(isAfterContentEditableFalse(CaretPosition(getRoot(), 1)));
+    assert.isTrue(isAfterContentEditableFalse(CaretPosition(getRoot(), 2)));
+    assert.isFalse(isAfterContentEditableFalse(CaretPosition(getRoot(), 3)));
   });
 
-  viewBlock.attach();
-  Pipeline.async({}, suite.toSteps({}), () => {
-    viewBlock.detach();
-    success();
-  }, failure);
+  it('TBA: isEmptyText', () => {
+    setupHtml('');
+    getRoot().appendChild(document.createTextNode(''));
+    assert.isTrue(isEmptyText(CaretPosition(getRoot().firstChild, 0)));
+    assert.isTrue(isEmptyText(CaretPosition(getRoot().firstChild, 1)));
+
+    setupHtml('<span data-mce-type="bookmark">' + ZWSP + '</span>');
+    const span = getRoot().firstChild;
+    assert.isFalse(isEmptyText(CaretPosition(span, 0)));
+    assert.isFalse(isEmptyText(CaretPosition(span, 1)));
+    assert.isTrue(isEmptyText(CaretPosition(span.firstChild, 0)));
+    assert.isTrue(isEmptyText(CaretPosition(span.firstChild, 1)));
+  });
 });

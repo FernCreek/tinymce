@@ -6,7 +6,7 @@
  */
 
 import { Fun, Future } from '@ephox/katamari';
-import { Attr, Css, Traverse } from '@ephox/sugar';
+import { Attribute, Css, Traverse } from '@ephox/sugar';
 
 import * as Styles from '../../style/Styles';
 import * as DataAttributes from '../../util/DataAttributes';
@@ -21,26 +21,26 @@ const ANIMATION_RATE = 10;
 
 const lastScroll = 'data-' + Styles.resolve('last-scroll-top');
 
-const getTop = function (element) {
+const getTop = (element) => {
   const raw = Css.getRaw(element, 'top').getOr('0');
   return parseInt(raw, 10);
 };
 
-const getScrollTop = function (element) {
-  return parseInt(element.dom().scrollTop, 10);
+const getScrollTop = (element) => {
+  return parseInt(element.dom.scrollTop, 10);
 };
 
-const moveScrollAndTop = function (element, destination, finalTop) {
-  return Future.nu(function (callback) {
+const moveScrollAndTop = (element, destination, finalTop) => {
+  return Future.nu((callback) => {
     const getCurrent = Fun.curry(getScrollTop, element);
 
-    const update = function (newScroll) {
-      element.dom().scrollTop = newScroll;
+    const update = (newScroll) => {
+      element.dom.scrollTop = newScroll;
       Css.set(element, 'top', (getTop(element) + ANIMATION_STEP) + 'px');
     };
 
-    const finish = function (/* dest */) {
-      element.dom().scrollTop = destination;
+    const finish = (/* dest */) => {
+      element.dom.scrollTop = destination;
       Css.set(element, 'top', finalTop + 'px');
       callback(destination);
     };
@@ -49,26 +49,26 @@ const moveScrollAndTop = function (element, destination, finalTop) {
   });
 };
 
-const moveOnlyScroll = function (element, destination) {
-  return Future.nu(function (callback) {
+const moveOnlyScroll = (element, destination) => {
+  return Future.nu((callback) => {
     const getCurrent = Fun.curry(getScrollTop, element);
-    Attr.set(element, lastScroll, getCurrent());
+    Attribute.set(element, lastScroll, getCurrent());
 
-    const update = function (newScroll, abort) {
+    const update = (newScroll, abort) => {
       const previous = DataAttributes.safeParse(element, lastScroll);
       // As soon as we detect a scroll value that we didn't set, assume the user
       // is scrolling, and abort the scrolling.
-      if (previous !== element.dom().scrollTop) {
-        abort(element.dom().scrollTop);
+      if (previous !== element.dom.scrollTop) {
+        abort(element.dom.scrollTop);
       } else {
-        element.dom().scrollTop = newScroll;
-        Attr.set(element, lastScroll, newScroll);
+        element.dom.scrollTop = newScroll;
+        Attribute.set(element, lastScroll, newScroll);
       }
     };
 
-    const finish = function (/* dest */) {
-      element.dom().scrollTop = destination;
-      Attr.set(element, lastScroll, destination);
+    const finish = (/* dest */) => {
+      element.dom.scrollTop = destination;
+      Attribute.set(element, lastScroll, destination);
       callback(destination);
     };
 
@@ -79,15 +79,15 @@ const moveOnlyScroll = function (element, destination) {
   });
 };
 
-const moveOnlyTop = function (element, destination) {
-  return Future.nu(function (callback) {
+const moveOnlyTop = (element, destination) => {
+  return Future.nu((callback) => {
     const getCurrent = Fun.curry(getTop, element);
 
-    const update = function (newTop) {
+    const update = (newTop) => {
       Css.set(element, 'top', newTop + 'px');
     };
 
-    const finish = function (/* dest */) {
+    const finish = (/* dest */) => {
       update(destination);
       callback(destination);
     };
@@ -98,7 +98,7 @@ const moveOnlyTop = function (element, destination) {
   });
 };
 
-const updateTop = function (element, amount) {
+const updateTop = (element, amount) => {
   const newTop = (amount + IosViewport.getYFixedData(element)) + 'px';
   Css.set(element, 'top', newTop);
 };
@@ -107,9 +107,9 @@ const updateTop = function (element, amount) {
 // However, on tinyMCE, we seemed to get a lot more cursor flickering as the window scroll
 // was changing. Therefore, until tests prove otherwise, we are just going to jump to the
 // destination in one go.
-const moveWindowScroll = function (toolbar, viewport, destY) {
-  const outerWindow = Traverse.owner(toolbar).dom().defaultView;
-  return Future.nu(function (callback) {
+const moveWindowScroll = (toolbar, viewport, destY) => {
+  const outerWindow = Traverse.owner(toolbar).dom.defaultView;
+  return Future.nu((callback) => {
     updateTop(toolbar, destY);
     updateTop(viewport, destY);
     outerWindow.scrollTo(0, destY);

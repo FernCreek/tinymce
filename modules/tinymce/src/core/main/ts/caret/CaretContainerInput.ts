@@ -5,27 +5,26 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { HTMLElement, Event } from '@ephox/dom-globals';
 import { Fun } from '@ephox/katamari';
-import { Element, SelectorFind } from '@ephox/sugar';
-import * as CaretContainer from './CaretContainer';
+import { SelectorFind, SugarElement } from '@ephox/sugar';
+
 import Editor from '../api/Editor';
+import * as CaretContainer from './CaretContainer';
 
 /**
  * This module shows the invisible block that the caret is currently in when contents is added to that block.
  */
 
-const findBlockCaretContainer = function (editor: Editor) {
-  return SelectorFind.descendant(Element.fromDom(editor.getBody()), '*[data-mce-caret]').fold(Fun.constant(null), function (elm) {
-    return elm.dom();
-  });
-};
+const findBlockCaretContainer = (editor: Editor): HTMLElement | null =>
+  SelectorFind.descendant<HTMLElement>(SugarElement.fromDom(editor.getBody()), '*[data-mce-caret]')
+    .map((elm) => elm.dom)
+    .getOrNull();
 
-const removeIeControlRect = function (editor: Editor) {
+const removeIeControlRect = (editor: Editor): void => {
   editor.selection.setRng(editor.selection.getRng());
 };
 
-const showBlockCaretContainer = function (editor: Editor, blockCaretContainer: HTMLElement) {
+const showBlockCaretContainer = (editor: Editor, blockCaretContainer: HTMLElement): void => {
   if (blockCaretContainer.hasAttribute('data-mce-caret')) {
     CaretContainer.showCaretContainerBlock(blockCaretContainer);
     removeIeControlRect(editor);
@@ -33,7 +32,7 @@ const showBlockCaretContainer = function (editor: Editor, blockCaretContainer: H
   }
 };
 
-const handleBlockContainer = function (editor: Editor, e: Event) {
+const handleBlockContainer = (editor: Editor, e: Event): void => {
   const blockCaretContainer = findBlockCaretContainer(editor);
 
   if (!blockCaretContainer) {
@@ -53,7 +52,7 @@ const handleBlockContainer = function (editor: Editor, e: Event) {
   }
 };
 
-const setup = function (editor: Editor) {
+const setup = (editor: Editor): void => {
   editor.on('keyup compositionstart', Fun.curry(handleBlockContainer, editor));
 };
 

@@ -1,29 +1,22 @@
+import { Arr, Merger, Result, Results } from '@ephox/katamari';
+
 import * as ObjChanger from '../core/ObjChanger';
 import * as ObjWriter from '../core/ObjWriter';
-import { Result, Results, Merger, Arr } from '@ephox/katamari';
 
 // Perhaps this level of indirection is unnecessary.
-const narrow = function (obj: {}, fields: any[]): {} {
-  return ObjChanger.narrow(obj, fields);
-};
+const narrow = <T extends Record<string, any>, F extends Array<keyof T>>(obj: T, fields: F): Pick<T, F[number]> =>
+  ObjChanger.narrow(obj, fields);
 
-const exclude = function (obj: {}, fields: any[]): {} {
-  return ObjChanger.exclude(obj, fields);
-};
+const exclude = <T extends Record<string, any>, F extends Array<keyof T>>(obj: T, fields: F): Omit<T, F[number]> =>
+  ObjChanger.exclude(obj, fields);
 
-const wrap = function <V> (key: string, value: V): {[key: string]: V} {
-  return ObjWriter.wrap(key, value);
-};
+const wrap = <V>(key: string, value: V): Record<string, V> =>
+  ObjWriter.wrap(key, value);
 
-const wrapAll = function (keyvalues: Array<{key: string; value: any}>): Record<string, any> {
-  return ObjWriter.wrapAll(keyvalues);
-};
+const wrapAll = <K extends string | number, T>(keyvalues: Array<{ key: K; value: T }>): Record<K, T> =>
+  ObjWriter.wrapAll(keyvalues);
 
-const indexOnKey = function <T> (array: Array<{[T: string]: any}>, key: string): {[T: string]: any} {
-  return ObjChanger.indexOnKey(array, key);
-};
-
-const mergeValues = function (values, base) {
+const mergeValues = <T>(values: T[], base: T) => {
   return values.length === 0 ? Result.value(base) : Result.value(
     Merger.deepMerge(
       base,
@@ -33,11 +26,10 @@ const mergeValues = function (values, base) {
   );
 };
 
-const mergeErrors = function (errors) {
-  return Result.error(Arr.flatten(errors));
-};
+const mergeErrors = (errors: string[][]): Result<never, string[]> =>
+  Result.error(Arr.flatten(errors));
 
-const consolidate = function (objs, base: {}): Result <{}, string> {
+const consolidate = <T>(objs: Array<Result<T, string[]>>, base: T): Result<T, string[]> => {
   const partitions = Results.partition(objs);
   return partitions.errors.length > 0 ? mergeErrors(partitions.errors) : mergeValues(partitions.values, base);
 };
@@ -47,6 +39,5 @@ export {
   exclude,
   wrap,
   wrapAll,
-  indexOnKey,
   consolidate
 };

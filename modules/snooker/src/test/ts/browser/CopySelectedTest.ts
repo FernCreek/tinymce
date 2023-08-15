@@ -1,38 +1,47 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
-import { Arr } from '@ephox/katamari';
-import { Attr, Class, Element, Html, InsertAll } from '@ephox/sugar';
+import { Arr, Obj, Type } from '@ephox/katamari';
+import { Attribute, Class, Html, InsertAll, SugarElement } from '@ephox/sugar';
+
 import * as CopySelected from 'ephox/snooker/api/CopySelected';
+import { LOCKED_COL_ATTR } from 'ephox/snooker/util/LockedColumnUtils';
 
 interface TestData {
   selected: boolean;
   html: string;
   rowspan?: string;
   colspan?: string;
+  locked?: boolean;
 }
 
-UnitTest.test('CopySelectedTest', function () {
+interface TableAttributes {
+  beforeCopy: Record<string, string | boolean | number>; // attributes to set on the table before copy
+  afterCopy: string[]; // attributes that should not be on the table after copy
+}
+
+UnitTest.test('CopySelectedTest', () => {
   // normally this is darwin ephemera, but doesn't actually matter what it is
   const SEL_CLASS = 'copy-selected';
 
   // traverse really needs this built in
-  const traverseChildElements = function (e: Element) {
-    return Arr.map(e.dom().children, Element.fromDom);
+  const traverseChildElements = (e: SugarElement) => {
+    return Arr.map(e.dom.children, SugarElement.fromDom);
   };
 
   // data objects for input/expected
-  const data = function (selected: boolean) {
-    return function (text: string, rowspan?: number, colspan?: number): TestData {
+  const data = (selected: boolean) => {
+    return (text: string, rowspan?: number, colspan?: number, locked: boolean = false): TestData => {
       return {
         selected,
         html: text,
         rowspan: rowspan === undefined ? undefined : String(rowspan),
-        colspan: colspan === undefined ? undefined : String(colspan)
+        colspan: colspan === undefined ? undefined : String(colspan),
+        locked
       };
     };
   };
   const s = data(true);
   const ns = data(false);
-  const gen = function (): TestData {
+  const gen = (): TestData => {
     return {
       selected: false,
       html: '<br>'
@@ -40,54 +49,73 @@ UnitTest.test('CopySelectedTest', function () {
   };
 
   // generate a table structure from a nested array
-  const generateInput = function (input: TestData[][]) {
-    const table = Element.fromTag('table');
-    const rows = Arr.map(input, function (row) {
-      const cells = Arr.map(row, function (cell) {
-        const td = Element.fromTag('td');
+  const generateInput = (input: TestData[][]) => {
+    const lockedCols: Record<number, true> = {};
+    const table = SugarElement.fromTag('table');
+    const rows = Arr.map(input, (row) => {
+      const cells = Arr.map(row, (cell, idx) => {
+        const td = SugarElement.fromTag('td');
         if (cell.rowspan !== undefined) {
-          Attr.set(td, 'rowspan', cell.rowspan);
+          Attribute.set(td, 'rowspan', cell.rowspan);
         }
         if (cell.colspan !== undefined) {
-          Attr.set(td, 'colspan', cell.colspan);
+          Attribute.set(td, 'colspan', cell.colspan);
         }
         if (cell.selected) {
           Class.add(td, SEL_CLASS);
         }
+        if (cell.locked) {
+          lockedCols[idx] = true;
+        }
         Html.set(td, cell.html);
         return td;
       });
-      const tr = Element.fromTag('tr');
+      const tr = SugarElement.fromTag('tr');
       InsertAll.append(tr, cells);
       return tr;
     });
-    const withNewlines = Arr.bind(rows, function (row) {
-      return [ Element.fromText('\n'), row ];
+    const withNewlines = Arr.bind(rows, (row) => {
+      return [ SugarElement.fromText('\n'), row ];
     });
-    InsertAll.append(table, withNewlines.concat(Element.fromText('\n')));
+    InsertAll.append(table, withNewlines.concat(SugarElement.fromText('\n')));
+    // Add locked col attribute to table
+    if (Obj.size(lockedCols) > 0) {
+      const lockedColStr = Obj.keys(lockedCols).join(',');
+      Attribute.set(table, LOCKED_COL_ATTR, lockedColStr);
+    }
     return table;
   };
 
-  const check = function (label: string, expected: TestData[][], input: TestData[][]) {
+  const check = (label: string, expected: TestData[][], input: TestData[][], tableAttributes?: TableAttributes) => {
     const table = generateInput(input);
+    if (Type.isNonNullable(tableAttributes)) {
+      Attribute.setAll(table, tableAttributes.beforeCopy);
+    }
 
-    CopySelected.extract(table, '.' + SEL_CLASS);
+    const replica = CopySelected.extract(table, '.' + SEL_CLASS);
+
+    // Verify specified table attributes are not present in replica table
+    if (Type.isNonNullable(tableAttributes)) {
+      Arr.each(tableAttributes.afterCopy, (attrName) => {
+        assert.eq(false, Attribute.has(replica, attrName));
+      });
+    }
 
     // Now verify that the table matches the nested array structure of expected
-    const assertWithInfo = function <T> (exp: T, actual: T, info: string) {
-      assert.eq(exp, actual, () => 'expected ' + info + ' "' + exp + '", was "' + actual + '"' + ', test "' + label + '". Output HTML:\n' + Html.getOuter(table));
+    const assertWithInfo = <T> (exp: T, actual: T, info: string) => {
+      assert.eq(exp, actual, () => 'expected ' + info + ' "' + exp + '", was "' + actual + '"' + ', test "' + label + '". Output HTML:\n' + Html.getOuter(replica));
     };
 
-    const domRows = traverseChildElements(table);
+    const domRows = traverseChildElements(replica);
     assertWithInfo(expected.length, domRows.length, 'number of rows');
-    Arr.each(expected, function (row, i) {
+    Arr.each(expected, (row, i) => {
       const domCells = traverseChildElements(domRows[i]);
       assertWithInfo(row.length, domCells.length, 'number of cells in output row ' + i + ' to be ');
-      Arr.each(row, function (cell, j) {
+      Arr.each(row, (cell, j) => {
         const domCell = domCells[j];
         assertWithInfo(cell.html, Html.get(domCell), 'cell text');
-        assertWithInfo(cell.rowspan, Attr.get(domCell, 'rowspan'), 'rowspan');
-        assertWithInfo(cell.colspan, Attr.get(domCell, 'colspan'), 'colspan');
+        assertWithInfo(cell.rowspan, Attribute.get(domCell, 'rowspan'), 'rowspan');
+        assertWithInfo(cell.colspan, Attribute.get(domCell, 'colspan'), 'colspan');
         assertWithInfo(cell.selected, Class.has(domCell, SEL_CLASS), 'selected class');
       });
     });
@@ -259,4 +287,37 @@ UnitTest.test('CopySelectedTest', function () {
       [ ns('L', 1, 2), ns('M', 1, 1) ]
     ]
   );
+  // //////////////////////////////////////////////////
+  check('single column, simple with locked cells',
+    [
+      [ s('A') ],
+      [ s('D') ],
+      [ s('G') ]
+    ],
+    [
+      [ s('A', 1, 1, true), ns('B', 1, 1), ns('C', 1, 1) ],
+      [ s('D', 1, 1, true), ns('E', 1, 1), ns('F', 1, 1) ],
+      [ s('G', 1, 1, true), ns('H', 1, 1), ns('I', 1, 1) ]
+    ], { beforeCopy: {}, afterCopy: [ LOCKED_COL_ATTR ] });
+  // //////////////////////////////////////////////////
+  check('single column, simple with removable table attributes',
+    [
+      [ s('A') ],
+      [ s('D') ],
+      [ s('G') ]
+    ],
+    [
+      [ s('A', 1, 1), ns('B', 1, 1), ns('C', 1, 1) ],
+      [ s('D', 1, 1), ns('E', 1, 1), ns('F', 1, 1) ],
+      [ s('G', 1, 1), ns('H', 1, 1), ns('I', 1, 1) ]
+    ],
+    {
+      beforeCopy: {
+        [ LOCKED_COL_ATTR ]: '0',
+        'data-snooker-col-series': 'numbers'
+      },
+      afterCopy: [ LOCKED_COL_ATTR, 'data-snooker-col-series' ]
+    }
+  );
+// //////////////////////////////////////////////////
 });

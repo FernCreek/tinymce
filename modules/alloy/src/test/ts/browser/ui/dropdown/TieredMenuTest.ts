@@ -24,7 +24,7 @@ UnitTest.asynctest('TieredMenuTest', (success, failure) => {
         classes: [ 'test-menu' ]
       },
       components: [
-        Menu.parts().items({ })
+        Menu.parts.items({ })
       ],
 
       markers: TestDropdownMenu.markers(),
@@ -37,18 +37,25 @@ UnitTest.asynctest('TieredMenuTest', (success, failure) => {
             items: Arr.map([
               { type: 'item', data: { value: 'a-alpha', meta: { text: 'a-Alpha' }}, hasSubmenu: false },
               { type: 'item', data: { value: 'a-beta', meta: { text: 'a-Beta' }}, hasSubmenu: true },
-              { type: 'item', data: { value: 'a-gamma', meta: { text: 'a-Gamma' }}, hasSubmenu: false }
+              { type: 'item', data: { value: 'a-gamma', meta: { text: 'a-Gamma', disabled: true }}, hasSubmenu: true }
             ], TestDropdownMenu.renderItem)
           },
           'a-beta': { // menu name should be triggering parent item so TieredMenuSpec path works
             value: 'menu-b',
             items: Arr.map([
-              { type: 'item', data: { value: 'b-alpha', meta: { text: 'b-Alpha' }}, hasSubmenu: false }
+              { type: 'item', data: { value: 'b-alpha', meta: { text: 'b-Alpha' }}, hasSubmenu: false },
+            ], TestDropdownMenu.renderItem)
+          },
+          'a-gamma': {
+            value: 'menu-c',
+            items: Arr.map([
+              { type: 'item', data: { value: 'c-alpha', meta: { text: 'c-Alpha' }}, hasSubmenu: false },
             ], TestDropdownMenu.renderItem)
           }
         }, TestDropdownMenu.renderMenu),
         expansions: {
-          'a-beta': 'a-beta'
+          'a-beta': 'a-beta',
+          'a-gamma': 'a-gamma',
         }
       },
 
@@ -74,12 +81,12 @@ UnitTest.asynctest('TieredMenuTest', (success, failure) => {
   ), (doc, _body, _gui, component, store) => {
     // TODO: Flesh out test.
     // const cAssertStructure = (label, expected) => {
-    //   return Chain.op((element: Element) => {
+    //   return Chain.op((element: SugarElement) => {
     //     Assertions.assertStructure(label, expected, element);
     //   });
     // };
     //
-    // const cTriggerFocusItem = Chain.op((target: Element) => {
+    // const cTriggerFocusItem = Chain.op((target: SugarElement) => {
     //   AlloyTriggers.dispatch(component, target, SystemEvents.focusItem());
     // });
     //
@@ -93,7 +100,7 @@ UnitTest.asynctest('TieredMenuTest', (success, failure) => {
     //   store.clear();
     // });
 
-    const structureMenu = (selected: boolean, itemSelections: boolean[], hasPopups: boolean[], isExpandeds: boolean[]) => (s: ApproxStructure.StructApi, str: ApproxStructure.StringApi, arr: ApproxStructure.ArrayApi) => s.element('ol', {
+    const structureMenu = (selected: boolean, itemSelections: boolean[], hasPopups: boolean[], isExpandeds: boolean[], disabled: boolean[]) => (s: ApproxStructure.StructApi, str: ApproxStructure.StringApi, arr: ApproxStructure.ArrayApi) => s.element('ol', {
       classes: [ arr.has('menu'), (selected ? arr.has : arr.not)('selected-menu') ],
       children: Arr.map(itemSelections, (sel, i) => s.element('li', {
         classes: [ arr.has('item'), (sel ? arr.has : arr.not)('selected-item') ],
@@ -101,7 +108,8 @@ UnitTest.asynctest('TieredMenuTest', (success, failure) => {
           'aria-haspopup': str.is(hasPopups[i].toString()),
           ...hasPopups[i]
             ? { 'aria-expanded': str.is(isExpandeds[i].toString()) }
-            : { 'aria-expanded': str.none('aria-expanded should not exist') }
+            : { 'aria-expanded': str.none('aria-expanded should not exist') },
+          'aria-disabled': str.is(disabled[i].toString()),
         }
       }))
     });
@@ -112,7 +120,7 @@ UnitTest.asynctest('TieredMenuTest', (success, failure) => {
         classes: [ arr.has('test-menu') ],
         children: Arr.map(structureMenus, (sm) => sm(s, str, arr))
       })),
-      component.element()
+      component.element
     );
 
     return [
@@ -121,10 +129,10 @@ UnitTest.asynctest('TieredMenuTest', (success, failure) => {
         ApproxStructure.build((s, str, arr) => s.element('div', {
           classes: [ arr.has('test-menu') ],
           children: [
-            structureMenu(true, [ true, false, false ], [ false, true, false ], [ false, false, false ])(s, str, arr)
+            structureMenu(true, [ true, false, false ], [ false, true, true ], [ false, false, false ], [ false, false, true ])(s, str, arr)
           ]
         })),
-        component.element()
+        component.element
       ),
 
       Step.sync(() => {
@@ -140,8 +148,8 @@ UnitTest.asynctest('TieredMenuTest', (success, failure) => {
       sAssertMenu(
         'Post expansion of submenu with <right> structure test',
         [
-          structureMenu(false, [ false, true, false ], [ false, true, false ], [ false, true, false ]),
-          structureMenu(true, [ true ], [ false ], [ false ])
+          structureMenu(false, [ false, true, false ], [ false, true, true ], [ false, true, false ], [ false, false, true ]),
+          structureMenu(true, [ true ], [ false ], [ false ], [ false ])
         ]
       ),
 
@@ -149,15 +157,15 @@ UnitTest.asynctest('TieredMenuTest', (success, failure) => {
       sAssertMenu(
         'Post collapse of submenu with <left> structure test',
         [
-          structureMenu(true, [ false, true, false ], [ false, true, false ], [ false, false, false ])
+          structureMenu(true, [ false, true, false ], [ false, true, true ], [ false, false, false ], [ false, false, true ])
         ]
       ),
       Keyboard.sKeydown(doc, Keys.enter(), { }),
       sAssertMenu(
         'Post exansion of submenu with <enter> structure test',
         [
-          structureMenu(false, [ false, true, false ], [ false, true, false ], [ false, true, false ]),
-          structureMenu(true, [ true ], [ false ], [ false ])
+          structureMenu(false, [ false, true, false ], [ false, true, true ], [ false, true, false ], [ false, false, true ]),
+          structureMenu(true, [ true ], [ false ], [ false ], [ false ])
         ]
       ),
 
@@ -165,16 +173,16 @@ UnitTest.asynctest('TieredMenuTest', (success, failure) => {
       sAssertMenu(
         'Post collapse of submenu with <escape> structure test',
         [
-          structureMenu(true, [ false, true, false ], [ false, true, false ], [ false, false, false ])
+          structureMenu(true, [ false, true, false ], [ false, true, true ], [ false, false, false ], [ false, false, true ])
         ]
       ),
 
-      Mouse.sHoverOn(component.element(), 'li:contains("a-Beta")'),
+      Mouse.sHoverOn(component.element, 'li:contains("a-Beta")'),
       sAssertMenu(
         'Post hover on item with submenu structure test',
         [
-          structureMenu(true, [ false, true, false ], [ false, true, false ], [ false, true, false ]),
-          structureMenu(false, [ false ], [ false ], [ false ])
+          structureMenu(true, [ false, true, false ], [ false, true, true ], [ false, true, false ], [ false, false, true ]),
+          structureMenu(false, [ false ], [ false ], [ false ], [ false ])
         ]
       ),
 
@@ -182,11 +190,19 @@ UnitTest.asynctest('TieredMenuTest', (success, failure) => {
       sAssertMenu(
         'Post right on item with expanded submenu structure test',
         [
-          structureMenu(false, [ false, true, false ], [ false, true, false ], [ false, true, false ]),
-          structureMenu(true, [ true ], [ false ], [ false ])
+          structureMenu(false, [ false, true, false ], [ false, true, true ], [ false, true, false ], [ false, false, true ]),
+          structureMenu(true, [ true ], [ false ], [ false ], [ false ])
         ]
-      )
+      ),
+
+      Mouse.sHoverOn(component.element, 'li:contains("a-Gamma")'),
+      sAssertMenu(
+        'Post hover on disabled item with submenu structure test',
+        [
+          structureMenu(true, [ false, false, true ], [ false, true, true ], [ false, false, false ], [ false, false, true ]),
+        ]
+      ),
       // TODO: Beef up tests
     ];
-  }, () => { success(); }, failure);
+  }, success, failure);
 });

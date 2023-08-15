@@ -1,44 +1,40 @@
-import { Pipeline } from '@ephox/agar';
-import { LegacyUnit } from '@ephox/mcagar';
+import { describe, it } from '@ephox/bedrock-client';
+import { assert } from 'chai';
+
 import XHR, { XHRSettings } from 'tinymce/core/api/util/XHR';
-import { UnitTest } from '@ephox/bedrock-client';
-import { XMLHttpRequest } from '@ephox/dom-globals';
 
-UnitTest.asynctest('browser.tinymce.core.util.XhrTest', function (success, failure) {
-  const suite = LegacyUnit.createSuite();
+type XHRTest = XMLHttpRequest & { test?: number };
+type XHRSettingsTest = XHRSettings & { test?: number };
 
-  suite.asyncTest('Successful request', function (_, done) {
-    XHR.on('beforeSend', function (e) {
+describe('browser.tinymce.core.util.XhrTest', () => {
+  it('Successful request', (done) => {
+    XHR.on('beforeSend', (e: { xhr: XHRTest; settings: XHRSettingsTest }) => {
       e.xhr.test = 123;
       e.settings.test = 456;
     });
 
     XHR.send({
       url: '/custom/json_rpc_ok',
-      success(data, xhr: XMLHttpRequest & { test: number }, input: XHRSettings & { test: number }) {
-        LegacyUnit.equal(JSON.parse(data), { result: 'Hello JSON-RPC', error: null, id: 1 });
-        LegacyUnit.equal(xhr.status, 200);
-        LegacyUnit.equal(input.url, '/custom/json_rpc_ok');
-        LegacyUnit.equal(xhr.test, 123);
-        LegacyUnit.equal(input.test, 456);
+      success: (data, xhr: XHRTest, input: XHRSettingsTest) => {
+        assert.deepEqual(JSON.parse(data), { result: 'Hello JSON-RPC', error: null, id: 1 });
+        assert.equal(xhr.status, 200);
+        assert.equal(input.url, '/custom/json_rpc_ok');
+        assert.equal(xhr.test, 123);
+        assert.equal(input.test, 456);
         done();
       }
     });
   });
 
-  suite.asyncTest('Unsuccessful request', function (_, done) {
+  it('Unsuccessful request', (done) => {
     XHR.send({
       url: '/custom/404',
-      error(type, xhr, input) {
-        LegacyUnit.equal(type, 'GENERAL');
-        LegacyUnit.equal(xhr.status, 404);
-        LegacyUnit.equal(input.url, '/custom/404');
+      error: (type, xhr, input) => {
+        assert.equal(type, 'GENERAL');
+        assert.equal(xhr.status, 404);
+        assert.equal(input.url, '/custom/404');
         done();
       }
     });
   });
-
-  Pipeline.async({}, suite.toSteps({}), function () {
-    success();
-  }, failure);
 });

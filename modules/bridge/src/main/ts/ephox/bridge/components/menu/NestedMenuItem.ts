@@ -1,11 +1,12 @@
-import { FieldSchema, ValueSchema } from '@ephox/boulder';
-import { Fun, Option, Result } from '@ephox/katamari';
-import { FancyMenuItemApi, MenuItemApi, SeparatorMenuItemApi, ToggleMenuItemApi } from '../../api/Menu';
-import { CommonMenuItem, CommonMenuItemApi, commonMenuItemFields, CommonMenuItemInstanceApi } from './CommonMenuItem';
+import { FieldSchema, StructureSchema } from '@ephox/boulder';
+import { Fun, Optional, Result } from '@ephox/katamari';
 
-export type NestedMenuItemContents = string | MenuItemApi | NestedMenuItemApi | ToggleMenuItemApi | SeparatorMenuItemApi | FancyMenuItemApi;
+import { FancyMenuItemSpec, MenuItemSpec, SeparatorMenuItemSpec, ToggleMenuItemSpec } from '../../api/Menu';
+import { CommonMenuItem, CommonMenuItemSpec, commonMenuItemFields, CommonMenuItemInstanceApi } from './CommonMenuItem';
 
-export interface NestedMenuItemApi extends CommonMenuItemApi {
+export type NestedMenuItemContents = string | MenuItemSpec | NestedMenuItemSpec | ToggleMenuItemSpec | SeparatorMenuItemSpec | FancyMenuItemSpec;
+
+export interface NestedMenuItemSpec extends CommonMenuItemSpec {
   type?: 'nestedmenuitem';
   icon?: string;
   getSubmenuItems: () => string | Array<NestedMenuItemContents>;
@@ -17,16 +18,17 @@ export interface NestedMenuItemInstanceApi extends CommonMenuItemInstanceApi { }
 
 export interface NestedMenuItem extends CommonMenuItem {
   type: 'nestedmenuitem';
-  icon: Option<string>;
+  icon: Optional<string>;
   getSubmenuItems: () => string | Array<NestedMenuItemContents>;
   onSetup: (api: NestedMenuItemInstanceApi) => (api: NestedMenuItemInstanceApi) => void;
 }
 
-export const nestedMenuItemSchema = ValueSchema.objOf([
-  FieldSchema.strictString('type'),
-  FieldSchema.strictFunction('getSubmenuItems'),
+export const nestedMenuItemSchema = StructureSchema.objOf([
+  FieldSchema.requiredString('type'),
+  FieldSchema.requiredFunction('getSubmenuItems'),
   FieldSchema.defaultedFunction('onSetup', () => Fun.noop),
   FieldSchema.optionString('icon')
 ].concat(commonMenuItemFields));
 
-export const createNestedMenuItem = (spec: NestedMenuItemApi): Result<NestedMenuItem, ValueSchema.SchemaError<any>> => ValueSchema.asRaw('nestedmenuitem', nestedMenuItemSchema, spec);
+export const createNestedMenuItem = (spec: NestedMenuItemSpec): Result<NestedMenuItem, StructureSchema.SchemaError<any>> =>
+  StructureSchema.asRaw('nestedmenuitem', nestedMenuItemSchema, spec);

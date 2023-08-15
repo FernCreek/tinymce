@@ -6,7 +6,9 @@
  */
 
 import { Arr, Fun } from '@ephox/katamari';
+
 import Promise from 'tinymce/core/api/util/Promise';
+
 import * as Utils from './Utils';
 
 const friendlyHttpErrors = [
@@ -20,16 +22,16 @@ const friendlyServiceErrors = [
   { type: 'domain_not_trusted', message: 'The api key is not valid for the request origins.' }
 ];
 
-const isServiceErrorCode = function (code) {
+const isServiceErrorCode = (code) => {
   return code === 400 || code === 403 || code === 500;
 };
 
-const getHttpErrorMsg = function (status) {
-  const message = Arr.find(friendlyHttpErrors, function (error) {
+const getHttpErrorMsg = (status) => {
+  const message = Arr.find(friendlyHttpErrors, (error) => {
     return status === error.code;
   }).fold(
     Fun.constant('Unknown ImageProxy error'),
-    function (error) {
+    (error) => {
       return error.message;
     }
   );
@@ -37,24 +39,24 @@ const getHttpErrorMsg = function (status) {
   return 'ImageProxy HTTP error: ' + message;
 };
 
-const handleHttpError = function (status) {
+const handleHttpError = (status) => {
   const message = getHttpErrorMsg(status);
 
   return Promise.reject(message);
 };
 
-const getServiceErrorMsg = function (type) {
-  return Arr.find(friendlyServiceErrors, function (error) {
+const getServiceErrorMsg = (type) => {
+  return Arr.find(friendlyServiceErrors, (error) => {
     return error.type === type;
   }).fold(
     Fun.constant('Unknown service error'),
-    function (error) {
+    (error) => {
       return error.message;
     }
   );
 };
 
-const getServiceError = function (text) {
+const getServiceError = (text) => {
   const serviceError = Utils.parseJson(text);
   const errorType = Utils.traverse(serviceError, [ 'error', 'type' ]);
   const errorMsg = errorType ? getServiceErrorMsg(errorType) : 'Invalid JSON in service error message';
@@ -62,15 +64,15 @@ const getServiceError = function (text) {
   return 'ImageProxy Service error: ' + errorMsg;
 };
 
-const handleServiceError = function (status, blob) {
-  return Utils.readBlob(blob).then(function (text) {
+const handleServiceError = (status, blob) => {
+  return Utils.readBlob(blob).then((text) => {
     const serviceError = getServiceError(text);
 
     return Promise.reject(serviceError);
   });
 };
 
-const handleServiceErrorResponse = function (status, blob) {
+const handleServiceErrorResponse = (status, blob) => {
   return isServiceErrorCode(status) ? handleServiceError(status, blob) : handleHttpError(status);
 };
 

@@ -6,17 +6,17 @@
  */
 
 import { AlloyComponent, MementoRecord, Representing } from '@ephox/alloy';
-import { FieldSchema, ValueSchema } from '@ephox/boulder';
-import { Fun, Merger, Option } from '@ephox/katamari';
-import { Element, Html, Value } from '@ephox/sugar';
+import { FieldSchema, StructureSchema } from '@ephox/boulder';
+import { Fun, Merger, Optional } from '@ephox/katamari';
+import { Html, SugarElement, Value } from '@ephox/sugar';
 
-const processors = ValueSchema.objOf([
+const processors = StructureSchema.objOf([
   FieldSchema.defaulted('preprocess', Fun.identity),
   FieldSchema.defaulted('postprocess', Fun.identity)
 ]);
 
 const memento = (mem: MementoRecord, rawProcessors) => {
-  const ps = ValueSchema.asRawOrDie('RepresentingConfigs.memento processors', processors, rawProcessors);
+  const ps = StructureSchema.asRawOrDie('RepresentingConfigs.memento processors', processors, rawProcessors);
   return Representing.config({
     store: {
       mode: 'manual',
@@ -34,7 +34,7 @@ const memento = (mem: MementoRecord, rawProcessors) => {
   });
 };
 
-const withComp = <D>(optInitialValue: Option<D>, getter: (c: AlloyComponent) => D, setter: (c: AlloyComponent, v: D) => void) => Representing.config(
+const withComp = <D>(optInitialValue: Optional<D>, getter: (c: AlloyComponent) => D, setter: (c: AlloyComponent, v: D) => void) => Representing.config(
   Merger.deepMerge(
     {
       store: {
@@ -51,17 +51,17 @@ const withComp = <D>(optInitialValue: Option<D>, getter: (c: AlloyComponent) => 
   )
 );
 
-const withElement = <D>(initialValue: Option<D>, getter: (elem: Element) => D, setter: (elem: Element, v: D) => void) => withComp(
+const withElement = <D>(initialValue: Optional<D>, getter: (elem: SugarElement) => D, setter: (elem: SugarElement, v: D) => void) => withComp(
   initialValue,
-  (c) => getter(c.element()),
-  (c, v) => setter(c.element(), v)
+  (c) => getter(c.element),
+  (c, v) => setter(c.element, v)
 );
 
-const domValue = (optInitialValue: Option<string>) => withElement(optInitialValue, Value.get, Value.set);
+const domValue = (optInitialValue: Optional<string>) => withElement(optInitialValue, Value.get, Value.set);
 
-const domHtml = (optInitialValue: Option<string>) => withElement(optInitialValue, Html.get, Html.set);
+const domHtml = (optInitialValue: Optional<string>) => withElement(optInitialValue, Html.get, Html.set);
 
-const memory = <D>(initialValue) => Representing.config({
+const memory = (initialValue) => Representing.config({
   store: {
     mode: 'memory',
     initialValue

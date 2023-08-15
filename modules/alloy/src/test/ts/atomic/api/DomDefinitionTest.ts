@@ -1,7 +1,8 @@
 import { Assert, UnitTest } from '@ephox/bedrock-client';
-import { Arr, Obj, Option } from '@ephox/katamari';
-import { Element } from '@ephox/sugar';
+import { Arr, Fun, Obj, Optional } from '@ephox/katamari';
+import { SugarElement } from '@ephox/sugar';
 import Jsc from '@ephox/wrap-jsverify';
+
 import * as DomModification from 'ephox/alloy/dom/DomModification';
 
 interface ModifiationType {
@@ -16,9 +17,9 @@ interface DefinitionType {
   classes: string[];
   attributes: Record<string, string>;
   styles: Record<string, string>;
-  value: Option<string>;
-  innerHtml: Option<string>;
-  domChildren: Element[];
+  value: Optional<string>;
+  innerHtml: Optional<string>;
+  domChildren: SugarElement[];
 }
 
 UnitTest.test('DomDefinitionTest', () => {
@@ -28,14 +29,14 @@ UnitTest.test('DomDefinitionTest', () => {
   // test became a lot less useful. Therefore, we'll just test a few
   // properties
 
-  const arbOptionOf = <T>(arb: any) => Jsc.tuple([ Jsc.bool, arb ]).smap(
-    (arr: [boolean, string]) => arr[0] ? Option.some(arr[1]) : Option.none(),
-    (opt: Option<string>) => opt.fold(
+  const arbOptionOf = (arb: any) => Jsc.tuple([ Jsc.bool, arb ]).smap(
+    (arr: [boolean, string]) => arr[0] ? Optional.some(arr[1]) : Optional.none(),
+    (opt: Optional<string>) => opt.fold(
       () => [ false, '' ],
       (v) => [ true, v ]
     ),
-    (opt: Option<string>) => opt.fold(
-      () => 'None',
+    (opt: Optional<string>) => opt.fold(
+      Fun.constant('None'),
       (v) => 'Some(' + v + ')'
     )
   );
@@ -49,7 +50,7 @@ UnitTest.test('DomDefinitionTest', () => {
     arbOptionOf(Jsc.string),
     arbOptionOf(Jsc.string)
   ]).smap(
-    (arr: [string, string, string[], Record<string, string>, Record<string, string>, Option<string>, Option<string>]) => ({
+    (arr: [string, string, string[], Record<string, string>, Record<string, string>, Optional<string>, Optional<string>]) => ({
       uid: arr[0],
       tag: arr[1],
       classes: arr[2],
@@ -57,7 +58,7 @@ UnitTest.test('DomDefinitionTest', () => {
       styles: arr[4],
       value: arr[5],
       innerHtml: arr[6],
-      domChildren: [ ] as Element[]
+      domChildren: [ ] as SugarElement[]
     }),
     (defn: DefinitionType) => [ defn.uid, defn.tag, defn.classes, defn.attributes, defn.styles, defn.value, defn.innerHtml, defn.domChildren ],
     (defn: DefinitionType) => JSON.stringify({
@@ -108,7 +109,7 @@ UnitTest.test('DomDefinitionTest', () => {
         Assert.eq(
           () => 'Defn Style: ' + k + '=' + v + ' should appear in result: ' + JSON.stringify(result, null, 2) + '., unless modification changed it',
           true,
-          result.styles[k] === v || result.styles[k] === mod.styles[k] && mod.styles.hasOwnProperty(k)
+          result.styles[k] === v || result.styles[k] === mod.styles[k] && Obj.has(mod.styles, k)
         );
       });
 
@@ -122,7 +123,7 @@ UnitTest.test('DomDefinitionTest', () => {
         Assert.eq(
           () => 'Defn attribute: ' + k + '=' + v + ' should appear in result: ' + JSON.stringify(result, null, 2) + '., unless modification changed it',
           true,
-          result.attributes[k] === v || result.attributes[k] === mod.attributes[k] && mod.attributes.hasOwnProperty(k)
+          result.attributes[k] === v || result.attributes[k] === mod.attributes[k] && Obj.has(mod.attributes, k)
         );
       });
       return true;

@@ -1,29 +1,36 @@
-import { Pipeline } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { Text } from '@ephox/dom-globals';
-import { LegacyUnit, TinyLoader } from '@ephox/mcagar';
+import { Keys } from '@ephox/agar';
+import { beforeEach, context, describe, it } from '@ephox/bedrock-client';
+import { Fun } from '@ephox/katamari';
+import { LegacyUnit, TinyAssertions, TinyContentActions, TinyHooks, TinySelections } from '@ephox/wrap-mcagar';
+import { assert } from 'chai';
+
 import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
+import { AddUndoEvent } from 'tinymce/core/api/EventTypes';
+import { UndoLevel } from 'tinymce/core/undo/UndoManagerTypes';
 import Theme from 'tinymce/themes/silver/Theme';
+
 import * as HtmlUtils from '../module/test/HtmlUtils';
 import * as KeyUtils from '../module/test/KeyUtils';
 
-UnitTest.asynctest('browser.tinymce.core.UndoManager', function (success, failure) {
-  const suite = LegacyUnit.createSuite<Editor>();
+describe('browser.tinymce.core.UndoManagerTest', () => {
+  const hook = TinyHooks.bddSetupLight<Editor>({
+    add_unload_trigger: false,
+    disable_nodechange: true,
+    indent: false,
+    entities: 'raw',
+    base_url: '/project/tinymce/js/tinymce'
+  }, [ Theme ]);
 
-  Theme();
-
-  const ok = function (value: boolean, label?: string) {
-    return LegacyUnit.equal(value, true, label);
-  };
-
-  suite.test('Initial states', function (editor) {
-    ok(!editor.undoManager.hasUndo());
-    ok(!editor.undoManager.hasRedo());
-    ok(!editor.undoManager.typing);
+  it('Initial states', () => {
+    const editor = hook.editor();
+    assert.isFalse(editor.undoManager.hasUndo());
+    assert.isFalse(editor.undoManager.hasRedo());
+    assert.isFalse(editor.undoManager.typing);
   });
 
-  suite.test('One undo level', function (editor) {
+  it('One undo level', () => {
+    const editor = hook.editor();
     editor.undoManager.clear();
     editor.setContent('test');
 
@@ -31,12 +38,13 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function (success, failur
     editor.execCommand('SelectAll');
     editor.execCommand('Bold');
 
-    ok(editor.undoManager.hasUndo());
-    ok(!editor.undoManager.hasRedo());
-    ok(!editor.undoManager.typing);
+    assert.isTrue(editor.undoManager.hasUndo());
+    assert.isFalse(editor.undoManager.hasRedo());
+    assert.isFalse(editor.undoManager.typing);
   });
 
-  suite.test('Two undo levels', function (editor) {
+  it('Two undo levels', () => {
+    const editor = hook.editor();
     editor.undoManager.clear();
     editor.setContent('test');
 
@@ -45,12 +53,13 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function (success, failur
     editor.execCommand('SelectAll');
     editor.execCommand('Italic');
 
-    ok(editor.undoManager.hasUndo());
-    ok(!editor.undoManager.hasRedo());
-    ok(!editor.undoManager.typing);
+    assert.isTrue(editor.undoManager.hasUndo());
+    assert.isFalse(editor.undoManager.hasRedo());
+    assert.isFalse(editor.undoManager.typing);
   });
 
-  suite.test('No undo levels and one redo', function (editor) {
+  it('No undo levels and one redo', () => {
+    const editor = hook.editor();
     editor.undoManager.clear();
     editor.setContent('test');
 
@@ -58,12 +67,13 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function (success, failur
     editor.execCommand('Bold');
     editor.undoManager.undo();
 
-    ok(!editor.undoManager.hasUndo());
-    ok(editor.undoManager.hasRedo());
-    ok(!editor.undoManager.typing);
+    assert.isFalse(editor.undoManager.hasUndo());
+    assert.isTrue(editor.undoManager.hasRedo());
+    assert.isFalse(editor.undoManager.typing);
   });
 
-  suite.test('One undo levels and one redo', function (editor) {
+  it('One undo levels and one redo', () => {
+    const editor = hook.editor();
     editor.undoManager.clear();
     editor.setContent('test');
 
@@ -73,22 +83,23 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function (success, failur
     editor.execCommand('Italic');
     editor.undoManager.undo();
 
-    ok(editor.undoManager.hasUndo());
-    ok(editor.undoManager.hasRedo());
-    ok(!editor.undoManager.typing);
+    assert.isTrue(editor.undoManager.hasUndo());
+    assert.isTrue(editor.undoManager.hasRedo());
+    assert.isFalse(editor.undoManager.typing);
   });
 
-  suite.test('Typing state', function (editor) {
+  it('Typing state', () => {
+    const editor = hook.editor();
     editor.undoManager.clear();
     editor.setContent('test');
 
-    ok(!editor.undoManager.typing);
+    assert.isFalse(editor.undoManager.typing);
 
     editor.dom.fire(editor.getBody(), 'keydown', { keyCode: 65 });
-    ok(editor.undoManager.typing);
+    assert.isTrue(editor.undoManager.typing);
 
     editor.dom.fire(editor.getBody(), 'keydown', { keyCode: 13 });
-    ok(!editor.undoManager.typing);
+    assert.isFalse(editor.undoManager.typing);
 
     const selectAllFlags: Record<string, any> = { keyCode: 65, ctrlKey: false, altKey: false, shiftKey: false };
 
@@ -99,10 +110,11 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function (success, failur
     }
 
     editor.dom.fire(editor.getBody(), 'keydown', selectAllFlags);
-    ok(!editor.undoManager.typing);
+    assert.isFalse(editor.undoManager.typing);
   });
 
-  suite.test('Undo and add new level', function (editor) {
+  it('Undo and add new level', () => {
+    const editor = hook.editor();
     editor.undoManager.clear();
     editor.setContent('test');
 
@@ -112,55 +124,57 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function (success, failur
     editor.execCommand('SelectAll');
     editor.execCommand('Italic');
 
-    ok(editor.undoManager.hasUndo());
-    ok(!editor.undoManager.hasRedo());
-    ok(!editor.undoManager.typing);
+    assert.isTrue(editor.undoManager.hasUndo());
+    assert.isFalse(editor.undoManager.hasRedo());
+    assert.isFalse(editor.undoManager.typing);
   });
 
-  suite.test('Events', function (editor) {
+  it('Events', () => {
+    const editor = hook.editor();
     let add, undo, redo;
 
     editor.undoManager.clear();
     editor.setContent('test');
 
-    editor.on('AddUndo', function (e) {
+    editor.on('AddUndo', (e) => {
       add = e.level;
     });
 
-    editor.on('Undo', function (e) {
+    editor.on('Undo', (e) => {
       undo = e.level;
     });
 
-    editor.on('Redo', function (e) {
+    editor.on('Redo', (e) => {
       redo = e.level;
     });
 
     editor.execCommand('SelectAll');
     editor.execCommand('Bold');
-    ok(!!add.content);
-    ok(!!add.bookmark);
+    assert.ok(!!add.content);
+    assert.ok(!!add.bookmark);
 
     editor.undoManager.undo();
-    ok(!!undo.content);
-    ok(!!undo.bookmark);
+    assert.ok(!!undo.content);
+    assert.ok(!!undo.bookmark);
 
     editor.undoManager.redo();
-    ok(!!redo.content);
-    ok(!!redo.bookmark);
+    assert.ok(!!redo.content);
+    assert.ok(!!redo.bookmark);
   });
 
-  suite.test('No undo/redo cmds on Undo/Redo shortcut', function (editor) {
+  it('No undo/redo cmds on Undo/Redo shortcut', () => {
+    const editor = hook.editor();
     const commands = [];
     let added = false;
 
     editor.undoManager.clear();
     editor.setContent('test');
 
-    editor.on('BeforeExecCommand', function (e) {
+    editor.on('BeforeExecCommand', (e) => {
       commands.push(e.command);
     });
 
-    editor.on('BeforeAddUndo', function () {
+    editor.on('BeforeAddUndo', () => {
       added = true;
     });
 
@@ -176,129 +190,135 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function (success, failur
     editor.dom.fire(editor.getBody(), 'keypress', evt);
     editor.dom.fire(editor.getBody(), 'keyup', evt);
 
-    LegacyUnit.strictEqual(added, false);
-    LegacyUnit.deepEqual(commands, [ 'Undo' ]);
+    assert.isFalse(added);
+    assert.deepEqual(commands, [ 'mceFocus', 'Undo' ]);
   });
 
-  suite.test('Transact', function (editor) {
+  it('Transact', () => {
+    const editor = hook.editor();
     let count = 0;
 
     editor.undoManager.clear();
 
-    editor.on('BeforeAddUndo', function () {
+    editor.on('BeforeAddUndo', () => {
       count++;
     });
 
-    const level = editor.undoManager.transact(function () {
+    const level = editor.undoManager.transact(() => {
       editor.undoManager.add();
       editor.undoManager.add();
     });
 
-    LegacyUnit.equal(count, 1);
-    LegacyUnit.equal(level !== null, true);
+    assert.equal(count, 1);
+    assert.isNotNull(level);
   });
 
-  suite.test('Transact no change', function (editor) {
+  it('Transact no change', () => {
+    const editor = hook.editor();
     editor.undoManager.add();
 
-    const level = editor.undoManager.transact(function () {
-    });
+    const level = editor.undoManager.transact(Fun.noop);
 
-    LegacyUnit.equal(level, null);
+    assert.isNull(level);
   });
 
-  suite.test('Transact with change', function (editor) {
+  it('Transact with change', () => {
+    const editor = hook.editor();
     editor.undoManager.add();
 
-    const level = editor.undoManager.transact(function () {
+    const level = editor.undoManager.transact(() => {
       editor.setContent('x');
     });
 
-    LegacyUnit.equal(level !== null, true);
+    assert.isNotNull(level);
   });
 
-  suite.test('Transact nested', function (editor) {
+  it('Transact nested', () => {
+    const editor = hook.editor();
     let count = 0;
 
     editor.undoManager.clear();
 
-    editor.on('BeforeAddUndo', function () {
+    editor.on('BeforeAddUndo', () => {
       count++;
     });
 
-    editor.undoManager.transact(function () {
+    editor.undoManager.transact(() => {
       editor.undoManager.add();
 
-      editor.undoManager.transact(function () {
+      editor.undoManager.transact(() => {
         editor.undoManager.add();
       });
     });
 
-    LegacyUnit.equal(count, 1);
+    assert.equal(count, 1);
   });
 
-  suite.test('Transact exception', function (editor) {
+  it('Transact exception', () => {
+    const editor = hook.editor();
     let count = 0;
 
     editor.undoManager.clear();
 
-    editor.on('BeforeAddUndo', function () {
+    editor.on('BeforeAddUndo', () => {
       count++;
     });
 
     try {
-      editor.undoManager.transact(function () {
+      editor.undoManager.transact(() => {
         throw new Error('Test');
       });
 
-      LegacyUnit.equal(true, false, 'Should never get here!');
+      assert.fail('Should never get here!');
     } catch (ex) {
-      LegacyUnit.equal(ex.message, 'Test');
+      assert.equal(ex.message, 'Test');
     }
 
     editor.undoManager.add();
 
-    LegacyUnit.equal(count, 1);
+    assert.equal(count, 1);
   });
 
-  suite.test('Extra with changes', function (editor) {
+  it('Extra with changes', () => {
+    const editor = hook.editor();
     editor.undoManager.clear();
     editor.setContent('<p>abc</p>');
     LegacyUnit.setSelection(editor, 'p', 0);
     editor.undoManager.add();
 
-    editor.undoManager.extra(function () {
+    editor.undoManager.extra(() => {
       LegacyUnit.setSelection(editor, 'p', 1, 'p', 2);
       editor.insertContent('1');
-    }, function () {
+    }, () => {
       LegacyUnit.setSelection(editor, 'p', 1, 'p', 2);
       editor.insertContent('2');
     });
 
     const data = editor.undoManager.data;
-    LegacyUnit.equal(data.length, 3);
-    LegacyUnit.equal(data[0].content, '<p>abc</p>');
-    LegacyUnit.deepEqual(data[0].bookmark, { start: [ 0, 0, 0 ] });
-    LegacyUnit.deepEqual(data[0].beforeBookmark, { start: [ 0, 0, 0 ] });
-    LegacyUnit.equal(data[1].content, '<p>a1c</p>');
-    LegacyUnit.deepEqual(data[1].bookmark, { start: [ 2, 0, 0 ] });
-    LegacyUnit.deepEqual(data[1].beforeBookmark, { start: [ 2, 0, 0 ] });
-    LegacyUnit.equal(data[2].content, '<p>a2c</p>');
-    LegacyUnit.deepEqual(data[2].bookmark, { start: [ 2, 0, 0 ] });
-    LegacyUnit.deepEqual(data[1].beforeBookmark, data[2].bookmark);
+    assert.lengthOf(data, 3);
+    assert.equal(data[0].content, '<p>abc</p>');
+    assert.deepEqual(data[0].bookmark, { start: [ 0, 0, 0 ] });
+    assert.deepEqual(data[0].beforeBookmark, { start: [ 0, 0, 0 ] });
+    assert.equal(data[1].content, '<p>a1c</p>');
+    assert.deepEqual(data[1].bookmark, { start: [ 2, 0, 0 ] });
+    assert.deepEqual(data[1].beforeBookmark, { start: [ 2, 0, 0 ] });
+    assert.equal(data[2].content, '<p>a2c</p>');
+    assert.deepEqual(data[2].bookmark, { start: [ 2, 0, 0 ] });
+    assert.deepEqual(data[1].beforeBookmark, data[2].bookmark);
   });
 
-  suite.test('Exclude internal elements', function (editor) {
-    let count = 0, lastLevel;
+  it('Exclude internal elements', () => {
+    const editor = hook.editor();
+    let count = 0, lastLevel: UndoLevel;
 
     editor.undoManager.clear();
-    LegacyUnit.equal(count, 0);
+    assert.equal(count, 0);
 
-    editor.on('AddUndo', function () {
+    editor.on('AddUndo', () => {
       count++;
     });
 
-    editor.on('BeforeAddUndo', function (e) {
+    editor.on('BeforeAddUndo', (e) => {
       lastLevel = e.level;
     });
 
@@ -309,8 +329,8 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function (success, failur
     );
 
     editor.undoManager.add();
-    LegacyUnit.equal(count, 1);
-    LegacyUnit.equal(HtmlUtils.cleanHtml(lastLevel.content),
+    assert.equal(count, 1);
+    assert.equal(HtmlUtils.cleanHtml(lastLevel.content),
       'test' +
       '<img src="about:blank">' +
       '<table><tbody><tr><td>x</td></tr></tbody></table>'
@@ -330,8 +350,8 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function (success, failur
     );
 
     editor.undoManager.add();
-    LegacyUnit.equal(count, 2);
-    LegacyUnit.equal(HtmlUtils.cleanHtml(lastLevel.content),
+    assert.equal(count, 2);
+    assert.equal(HtmlUtils.cleanHtml(lastLevel.content),
       '<span data-mce-bogus="1">x</span>' +
       '<span data-mce-bogus="1"></span>' +
       '<br data-mce-bogus="1">' +
@@ -342,10 +362,11 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function (success, failur
     );
   });
 
-  suite.test('Undo added when typing and losing focus', function (editor) {
-    let lastLevel;
+  it('Undo added when typing and losing focus', () => {
+    const editor = hook.editor();
+    let lastLevel: UndoLevel;
 
-    editor.on('BeforeAddUndo', function (e) {
+    editor.on('BeforeAddUndo', (e) => {
       lastLevel = e.level;
     });
 
@@ -354,23 +375,24 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function (success, failur
     LegacyUnit.setSelection(editor, 'p', 4, 'p', 9);
     KeyUtils.type(editor, '\b');
 
-    LegacyUnit.equal(HtmlUtils.cleanHtml(lastLevel.content), '<p>some text</p>');
+    assert.equal(HtmlUtils.cleanHtml(lastLevel.content), '<p>some text</p>');
     editor.fire('blur');
-    LegacyUnit.equal(HtmlUtils.cleanHtml(lastLevel.content), '<p>some</p>');
+    assert.equal(HtmlUtils.cleanHtml(lastLevel.content), '<p>some</p>');
 
     editor.execCommand('FormatBlock', false, 'h1');
     editor.undoManager.undo();
-    LegacyUnit.equal(editor.getContent(), '<p>some</p>');
+    assert.equal(editor.getContent(), '<p>some</p>');
   });
 
-  suite.test('BeforeAddUndo event', function (editor) {
-    let lastEvt, addUndoEvt;
+  it('BeforeAddUndo event', () => {
+    const editor = hook.editor();
+    let lastEvt, addUndoEvt: AddUndoEvent;
 
-    const blockEvent = function (e) {
+    const blockEvent = (e) => {
       e.preventDefault();
     };
 
-    editor.on('BeforeAddUndo', function (e) {
+    editor.on('BeforeAddUndo', (e) => {
       lastEvt = e;
     });
 
@@ -378,136 +400,204 @@ UnitTest.asynctest('browser.tinymce.core.UndoManager', function (success, failur
     editor.setContent('<p>a</p>');
     editor.undoManager.add();
 
-    LegacyUnit.equal(lastEvt.lastLevel, undefined);
-    LegacyUnit.equal(HtmlUtils.cleanHtml(lastEvt.level.content), '<p>a</p>');
+    assert.equal(lastEvt.lastLevel, undefined);
+    assert.equal(HtmlUtils.cleanHtml(lastEvt.level.content), '<p>a</p>');
 
     editor.setContent('<p>b</p>');
     editor.undoManager.add();
 
-    LegacyUnit.equal(HtmlUtils.cleanHtml(lastEvt.lastLevel.content), '<p>a</p>');
-    LegacyUnit.equal(HtmlUtils.cleanHtml(lastEvt.level.content), '<p>b</p>');
+    assert.equal(HtmlUtils.cleanHtml(lastEvt.lastLevel.content), '<p>a</p>');
+    assert.equal(HtmlUtils.cleanHtml(lastEvt.level.content), '<p>b</p>');
 
     editor.on('BeforeAddUndo', blockEvent);
 
-    editor.on('AddUndo', function (e) {
+    editor.on('AddUndo', (e) => {
       addUndoEvt = e;
     });
 
     editor.setContent('<p>c</p>');
     editor.undoManager.add(null, { data: 1 });
 
-    LegacyUnit.equal(HtmlUtils.cleanHtml(lastEvt.lastLevel.content), '<p>b</p>');
-    LegacyUnit.equal(HtmlUtils.cleanHtml(lastEvt.level.content), '<p>c</p>');
-    LegacyUnit.equal(lastEvt.originalEvent.data, 1);
-    ok(!addUndoEvt, 'Event level produced when it should be blocked');
+    assert.equal(HtmlUtils.cleanHtml(lastEvt.lastLevel.content), '<p>b</p>');
+    assert.equal(HtmlUtils.cleanHtml(lastEvt.level.content), '<p>c</p>');
+    assert.equal(lastEvt.originalEvent.data, 1);
+    assert.isUndefined(addUndoEvt, 'Event level produced when it should be blocked');
 
     editor.off('BeforeAddUndo', blockEvent);
   });
 
-  suite.test('Dirty state type letter', function (editor) {
+  it('Dirty state type letter', () => {
+    const editor = hook.editor();
     editor.undoManager.clear();
     editor.setDirty(false);
     editor.setContent('<p>a</p>');
     LegacyUnit.setSelection(editor, 'p', 1);
 
-    ok(!editor.isDirty(), 'Dirty state should be false');
+    assert.isFalse(editor.isDirty(), 'Dirty state should be false');
     KeyUtils.type(editor, 'b');
-    LegacyUnit.equal(editor.getContent(), '<p>ab</p>');
-    ok(editor.isDirty(), 'Dirty state should be true');
+    assert.equal(editor.getContent(), '<p>ab</p>');
+    assert.isTrue(editor.isDirty(), 'Dirty state should be true');
   });
 
-  suite.test('Dirty state type shift+letter', function (editor) {
+  it('Dirty state type shift+letter', () => {
+    const editor = hook.editor();
     editor.undoManager.clear();
     editor.setDirty(false);
     editor.setContent('<p>a</p>');
     LegacyUnit.setSelection(editor, 'p', 1);
 
-    ok(!editor.isDirty(), 'Dirty state should be false');
+    assert.isFalse(editor.isDirty(), 'Dirty state should be false');
     KeyUtils.type(editor, { keyCode: 65, charCode: 66, shiftKey: true });
-    LegacyUnit.equal(editor.getContent(), '<p>aB</p>');
-    ok(editor.isDirty(), 'Dirty state should be true');
+    assert.equal(editor.getContent(), '<p>aB</p>');
+    assert.isTrue(editor.isDirty(), 'Dirty state should be true');
   });
 
-  suite.test('Dirty state type AltGr+letter', function (editor) {
+  it('Dirty state type AltGr+letter', () => {
+    const editor = hook.editor();
     editor.undoManager.clear();
     editor.setDirty(false);
     editor.setContent('<p>a</p>');
     LegacyUnit.setSelection(editor, 'p', 1);
 
-    ok(!editor.isDirty(), 'Dirty state should be false');
+    assert.isFalse(editor.isDirty(), 'Dirty state should be false');
     KeyUtils.type(editor, { keyCode: 65, charCode: 66, ctrlKey: true, altKey: true });
-    LegacyUnit.equal(editor.getContent(), '<p>aB</p>');
-    ok(editor.isDirty(), 'Dirty state should be true');
+    assert.equal(editor.getContent(), '<p>aB</p>');
+    assert.isTrue(editor.isDirty(), 'Dirty state should be true');
   });
 
-  suite.test('ExecCommand while typing should produce undo level', function (editor) {
+  it('Dirty state on second AddUndo', (done) => {
+    const editor = hook.editor();
+    editor.setContent('<p>a</p>');
+    LegacyUnit.setSelection(editor, 'p', 1);
+
+    let first = true;
+    const test = () => {
+      if (first) {
+        first = false;
+        if (editor.isDirty()) {
+          done('Dirty flag should not be set on first AddUndo.');
+        }
+      } else {
+        if (!editor.isDirty()) {
+          done('Dirty flag should be set after second AddUndo.');
+        }
+      }
+    };
+
+    editor.undoManager.clear();
+    editor.setDirty(false);
+    editor.on('AddUndo', test);
+    KeyUtils.type(editor, '\n');
+    KeyUtils.type(editor, '\n');
+
+    editor.off('AddUndo', test);
+    done();
+  });
+
+  it('ExecCommand while typing should produce undo level', () => {
+    const editor = hook.editor();
     editor.undoManager.clear();
     editor.setDirty(false);
     editor.setContent('<p>a</p>');
     LegacyUnit.setSelection(editor, 'p', 1);
 
-    LegacyUnit.equal(editor.undoManager.typing, false);
+    assert.isFalse(editor.undoManager.typing);
     KeyUtils.type(editor, { keyCode: 66, charCode: 66 });
-    LegacyUnit.equal(editor.undoManager.typing, true);
-    LegacyUnit.equal(editor.getContent(), '<p>aB</p>');
+    assert.isTrue(editor.undoManager.typing);
+    assert.equal(editor.getContent(), '<p>aB</p>');
     editor.execCommand('mceInsertContent', false, 'C');
-    LegacyUnit.equal(editor.undoManager.typing, false);
-    LegacyUnit.equal(editor.undoManager.data.length, 3);
-    LegacyUnit.equal(editor.undoManager.data[0].content, '<p>a</p>');
-    LegacyUnit.equal(editor.undoManager.data[1].content, '<p>aB</p>');
-    LegacyUnit.equal(editor.undoManager.data[2].content, '<p>aBC</p>');
+    assert.isFalse(editor.undoManager.typing);
+    assert.lengthOf(editor.undoManager.data, 3);
+    assert.equal(editor.undoManager.data[0].content, '<p>a</p>');
+    assert.equal(editor.undoManager.data[1].content, '<p>aB</p>');
+    assert.equal(editor.undoManager.data[2].content, '<p>aBC</p>');
   });
 
-  suite.test('transact while typing should produce undo level', function (editor) {
+  it('transact while typing should produce undo level', () => {
+    const editor = hook.editor();
     editor.undoManager.clear();
     editor.setDirty(false);
     editor.setContent('<p>a</p>');
     LegacyUnit.setSelection(editor, 'p', 1);
 
-    LegacyUnit.equal(editor.undoManager.typing, false);
+    assert.isFalse(editor.undoManager.typing);
     KeyUtils.type(editor, { keyCode: 66, charCode: 66 });
-    LegacyUnit.equal(editor.undoManager.typing, true);
-    LegacyUnit.equal(editor.getContent(), '<p>aB</p>');
-    editor.undoManager.transact(function () {
+    assert.isTrue(editor.undoManager.typing);
+    assert.equal(editor.getContent(), '<p>aB</p>');
+    editor.undoManager.transact(() => {
       (editor.getBody().firstChild.firstChild as Text).data = 'aBC';
     });
-    LegacyUnit.equal(editor.undoManager.typing, false);
-    LegacyUnit.equal(editor.undoManager.data.length, 3);
-    LegacyUnit.equal(editor.undoManager.data[0].content, '<p>a</p>');
-    LegacyUnit.equal(editor.undoManager.data[1].content, '<p>aB</p>');
-    LegacyUnit.equal(editor.undoManager.data[2].content, '<p>aBC</p>');
+    assert.isFalse(editor.undoManager.typing);
+    assert.lengthOf(editor.undoManager.data, 3);
+    assert.equal(editor.undoManager.data[0].content, '<p>a</p>');
+    assert.equal(editor.undoManager.data[1].content, '<p>aB</p>');
+    assert.equal(editor.undoManager.data[2].content, '<p>aBC</p>');
   });
 
-  suite.test('ignore does a transaction but no levels', function (editor) {
+  it('ignore does a transaction but no levels', () => {
+    const editor = hook.editor();
     editor.undoManager.clear();
     editor.setDirty(false);
     editor.setContent('<p>a</p>');
     LegacyUnit.setSelection(editor, 'p', 0, 'p', 1);
     editor.undoManager.typing = true;
 
-    editor.undoManager.ignore(function () {
+    editor.undoManager.ignore(() => {
       editor.execCommand('bold');
       editor.execCommand('italic');
     });
 
-    LegacyUnit.equal(editor.undoManager.typing, true);
-    LegacyUnit.equal(editor.undoManager.data.length, 0);
-    LegacyUnit.equal(editor.getContent(), '<p><em><strong>a</strong></em></p>');
+    assert.isTrue(editor.undoManager.typing);
+    assert.lengthOf(editor.undoManager.data, 0);
+    assert.equal(editor.getContent(), '<p><em><strong>a</strong></em></p>');
   });
 
-  suite.test('undo filter for mceRepaint is case insensitive', function (editor) {
+  it('undo filter for mceRepaint is case insensitive', () => {
+    const editor = hook.editor();
     editor.undoManager.clear();
     editor.execCommand('mceRepaint');
-    LegacyUnit.equal(editor.undoManager.hasUndo(), false);
+    assert.isFalse(editor.undoManager.hasUndo());
   });
 
-  TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
-    Pipeline.async({}, suite.toSteps(editor), onSuccess, onFailure);
-  }, {
-    add_unload_trigger: false,
-    disable_nodechange: true,
-    indent: false,
-    entities: 'raw',
-    base_url: '/project/tinymce/js/tinymce'
-  }, success, failure);
+  it('TINY-7373: undo filter for mceFocus is case insensitive', () => {
+    const editor = hook.editor();
+    editor.undoManager.clear();
+    editor.execCommand('mceFocus');
+    assert.isFalse(editor.undoManager.hasUndo());
+  });
+
+  context('Undo when first element is contenteditable="false"', () => {
+    beforeEach(() => {
+      const editor = hook.editor();
+      editor.focus();
+      editor.resetContent('<div contenteditable="false"><p>CEF</p></div><p>something</p><p>something else</p>');
+    });
+
+    it('TINY-7663: No fake caret - should restore correct cursor location', () => {
+      const editor = hook.editor();
+      TinyAssertions.assertContentPresence(editor, { 'p[data-mce-caret=before]': 1 });
+      // selection path must include fake caret which is before the CEF div
+      TinySelections.setCursor(editor, [ 3, 0 ], 14);
+      // moving the selection removed the fake caret
+      TinyAssertions.assertContentPresence(editor, { 'p[data-mce-caret=before]': 0 });
+      // the act of moving the cursor removed the fake caret so now the selection path is off by one (expected)
+      TinyAssertions.assertCursor(editor, [ 2, 0 ], 14);
+
+      TinyContentActions.keystroke(editor, Keys.enter());
+      editor.undoManager.undo();
+      TinyAssertions.assertContent(editor, '<div contenteditable="false"><p>CEF</p></div><p>something</p><p>something else</p>');
+      TinyAssertions.assertCursor(editor, [ 2, 0 ], 14);
+    });
+
+    it('TINY-7663: Fake caret - should restore correct cursor location', () => {
+      const editor = hook.editor();
+      TinyAssertions.assertContentPresence(editor, { 'p[data-mce-caret=before]': 1 });
+      TinyAssertions.assertCursor(editor, [ 0 ], 0);
+
+      TinyContentActions.keystroke(editor, Keys.enter());
+      editor.undoManager.undo();
+      TinyAssertions.assertContent(editor, '<div contenteditable="false"><p>CEF</p></div><p>something</p><p>something else</p>');
+      TinyAssertions.assertCursor(editor, [ 0 ], 0);
+    });
+  });
 });

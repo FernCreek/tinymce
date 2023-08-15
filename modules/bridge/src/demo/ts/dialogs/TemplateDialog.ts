@@ -1,7 +1,6 @@
-import { console } from '@ephox/dom-globals';
 import { openDemoDialog } from './DemoDialogHelpers';
 
-export const createTemplateDialog = () => {
+export const createTemplateDialog = (): void => {
   openDemoDialog(
     {
       title: 'Insert template',
@@ -52,7 +51,7 @@ export const createTemplateDialog = () => {
       onSubmit: (api) => {
         const data = api.getData();
 
-        // tslint:disable-next-line:no-console
+        // eslint-disable-next-line no-console
         console.log({
           template: data.template
         });

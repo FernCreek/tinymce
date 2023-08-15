@@ -1,7 +1,8 @@
-import { Option } from '@ephox/katamari';
-import { Spot } from '@ephox/phoenix';
+import { Optional } from '@ephox/katamari';
+import { Spot, SpotPoint } from '@ephox/phoenix';
 import { PlatformDetection } from '@ephox/sand';
-import { Awareness, Compare, Element } from '@ephox/sugar';
+import { Awareness, Compare, SimRange, SugarElement } from '@ephox/sugar';
+
 import { WindowBridge } from '../api/WindowBridge';
 import { BeforeAfter } from '../navigation/BeforeAfter';
 import * as BrTags from '../navigation/BrTags';
@@ -15,38 +16,39 @@ type Carets = Carets.Carets;
 
 const MAX_RETRIES = 20;
 
-
-const findSpot = function (bridge: WindowBridge, isRoot: (e: Element) => boolean, direction: KeyDirection) {
-  return bridge.getSelection().bind(function (sel) {
-    return BrTags.tryBr(isRoot, sel.finish(), sel.foffset(), direction).fold(function () {
-      return Option.some(Spot.point(sel.finish(), sel.foffset()));
-    }, function (brNeighbour) {
+const findSpot = (bridge: WindowBridge, isRoot: (e: SugarElement) => boolean, direction: KeyDirection): Optional<SpotPoint<SugarElement<Node>>> => {
+  return bridge.getSelection().bind((sel) => {
+    return BrTags.tryBr(isRoot, sel.finish, sel.foffset, direction).fold(() => {
+      return Optional.some(Spot.point(sel.finish, sel.foffset));
+    }, (brNeighbour) => {
       const range = bridge.fromSitus(brNeighbour);
-      const analysis = BeforeAfter.verify(bridge, sel.finish(), sel.foffset(), range.finish(), range.foffset(), direction.failure, isRoot);
+      const analysis = BeforeAfter.verify(bridge, sel.finish, sel.foffset, range.finish, range.foffset, direction.failure, isRoot);
       return BrTags.process(analysis);
     });
   });
 };
 
-const scan = function (bridge: WindowBridge, isRoot: (e: Element) => boolean, element: Element, offset: number, direction: KeyDirection, numRetries: number): Option<Situs> {
-  if (numRetries === 0) { return Option.none(); }
+const scan = (bridge: WindowBridge, isRoot: (e: SugarElement) => boolean, element: SugarElement, offset: number, direction: KeyDirection, numRetries: number): Optional<Situs> => {
+  if (numRetries === 0) {
+    return Optional.none();
+  }
   // Firstly, move the (x, y) and see what element we end up on.
-  return tryCursor(bridge, isRoot, element, offset, direction).bind(function (situs) {
+  return tryCursor(bridge, isRoot, element, offset, direction).bind((situs) => {
     const range = bridge.fromSitus(situs);
     // Now, check to see if the element is a new cell.
-    const analysis = BeforeAfter.verify(bridge, element, offset, range.finish(), range.foffset(), direction.failure, isRoot);
-    return BeforeAfter.cata(analysis, function () {
-      return Option.none<Situs>();
-    }, function () {
+    const analysis = BeforeAfter.verify(bridge, element, offset, range.finish, range.foffset, direction.failure, isRoot);
+    return BeforeAfter.cata(analysis, () => {
+      return Optional.none<Situs>();
+    }, () => {
       // We have a new cell, so we stop looking.
-      return Option.some(situs);
-    }, function (cell) {
+      return Optional.some(situs);
+    }, (cell) => {
       if (Compare.eq(element, cell) && offset === 0) {
         return tryAgain(bridge, element, offset, Carets.moveUp, direction);
       } else { // We need to look again from the start of our current cell
         return scan(bridge, isRoot, cell, 0, direction, numRetries - 1);
       }
-    }, function (cell) {
+    }, (cell) => {
       // If we were here last time, move and try again.
       if (Compare.eq(element, cell) && offset === Awareness.getEnd(cell)) {
         return tryAgain(bridge, element, offset, Carets.moveDown, direction);
@@ -57,13 +59,13 @@ const scan = function (bridge: WindowBridge, isRoot: (e: Element) => boolean, el
   });
 };
 
-const tryAgain = function (bridge: WindowBridge, element: Element, offset: number, move: (carets: Carets, jump: number) => Carets, direction: KeyDirection) {
-  return Rectangles.getBoxAt(bridge, element, offset).bind(function (box) {
+const tryAgain = (bridge: WindowBridge, element: SugarElement, offset: number, move: (carets: Carets, jump: number) => Carets, direction: KeyDirection): Optional<Situs> => {
+  return Rectangles.getBoxAt(bridge, element, offset).bind((box) => {
     return tryAt(bridge, direction, move(box, Retries.getJumpSize()));
   });
 };
 
-const tryAt = function (bridge: WindowBridge, direction: KeyDirection, box: Carets) {
+const tryAt = (bridge: WindowBridge, direction: KeyDirection, box: Carets): Optional<Situs> => {
   const browser = PlatformDetection.detect().browser;
   // NOTE: As we attempt to take over selection everywhere, we'll probably need to separate these again.
   if (browser.isChrome() || browser.isSafari() || browser.isFirefox() || browser.isEdge()) {
@@ -71,20 +73,20 @@ const tryAt = function (bridge: WindowBridge, direction: KeyDirection, box: Care
   } else if (browser.isIE()) {
     return direction.ieRetry(bridge, box);
   } else {
-    return Option.none<Situs>();
+    return Optional.none<Situs>();
   }
 };
 
-const tryCursor = function (bridge: WindowBridge, isRoot: (e: Element) => boolean, element: Element, offset: number, direction: KeyDirection) {
-  return Rectangles.getBoxAt(bridge, element, offset).bind(function (box) {
+const tryCursor = (bridge: WindowBridge, isRoot: (e: SugarElement) => boolean, element: SugarElement, offset: number, direction: KeyDirection): Optional<Situs> => {
+  return Rectangles.getBoxAt(bridge, element, offset).bind((box) => {
     return tryAt(bridge, direction, box);
   });
 };
 
-const handle = function (bridge: WindowBridge, isRoot: (e: Element) => boolean, direction: KeyDirection) {
-  return findSpot(bridge, isRoot, direction).bind(function (spot) {
+const handle = (bridge: WindowBridge, isRoot: (e: SugarElement) => boolean, direction: KeyDirection): Optional<SimRange> => {
+  return findSpot(bridge, isRoot, direction).bind((spot) => {
     // There is a point to start doing box-hitting from
-    return scan(bridge, isRoot, spot.element(), spot.offset(), direction, MAX_RETRIES).map(bridge.fromSitus);
+    return scan(bridge, isRoot, spot.element, spot.offset, direction, MAX_RETRIES).map(bridge.fromSitus);
   });
 };
 

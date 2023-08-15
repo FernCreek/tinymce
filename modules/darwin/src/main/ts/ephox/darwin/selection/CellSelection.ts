@@ -1,33 +1,39 @@
-import { Arr, Fun, Option } from '@ephox/katamari';
+import { Arr, Optional } from '@ephox/katamari';
 import { DomParent } from '@ephox/robin';
 import { TablePositions } from '@ephox/snooker';
-import { Compare, SelectorFilter, SelectorFind, Selectors, Element } from '@ephox/sugar';
-import { Identified, IdentifiedExt } from './Identified';
-import { Node as DomNode, Element as DomElement } from '@ephox/dom-globals';
+import { Compare, SelectorFilter, SelectorFind, Selectors, SugarElement } from '@ephox/sugar';
 
-const lookupTable = function (container: Element) {
+import { Identified, IdentifiedExt } from './Identified';
+
+interface Edges {
+  readonly first: SugarElement;
+  readonly last: SugarElement;
+  readonly table: SugarElement<HTMLTableElement>;
+}
+
+const lookupTable = (container: SugarElement) => {
   return SelectorFind.ancestor(container, 'table');
 };
 
-const identify = function (start: Element, finish: Element, isRoot?: (element: Element) => boolean): Option<Identified> {
-  const getIsRoot = function (rootTable: Element) {
-    return function (element: Element) {
+const identify = (start: SugarElement, finish: SugarElement, isRoot?: (element: SugarElement) => boolean): Optional<Identified> => {
+  const getIsRoot = (rootTable: SugarElement) => {
+    return (element: SugarElement) => {
       return (isRoot !== undefined && isRoot(element)) || Compare.eq(element, rootTable);
     };
   };
 
   // Optimisation: If the cells are equal, it's a single cell array
   if (Compare.eq(start, finish)) {
-    return Option.some({
-      boxes: Option.some([ start ]),
+    return Optional.some({
+      boxes: Optional.some([ start ]),
       start,
       finish
     });
   } else {
-    return lookupTable(start).bind(function (startTable) {
-      return lookupTable(finish).bind(function (finishTable) {
+    return lookupTable(start).bind((startTable) => {
+      return lookupTable(finish).bind((finishTable) => {
         if (Compare.eq(startTable, finishTable)) { // Selecting from within the same table.
-          return Option.some({
+          return Optional.some({
             boxes: TablePositions.intercepts(startTable, start, finish),
             start,
             finish
@@ -35,7 +41,7 @@ const identify = function (start: Element, finish: Element, isRoot?: (element: E
         } else if (Compare.contains(startTable, finishTable)) { // Selecting from the parent table to the nested table.
           const ancestorCells = SelectorFilter.ancestors(finish, 'td,th', getIsRoot(startTable));
           const finishCell = ancestorCells.length > 0 ? ancestorCells[ancestorCells.length - 1] : finish;
-          return Option.some({
+          return Optional.some({
             boxes: TablePositions.nestedIntercepts(startTable, start, startTable, finish, finishTable),
             start,
             finish: finishCell
@@ -43,19 +49,19 @@ const identify = function (start: Element, finish: Element, isRoot?: (element: E
         } else if (Compare.contains(finishTable, startTable)) { // Selecting from the nested table to the parent table.
           const ancestorCells = SelectorFilter.ancestors(start, 'td,th', getIsRoot(finishTable));
           const startCell = ancestorCells.length > 0 ? ancestorCells[ancestorCells.length - 1] : start;
-          return Option.some({
+          return Optional.some({
             boxes: TablePositions.nestedIntercepts(finishTable, start, startTable, finish, finishTable),
             start,
             finish: startCell
           });
         } else { // Selecting from a nested table to a different nested table.
-          return DomParent.ancestors(start, finish).shared().bind(function (lca) {
-            return SelectorFind.closest(lca, 'table', isRoot).bind(function (lcaTable) {
+          return DomParent.ancestors(start, finish).shared.bind((lca) => {
+            return SelectorFind.closest(lca, 'table', isRoot).bind((lcaTable) => {
               const finishAncestorCells = SelectorFilter.ancestors(finish, 'td,th', getIsRoot(lcaTable));
               const finishCell = finishAncestorCells.length > 0 ? finishAncestorCells[finishAncestorCells.length - 1] : finish;
               const startAncestorCells = SelectorFilter.ancestors(start, 'td,th', getIsRoot(lcaTable));
               const startCell = startAncestorCells.length > 0 ? startAncestorCells[startAncestorCells.length - 1] : start;
-              return Option.some({
+              return Optional.some({
                 boxes: TablePositions.nestedIntercepts(lcaTable, start, startTable, finish, finishTable),
                 start: startCell,
                 finish: finishCell
@@ -68,36 +74,36 @@ const identify = function (start: Element, finish: Element, isRoot?: (element: E
   }
 };
 
-const retrieve = function (container: Element<DomNode>, selector: string) {
-  const sels = SelectorFilter.descendants(container, selector);
-  return sels.length > 0 ? Option.some(sels) : Option.none<Element<DomElement>[]>();
+const retrieve = <T extends Element> (container: SugarElement<Node>, selector: string): Optional<SugarElement<T>[]> => {
+  const sels = SelectorFilter.descendants<T>(container, selector);
+  return sels.length > 0 ? Optional.some(sels) : Optional.none<SugarElement<T>[]>();
 };
 
-const getLast = function (boxes: Element[], lastSelectedSelector: string) {
-  return Arr.find(boxes, function (box) {
+const getLast = (boxes: SugarElement<Element>[], lastSelectedSelector: string): Optional<SugarElement<Element>> => {
+  return Arr.find(boxes, (box) => {
     return Selectors.is(box, lastSelectedSelector);
   });
 };
 
-const getEdges = function (container: Element, firstSelectedSelector: string, lastSelectedSelector: string) {
-  return SelectorFind.descendant(container, firstSelectedSelector).bind(function (first) {
-    return SelectorFind.descendant(container, lastSelectedSelector).bind(function (last) {
-      return DomParent.sharedOne(lookupTable, [ first, last ]).map(function (tbl) {
+const getEdges = (container: SugarElement, firstSelectedSelector: string, lastSelectedSelector: string): Optional<Edges> => {
+  return SelectorFind.descendant(container, firstSelectedSelector).bind((first) => {
+    return SelectorFind.descendant(container, lastSelectedSelector).bind((last) => {
+      return DomParent.sharedOne(lookupTable, [ first, last ]).map((table) => {
         return {
-          first: Fun.constant(first),
-          last: Fun.constant(last),
-          table: Fun.constant(tbl)
+          first,
+          last,
+          table
         };
       });
     });
   });
 };
 
-const expandTo = function (finish: Element, firstSelectedSelector: string): Option<IdentifiedExt> {
-  return SelectorFind.ancestor(finish, 'table').bind(function (table) {
-    return SelectorFind.descendant(table, firstSelectedSelector).bind(function (start) {
-      return identify(start, finish).bind(function (identified) {
-        return identified.boxes.map<IdentifiedExt>(function (boxes) {
+const expandTo = (finish: SugarElement, firstSelectedSelector: string): Optional<IdentifiedExt> => {
+  return SelectorFind.ancestor(finish, 'table').bind((table) => {
+    return SelectorFind.descendant(table, firstSelectedSelector).bind((start) => {
+      return identify(start, finish).bind((identified) => {
+        return identified.boxes.map<IdentifiedExt>((boxes) => {
           return {
             boxes,
             start: identified.start,
@@ -109,9 +115,10 @@ const expandTo = function (finish: Element, firstSelectedSelector: string): Opti
   });
 };
 
-const shiftSelection = function (boxes: Element[], deltaRow: number, deltaColumn: number, firstSelectedSelector: string, lastSelectedSelector: string) {
-  return getLast(boxes, lastSelectedSelector).bind(function (last) {
-    return TablePositions.moveBy(last, deltaRow, deltaColumn).bind(function (finish) {
+const shiftSelection = (boxes: SugarElement[], deltaRow: number, deltaColumn: number,
+                        firstSelectedSelector: string, lastSelectedSelector: string): Optional<IdentifiedExt> => {
+  return getLast(boxes, lastSelectedSelector).bind((last) => {
+    return TablePositions.moveBy(last, deltaRow, deltaColumn).bind((finish) => {
       return expandTo(finish, firstSelectedSelector);
     });
   });

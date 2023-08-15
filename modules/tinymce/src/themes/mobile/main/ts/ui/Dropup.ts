@@ -5,19 +5,18 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Behaviour, Container, GuiFactory, Replacing, Sliding, AlloyComponent } from '@ephox/alloy';
+import { AlloyComponent, Behaviour, Container, GuiFactory, Replacing, Sliding } from '@ephox/alloy';
 import { Fun } from '@ephox/katamari';
+import { SugarElement } from '@ephox/sugar';
 
 import * as Receivers from '../channels/Receivers';
 import * as Styles from '../style/Styles';
-import { SugarElement } from 'tinymce/themes/mobile/alien/TypeDefinitions';
-import { window } from '@ephox/dom-globals';
 
 export interface DropUp {
-  appear: (menu: any, update: any, component: any) => void;
-  disappear: (onReadyToShrink: any) => void;
-  component: () => AlloyComponent;
-  element: () => SugarElement;
+  readonly appear: (menu: any, update: any, component: any) => void;
+  readonly disappear: (onReadyToShrink: any) => void;
+  readonly component: AlloyComponent;
+  readonly element: SugarElement;
 }
 
 const build = (refresh, scrollIntoView): DropUp => {
@@ -40,13 +39,13 @@ const build = (refresh, scrollIntoView): DropUp => {
           dimension: {
             property: 'height'
           },
-          onShrunk(component) {
+          onShrunk: (component) => {
             refresh();
             scrollIntoView();
 
             Replacing.set(component, [ ]);
           },
-          onGrown(_component) {
+          onGrown: (_component) => {
             refresh();
             scrollIntoView();
           }
@@ -78,7 +77,7 @@ const build = (refresh, scrollIntoView): DropUp => {
   return {
     appear,
     disappear,
-    component: Fun.constant(dropup),
+    component: dropup,
     element: dropup.element
   };
 };

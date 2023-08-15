@@ -1,10 +1,9 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Arr, Obj } from '@ephox/katamari';
-import * as Regexes from 'ephox/polaris/api/Regexes';
-import { console } from '@ephox/dom-globals';
 
-// tslint:disable no-console
-UnitTest.test('RegexesTest', function () {
+import * as Regexes from 'ephox/polaris/api/Regexes';
+
+UnitTest.test('RegexesTest', () => {
   const ephoxCases = [
     'www.google.com.au',
     'www.google.com.au:80',
@@ -22,7 +21,10 @@ UnitTest.test('RegexesTest', function () {
     `http://-.~_!$&'()*+,;=:%40:80%2f::::::@example.com?-.~_!$&'()*+,;=:%40:80%2f::::::@e#-.~_!$&'()*+,;=:%40:80%2f::::::@e`,
     'http://xn--domain.com',
     'www.google.ca/index.htm?id=/bla/bla',
-    'https://www.amazon.com.au/gp/product/B0798R2WXG/ref=s9_acsd_top_hd_bw_b5QhTfX_c_x_w?pf_rd_m=ANEGB3WVEVKZB&pf_rd_s=merchandised-search-4&pf_rd_r=KF6SD7C0M69MKF2FR9CC&pf_rd_t=101&pf_rd_p=8ad3bdba-b846-5350-9c00-72c2cb7191dd&pf_rd_i=4975211051'
+    'https://www.amazon.com.au/gp/product/B0798R2WXG/ref=s9_acsd_top_hd_bw_b5QhTfX_c_x_w?pf_rd_m=ANEGB3WVEVKZB&pf_rd_s=merchandised-search-4&pf_rd_r=KF6SD7C0M69MKF2FR9CC&pf_rd_t=101&pf_rd_p=8ad3bdba-b846-5350-9c00-72c2cb7191dd&pf_rd_i=4975211051',
+    'https://www.birddoctor.net/refId,56511/refDownload.pml',
+    'https://www.example.com/:w:/s/b026324c6904b2a9cb4b88d6d61c81d1?q=abc123',
+    'https://website.com/test/!test'
   ];
 
   // More cases, http://formvalidation.io/validators/uri/
@@ -67,7 +69,17 @@ UnitTest.test('RegexesTest', function () {
     // 'http://☺.damowmow.com/',
   ];
 
-  const trueCases = ephoxCases.concat(mathiasBynens);
+  const validSchemes = [
+    'h://foo.com',
+    'h1://foo.com',
+    'h1+://foo.com',
+    'h1+.://foo.com',
+    'h1+.-://foo.com',
+    'p72internal://foo.com',
+    'but15characters://foo.com',
+  ];
+
+  const trueCases = ephoxCases.concat(mathiasBynens).concat(validSchemes);
 
   const ephoxFalseCases = [
     'I am not a link',
@@ -92,7 +104,6 @@ UnitTest.test('RegexesTest', function () {
     'http:// shouldfail.com',
     'http://foo.bar/foo(bar)baz quux',
     'foo.com',
-    'h://test',
     ':// should fail',
     'http://?',
     'http://??',
@@ -129,21 +140,34 @@ UnitTest.test('RegexesTest', function () {
     // 'http://10.1.1.1'
   ];
 
-  const falseCases = ephoxFalseCases.concat(mathiasBynensFalse);
+  const invalidSchemes = [
+    '1h://foo.com',
+    '+h://foo.com',
+    '.h://foo.com',
+    '-h://foo.com',
+    'h!://foo.com',
+    'h/://foo.com',
+    'h_://foo.com',
+    'morethanfifteencharacters://foo.com',
+  ];
 
-  Arr.each(trueCases, function (cs) {
+  const falseCases = ephoxFalseCases.concat(mathiasBynensFalse).concat(invalidSchemes);
+
+  Arr.each(trueCases, (cs) => {
     const matched = Regexes.link().exec(cs);
     assert.eq(cs, matched !== null && matched[0], 'expected true but was false: ' + cs);
     if (matched !== null && matched.length > 1) {
+      // eslint-disable-next-line no-console
       console.log('matched groups:');
-      Arr.each(matched, function (s, i) {
+      Arr.each(matched, (s, i) => {
+        // eslint-disable-next-line no-console
         console.log(i, s);
       });
       assert.fail('link regex must not capture any groups');
     }
   });
 
-  Arr.each(falseCases, function (cs) {
+  Arr.each(falseCases, (cs) => {
     const match = Regexes.link().exec(cs);
     assert.eq(false, match !== null && cs === match[0], 'expected false but was true: ' + cs);
   });
@@ -221,10 +245,54 @@ UnitTest.test('RegexesTest', function () {
   };
 
   // remember don't inline the module function execution, JS regexes have state!
-  Obj.each(autolinks, function (v, k) {
+  Obj.each(autolinks, (v, k) => {
     const match = Regexes.autolink().exec(k);
     if (match !== null) {
       const url = match[1];
+      assert.eq(true, v === url, 'expected ' + v + ' but was "' + url + '"');
+    } else {
+      assert.fail('expected ' + v + ' but did not match "' + k + '"');
+    }
+  });
+
+  // Ignore trailing punctuation such as a comma, period and exclamation mark at the end of the URL path
+  const onlyWithPathLinks = {
+    'http://google.com': 'http://google.com',
+    'http://google.com.': 'http://google.com',
+    'http://google.com,': 'http://google.com',
+    'http://google.com!': 'http://google.com',
+    'http://google.com;': 'http://google.com',
+    'http://google.com:': 'http://google.com',
+    'http://google.com/,': 'http://google.com/',
+    'http://google.com/,,': 'http://google.com/',
+    'http://google.com/.': 'http://google.com/',
+    'http://google.com/..': 'http://google.com/',
+    'http://google.com/!': 'http://google.com/',
+    'http://google.com/:': 'http://google.com/',
+    'http://google.com/;': 'http://google.com/',
+    'http://google.com/,/': 'http://google.com/,/',
+    'http://google.com/,/,': 'http://google.com/,/',
+    'http://google.com/abc': 'http://google.com/abc',
+    'http://google.com/abc,': 'http://google.com/abc',
+    'http://google.com/abc.': 'http://google.com/abc',
+    'http://google.com/abc!': 'http://google.com/abc',
+    'http://google.com/abc;': 'http://google.com/abc',
+    'http://google.com/abc:': 'http://google.com/abc',
+    'http://google.com/,ab,c': 'http://google.com/,ab,c',
+    'http://google.com/ab,c': 'http://google.com/ab,c',
+    'http://google.com/ab,c,': 'http://google.com/ab,c',
+    'http://google.com/ab,c.': 'http://google.com/ab,c',
+    'http://google.com/abc,d/,': 'http://google.com/abc,d/',
+    'http://google.com/abc,d/.': 'http://google.com/abc,d/',
+    'http://google.com/a,bc,d/,': 'http://google.com/a,bc,d/',
+    'http://google.com/a,bc,d/.': 'http://google.com/a,bc,d/',
+    'Visit, please, http://google.com/a,bc,d/. Good luck!': 'http://google.com/a,bc,d/',
+  };
+
+  Obj.each(onlyWithPathLinks, (v, k) => {
+    const match = Regexes.link().exec(k);
+    if (match !== null) {
+      const url = match[0];
       assert.eq(true, v === url, 'expected ' + v + ' but was "' + url + '"');
     } else {
       assert.fail('expected ' + v + ' but did not match "' + k + '"');

@@ -1,8 +1,8 @@
 import { Chain, Guard, NamedChain, Touch, UiFinder } from '@ephox/agar';
 import { UnitTest } from '@ephox/bedrock-client';
-import { Option, Result } from '@ephox/katamari';
+import { Fun, Optional, Result } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
-import { Css, Position, Scroll } from '@ephox/sugar';
+import { Css, Scroll, SugarPosition } from '@ephox/sugar';
 
 import * as Boxes from 'ephox/alloy/alien/Boxes';
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
@@ -19,7 +19,7 @@ UnitTest.asynctest('TouchDraggingTest', (success, failure) => {
   PlatformDetection.override({
     deviceType: {
       ...origPlatform.deviceType,
-      isTouch: () => true
+      isTouch: Fun.always
     }
   });
 
@@ -38,21 +38,19 @@ UnitTest.asynctest('TouchDraggingTest', (success, failure) => {
           mode: 'touch',
           blockerClass: 'test-blocker',
           snaps: {
-            getSnapPoints() {
-              return [
-                Dragging.snap({
-                  sensor: DragCoord.fixed(300, 10),
-                  range: Position(1000, 30),
-                  output: DragCoord.fixed(Option.none<number>(), Option.some(10))
-                })
-              ];
-            },
+            getSnapPoints: () => [
+              Dragging.snap({
+                sensor: DragCoord.fixed(300, 10),
+                range: SugarPosition(1000, 30),
+                output: DragCoord.fixed(Optional.none<number>(), Optional.some(10))
+              })
+            ],
             leftAttr: 'data-snap-left',
             topAttr: 'data-snap-top'
           },
           getBounds: () => {
             const scroll = Scroll.get();
-            return Boxes.bounds(scroll.left(), scroll.top(), 500, 500);
+            return Boxes.bounds(scroll.left, scroll.top, 500, 500);
           }
         })
       ])
@@ -73,12 +71,12 @@ UnitTest.asynctest('TouchDraggingTest', (success, failure) => {
     })
   ), (_doc, _body, gui, component, _store) => {
 
-    const cSubject = Chain.mapper(() => subject.get(component).element());
+    const cSubject = Chain.mapper(() => subject.get(component).element);
 
     const cEnsurePositionChanged = Chain.control(
       Chain.binder((all: any) => all.box_position1.left !== all.box_position2.left &&
           all.box_position2.left !== all.box_position3.left ? Result.value({}) :
-        Result.error('Positions did not change.\nPosition data: ' + JSON.stringify({
+        Result.error('Positions did not change.\nSugarPosition data: ' + JSON.stringify({
           1: all.box_position1,
           2: all.box_position2,
           3: all.box_position3
@@ -94,7 +92,7 @@ UnitTest.asynctest('TouchDraggingTest', (success, failure) => {
           all.box_position7.left === all.box_position8_bound.left &&
           all.box_position7.left === '400px' && all.box_position8_bound.top === '100px';
         return boundLeft && boundRight ? Result.value({}) :
-          Result.error('Dragging should have been restricted to the bounds.\nPosition data: ' + JSON.stringify({
+          Result.error('Dragging should have been restricted to the bounds.\nSugarPosition data: ' + JSON.stringify({
             1: all.box_position4,
             2: all.box_position5,
             3: all.box_position6_bound,
@@ -109,7 +107,7 @@ UnitTest.asynctest('TouchDraggingTest', (success, failure) => {
         const boundBottom = all.box_scrolled_position9.top === all.box_scrolled_position10_bound.top &&
           all.box_scrolled_position9.top === '400px' && all.box_scrolled_position10_bound.left === '50px';
         return boundBottom ? Result.value({}) :
-          Result.error('Dragging should have been restricted to the bounds.\nPosition data: ' + JSON.stringify({
+          Result.error('Dragging should have been restricted to the bounds.\nSugarPosition data: ' + JSON.stringify({
             1: all.box_scrolled_position9,
             2: all.box_scrolled_position10_bound
           }, null, 2));
@@ -171,7 +169,7 @@ UnitTest.asynctest('TouchDraggingTest', (success, failure) => {
         NamedChain.asChain([
           NamedChain.write('box', cSubject),
           NamedChain.direct('box', Touch.cTouchStart, '_'),
-          NamedChain.writeValue('container', gui.element()),
+          NamedChain.writeValue('container', gui.element),
           NamedChain.direct('container', UiFinder.cFindIn('.test-blocker'), 'blocker'),
 
           NamedChain.direct('blocker', Touch.cTouchMoveTo(100, 200), '_'),

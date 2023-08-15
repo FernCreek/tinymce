@@ -1,185 +1,183 @@
-import { Pipeline } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { LegacyUnit } from '@ephox/mcagar';
-import EventDispatcher from 'tinymce/core/api/util/EventDispatcher';
+import { describe, it } from '@ephox/bedrock-client';
+import { assert } from 'chai';
 
-UnitTest.asynctest('browser.tinymce.core.util.EventDispatcherTest', function (success, failure) {
-  const suite = LegacyUnit.createSuite();
+import EventDispatcher, { EditorEvent } from 'tinymce/core/api/util/EventDispatcher';
 
-  suite.test('fire (no event listeners)', function () {
+describe('browser.tinymce.core.util.EventDispatcherTest', () => {
+  it('fire (no event listeners)', () => {
     const dispatcher = new EventDispatcher();
-    let args;
+    let args: EditorEvent<any>;
 
     args = dispatcher.fire('click', { test: 1 });
-    LegacyUnit.equal(args.test, 1);
-    LegacyUnit.equal(args.isDefaultPrevented(), false);
-    LegacyUnit.equal(args.isPropagationStopped(), false);
-    LegacyUnit.equal(args.isImmediatePropagationStopped(), false);
-    LegacyUnit.equal(args.target, dispatcher);
+    assert.equal(args.test, 1);
+    assert.isFalse(args.isDefaultPrevented());
+    assert.isFalse(args.isPropagationStopped());
+    assert.isFalse(args.isImmediatePropagationStopped());
+    assert.equal(args.target, dispatcher);
 
     args = dispatcher.fire('click');
-    LegacyUnit.equal(args.isDefaultPrevented(), false);
-    LegacyUnit.equal(args.isPropagationStopped(), false);
-    LegacyUnit.equal(args.isImmediatePropagationStopped(), false);
+    assert.isFalse(args.isDefaultPrevented());
+    assert.isFalse(args.isPropagationStopped());
+    assert.isFalse(args.isImmediatePropagationStopped());
   });
 
-  suite.test('fire (event listeners)', function () {
+  it('fire (event listeners)', () => {
     const dispatcher = new EventDispatcher();
     let data = '';
 
-    dispatcher.on('click', function () {
+    dispatcher.on('click', () => {
       data += 'a';
     });
-    dispatcher.on('click', function () {
+    dispatcher.on('click', () => {
       data += 'b';
     });
 
     dispatcher.fire('click', { test: 1 });
-    LegacyUnit.equal(data, 'ab');
+    assert.equal(data, 'ab');
   });
 
-  suite.test('fire (event listeners) stopImmediatePropagation', function () {
+  it('fire (event listeners) stopImmediatePropagation', () => {
     const dispatcher = new EventDispatcher();
     let data = '';
 
-    dispatcher.on('click', function (e) {
+    dispatcher.on('click', (e) => {
       data += 'a'; e.stopImmediatePropagation();
     });
-    dispatcher.on('click', function () {
+    dispatcher.on('click', () => {
       data += 'b';
     });
 
     dispatcher.fire('click', { test: 1 });
-    LegacyUnit.equal(data, 'a');
+    assert.equal(data, 'a');
   });
 
-  suite.test('on', function () {
+  it('on', () => {
     const dispatcher = new EventDispatcher();
     let data = '';
 
-    LegacyUnit.equal(dispatcher.on('click', function () {
+    assert.equal(dispatcher.on('click', () => {
       data += 'a';
     }), dispatcher);
-    LegacyUnit.equal(dispatcher.on('click keydown', function () {
+    assert.equal(dispatcher.on('click keydown', () => {
       data += 'b';
     }), dispatcher);
 
     dispatcher.fire('click');
-    LegacyUnit.equal(data, 'ab');
+    assert.equal(data, 'ab');
 
     dispatcher.fire('keydown');
-    LegacyUnit.equal(data, 'abb');
+    assert.equal(data, 'abb');
   });
 
-  suite.test('on (prepend)', function () {
+  it('on (prepend)', () => {
     const dispatcher = new EventDispatcher();
     let data = '';
 
-    LegacyUnit.equal(dispatcher.on('click', function () {
+    assert.equal(dispatcher.on('click', () => {
       data += 'a';
     }), dispatcher);
-    LegacyUnit.equal(dispatcher.on('click', function () {
+    assert.equal(dispatcher.on('click', () => {
       data += 'b';
     }, true), dispatcher);
 
     dispatcher.fire('click');
-    LegacyUnit.equal(data, 'ba');
+    assert.equal(data, 'ba');
   });
 
-  suite.test('once', function () {
+  it('once', () => {
     const dispatcher = new EventDispatcher();
     let data = '';
 
-    LegacyUnit.equal(dispatcher.on('click', function () {
+    assert.equal(dispatcher.on('click', () => {
       data += 'a';
     }), dispatcher);
-    LegacyUnit.equal(dispatcher.once('click', function () {
+    assert.equal(dispatcher.once('click', () => {
       data += 'b';
     }), dispatcher);
-    LegacyUnit.equal(dispatcher.on('click', function () {
+    assert.equal(dispatcher.on('click', () => {
       data += 'c';
     }), dispatcher);
 
     dispatcher.fire('click');
-    LegacyUnit.equal(data, 'abc');
+    assert.equal(data, 'abc');
 
     dispatcher.fire('click');
-    LegacyUnit.equal(data, 'abcac');
+    assert.equal(data, 'abcac');
   });
 
-  suite.test('once (prepend)', function () {
+  it('once (prepend)', () => {
     const dispatcher = new EventDispatcher();
     let data = '';
 
-    LegacyUnit.equal(dispatcher.on('click', function () {
+    assert.equal(dispatcher.on('click', () => {
       data += 'a';
     }), dispatcher);
-    LegacyUnit.equal(dispatcher.once('click', function () {
+    assert.equal(dispatcher.once('click', () => {
       data += 'b';
     }, true), dispatcher);
-    LegacyUnit.equal(dispatcher.on('click', function () {
+    assert.equal(dispatcher.on('click', () => {
       data += 'c';
     }), dispatcher);
 
     dispatcher.fire('click');
-    LegacyUnit.equal(data, 'bac');
+    assert.equal(data, 'bac');
 
     dispatcher.fire('click');
-    LegacyUnit.equal(data, 'bacac');
+    assert.equal(data, 'bacac');
   });
 
-  suite.test('once (unbind)', function () {
+  it('once (unbind)', () => {
     const dispatcher = new EventDispatcher();
     let data = '';
 
-    const handler = function () {
+    const handler = () => {
       data += 'b';
     };
 
-    dispatcher.once('click', function () {
+    dispatcher.once('click', () => {
       data += 'a';
     });
     dispatcher.once('click', handler);
     dispatcher.off('click', handler);
 
     dispatcher.fire('click');
-    LegacyUnit.equal(data, 'a');
+    assert.equal(data, 'a');
   });
 
-  suite.test('once (multiple events)', function () {
+  it('once (multiple events)', () => {
     const dispatcher = new EventDispatcher();
     let data = '';
 
-    dispatcher.once('click', function () {
+    dispatcher.once('click', () => {
       data += 'a';
     });
-    dispatcher.once('keydown', function () {
+    dispatcher.once('keydown', () => {
       data += 'b';
     });
 
     dispatcher.fire('click');
-    LegacyUnit.equal(data, 'a');
+    assert.equal(data, 'a');
 
     dispatcher.fire('keydown');
-    LegacyUnit.equal(data, 'ab');
+    assert.equal(data, 'ab');
 
     dispatcher.fire('click');
     dispatcher.fire('keydown');
 
-    LegacyUnit.equal(data, 'ab');
+    assert.equal(data, 'ab');
   });
 
-  suite.test('off (all)', function () {
+  it('off (all)', () => {
     const dispatcher = new EventDispatcher();
     let data = '';
 
-    const listenerA = function () {
+    const listenerA = () => {
       data += 'a';
     };
-    const listenerB = function () {
+    const listenerB = () => {
       data += 'b';
     };
-    const listenerC = function () {
+    const listenerC = () => {
       data += 'c';
     };
 
@@ -192,20 +190,20 @@ UnitTest.asynctest('browser.tinymce.core.util.EventDispatcherTest', function (su
     data = '';
     dispatcher.fire('click');
     dispatcher.fire('keydown');
-    LegacyUnit.equal(data, '');
+    assert.equal(data, '');
   });
 
-  suite.test('off (all named)', function () {
+  it('off (all named)', () => {
     const dispatcher = new EventDispatcher();
     let data = '';
 
-    const listenerA = function () {
+    const listenerA = () => {
       data += 'a';
     };
-    const listenerB = function () {
+    const listenerB = () => {
       data += 'b';
     };
-    const listenerC = function () {
+    const listenerC = () => {
       data += 'c';
     };
 
@@ -218,17 +216,17 @@ UnitTest.asynctest('browser.tinymce.core.util.EventDispatcherTest', function (su
     data = '';
     dispatcher.fire('click');
     dispatcher.fire('keydown');
-    LegacyUnit.equal(data, 'c');
+    assert.equal(data, 'c');
   });
 
-  suite.test('off (all specific observer)', function () {
+  it('off (all specific observer)', () => {
     const dispatcher = new EventDispatcher();
     let data = '';
 
-    const listenerA = function () {
+    const listenerA = () => {
       data += 'a';
     };
-    const listenerB = function () {
+    const listenerB = () => {
       data += 'b';
     };
 
@@ -238,18 +236,20 @@ UnitTest.asynctest('browser.tinymce.core.util.EventDispatcherTest', function (su
 
     data = '';
     dispatcher.fire('click');
-    LegacyUnit.equal(data, 'a');
+    assert.equal(data, 'a');
   });
 
-  suite.test('scope setting', function () {
-    let lastScope, lastEvent, dispatcher;
+  it('scope setting', () => {
+    let lastScope: any;
+    let lastEvent: EditorEvent<any>;
+    let dispatcher: EventDispatcher<any>;
 
     dispatcher = new EventDispatcher();
     dispatcher.on('click', function () {
       // eslint-disable-next-line consistent-this
       lastScope = this;
     }).fire('click');
-    LegacyUnit.equal(dispatcher, lastScope);
+    assert.equal(dispatcher, lastScope);
 
     const scope = { test: 1 };
     dispatcher = new EventDispatcher({ scope });
@@ -258,77 +258,112 @@ UnitTest.asynctest('browser.tinymce.core.util.EventDispatcherTest', function (su
       lastScope = this;
       lastEvent = e;
     }).fire('click');
-    LegacyUnit.equal(scope, lastScope);
-    LegacyUnit.equal(lastEvent.target, lastScope);
+    assert.equal(scope, lastScope);
+    assert.equal(lastEvent.target, lastScope);
   });
 
-  suite.test('beforeFire setting', function () {
-    let lastArgs;
+  it('beforeFire setting', () => {
+    let lastArgs: EditorEvent<any>;
 
     const dispatcher = new EventDispatcher({
-      beforeFire(args) {
+      beforeFire: (args) => {
         lastArgs = args;
       }
     });
 
     const args = dispatcher.fire('click');
-    LegacyUnit.equal(lastArgs === args, true);
+    assert.strictEqual(lastArgs, args);
   });
 
-  suite.test('beforeFire setting (stopImmediatePropagation)', function () {
-    let lastArgs, data = '';
+  it('beforeFire setting (stopImmediatePropagation)', () => {
+    let lastArgs: EditorEvent<any>;
+    let data = '';
 
     const dispatcher = new EventDispatcher({
-      beforeFire(args) {
+      beforeFire: (args) => {
         lastArgs = args;
         args.stopImmediatePropagation();
       }
     });
 
-    const listenerA = function () {
+    const listenerA = () => {
       data += 'a';
     };
 
     dispatcher.on('click', listenerA);
     const args = dispatcher.fire('click');
-    LegacyUnit.equal(lastArgs === args, true);
-    LegacyUnit.equal(data, '');
+    assert.strictEqual(lastArgs, args);
+    assert.equal(data, '');
   });
 
-  suite.test('toggleEvent setting', function () {
-    let lastName, lastState;
+  it('toggleEvent setting', () => {
+    let lastName: string;
+    let lastState: boolean;
 
     const dispatcher = new EventDispatcher({
-      toggleEvent(name, state) {
+      toggleEvent: (name, state) => {
         lastName = name;
         lastState = state;
       }
     });
 
-    const listenerA = function () {
-    };
-    const listenerB = function () {
-    };
+    // eslint-disable-next-line @tinymce/prefer-fun
+    const listenerA = () => {};
+    // eslint-disable-next-line @tinymce/prefer-fun
+    const listenerB = () => {};
 
     dispatcher.on('click', listenerA);
-    LegacyUnit.equal(lastName, 'click');
-    LegacyUnit.equal(lastState, true);
+    assert.equal(lastName, 'click');
+    assert.isTrue(lastState);
 
     lastName = lastState = null;
     dispatcher.on('click', listenerB);
-    LegacyUnit.equal(lastName, null);
-    LegacyUnit.equal(lastState, null);
+    assert.isNull(lastName);
+    assert.isNull(lastState);
 
     dispatcher.off('click', listenerA);
-    LegacyUnit.equal(lastName, null);
-    LegacyUnit.equal(lastState, null);
+    assert.isNull(lastName);
+    assert.isNull(lastState);
 
     dispatcher.off('click', listenerB);
-    LegacyUnit.equal(lastName, 'click');
-    LegacyUnit.equal(lastState, false);
+    assert.equal(lastName, 'click');
+    assert.isFalse(lastState);
   });
 
-  Pipeline.async({}, suite.toSteps({}), function () {
-    success();
-  }, failure);
+  it('TINY-7436: Callbacks added or removed in an earlier handler do not run while firing the same event', () => {
+    const dispatcher = new EventDispatcher();
+    const logs = [];
+
+    const func1 = () => {
+      logs.push('func1');
+      dispatcher.off('run', func2);
+      dispatcher.on('run', func3);
+    };
+    const func2 = () => logs.push('func2');
+    const func3 = () => logs.push('func3');
+
+    dispatcher.on('run', func1);
+    dispatcher.on('run', func2);
+
+    assert.isEmpty(logs);
+    dispatcher.fire('run');
+    assert.deepEqual(logs, [ 'func1' ]);
+  });
+
+  it('TINY-3254: Does not mutate the original event args when firing', () => {
+    const dispatcher = new EventDispatcher();
+    const original = { type: 'custom' };
+
+    dispatcher.on('run', (e) => {
+      e.new = true;
+    });
+    const result = dispatcher.fire<'run', any>('run', original);
+
+    assert.notDeepEqual(result, original);
+    assert.equal(original.type, 'custom');
+    assert.notProperty(original, 'new');
+    assert.notProperty(original, 'preventDefault');
+    assert.equal(result.type, 'run');
+    assert.isTrue(result.new);
+  });
 });

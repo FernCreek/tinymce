@@ -1,7 +1,7 @@
 #!groovy
-@Library('waluigi@v3.1.0') _
+@Library('waluigi@v4.5.0') _
 
-def runTests(name, bedrockCommand) {
+def runTests(name, bedrockCommand, runAll) {
   // Clean out the old XML files before running tests, since we junit import *.XML files
   dir('scratch') {
     if (isUnix()) {
@@ -11,57 +11,65 @@ def runTests(name, bedrockCommand) {
     }
   }
 
-  def successfulTests = execHandle(bedrockCommand)
+  def command = runAll ? bedrockCommand + ' --ignore-lerna-changed=true' : bedrockCommand
+  def successfulTests = execHandle(command)
 
   echo "Writing JUnit results for " + name + " on node: $NODE_NAME"
   junit allowEmptyResults: true, testResults: 'scratch/TEST-*.xml'
 
   if (!successfulTests) {
     echo "Tests failed for " + name + " so passing failure as exit code for node: $NODE_NAME"
-    sh "exit 1"
+    exec("exit 1")
   }
 }
 
-def runBrowserTests(name, browser, os, bucket, buckets) {
+def runBrowserTests(name, browser, os, bucket, buckets, runAll) {
   def bedrockCommand =
     "yarn grunt browser-auto" +
+      " --chunk=400" +
       " --bedrock-os=" + os +
       " --bedrock-browser=" + browser +
       " --bucket=" + bucket +
       " --buckets=" + buckets;
 
-  runTests(name, bedrockCommand);
+  runTests(name, bedrockCommand, runAll);
 }
 
-def runPhantomTests() {
+def runPhantomTests(runAll) {
   def bedrockCommand = "yarn grunt phantomjs-auto";
-  runTests("PhantomJS", bedrockCommand);
+  runTests("PhantomJS", bedrockCommand, runAll);
 }
 
 standardProperties()
 
+def gitMerge(String primaryBranch) {
+  if (BRANCH_NAME != primaryBranch) {
+    echo "Merging ${primaryBranch} into this branch to run tests"
+    exec("git merge --no-commit --no-ff origin/${primaryBranch}")
+  }
+}
+
 node("primary") {
   timestamps {
-    def primaryBranch = "master"
+    checkout scm
 
-    def gitMerge = {
-      if (BRANCH_NAME != primaryBranch) {
-        echo "Merging ${primaryBranch} into this branch to run tests"
-        exec("git merge --no-commit --no-ff origin/${primaryBranch}")
-      }
-    }
+    def props = readProperties file: 'build.properties'
 
-    stage ("Checkout SCM") {
-      checkout scm
-      // cancel build if master doesn't merge cleanly, otherwise tests wil fail
-      gitMerge()
+    def primaryBranch = props.primaryBranch
+    assert primaryBranch != null && primaryBranch != ""
+    def runAllTests = BRANCH_NAME == primaryBranch
+
+    stage ("Merge") {
+      // cancel build if primary branch doesn't merge cleanly
+      gitMerge(primaryBranch)
     }
 
     def browserPermutations = [
       [ name: "win10Chrome", os: "windows-10", browser: "chrome", buckets: 1 ],
-      [ name: "win10FF", os: "windows-10", browser: "firefox", buckets: 1 ],
-      [ name: "win10Edge", os: "windows-10", browser: "MicrosoftEdge", buckets: 2 ],
-      [ name: "win10IE", os: "windows-10", browser: "ie", buckets: 3 ],
+      [ name: "win11FF", os: "windows-11", browser: "firefox", buckets: 1 ],
+      [ name: "win10Edge", os: "windows-10", browser: "MicrosoftEdge", buckets: 1 ],
+      // Disable IE tests as IE is unreliable
+      // [ name: "win10IE", os: "windows-10", browser: "ie", buckets: 3 ],
       [ name: "macSafari", os: "macos", browser: "safari", buckets: 1 ],
       [ name: "macChrome", os: "macos", browser: "chrome", buckets: 1 ],
       [ name: "macFirefox", os: "macos", browser: "firefox", buckets: 1 ]
@@ -97,13 +105,13 @@ node("primary") {
               exec("git config user.email \"local@build.node\"")
               exec("git config user.name \"irrelevant\"")
 
-              gitMerge()
+              gitMerge(primaryBranch)
 
               cleanAndInstall()
               exec("yarn ci")
 
               echo "Platform: browser tests for " + permutation.name + " on node: $NODE_NAME"
-              runBrowserTests(permutation.name, permutation.browser, permutation.os, c_bucket, buckets)
+              runBrowserTests(permutation.name, permutation.browser, permutation.os, c_bucket, buckets, runAllTests)
             }
           }
         }
@@ -116,7 +124,7 @@ node("primary") {
         // we are re-using the state prepared by `ci-all` below
         // if we ever change these tests to run on a different node, rollup is required in addition to the normal CI command
         echo "Platform: PhantomJS tests on node: $NODE_NAME"
-        runPhantomTests()
+        runPhantomTests(runAllTests)
       }
 
       if (BRANCH_NAME != primaryBranch) {
@@ -136,6 +144,10 @@ node("primary") {
 
     stage ("Type check") {
       exec("yarn ci-all")
+    }
+
+    stage ("Moxiedoc check") {
+      exec("yarn tinymce-grunt shell:moxiedoc")
     }
 
     stage ("Run Tests") {

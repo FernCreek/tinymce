@@ -5,24 +5,27 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Types } from '@ephox/bridge';
-import { Element } from '@ephox/dom-globals';
-import { Fun, Type, Unicode } from '@ephox/katamari';
+import { Fun, Obj, Type } from '@ephox/katamari';
+
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import Editor from 'tinymce/core/api/Editor';
-import Env from 'tinymce/core/api/Env';
 import { StyleMap } from 'tinymce/core/api/html/Styles';
+import { Dialog } from 'tinymce/core/api/ui/Ui';
+
 import * as InsertTable from '../actions/InsertTable';
 import * as Styles from '../actions/Styles';
+import * as Events from '../api/Events';
 import { getDefaultAttributes, getDefaultStyles, getTableClassList, hasAdvancedTableTab, shouldStyleWithCss } from '../api/Settings';
 import * as Util from '../core/Util';
+import { getAdvancedTab } from './DialogAdvancedTab';
 import * as Helpers from './Helpers';
 import * as TableDialogGeneralTab from './TableDialogGeneralTab';
+import * as UiUtils from './UiUtils';
 
 type TableData = Helpers.TableData;
 
 // Explore the layers of the table till we find the first layer of tds or ths
-const styleTDTH = (dom: DOMUtils, elm: Element, name: string | StyleMap, value?: string | number) => {
+const styleTDTH = (dom: DOMUtils, elm: Element, name: string | StyleMap, value?: string | number): void => {
   if (elm.tagName === 'TD' || elm.tagName === 'TH') {
     if (Type.isString(name)) {
       dom.setStyle(elm, name, value);
@@ -38,7 +41,7 @@ const styleTDTH = (dom: DOMUtils, elm: Element, name: string | StyleMap, value?:
   }
 };
 
-const applyDataToElement = (editor: Editor, tableElm, data: TableData) => {
+const applyDataToElement = (editor: Editor, tableElm: HTMLTableElement, data: TableData): void => {
   const dom = editor.dom;
   const attrs: any = {};
   const styles: any = {};
@@ -86,12 +89,13 @@ const applyDataToElement = (editor: Editor, tableElm, data: TableData) => {
 
   attrs.style = dom.serializeStyle({ ...getDefaultStyles(editor), ...styles });
   dom.setAttribs(tableElm, { ...getDefaultAttributes(editor), ...attrs });
+
 };
 
-const onSubmitTableForm = (editor: Editor, tableElm: Element, api: Types.Dialog.DialogInstanceApi<TableData>) => {
+const onSubmitTableForm = (editor: Editor, tableElm: HTMLTableElement | undefined, oldData: TableData, api: Dialog.DialogInstanceApi<TableData>): void => {
   const dom = editor.dom;
-  let captionElm;
   const data = api.getData();
+  const modifiedData = Obj.filter(data, (value, key) => oldData[key] !== value);
 
   api.close();
 
@@ -107,33 +111,37 @@ const onSubmitTableForm = (editor: Editor, tableElm: Element, api: Types.Dialog.
       tableElm = InsertTable.insert(editor, cols, rows, 0, 0);
     }
 
-    applyDataToElement(editor, tableElm, data);
+    if (Obj.size(modifiedData) > 0) {
+      applyDataToElement(editor, tableElm, data);
 
-    // Toggle caption on/off
-    captionElm = dom.select('caption', tableElm)[0];
+      // Toggle caption on/off
+      const captionElm = dom.select('caption', tableElm)[0];
 
-    if (captionElm && !data.caption) {
-      dom.remove(captionElm);
-    }
+      if (captionElm && !data.caption || !captionElm && data.caption) {
+        editor.execCommand('mceTableToggleCaption');
+      }
 
-    if (!captionElm && data.caption) {
-      captionElm = dom.create('caption');
-      captionElm.innerHTML = !Env.ie ? '<br data-mce-bogus="1"/>' : Unicode.nbsp;
-      tableElm.insertBefore(captionElm, tableElm.firstChild);
-    }
-
-    if (data.align === '') {
-      Styles.unApplyAlign(editor, tableElm);
-    } else {
-      Styles.applyAlign(editor, tableElm, data.align);
+      if (data.align === '') {
+        Styles.unApplyAlign(editor, tableElm);
+      } else {
+        Styles.applyAlign(editor, tableElm, data.align);
+      }
     }
 
     editor.focus();
     editor.addVisual();
+
+    if (Obj.size(modifiedData) > 0) {
+      const captionModified = Obj.has(modifiedData, 'caption');
+      // style modified if there's at least one other change apart from 'caption'
+      const styleModified = captionModified ? Obj.size(modifiedData) > 1 : true;
+
+      Events.fireTableModified(editor, tableElm, { structure: captionModified, style: styleModified });
+    }
   });
 };
 
-const open = (editor: Editor, insertNewTable: boolean) => {
+const open = (editor: Editor, insertNewTable: boolean): void => {
   const dom = editor.dom;
   let tableElm: Element;
   let data = Helpers.extractDataFromSettings(editor, hasAdvancedTableTab(editor));
@@ -145,7 +153,7 @@ const open = (editor: Editor, insertNewTable: boolean) => {
   // 3. isNew == false && selection parent isn't a table - open dialog with default values and insert a table
 
   if (insertNewTable === false) {
-    tableElm = dom.getParent(editor.selection.getStart(), 'table');
+    tableElm = dom.getParent(editor.selection.getStart(), 'table', editor.getBody());
     if (tableElm) {
       // Case 2 - isNew == false && table parent
       data = Helpers.extractDataFromTableElement(editor, tableElm, hasAdvancedTableTab(editor));
@@ -168,7 +176,7 @@ const open = (editor: Editor, insertNewTable: boolean) => {
     }
   }
 
-  const classes = Helpers.buildListItems(getTableClassList(editor));
+  const classes = UiUtils.buildListItems(getTableClassList(editor));
 
   if (classes.length > 0) {
     if (data.class) {
@@ -176,18 +184,18 @@ const open = (editor: Editor, insertNewTable: boolean) => {
     }
   }
 
-  const generalPanel: Types.Dialog.BodyComponentApi = {
+  const generalPanel: Dialog.GridSpec = {
     type: 'grid',
     columns: 2,
     items: TableDialogGeneralTab.getItems(editor, classes, insertNewTable)
   };
 
-  const nonAdvancedForm = (): Types.Dialog.PanelApi => ({
+  const nonAdvancedForm = (): Dialog.PanelSpec => ({
     type: 'panel',
     items: [ generalPanel ]
   });
 
-  const advancedForm = (): Types.Dialog.TabPanelApi => ({
+  const advancedForm = (): Dialog.TabPanelSpec => ({
     type: 'tabpanel',
     tabs: [
       {
@@ -195,7 +203,7 @@ const open = (editor: Editor, insertNewTable: boolean) => {
         name: 'general',
         items: [ generalPanel ]
       },
-      Helpers.getAdvancedTab('table')
+      getAdvancedTab(editor, 'table')
     ]
   });
 
@@ -205,7 +213,7 @@ const open = (editor: Editor, insertNewTable: boolean) => {
     title: 'Table Properties',
     size: 'normal',
     body: dialogBody,
-    onSubmit: Fun.curry(onSubmitTableForm, editor, tableElm),
+    onSubmit: Fun.curry(onSubmitTableForm, editor, tableElm, data),
     buttons: [
       {
         type: 'cancel',

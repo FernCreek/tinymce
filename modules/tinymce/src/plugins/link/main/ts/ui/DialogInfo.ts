@@ -5,8 +5,8 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Element, HTMLAnchorElement } from '@ephox/dom-globals';
-import { Option } from '@ephox/katamari';
+import { Optional } from '@ephox/katamari';
+
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import Editor from 'tinymce/core/api/Editor';
 
@@ -19,17 +19,17 @@ import { LinkListOptions } from './sections/LinkListOptions';
 import { RelOptions } from './sections/RelOptions';
 import { TargetOptions } from './sections/TargetOptions';
 
-const nonEmptyAttr = (dom: DOMUtils, elem: string | Element, name: string): Option<string> => {
+const nonEmptyAttr = (dom: DOMUtils, elem: string | Element, name: string): Optional<string> => {
   const val: string | null = dom.getAttrib(elem, name);
-  return val !== null && val.length > 0 ? Option.some(val) : Option.none();
+  return val !== null && val.length > 0 ? Optional.some(val) : Optional.none();
 };
 
-const extractFromAnchor = (editor: Editor, anchor: HTMLAnchorElement) => {
+const extractFromAnchor = (editor: Editor, anchor: HTMLAnchorElement): LinkDialogInfo['anchor'] => {
   const dom = editor.dom;
-  const onlyText = Utils.isOnlyTextSelected(editor.selection.getContent());
-  const text: Option<string> = onlyText ? Option.some(Utils.getAnchorText(editor.selection, anchor)) : Option.none();
-  const url: Option<string> = anchor ? Option.some(dom.getAttrib(anchor, 'href')) : Option.none();
-  const target: Option<string> = anchor ? Option.from(dom.getAttrib(anchor, 'target')) : Option.none();
+  const onlyText = Utils.isOnlyTextSelected(editor);
+  const text: Optional<string> = onlyText ? Optional.some(Utils.getAnchorText(editor.selection, anchor)) : Optional.none();
+  const url: Optional<string> = anchor ? Optional.some(dom.getAttrib(anchor, 'href')) : Optional.none();
+  const target: Optional<string> = anchor ? Optional.from(dom.getAttrib(anchor, 'target')) : Optional.none();
   const rel = nonEmptyAttr(dom, anchor, 'rel');
   const linkClass = nonEmptyAttr(dom, anchor, 'class');
   const title = nonEmptyAttr(dom, anchor, 'title');
@@ -44,24 +44,25 @@ const extractFromAnchor = (editor: Editor, anchor: HTMLAnchorElement) => {
   };
 };
 
-const collect = (editor: Editor, linkNode: HTMLAnchorElement): Promise<LinkDialogInfo> => LinkListOptions.getLinks(editor).then((links) => {
-  const anchor = extractFromAnchor(editor, linkNode);
-  return {
-    anchor,
-    catalogs: {
-      targets: TargetOptions.getTargets(editor),
-      // This should be initial target. Is anchor.target that?
-      rels: RelOptions.getRels(editor, anchor.target),
-      classes: ClassListOptions.getClasses(editor),
-      anchor: AnchorListOptions.getAnchors(editor),
-      link: links
-    },
-    optNode: Option.from(linkNode),
-    flags: {
-      titleEnabled: Settings.shouldShowLinkTitle(editor)
-    }
-  };
-});
+const collect = (editor: Editor, linkNode: HTMLAnchorElement): Promise<LinkDialogInfo> =>
+  LinkListOptions.getLinks(editor).then((links) => {
+    const anchor = extractFromAnchor(editor, linkNode);
+    return {
+      anchor,
+      catalogs: {
+        targets: TargetOptions.getTargets(editor),
+        // This should be initial target. Is anchor.target that?
+        rels: RelOptions.getRels(editor, anchor.target),
+        classes: ClassListOptions.getClasses(editor),
+        anchor: AnchorListOptions.getAnchors(editor),
+        link: links
+      },
+      optNode: Optional.from(linkNode),
+      flags: {
+        titleEnabled: Settings.shouldShowLinkTitle(editor)
+      }
+    };
+  });
 
 export const DialogInfo = {
   collect

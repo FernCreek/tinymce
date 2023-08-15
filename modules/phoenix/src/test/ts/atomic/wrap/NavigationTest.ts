@@ -1,9 +1,10 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
 import { CommentGene, Gene, TestUniverse, TextGene } from '@ephox/boss';
+
 import * as Finder from 'ephox/phoenix/test/Finder';
 import * as Navigation from 'ephox/phoenix/wrap/Navigation';
 
-UnitTest.test('NavigationTest', function () {
+UnitTest.test('NavigationTest', () => {
   let doc = TestUniverse(
     Gene('root', 'root', [
       Gene('1', 'div', [
@@ -31,22 +32,22 @@ UnitTest.test('NavigationTest', function () {
     offset: number;
   }
 
-  const checkLast = function (expected: CheckItem, id: string) {
+  const checkLast = (expected: CheckItem, id: string) => {
     const actual = Navigation.toLast(doc, Finder.get(doc, id));
-    assert.eq(expected.element, actual.element().id);
-    assert.eq(expected.offset, actual.offset());
+    assert.eq(expected.element, actual.element.id);
+    assert.eq(expected.offset, actual.offset);
   };
 
-  const checkLower = function (expected: CheckItem, id: string) {
+  const checkLower = (expected: CheckItem, id: string) => {
     const actual = Navigation.toLower(doc, Finder.get(doc, id));
-    assert.eq(expected.element, actual.element().id);
-    assert.eq(expected.offset, actual.offset());
+    assert.eq(expected.element, actual.element.id);
+    assert.eq(expected.offset, actual.offset);
   };
 
-  const checkLeaf = function (expected: CheckItem, id: string, offset: number) {
+  const checkLeaf = (expected: CheckItem, id: string, offset: number) => {
     const actual = Navigation.toLeaf(doc, Finder.get(doc, id), offset);
-    assert.eq(expected.element, actual.element().id);
-    assert.eq(expected.offset, actual.offset());
+    assert.eq(expected.element, actual.element.id);
+    assert.eq(expected.offset, actual.offset);
   };
 
   checkLower({ element: '1', offset: 2 }, '1');
@@ -60,20 +61,20 @@ UnitTest.test('NavigationTest', function () {
   checkLeaf({ element: '1.2.2.1', offset: 0 }, '1.2', 1);
   checkLeaf({ element: '1.2.5', offset: 'Last piece of text'.length }, '1.2', 5);
 
-  const checkFreeFallLtr = function (expected: CheckItem, universe: TestUniverse, elementId: string) {
+  const checkFreeFallLtr = (expected: CheckItem, universe: TestUniverse, elementId: string) => {
     const element = Finder.get(doc, elementId);
     const actual = Navigation.freefallLtr(universe, element);
     assert.eq(element.id, elementId);
-    assert.eq(expected.element, actual.element().id);
-    assert.eq(expected.offset, actual.offset());
+    assert.eq(expected.element, actual.element.id);
+    assert.eq(expected.offset, actual.offset);
   };
 
-  const checkFreeFallRtl = function (expected: CheckItem, universe: TestUniverse, elementId: string) {
+  const checkFreeFallRtl = (expected: CheckItem, universe: TestUniverse, elementId: string) => {
     const element = Finder.get(doc, elementId);
     const actual = Navigation.freefallRtl(universe, element);
     assert.eq(element.id, elementId);
-    assert.eq(expected.element, actual.element().id);
-    assert.eq(expected.offset, actual.offset());
+    assert.eq(expected.element, actual.element.id);
+    assert.eq(expected.offset, actual.offset);
   };
 
   // Freefall without comment nodes
@@ -93,7 +94,7 @@ UnitTest.test('NavigationTest', function () {
   checkFreeFallRtl({ element: '1.2.5', offset: 18 }, doc, 'root');
   checkFreeFallRtl({ element: '1.2.5', offset: 18 }, doc, '1');
   checkFreeFallRtl({ element: '1.1.2', offset: 15 }, doc, '1.1');
-  checkFreeFallRtl({ element: '1.1.1', offset:  0 }, doc, '1.1.1');
+  checkFreeFallRtl({ element: '1.1.1', offset: 0 }, doc, '1.1.1');
   checkFreeFallRtl({ element: '1.1.2', offset: 15 }, doc, '1.1.2');
   checkFreeFallRtl({ element: '1.2.5', offset: 18 }, doc, '1.2');
   checkFreeFallRtl({ element: '1.2.1', offset: 12 }, doc, '1.2.1');
@@ -136,7 +137,7 @@ UnitTest.test('NavigationTest', function () {
 
   checkFreeFallRtl({ element: '3-1.1', offset: 9 }, doc, '3-root');
   checkFreeFallRtl({ element: '3-1.1', offset: 9 }, doc, '3-1');
-  checkFreeFallRtl({ element: '3-c0', offset:  0 }, doc, '3-c0');
+  checkFreeFallRtl({ element: '3-c0', offset: 0 }, doc, '3-c0');
   checkFreeFallRtl({ element: '3-1.1', offset: 9 }, doc, '3-1.1');
 
   doc = TestUniverse(
@@ -155,12 +156,12 @@ UnitTest.test('NavigationTest', function () {
   checkFreeFallLtr({ element: '4-1.1', offset: 0 }, doc, '4-1');
   checkFreeFallLtr({ element: '4-1.1', offset: 0 }, doc, '4-c1');
   checkFreeFallLtr({ element: '4-1.1', offset: 0 }, doc, '4-1.1');
-  checkFreeFallLtr({ element: '4-c2', offset:  0 }, doc, '4-c2');
+  checkFreeFallLtr({ element: '4-c2', offset: 0 }, doc, '4-c2');
 
   checkFreeFallRtl({ element: '4-1.1', offset: 9 }, doc, '4-root');
-  checkFreeFallRtl({ element: '4-c0', offset:  0 }, doc, '4-c0');
+  checkFreeFallRtl({ element: '4-c0', offset: 0 }, doc, '4-c0');
   checkFreeFallRtl({ element: '4-1.1', offset: 9 }, doc, '4-1');
-  checkFreeFallRtl({ element: '4-c1', offset:  0 }, doc, '4-c1');
+  checkFreeFallRtl({ element: '4-c1', offset: 0 }, doc, '4-c1');
   checkFreeFallRtl({ element: '4-1.1', offset: 9 }, doc, '4-1.1');
   checkFreeFallRtl({ element: '4-1.1', offset: 9 }, doc, '4-c2');
 });

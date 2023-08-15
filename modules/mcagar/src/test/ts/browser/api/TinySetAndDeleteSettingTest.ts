@@ -1,21 +1,23 @@
 import { Assertions, GeneralSteps, Logger, Pipeline, Step } from '@ephox/agar';
 import { UnitTest } from '@ephox/bedrock-client';
+import { Fun } from '@ephox/katamari';
+
 import { Editor } from 'ephox/mcagar/alien/EditorTypes';
-import { TinyApis } from 'ephox/mcagar/api/TinyApis';
-import * as TinyLoader from 'ephox/mcagar/api/TinyLoader';
+import { TinyApis } from 'ephox/mcagar/api/pipeline/TinyApis';
+import * as TinyLoader from 'ephox/mcagar/api/pipeline/TinyLoader';
 
 UnitTest.asynctest('TinySetAndDeleteSettingTest', (success, failure) => {
 
-  const sAssertSetting = function (editor: Editor, key: string, expected: any) {
-    return Step.sync(function () {
+  const sAssertSetting = (editor: Editor, key: string, expected: any) => {
+    return Step.sync(() => {
       const actual = editor.settings[key];
 
       return Assertions.assertEq('should have expected val at key', expected, actual);
     });
   };
 
-  const sAssertSettingType = function (editor: Editor, key: string, expected: any) {
-    return Step.sync(function () {
+  const sAssertSettingType = (editor: Editor, key: string, expected: any) => {
+    return Step.sync(() => {
       const actual = typeof editor.settings[key];
 
       return Assertions.assertEq('should have expected type', expected, actual);
@@ -34,9 +36,7 @@ UnitTest.asynctest('TinySetAndDeleteSettingTest', (success, failure) => {
       ])),
 
       Logger.t('set setting to function', GeneralSteps.sequence([
-        apis.sSetSetting('a', function (a: any) {
-          return a;
-        }),
+        apis.sSetSetting('a', Fun.identity),
         sAssertSettingType(editor, 'a', 'function')
       ])),
 

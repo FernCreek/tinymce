@@ -4,35 +4,48 @@
  * For LGPL see License.txt in the project root for license information.
  * For commercial licenses see https://www.tiny.cloud/
  */
-import { document, window } from '@ephox/dom-globals';
-import { Fun, Singleton, Cell } from '@ephox/katamari';
-import { Css, Element, VisualViewport } from '@ephox/sugar';
+
+import { Cell, Fun, Optional, Singleton } from '@ephox/katamari';
+import { Css, DomEvent, EventUnbinder, SugarElement, SugarShadowDom, Traverse, WindowVisualViewport } from '@ephox/sugar';
+
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
+import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
 import Delay from 'tinymce/core/api/util/Delay';
+
 import * as Events from '../api/Events';
+import * as Settings from '../api/Settings';
+import { exitFullscreen, getFullscreenchangeEventName, getFullscreenRoot, isFullscreenElement, requestFullscreen } from './NativeFullscreen';
 import * as Thor from './Thor';
-import Editor from 'tinymce/core/api/Editor';
+
+interface ScrollPos {
+  readonly x: number;
+  readonly y: number;
+}
+
+export interface ScrollInfo {
+  readonly scrollPos: ScrollPos;
+  readonly containerWidth: string;
+  readonly containerHeight: string;
+  readonly containerTop: string;
+  readonly containerLeft: string;
+  readonly iframeWidth: string;
+  readonly iframeHeight: string;
+  readonly fullscreenChangeHandler: EventUnbinder;
+}
 
 const DOM = DOMUtils.DOM;
 
-const getScrollPos = () => {
-  const vp = VisualViewport.getBounds(window);
+const getScrollPos = (): ScrollPos =>
+  WindowVisualViewport.getBounds(window);
 
-  return {
-    x: vp.x,
-    y: vp.y
-  };
-};
-
-const setScrollPos = (pos) => {
+const setScrollPos = (pos: ScrollPos): void =>
   window.scrollTo(pos.x, pos.y);
-};
 
-const viewportUpdate = VisualViewport.get().fold(
+const viewportUpdate = WindowVisualViewport.get().fold(
   () => ({ bind: Fun.noop, unbind: Fun.noop }),
   (visualViewport) => {
-    const editorContainer = Singleton.value<Element>();
+    const editorContainer = Singleton.value<SugarElement<HTMLElement>>();
     const resizeBinder = Singleton.unbindable();
     const scrollBinder = Singleton.unbindable();
 
@@ -57,11 +70,11 @@ const viewportUpdate = VisualViewport.get().fold(
       refreshVisualViewport();
     }, 50);
 
-    const bind = (element) => {
+    const bind = (element: SugarElement<HTMLElement>) => {
       editorContainer.set(element);
       update();
-      resizeBinder.set(VisualViewport.bind('resize', update));
-      scrollBinder.set(VisualViewport.bind('scroll', update));
+      resizeBinder.set(WindowVisualViewport.bind('resize', update));
+      scrollBinder.set(WindowVisualViewport.bind('scroll', update));
     };
 
     const unbind = () => {
@@ -79,14 +92,15 @@ const viewportUpdate = VisualViewport.get().fold(
   }
 );
 
-const toggleFullscreen = (editor: Editor, fullscreenState: Cell<any>) => {
+const toggleFullscreen = (editor: Editor, fullscreenState: Cell<ScrollInfo | null>): void => {
   const body = document.body;
   const documentElement = document.documentElement;
   const editorContainer = editor.getContainer();
-  const editorContainerS = Element.fromDom(editorContainer);
+  const editorContainerS = SugarElement.fromDom(editorContainer);
+  const fullscreenRoot = getFullscreenRoot(editor);
 
-  const fullscreenInfo = fullscreenState.get();
-  const editorBody = Element.fromDom(editor.getBody());
+  const fullscreenInfo: ScrollInfo | null = fullscreenState.get();
+  const editorBody = SugarElement.fromDom(editor.getBody());
 
   const isTouch = Env.deviceType.isTouch();
 
@@ -95,19 +109,39 @@ const toggleFullscreen = (editor: Editor, fullscreenState: Cell<any>) => {
   const iframe = editor.iframeElement;
   const iframeStyle = iframe.style;
 
+  const handleClasses = (handler: (elm: string | Node | Node[], cls: string) => void) => {
+    handler(body, 'tox-fullscreen');
+    handler(documentElement, 'tox-fullscreen');
+    handler(editorContainer, 'tox-fullscreen');
+    SugarShadowDom.getShadowRoot(editorContainerS)
+      .map((root) => SugarShadowDom.getShadowHost(root).dom)
+      .each((host) => {
+        handler(host, 'tox-fullscreen');
+        handler(host, 'tox-shadowhost');
+      });
+  };
+
   const cleanup = () => {
     if (isTouch) {
       Thor.restoreStyles(editor.dom);
     }
 
-    DOM.removeClass(body, 'tox-fullscreen');
-    DOM.removeClass(documentElement, 'tox-fullscreen');
-    DOM.removeClass(editorContainer, 'tox-fullscreen');
+    handleClasses(DOM.removeClass);
 
     viewportUpdate.unbind();
+    Optional.from(fullscreenState.get()).each((info) => info.fullscreenChangeHandler.unbind());
   };
 
   if (!fullscreenInfo) {
+    const fullscreenChangeHandler = DomEvent.bind(Traverse.owner(fullscreenRoot), getFullscreenchangeEventName(), (_evt) => {
+      if (Settings.getFullscreenNative(editor)) {
+        // if we have exited browser fullscreen with Escape then exit editor fullscreen too
+        if (!isFullscreenElement(fullscreenRoot) && fullscreenState.get() !== null) {
+          toggleFullscreen(editor, fullscreenState);
+        }
+      }
+    });
+
     const newFullScreenInfo = {
       scrollPos: getScrollPos(),
       containerWidth: editorContainerStyle.width,
@@ -115,7 +149,8 @@ const toggleFullscreen = (editor: Editor, fullscreenState: Cell<any>) => {
       containerTop: editorContainerStyle.top,
       containerLeft: editorContainerStyle.left,
       iframeWidth: iframeStyle.width,
-      iframeHeight: iframeStyle.height
+      iframeHeight: iframeStyle.height,
+      fullscreenChangeHandler
     };
 
     if (isTouch) {
@@ -125,17 +160,22 @@ const toggleFullscreen = (editor: Editor, fullscreenState: Cell<any>) => {
     iframeStyle.width = iframeStyle.height = '100%';
     editorContainerStyle.width = editorContainerStyle.height = '';
 
-    DOM.addClass(body, 'tox-fullscreen');
-    DOM.addClass(documentElement, 'tox-fullscreen');
-    DOM.addClass(editorContainer, 'tox-fullscreen');
+    handleClasses(DOM.addClass);
 
     viewportUpdate.bind(editorContainerS);
 
     editor.on('remove', cleanup);
 
     fullscreenState.set(newFullScreenInfo);
+    if (Settings.getFullscreenNative(editor)) {
+      requestFullscreen(fullscreenRoot);
+    }
     Events.fireFullscreenStateChanged(editor, true);
   } else {
+    fullscreenInfo.fullscreenChangeHandler.unbind();
+    if (Settings.getFullscreenNative(editor) && isFullscreenElement(fullscreenRoot)) {
+      exitFullscreen(Traverse.owner(fullscreenRoot));
+    }
     iframeStyle.width = fullscreenInfo.iframeWidth;
     iframeStyle.height = fullscreenInfo.iframeHeight;
 
@@ -144,11 +184,11 @@ const toggleFullscreen = (editor: Editor, fullscreenState: Cell<any>) => {
     editorContainerStyle.top = fullscreenInfo.containerTop;
     editorContainerStyle.left = fullscreenInfo.containerLeft;
 
+    cleanup();
     setScrollPos(fullscreenInfo.scrollPos);
 
     fullscreenState.set(null);
     Events.fireFullscreenStateChanged(editor, false);
-    cleanup();
     editor.off('remove', cleanup);
   }
 };

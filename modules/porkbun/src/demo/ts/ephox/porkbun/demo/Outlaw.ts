@@ -1,6 +1,8 @@
-import { Singleton } from '@ephox/katamari';
+import { Fun, Singleton } from '@ephox/katamari';
+
 import { Bindable, Event } from 'ephox/porkbun/Event';
 import * as Events from 'ephox/porkbun/Events';
+
 import { DieEvent, Outlaw, Saloon, ShootEvent } from './Types';
 
 interface OutlawEvents {
@@ -16,7 +18,7 @@ interface OutlawEvents {
 
 declare const $: any;
 
-const create = function (name: string): Outlaw {
+const create = (name: string): Outlaw => {
   const container = $('<div />');
   container.css({ width: '1px dashed gray' });
 
@@ -37,48 +39,46 @@ const create = function (name: string): Outlaw {
   character.append(img, caption);
   container.append(character);
 
-  const getElement = function () {
-    return container;
-  };
+  const getElement = Fun.constant(container);
 
-  const addAction = function (text: string, action: () => void) {
+  const addAction = (text: string, action: () => void) => {
     const button = $('<button />');
     button.text(text);
-    button.bind('click', function () {
+    button.bind('click', () => {
       action();
       button.detach();
     });
     actions.append(button);
   };
 
-  const events = Events.create({
+  const events: OutlawEvents = Events.create({
     shoot: Event([ 'target' ]),
-    die:   Event([])
-  }) as OutlawEvents;
+    die: Event([])
+  });
 
   const establishment = Singleton.value<Saloon>();
-  const enter = function (saloon: Saloon) {
+  const enter = (saloon: Saloon) => {
     saloon.enter(api);
     establishment.set(saloon);
   };
 
-  const leave = function () {
+  const leave = () => {
     establishment.on((e) => e.leave(api));
     establishment.clear();
   };
 
-  const shoot = function (target: Outlaw) {
+  const shoot = (target: Outlaw) => {
     target.die();
     events.trigger.shoot(target);
   };
 
-  const die = function () {
+  const die = () => {
     img.attr('src', 'images/gravestone.jpg');
     actions.remove();
     events.trigger.die();
   };
 
-  const chase = function () {
+  const chase = () => {
     leave();
   };
 

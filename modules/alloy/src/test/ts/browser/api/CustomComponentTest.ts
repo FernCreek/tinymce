@@ -23,7 +23,7 @@ UnitTest.asynctest('CustomComponentTest', (success, failure) => {
       fields: [ ],
       name: 'behaviourA',
       active: {
-        exhibit(_base, _info) {
+        exhibit: (_base, _info) => {
           return DomModification.nu({
             classes: [ 'behaviour-a-exhibit' ]
           });
@@ -35,7 +35,7 @@ UnitTest.asynctest('CustomComponentTest', (success, failure) => {
         )
       },
       apis: {
-        behaveA(_comp) {
+        behaveA: (_comp) => {
           store.adder('behaveA')();
         }
       }
@@ -45,11 +45,11 @@ UnitTest.asynctest('CustomComponentTest', (success, failure) => {
 
     const behaviourB = Behaviour.create({
       fields: [
-        FieldSchema.strict('attr')
+        FieldSchema.required('attr')
       ],
       name: 'behaviourB',
       active: {
-        exhibit(_base, info: { attr: string}) {
+        exhibit: (_base, info: { attr: string}) => {
           const extra = {
             attributes: {
               'behaviour-b-exhibit': info.attr
@@ -106,10 +106,10 @@ UnitTest.asynctest('CustomComponentTest', (success, failure) => {
           'data-alloy-id': str.none()
         }
       })),
-      component.element()
+      component.element
     ),
     Step.sync(() => {
-      Assertions.assertEq('Tagger should read custom-uid', 'custom-uid', Tagger.readOrDie(component.element()));
+      Assertions.assertEq('Tagger should read custom-uid', 'custom-uid', Tagger.readOrDie(component.element));
     }),
 
     store.sAssertEq('Nothing in store yet', [ ]),
@@ -125,9 +125,7 @@ UnitTest.asynctest('CustomComponentTest', (success, failure) => {
       'behaviour.b.event'
     ]),
 
-    Step.sync(() => {
-        bA.get()?.behaveA(component);
-    }),
+    Step.sync(() => bA.get()?.behaveA(component)),
 
     store.sAssertEq('Should now have an Api log', [
       'behaviour.a.event',

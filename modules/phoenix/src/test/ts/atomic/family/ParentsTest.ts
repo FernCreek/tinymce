@@ -1,9 +1,10 @@
 import { assert, UnitTest } from '@ephox/bedrock-client';
 import { Gene, TestUniverse } from '@ephox/boss';
+
 import * as Parents from 'ephox/phoenix/family/Parents';
 import * as Finder from 'ephox/phoenix/test/Finder';
 
-UnitTest.test('ParentsTest', function () {
+UnitTest.test('ParentsTest', () => {
   const doc = TestUniverse(
     Gene('root', 'root', [
       Gene('a', '', [
@@ -35,7 +36,7 @@ UnitTest.test('ParentsTest', function () {
     ])
   );
 
-  const check = function (expected: string, first: string, last: string) {
+  const check = (expected: string, first: string, last: string) => {
     const start = Finder.get(doc, first);
     const finish = Finder.get(doc, last);
     const actual = Parents.common(doc, start, finish);

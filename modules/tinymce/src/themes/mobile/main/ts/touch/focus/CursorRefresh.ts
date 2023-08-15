@@ -6,23 +6,24 @@
  */
 
 import { Focus } from '@ephox/sugar';
+
 import Delay from 'tinymce/core/api/util/Delay';
 
-const refreshInput = function (input) {
+const refreshInput = (input) => {
   // This is magic used to refresh the iOS cursor on an input field when input focus is
   // lost and then restored. The setTime out is important for consistency, a lower value
   // may not yield a successful reselection when the time out value is 10, 30% success
   // on making the blue selection reappear.
-  const start = input.dom().selectionStart;
-  const end = input.dom().selectionEnd;
-  const dir = input.dom().selectionDirection;
-  Delay.setTimeout(function () {
-    input.dom().setSelectionRange(start, end, dir);
+  const start = input.dom.selectionStart;
+  const end = input.dom.selectionEnd;
+  const dir = input.dom.selectionDirection;
+  Delay.setTimeout(() => {
+    input.dom.setSelectionRange(start, end, dir);
     Focus.focus(input);
   }, 50);
 };
 
-const refresh = function (winScope) {
+const refresh = (winScope) => {
   // Sometimes the cursor can get out of sync with the content, it looks weird and importantly
   // it causes the code that dismisses the keyboard to fail, Fussy has selection code, but since
   // this is fired often and confined to iOS, it's implemented with more native code. Note, you

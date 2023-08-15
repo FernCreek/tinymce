@@ -6,18 +6,19 @@
  */
 
 import { GuiFactory } from '@ephox/alloy';
-import { ValueSchema } from '@ephox/boulder';
+import { StructureSchema } from '@ephox/boulder';
 import { Fun } from '@ephox/katamari';
 import { Css, Insert } from '@ephox/sugar';
+
+import { MobileWebApp } from 'tinymce/themes/mobile/api/IosWebapp';
 
 import * as AndroidMode from '../android/core/AndroidMode';
 import * as TapToEditMask from '../touch/view/TapToEditMask';
 import MobileSchema from './MobileSchema';
-import { MobileWebApp } from 'tinymce/themes/mobile/api/IosWebapp';
 
 // TODO: Remove dupe with IosWebapp
-const produce = function (raw: {any}): MobileWebApp {
-  const mobile = ValueSchema.asRawOrDie(
+const produce = (raw: {any}): MobileWebApp => {
+  const mobile = StructureSchema.asRawOrDie(
     'Getting AndroidWebapp schema',
     MobileSchema,
     raw
@@ -27,7 +28,7 @@ const produce = function (raw: {any}): MobileWebApp {
   Css.set(mobile.toolstrip, 'width', '100%');
 
   // We do not make the Android container relative, because we aren't positioning the toolbar absolutely.
-  const onTap = function () {
+  const onTap = () => {
     mobile.setReadOnly(mobile.readOnlyOnInit());
     mode.enter();
   };
@@ -38,15 +39,15 @@ const produce = function (raw: {any}): MobileWebApp {
 
   mobile.alloy.add(mask);
   const maskApi = {
-    show() {
+    show: () => {
       mobile.alloy.add(mask);
     },
-    hide() {
+    hide: () => {
       mobile.alloy.remove(mask);
     }
   };
 
-  Insert.append(mobile.container, mask.element());
+  Insert.append(mobile.container, mask.element);
 
   const mode = AndroidMode.create(mobile, maskApi);
 

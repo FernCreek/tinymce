@@ -1,7 +1,6 @@
-import { console } from '@ephox/dom-globals';
 import { openDemoDialog } from './DemoDialogHelpers';
 
-export const createCodeSampleDialog = () => {
+export const createCodeSampleDialog = (): void => {
   openDemoDialog(
     {
       title: 'Insert/Edit code sample',
@@ -50,7 +49,7 @@ export const createCodeSampleDialog = () => {
       onSubmit: (api) => {
         const data = api.getData();
 
-        // tslint:disable-next-line:no-console
+        // eslint-disable-next-line no-console
         console.log({
           language: data.language,
           code: data.code

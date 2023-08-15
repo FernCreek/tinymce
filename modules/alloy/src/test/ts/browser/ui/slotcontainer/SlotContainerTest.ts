@@ -2,6 +2,7 @@ import { ApproxStructure, Assertions, Chain, Step, StructAssert } from '@ephox/a
 import { UnitTest } from '@ephox/bedrock-client';
 import { Result } from '@ephox/katamari';
 
+import { AlloyComponent } from 'ephox/alloy/api/component/ComponentApi';
 import * as GuiFactory from 'ephox/alloy/api/component/GuiFactory';
 import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
 import { Button } from 'ephox/alloy/api/ui/Button';
@@ -46,7 +47,7 @@ UnitTest.asynctest('SlotContainerTest', (success, failure) => {
   ), (_doc, _body, _gui, component, _store) => {
 
     const cGetSlot = (slot: string) => Chain.binder(() => SlotContainer.getSlot(component, slot).fold(
-      () => Result.error('Could not find slot: ' + slot),
+      () => Result.error<AlloyComponent, string>('Could not find slot: ' + slot),
       Result.value
     ));
 
@@ -56,7 +57,7 @@ UnitTest.asynctest('SlotContainerTest', (success, failure) => {
         Assertions.assertStructure(
           label,
           ApproxStructure.build(expectedStructure),
-          c.element()
+          c.element
         );
       })
     ]);
@@ -146,7 +147,7 @@ UnitTest.asynctest('SlotContainerTest', (success, failure) => {
             })
           ]
         })),
-        component.element()
+        component.element
       ),
 
       sAssertButtonShowing('button: Before any APIs are called'),
@@ -180,5 +181,5 @@ UnitTest.asynctest('SlotContainerTest', (success, failure) => {
       sAssertButtonSlotHidden('After SlotContainer.hideAllSlots(_)'),
       sAssertGetSlotNames('checking the list slots', [ 'inputA', 'buttonB' ])
     ];
-  }, () => { success(); }, failure);
+  }, success, failure);
 });

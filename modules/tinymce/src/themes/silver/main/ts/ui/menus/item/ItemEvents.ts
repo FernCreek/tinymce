@@ -7,6 +7,7 @@
 
 import { AlloyEvents, AlloyTriggers, SystemEvents } from '@ephox/alloy';
 import { Menu } from '@ephox/bridge';
+
 import { GetApiType, runWithApi } from '../../controls/Controls';
 import ItemResponse from './ItemResponse';
 
@@ -19,10 +20,10 @@ export interface OnMenuItemExecuteType<T> extends GetApiType<T> {
 }
 
 // Perform `action` when an item is clicked on, close menus, and stop event
-const onMenuItemExecute = <T>(info: OnMenuItemExecuteType<T>, itemResponse: ItemResponse) => AlloyEvents.runOnExecute(function (comp, simulatedEvent) {
+const onMenuItemExecute = <T>(info: OnMenuItemExecuteType<T>, itemResponse: ItemResponse) => AlloyEvents.runOnExecute((comp, simulatedEvent) => {
   // If there is an action, run the action
   runWithApi(info, comp)(info.onAction);
-  if (! info.triggersSubmenu && itemResponse === ItemResponse.CLOSE_ON_EXECUTE) {
+  if (!info.triggersSubmenu && itemResponse === ItemResponse.CLOSE_ON_EXECUTE) {
     AlloyTriggers.emit(comp, SystemEvents.sandboxClose());
     simulatedEvent.stop();
   }
@@ -30,7 +31,7 @@ const onMenuItemExecute = <T>(info: OnMenuItemExecuteType<T>, itemResponse: Item
 
 const menuItemEventOrder = {
   // TODO: use the constants provided by behaviours.
-  'alloy.execute': [ 'disabling', 'alloy.base.behaviour', 'toggling', 'item-events' ]
+  [SystemEvents.execute()]: [ 'disabling', 'alloy.base.behaviour', 'toggling', 'item-events' ]
 };
 
 export { onMenuItemExecute, menuItemEventOrder };

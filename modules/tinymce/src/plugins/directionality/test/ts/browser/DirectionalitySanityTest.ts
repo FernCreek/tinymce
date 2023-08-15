@@ -1,55 +1,170 @@
-import { ApproxStructure, Pipeline, Log } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { TinyApis, TinyLoader, TinyUi } from '@ephox/mcagar';
+import { describe, it } from '@ephox/bedrock-client';
+import { TinyAssertions, TinyHooks, TinySelections, TinyUiActions } from '@ephox/wrap-mcagar';
 
-import DirectionalityPlugin from 'tinymce/plugins/directionality/Plugin';
-import SilverTheme from 'tinymce/themes/silver/Theme';
+import Plugin from 'tinymce/plugins/directionality/Plugin';
+import Theme from 'tinymce/themes/silver/Theme';
 
-UnitTest.asynctest(
-  'browser.tinymce.plugins.directionality.DirectionalitySanityTest', (success, failure) => {
+describe('browser.tinymce.plugins.directionality.DirectionalitySanityTest', () => {
+  const hook = TinyHooks.bddSetupLight({
+    plugins: 'directionality',
+    toolbar: 'ltr rtl',
+    base_url: '/project/tinymce/js/tinymce',
+    indent: false
+  }, [ Plugin, Theme ]);
 
-    DirectionalityPlugin();
-    SilverTheme();
+  it('TBA: Set and select content, click on the Right to left toolbar button and assert direction is right to left', () => {
+    const editor = hook.editor();
+    editor.setContent('a');
+    TinySelections.setSelection(editor, [ 0, 0 ], 0, [ 0, 0 ], 1);
+    TinyUiActions.clickOnToolbar(editor, 'button[title="Right to left"]');
+    TinyAssertions.assertContent(editor, '<p dir="rtl">a</p>');
+  });
 
-    TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
-      const tinyUi = TinyUi(editor);
-      const tinyApis = TinyApis(editor);
+  it('TBA: Set and select content, click on the Left to right toolbar button and assert direction is left to right', () => {
+    const editor = hook.editor();
+    editor.setContent('<p dir="rtl">a</p>');
+    TinySelections.setSelection(editor, [ 0, 0 ], 0, [ 0, 0 ], 1);
+    TinyUiActions.clickOnToolbar(editor, 'button[title="Left to right"]');
+    TinyAssertions.assertContent(editor, '<p>a</p>'); // as the default dir is ltr it just removes the dir attr
+  });
 
-      Pipeline.async({},
-        Log.steps('TBA', 'Directionality: Set and select content, click on the Right to left toolbar button and assert direction is right to left. Now, click on the Left to right button and assert direction is left to right', [
-          tinyApis.sSetContent('a'),
-          tinyApis.sSetSelection([ 0, 0 ], 0, [ 0, 0 ], 1),
-          tinyUi.sClickOnToolbar('click on ltr btn', 'button[title="Right to left"]'),
-          tinyApis.sAssertContentStructure(ApproxStructure.build(function (s, str) {
-            return s.element('body', {
-              children: [
-                s.element('p', {
-                  attrs: {
-                    dir: str.is('rtl')
-                  }
-                })
-              ]
-            });
-          })),
-          tinyUi.sClickOnToolbar('click on rtl btn', 'button[title="Left to right"]'),
-          tinyApis.sAssertContentStructure(ApproxStructure.build(function (s, str) {
-            return s.element('body', {
-              children: [
-                s.element('p', {
-                  attrs: {
-                    dir: str.is('ltr')
-                  }
-                })
-              ]
-            });
-          }))
-        ])
-        , onSuccess, onFailure);
-    }, {
-      plugins: 'directionality',
-      toolbar: 'ltr rtl',
-      base_url: '/project/tinymce/js/tinymce',
-      theme: 'silver'
-    }, success, failure);
-  }
-);
+  it('TINY-4589: should set two paragraphs to rtl and ltl', () => {
+    const editor = hook.editor();
+    editor.setContent('<p>foo</p><p>bar</p>');
+    TinySelections.setSelection(editor, [ 0 ], 0, [ 1 ], 1);
+    TinyUiActions.clickOnToolbar(editor, 'button[title="Right to left"]');
+    TinyAssertions.assertContent(editor, '<p dir="rtl">foo</p><p dir="rtl">bar</p>');
+    TinyUiActions.clickOnToolbar(editor, 'button[title="Left to right"]');
+    TinyAssertions.assertContent(editor, '<p>foo</p><p>bar</p>');
+  });
+
+  it('TINY-4589: should set parent dir when element is a list item', () => {
+    const editor = hook.editor();
+    editor.setContent('<ul><li>foo</li><li>bar</li></ul>');
+    TinySelections.setSelection(editor, [ 0, 0 ], 0, [ 0, 0 ], 1);
+    TinyUiActions.clickOnToolbar(editor, 'button[title="Right to left"]');
+    TinyAssertions.assertContent(editor, '<ul dir="rtl"><li>foo</li><li>bar</li></ul>');
+    TinyUiActions.clickOnToolbar(editor, 'button[title="Left to right"]');
+    TinyAssertions.assertContent(editor, '<ul><li>foo</li><li>bar</li></ul>');
+  });
+
+  it('TINY-4589: should remove dir from selected list item and children', () => {
+    const editor = hook.editor();
+    editor.setContent(
+      '<ul>' +
+        '<li dir="ltr">foo' +
+          '<ul>' +
+            '<li dir="ltr">a</li>' +
+            '<li dir="rtl">b</li>' +
+            '<li>c</li>' +
+          '</ul>' +
+        '</li>' +
+        '<li dir="xyz">bar</li>' +
+      '</ul>'
+    );
+    TinySelections.setSelection(editor, [ 0, 0 ], 0, [ 0, 0 ], 1);
+    TinyUiActions.clickOnToolbar(editor, 'button[title="Right to left"]');
+    TinyAssertions.assertContent(editor,
+      '<ul dir="rtl">' +
+        '<li>foo' +
+          '<ul>' +
+            '<li dir="ltr">a</li>' +
+            '<li dir="rtl">b</li>' +
+            '<li>c</li>' +
+          '</ul>' +
+        '</li>' +
+        '<li>bar</li>' +
+      '</ul>'
+    );
+  });
+
+  it('TINY-4589: applying the same dir makes no changes', () => {
+    const editor = hook.editor();
+    const editorContent =
+    '<ul dir="rtl">' +
+      '<li dir="ltr">ini' +
+        '<ul>' +
+          '<li>foo</li>' +
+          '<li>bar</li>' +
+        '</ul>' +
+      '</li>' +
+    '</ul>';
+    editor.setContent(editorContent);
+    TinySelections.setSelection(editor, [ 0, 0, 1, 0 ], 0, [ 0, 0, 1, 0 ], 1); // foo
+    TinyUiActions.clickOnToolbar(editor, 'button[title="Left to right"]');
+    TinyAssertions.assertContent(editor, editorContent);
+  });
+
+  it('TINY-4589: should consider list item dir', () => {
+    const editor = hook.editor();
+    editor.setContent(
+      '<ul dir="rtl">' +
+        '<li dir="ltr">ini' +
+          '<ul>' +
+            '<li>foo</li>' +
+            '<li>bar</li>' +
+          '</ul>' +
+        '</li>' +
+      '</ul>'
+    );
+    TinySelections.setSelection(editor, [ 0, 0, 1, 0 ], 0, [ 0, 0, 1, 0 ], 1); // foo
+    TinyUiActions.clickOnToolbar(editor, 'button[title="Right to left"]');
+    TinyAssertions.assertContent(editor,
+      '<ul dir="rtl">' +
+        '<li dir="ltr">ini' +
+          '<ul dir="rtl">' +
+            '<li>foo</li>' +
+            '<li>bar</li>' +
+          '</ul>' +
+        '</li>' +
+      '</ul>'
+    );
+  });
+
+  it('TINY-4589: should remove dir attr if parent has same dir', () => {
+    const editor = hook.editor();
+    editor.setContent('<div dir="ltr"><p>foo</p><p>bar</p></div>');
+    TinySelections.setSelection(editor, [ 0, 0 ], 0, [ 0, 0 ], 1);
+    TinyUiActions.clickOnToolbar(editor, 'button[title="Right to left"]');
+    TinyAssertions.assertContent(editor, '<div dir="ltr"><p dir="rtl">foo</p><p>bar</p></div>');
+    TinyUiActions.clickOnToolbar(editor, 'button[title="Left to right"]');
+    TinyAssertions.assertContent(editor, '<div dir="ltr"><p>foo</p><p>bar</p></div>');
+  });
+
+  it('TINY-4589: should get computed dir from #target', () => {
+    const editor = hook.editor();
+    editor.setContent(
+      '<div dir="rtl">' +
+        '<div id="target" dir="ltr">' +
+          '<div dir="x">' +
+            '<p>foo</p>' +
+            '<p>bar</p>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+    TinySelections.setSelection(editor, [ 0, 0, 0, 0 ], 0, [ 0, 0, 0, 0 ], 1); // foo
+    TinyUiActions.clickOnToolbar(editor, 'button[title="Right to left"]');
+    TinyAssertions.assertContent(editor,
+      '<div dir="rtl">' +
+        '<div id="target" dir="ltr">' +
+          '<div dir="x">' +
+            '<p dir="rtl">foo</p>' +
+            '<p>bar</p>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+    TinyUiActions.clickOnToolbar(editor, 'button[title="Left to right"]');
+    TinyAssertions.assertContent(editor,
+      '<div dir="rtl">' +
+        '<div id="target" dir="ltr">' +
+          '<div dir="x">' +
+            '<p>foo</p>' +
+            '<p>bar</p>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  });
+});

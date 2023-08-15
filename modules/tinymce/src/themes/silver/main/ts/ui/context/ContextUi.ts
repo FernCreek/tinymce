@@ -6,31 +6,30 @@
  */
 
 import {
-  AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloySpec, AlloyTriggers, Behaviour, CustomEvent, GuiFactory, InlineView, Keying,
-  NativeEvents
+  AddEventsBehaviour, AlloyComponent, AlloyEvents, AlloySpec, AlloyTriggers, Behaviour, CustomEvent, GuiFactory, InlineView, Keying, NativeEvents
 } from '@ephox/alloy';
-import { Arr, Cell, Id, Option, Result } from '@ephox/katamari';
-import { Class, Css, Element, EventArgs, Focus, Width } from '@ephox/sugar';
+import { Arr, Cell, Id, Optional, Result } from '@ephox/katamari';
+import { Class, Css, EventArgs, Focus, SugarElement, SugarShadowDom, Width } from '@ephox/sugar';
+
 import Delay from 'tinymce/core/api/util/Delay';
 
 const forwardSlideEvent = Id.generate('forward-slide');
 export interface ForwardSlideEvent extends CustomEvent {
-  forwardContents: () => AlloySpec;
+  readonly forwardContents: AlloySpec;
 }
 
 const backSlideEvent = Id.generate('backward-slide');
-// tslint:disable-next-line:no-empty-interface
 export interface BackwardSlideEvent extends CustomEvent { }
 
 const changeSlideEvent = Id.generate('change-slide-event');
 export interface ChangeSlideEvent extends CustomEvent {
-  contents: () => AlloySpec;
-  focus: () => Option<Element>;
+  readonly contents: AlloySpec;
+  readonly focus: Optional<SugarElement>;
 }
 
 const resizingClass = 'tox-pop--resizing';
 
-const renderContextToolbar = (spec: { onEscape: () => Option<boolean>; sink: AlloyComponent }) => {
+const renderContextToolbar = (spec: { onEscape: () => Optional<boolean>; sink: AlloyComponent }) => {
   const stack = Cell([ ]);
 
   return InlineView.sketch({
@@ -45,39 +44,42 @@ const renderContextToolbar = (spec: { onEscape: () => Option<boolean>; sink: All
     onShow: (comp) => {
       stack.set([ ]);
       InlineView.getContent(comp).each((c) => {
-        Css.remove(c.element(), 'visibility');
+        Css.remove(c.element, 'visibility');
       });
-      Class.remove(comp.element(), resizingClass);
-      Css.remove(comp.element(), 'width');
+      Class.remove(comp.element, resizingClass);
+      Css.remove(comp.element, 'width');
     },
 
     inlineBehaviours: Behaviour.derive([
       AddEventsBehaviour.config('context-toolbar-events', [
-        AlloyEvents.runOnSource<EventArgs>(NativeEvents.transitionend(), (comp, _se) => {
-          Class.remove(comp.element(), resizingClass);
-          Css.remove(comp.element(), 'width');
+        AlloyEvents.runOnSource<EventArgs<TransitionEvent>>(NativeEvents.transitionend(), (comp, se) => {
+          if (se.event.raw.propertyName === 'width') {
+            Class.remove(comp.element, resizingClass);
+            Css.remove(comp.element, 'width');
+          }
         }),
 
         AlloyEvents.run<ChangeSlideEvent>(changeSlideEvent, (comp, se) => {
+          const elem = comp.element;
           // If it was partially through a slide, clear that and measure afresh
-          Css.remove(comp.element(), 'width');
-          const currentWidth = Width.get(comp.element());
+          Css.remove(elem, 'width');
+          const currentWidth = Width.get(elem);
 
-          InlineView.setContent(comp, se.event().contents());
-          Class.add(comp.element(), resizingClass);
-          const newWidth = Width.get(comp.element());
-          Css.set(comp.element(), 'width', currentWidth + 'px');
+          InlineView.setContent(comp, se.event.contents);
+          Class.add(elem, resizingClass);
+          const newWidth = Width.get(elem);
+          Css.set(elem, 'width', currentWidth + 'px');
           InlineView.getContent(comp).each((newContents) => {
-            se.event().focus().bind((f) => {
+            se.event.focus.bind((f) => {
               Focus.focus(f);
-              return Focus.search(comp.element());
+              return Focus.search(elem);
             }).orThunk(() => {
               Keying.focusIn(newContents);
-              return Focus.active();
+              return Focus.active(SugarShadowDom.getRootNode(elem));
             });
           });
           Delay.setTimeout(() => {
-            Css.set(comp.element(), 'width', newWidth + 'px');
+            Css.set(comp.element, 'width', newWidth + 'px');
           }, 0);
         }),
 
@@ -86,14 +88,13 @@ const renderContextToolbar = (spec: { onEscape: () => Option<boolean>; sink: All
             stack.set(stack.get().concat([
               {
                 bar: oldContents,
-                // TODO: Not working
-                focus: Focus.active()
+                focus: Focus.active(SugarShadowDom.getRootNode(comp.element))
               }
             ]));
           });
           AlloyTriggers.emitWith(comp, changeSlideEvent, {
-            contents: se.event().forwardContents(),
-            focus: Option.none()
+            contents: se.event.forwardContents,
+            focus: Optional.none()
           });
         }),
 
@@ -118,7 +119,7 @@ const renderContextToolbar = (spec: { onEscape: () => Option<boolean>; sink: All
             spec.onEscape(),
           (_) => {
             AlloyTriggers.emit(comp, backSlideEvent);
-            return Option.some(true);
+            return Optional.some(true);
           }
         )
       })

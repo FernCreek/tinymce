@@ -5,9 +5,9 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { HTMLElement } from '@ephox/dom-globals';
-import { Option } from '@ephox/katamari';
-import { Element } from '@ephox/sugar';
+import { Optional } from '@ephox/katamari';
+import { SugarElement } from '@ephox/sugar';
+
 import Editor from '../api/Editor';
 import Env from '../api/Env';
 import { Content, ContentFormat, GetContentArgs } from '../content/ContentTypes';
@@ -25,48 +25,60 @@ export interface GetSelectionContentArgs extends GetContentArgs {
 const trimLeadingCollapsibleText = (text: string) => text.replace(/^[ \f\n\r\t\v]+/, '');
 const isCollapsibleWhitespace = (text: string, index: number) => index >= 0 && index < text.length && CharType.isWhiteSpace(text.charAt(index));
 
-const getInnerText = (bin: HTMLElement) => {
+const getInnerText = (bin: HTMLElement, shouldTrim: boolean) => {
   const text = Zwsp.trim(bin.innerText);
-  // Trim leading collapsible whitespace on IE 11, as on IE 11 innerText doesn't consider how it'll render.
-  // Firefox, IE and Edge also actually render trailing spaces in some cases, so don't trim trailing whitespace.
-  return Env.browser.isIE() ? trimLeadingCollapsibleText(text) : text;
+  return shouldTrim ? trimLeadingCollapsibleText(text) : text;
 };
 
-const getTextContent = (editor: Editor): string => Option.from(editor.selection.getRng()).map((rng) => {
-  const bin = editor.dom.add(editor.getBody(), 'div', {
-    'data-mce-bogus': 'all',
-    'style': 'overflow: hidden; opacity: 0;'
-  }, rng.cloneContents());
-  const text = getInnerText(bin);
+const getContextNodeName = (parentBlockOpt: Optional<HTMLElement>): string =>
+  parentBlockOpt.map((block) => block.nodeName).getOr('div').toLowerCase();
 
-  // textContent will not strip leading/trailing spaces since it doesn't consider how it'll render
-  const nonRenderedText = Zwsp.trim(bin.textContent);
-  editor.dom.remove(bin);
+const getTextContent = (editor: Editor): string =>
+  Optional.from(editor.selection.getRng()).map((rng) => {
+    const parentBlockOpt = Optional.from(editor.dom.getParent<HTMLElement>(rng.commonAncestorContainer, editor.dom.isBlock));
+    const body = editor.getBody();
 
-  if (isCollapsibleWhitespace(nonRenderedText, 0) || isCollapsibleWhitespace(nonRenderedText, nonRenderedText.length - 1)) {
-    // If the bin contains a trailing/leading space, then we need to inspect the parent block to see if we should include the spaces
-    const parentBlock = editor.dom.getParent(rng.commonAncestorContainer, editor.dom.isBlock) as HTMLElement;
-    const parentBlockText = getInnerText(parentBlock);
-    const textIndex = parentBlockText.indexOf(text);
+    const contextNodeName = getContextNodeName(parentBlockOpt);
 
-    if (textIndex !== -1) {
-      const hasProceedingSpace = isCollapsibleWhitespace(parentBlockText, textIndex - 1);
-      const hasTrailingSpace = isCollapsibleWhitespace(parentBlockText, textIndex + text.length);
-      return (hasProceedingSpace ? ' ' : '') + text + (hasTrailingSpace ? ' ' : '');
+    // Trim leading collapsible whitespace on IE 11, as on IE 11 innerText doesn't consider how it'll render.
+    // Firefox, IE and Edge also actually render trailing spaces in some cases, so don't trim trailing whitespace.
+    // Should not trim spaces inside pre-blocks.
+    const shouldTrimSpaces = Env.browser.isIE() && contextNodeName !== 'pre';
+
+    const bin = editor.dom.add(body, contextNodeName, {
+      'data-mce-bogus': 'all',
+      'style': 'overflow: hidden; opacity: 0;'
+    }, rng.cloneContents());
+    const text = getInnerText(bin, shouldTrimSpaces);
+
+    // textContent will not strip leading/trailing spaces since it doesn't consider how it'll render
+    const nonRenderedText = Zwsp.trim(bin.textContent);
+    editor.dom.remove(bin);
+
+    if (isCollapsibleWhitespace(nonRenderedText, 0) || isCollapsibleWhitespace(nonRenderedText, nonRenderedText.length - 1)) {
+      // If the bin contains a trailing/leading space, then we need to inspect the parent block to see if we should include the spaces
+      const parentBlock = parentBlockOpt.getOr(body);
+      const parentBlockText = getInnerText(parentBlock, shouldTrimSpaces);
+      const textIndex = parentBlockText.indexOf(text);
+
+      if (textIndex === -1) {
+        return text;
+      } else {
+        const hasProceedingSpace = isCollapsibleWhitespace(parentBlockText, textIndex - 1);
+        const hasTrailingSpace = isCollapsibleWhitespace(parentBlockText, textIndex + text.length);
+        return (hasProceedingSpace ? ' ' : '') + text + (hasTrailingSpace ? ' ' : '');
+      }
     } else {
       return text;
     }
-  } else {
-    return text;
-  }
-}).getOr('');
+  }).getOr('');
 
 const getSerializedContent = (editor: Editor, args: GetSelectionContentArgs): Content => {
   const rng = editor.selection.getRng(), tmpElm = editor.dom.create('body');
   const sel = editor.selection.getSel();
   const ranges = EventProcessRanges.processRanges(editor, MultiRange.getRanges(sel));
 
-  const fragment = args.contextual ? FragmentReader.read(Element.fromDom(editor.getBody()), ranges).dom() : rng.cloneContents();
+  const fragment = args.contextual ? FragmentReader.read(SugarElement.fromDom(editor.getBody()), ranges).dom : rng.cloneContents();
   if (fragment) {
     tmpElm.appendChild(fragment);
   }
@@ -74,29 +86,34 @@ const getSerializedContent = (editor: Editor, args: GetSelectionContentArgs): Co
   return editor.selection.serializer.serialize(tmpElm, args);
 };
 
-export const getSelectedContentInternal = (editor: Editor, format: ContentFormat, args: GetSelectionContentArgs = {}): Content => {
-  args.get = true;
-  args.format = format;
-  args.selection = true;
+const setupArgs = (args: Partial<GetSelectionContentArgs>, format: ContentFormat): GetSelectionContentArgs => ({
+  ...args,
+  format,
+  get: true,
+  selection: true
+});
 
-  args = editor.fire('BeforeGetContent', args);
-  if (args.isDefaultPrevented()) {
-    editor.fire('GetContent', args);
-    return args.content;
+export const getSelectedContentInternal = (editor: Editor, format: ContentFormat, args: GetSelectionContentArgs = {}): Content => {
+  const defaultedArgs = setupArgs(args, format);
+  const updatedArgs = editor.fire('BeforeGetContent', defaultedArgs);
+
+  if (updatedArgs.isDefaultPrevented()) {
+    editor.fire('GetContent', updatedArgs);
+    return updatedArgs.content;
   }
 
-  if (args.format === 'text') {
+  if (updatedArgs.format === 'text') {
     return getTextContent(editor);
   } else {
-    args.getInner = true;
-    const content = getSerializedContent(editor, args);
+    updatedArgs.getInner = true;
+    const content = getSerializedContent(editor, updatedArgs);
 
-    if (args.format === 'tree') {
+    if (updatedArgs.format === 'tree') {
       return content;
     } else {
-      args.content = editor.selection.isCollapsed() ? '' : content as string;
-      editor.fire('GetContent', args);
-      return args.content;
+      updatedArgs.content = editor.selection.isCollapsed() ? '' : content as string;
+      editor.fire('GetContent', updatedArgs);
+      return updatedArgs.content;
     }
   }
 };

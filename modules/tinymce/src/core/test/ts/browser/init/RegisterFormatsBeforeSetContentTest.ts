@@ -1,40 +1,34 @@
-import { Pipeline, Step } from '@ephox/agar';
-import { TinyLoader } from '@ephox/mcagar';
-import { UnitTest, Assert } from '@ephox/bedrock-client';
+import { describe, it } from '@ephox/bedrock-client';
+import { Arr, Obj, Singleton, Strings } from '@ephox/katamari';
+import { TinyHooks } from '@ephox/wrap-mcagar';
+import { assert } from 'chai';
 
-import Theme from 'tinymce/themes/silver/Theme';
-import { Cell, Option, Obj, Arr, Strings } from '@ephox/katamari';
 import Editor from 'tinymce/core/api/Editor';
+import Theme from 'tinymce/themes/silver/Theme';
 
-UnitTest.asynctest('Register formats before setContent test', (success, failure) => {
-  const customFormatNames = Cell<Option<string[]>>(Option.none());
-
-  const storeFormats = (editor: Editor) => {
-    const names = Arr.filter(Obj.keys(editor.formatter.get()), (key) => Strings.startsWith(key, 'custom-'));
-    customFormatNames.set(Option.some(names));
-  };
-
-  Theme();
-
-  TinyLoader.setupLight((editor, onSuccess, onFailure) => {
-    Pipeline.async({}, [
-      Step.sync(() => {
-        Assert.eq('Should be custom formats names based on the titles in style_formats', [
-          'custom-my-block-format',
-          'custom-my-inline-format',
-          'custom-my-selector-format'
-        ], customFormatNames.get().getOrDie('Should be format names'));
-      })
-    ], onSuccess, onFailure);
-  }, {
+describe('browser.tinymce.core.init.RegisterFormatsBeforeSetContentTest', () => {
+  const customFormatNames = Singleton.value<string[]>();
+  TinyHooks.bddSetupLight<Editor>({
     base_url: '/project/tinymce/js/tinymce',
     style_formats: [
       { title: 'my-block-format', block: 'h1' },
       { title: 'my-inline-format', inline: 'b' },
       { title: 'my-selector-format', selector: 'h1', classes: [ 'class' ] }
     ],
-    setup: (editor) => {
-      editor.on('beforesetcontent', (_) => storeFormats(editor));
+    setup: (editor: Editor) => {
+      editor.on('BeforeSetContent', (_) => {
+        const names = Arr.filter(Obj.keys(editor.formatter.get()), (key) => Strings.startsWith(key, 'custom-'));
+        customFormatNames.set(names);
+      });
     }
-  }, success, failure);
+  }, [ Theme ]);
+
+  it('Register formats before setContent test', () => {
+    const formats = customFormatNames.get().getOrDie('Should be format names');
+    assert.deepEqual(formats, [
+      'custom-my-block-format',
+      'custom-my-inline-format',
+      'custom-my-selector-format'
+    ], 'Should be custom formats names based on the titles in style_formats');
+  });
 });

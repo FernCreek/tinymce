@@ -1,38 +1,38 @@
-import { Fun, Option } from '@ephox/katamari';
-import { Element, Css } from '@ephox/sugar';
+import { Optional } from '@ephox/katamari';
+import { Css, SugarElement } from '@ephox/sugar';
 
 export interface PositionCss {
-  readonly position: () => string;
-  readonly left: () => Option<number>;
-  readonly top: () => Option<number>;
-  readonly right: () => Option<number>;
-  readonly bottom: () => Option<number>;
+  readonly position: string;
+  readonly left: Optional<string>;
+  readonly top: Optional<string>;
+  readonly right: Optional<string>;
+  readonly bottom: Optional<string>;
 }
 
 const NuPositionCss = (
   position: string,
-  left: Option<number>,
-  top: Option<number>,
-  right: Option<number>,
-  bottom: Option<number>
-): PositionCss => ({
-  position: Fun.constant(position),
-  left: Fun.constant(left),
-  top: Fun.constant(top),
-  right: Fun.constant(right),
-  bottom: Fun.constant(bottom)
+  left: Optional<number>,
+  top: Optional<number>,
+  right: Optional<number>,
+  bottom: Optional<number>
+): PositionCss => {
+  const toPx = (num: number) => num + 'px';
+  return {
+    position,
+    left: left.map(toPx),
+    top: top.map(toPx),
+    right: right.map(toPx),
+    bottom: bottom.map(toPx)
+  };
+};
+
+const toOptions = (position: PositionCss): Record<string, Optional<string>> => ({
+  ...position,
+  position: Optional.some(position.position)
 });
 
-const applyPositionCss = (element: Element, position: PositionCss) => {
-  const addPx = (num: number) => num + 'px';
-
-  Css.setOptions(element, {
-    position: Option.some(position.position()),
-    left: position.left().map(addPx),
-    top: position.top().map(addPx),
-    right: position.right().map(addPx),
-    bottom: position.bottom().map(addPx)
-  });
+const applyPositionCss = (element: SugarElement<HTMLElement>, position: PositionCss): void => {
+  Css.setOptions(element, toOptions(position));
 };
 
 export {

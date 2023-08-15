@@ -5,12 +5,14 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { HTMLElement } from '@ephox/dom-globals';
+import { FormatVars } from '../fmt/FormatTypes';
+import { RangeLikeObject } from '../selection/RangeTypes';
 import Editor from './Editor';
+import { ParserArgs } from './html/DomParser';
 
-const firePreProcess = (editor: Editor, args) => editor.fire('PreProcess', args);
+const firePreProcess = (editor: Editor, args: ParserArgs & { node: Element }) => editor.fire('PreProcess', args);
 
-const firePostProcess = (editor: Editor, args) => editor.fire('PostProcess', args);
+const firePostProcess = (editor: Editor, args: ParserArgs & { content: string }) => editor.fire('PostProcess', args);
 
 const fireRemove = (editor: Editor) => editor.fire('remove');
 
@@ -18,12 +20,12 @@ const fireDetach = (editor: Editor) => editor.fire('detach');
 
 const fireSwitchMode = (editor: Editor, mode: string) => editor.fire('SwitchMode', { mode });
 
-const fireObjectResizeStart = (editor: Editor, target: HTMLElement, width: number, height: number) => {
-  editor.fire('ObjectResizeStart', { target, width, height });
+const fireObjectResizeStart = (editor: Editor, target: HTMLElement, width: number, height: number, origin: string) => {
+  editor.fire('ObjectResizeStart', { target, width, height, origin });
 };
 
-const fireObjectResized = (editor: Editor, target: HTMLElement, width: number, height: number) => {
-  editor.fire('ObjectResized', { target, width, height });
+const fireObjectResized = (editor: Editor, target: HTMLElement, width: number, height: number, origin: string) => {
+  editor.fire('ObjectResized', { target, width, height, origin });
 };
 
 const firePreInit = (editor: Editor) => editor.fire('PreInit');
@@ -35,6 +37,12 @@ const fireInit = (editor: Editor) => editor.fire('Init');
 const firePlaceholderToggle = (editor: Editor, state: boolean) => editor.fire('PlaceholderToggle', { state });
 
 const fireError = (editor: Editor, errorType: string, error: { message: string }) => editor.fire(errorType, error);
+
+const fireFormatApply = (editor: Editor, format: string, node: Node | RangeLikeObject, vars: FormatVars | undefined) =>
+  editor.fire('FormatApply', { format, node, vars });
+
+const fireFormatRemove = (editor: Editor, format: string, node: Node | RangeLikeObject, vars: FormatVars | undefined) =>
+  editor.fire('FormatRemove', { format, node, vars });
 
 export {
   firePreProcess,
@@ -48,5 +56,7 @@ export {
   firePostRender,
   fireInit,
   firePlaceholderToggle,
-  fireError
+  fireError,
+  fireFormatApply,
+  fireFormatRemove
 };

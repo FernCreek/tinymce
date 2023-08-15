@@ -1,15 +1,15 @@
 import { AlloyComponent, Attachment, Behaviour, Gui, GuiFactory, Memento, Replacing } from '@ephox/alloy';
 import { Arr, Fun } from '@ephox/katamari';
-import { TinyApis, TinyLoader } from '@ephox/mcagar';
+import { TinyApis, TinyLoader } from '@ephox/wrap-mcagar';
 
 import ThemeManager from 'tinymce/core/api/ThemeManager';
 import * as Features from 'tinymce/themes/mobile/features/Features';
-import * as FormatChangers from 'tinymce/themes/mobile/util/FormatChangers';
 import { MobileRealm } from 'tinymce/themes/mobile/ui/IosRealm';
+import * as FormatChangers from 'tinymce/themes/mobile/util/FormatChangers';
 
 const strName = 'test';
 
-const setup = function (info, onSuccess, onFailure) {
+const setup = (info, onSuccess, onFailure) => {
 
   /* This test is going to create a toolbar with both list items on it */
   const alloy = Gui.create();
@@ -37,8 +37,8 @@ const setup = function (info, onSuccess, onFailure) {
   alloy.add(socket);
 
   const realm: MobileRealm = {
-    dropup: Fun.die('not implemented'),
-    element: Fun.die('not implemented'),
+    dropup: null,
+    element: null,
     exit: Fun.die('not implemented'),
     focusToolbar: Fun.die('not implemented'),
     init: Fun.die('not implemented'),
@@ -46,25 +46,27 @@ const setup = function (info, onSuccess, onFailure) {
     setContextToolbar: Fun.die('not implemented'),
     setToolbarGroups: Fun.die('not implemented'),
     updateMode: Fun.die('not implemented'),
-    system: Fun.constant(alloy),
-    socket: Fun.constant(socket)
+    system: alloy,
+    socket
   };
 
-  ThemeManager.add(strName, function (editor) {
+  ThemeManager.add(strName, (editor) => {
     return {
-      renderUI() {
-        editor.fire('SkinLoaded');
+      renderUI: () => {
+        // Existing themes will delay firing the SkinLoaded until the editor has been initialized
+        editor.on('init', () => editor.fire('SkinLoaded'));
+
         return {
-          iframeContainer: socket.element().dom(),
-          editorContainer: alloy.element().dom()
+          iframeContainer: socket.element.dom,
+          editorContainer: alloy.element.dom
         };
       }
     };
   });
 
   return {
-    use(f: (realm: MobileRealm, apis: TinyApis, toolbar: AlloyComponent, socket: AlloyComponent, buttons, onSuccess: () => void, onFailure: (err?: any) => void) => void) {
-      TinyLoader.setup(function (editor, onS, onF) {
+    use: (f: (realm: MobileRealm, apis: TinyApis, toolbar: AlloyComponent, socket: AlloyComponent, buttons, onSuccess: () => void, onFailure: (err?: any) => void) => void) => {
+      TinyLoader.setup((editor, onS, onF) => {
         const features = Features.setup(realm, editor);
 
         FormatChangers.init(realm, editor);
@@ -72,12 +74,12 @@ const setup = function (info, onSuccess, onFailure) {
         const apis = TinyApis(editor);
 
         const buttons = { };
-        Arr.each(info.items, function (item) {
+        Arr.each(info.items, (item) => {
           // For each item in the toolbar, make a lookup
           buttons[item] = Memento.record(features[item].sketch());
         });
 
-        const toolbarItems = Arr.map(info.items, function (item) {
+        const toolbarItems = Arr.map(info.items, (item) => {
           return buttons[item].asSpec();
         });
 

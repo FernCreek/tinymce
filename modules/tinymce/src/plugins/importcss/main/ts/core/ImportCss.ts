@@ -5,36 +5,47 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { Type } from '@ephox/katamari';
+
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
+import Editor from 'tinymce/core/api/Editor';
 import EditorManager from 'tinymce/core/api/EditorManager';
 import Env from 'tinymce/core/api/Env';
+import { StyleFormat } from 'tinymce/core/api/fmt/StyleFormat';
+import { Plugin } from 'tinymce/core/api/PluginManager';
 import Tools from 'tinymce/core/api/util/Tools';
-import * as Settings from '../api/Settings';
-import Editor from 'tinymce/core/api/Editor';
-import { generate } from './SelectorModel';
 
-interface Group {
-  title: string;
-  original: Group;
-  selectors: {};
-  filter: (value: string) => boolean;
-  item: {
-    text: string;
-    menu: [];
-  };
+import * as Settings from '../api/Settings';
+import { generate, SelectorFormatItem } from './SelectorModel';
+
+type Filter = (value: string, imported?: boolean) => boolean;
+type SelectorConvertor = () => StyleFormat | undefined;
+
+export interface UserDefinedGroup {
+  readonly title: string;
+  readonly filter?: Filter;
+  readonly selector_converter?: SelectorConvertor;
 }
 
-const removeCacheSuffix = function (url: string) {
+interface Group extends UserDefinedGroup {
+  readonly original: UserDefinedGroup;
+  readonly selectors: Record<string, boolean>;
+  readonly filter: Filter | undefined;
+}
+
+const internalEditorStyle = /^\.(?:ephox|tiny-pageembed|mce)(?:[.-]+\w+)+$/;
+
+const removeCacheSuffix = (url: string): string => {
   const cacheSuffix = Env.cacheSuffix;
 
-  if (typeof url === 'string') {
+  if (Type.isString(url)) {
     url = url.replace('?' + cacheSuffix, '').replace('&' + cacheSuffix, '');
   }
 
   return url;
 };
 
-const isSkinContentCss = (editor: Editor, href: string) => {
+const isSkinContentCss = (editor: Editor, href: string): boolean => {
   const skin = Settings.getSkin(editor);
 
   if (skin) {
@@ -47,13 +58,13 @@ const isSkinContentCss = (editor: Editor, href: string) => {
   return false;
 };
 
-const compileFilter = function (filter: string | RegExp | Function) {
-  if (typeof filter === 'string') {
-    return function (value) {
+const compileFilter = (filter: string | RegExp | Filter | undefined): Filter | undefined => {
+  if (Type.isString(filter)) {
+    return (value: string) => {
       return value.indexOf(filter) !== -1;
     };
   } else if (filter instanceof RegExp) {
-    return function (value) {
+    return (value: string) => {
       return filter.test(value);
     };
   }
@@ -61,11 +72,15 @@ const compileFilter = function (filter: string | RegExp | Function) {
   return filter;
 };
 
-const getSelectors = function (editor: Editor, doc, fileFilter) {
-  const selectors = [], contentCSSUrls = {};
+const isCssImportRule = (rule: CSSRule): rule is CSSImportRule => (rule as any).styleSheet;
+const isCssPageRule = (rule: CSSRule): rule is CSSPageRule => (rule as any).selectorText;
 
-  function append(styleSheet, imported?) {
-    let href = styleSheet.href, rules;
+const getSelectors = (editor: Editor, doc: Document, fileFilter: Filter | undefined): string[] => {
+  const selectors: string[] = [];
+  const contentCSSUrls: Record<string, boolean> = {};
+
+  const append = (styleSheet: CSSStyleSheet, imported?: boolean) => {
+    let href = styleSheet.href, rules: CSSRuleList | undefined;
 
     href = removeCacheSuffix(href);
 
@@ -73,7 +88,8 @@ const getSelectors = function (editor: Editor, doc, fileFilter) {
       return;
     }
 
-    Tools.each(styleSheet.imports, function (styleSheet) {
+    // TODO: Is this still need as TypeScript/MDN says imports doesn't exist?
+    Tools.each((styleSheet as any).imports, (styleSheet: CSSStyleSheet) => {
       append(styleSheet, true);
     });
 
@@ -84,29 +100,29 @@ const getSelectors = function (editor: Editor, doc, fileFilter) {
       // @import url(//fonts.googleapis.com/css?family=Pathway+Gothic+One);
     }
 
-    Tools.each(rules, function (cssRule) {
-      if (cssRule.styleSheet) {
+    Tools.each(rules, (cssRule) => {
+      if (isCssImportRule(cssRule)) {
         append(cssRule.styleSheet, true);
-      } else if (cssRule.selectorText) {
-        Tools.each(cssRule.selectorText.split(','), function (selector) {
+      } else if (isCssPageRule(cssRule)) {
+        Tools.each(cssRule.selectorText.split(','), (selector) => {
           selectors.push(Tools.trim(selector));
         });
       }
     });
-  }
+  };
 
-  Tools.each(editor.contentCSS, function (url) {
+  Tools.each(editor.contentCSS, (url) => {
     contentCSSUrls[url] = true;
   });
 
   if (!fileFilter) {
-    fileFilter = function (href: string, imported: string) {
+    fileFilter = (href: string, imported: boolean) => {
       return imported || contentCSSUrls[href];
     };
   }
 
   try {
-    Tools.each(doc.styleSheets, function (styleSheet: string) {
+    Tools.each(doc.styleSheets, (styleSheet) => {
       append(styleSheet);
     });
   } catch (e) {
@@ -116,7 +132,7 @@ const getSelectors = function (editor: Editor, doc, fileFilter) {
   return selectors;
 };
 
-const defaultConvertSelectorToFormat = function (editor: Editor, selectorText: string) {
+const defaultConvertSelectorToFormat = (editor: Editor, selectorText: string): StyleFormat | undefined => {
   let format;
 
   // Parse simple element.class1, .class1
@@ -164,42 +180,32 @@ const defaultConvertSelectorToFormat = function (editor: Editor, selectorText: s
   return format;
 };
 
-const getGroupsBySelector = function (groups: Group[], selector: string): Group[] {
-  return Tools.grep(groups, function (group) {
+const getGroupsBySelector = (groups: Group[], selector: string): Group[] => {
+  return Tools.grep(groups, (group) => {
     return !group.filter || group.filter(selector);
   });
 };
 
-const compileUserDefinedGroups = function (groups): Group[] {
-  return Tools.map(groups, function (group) {
+const compileUserDefinedGroups = (groups: UserDefinedGroup[]): Group[] => {
+  return Tools.map(groups, (group) => {
     return Tools.extend({}, group, {
       original: group,
       selectors: {},
-      filter: compileFilter(group.filter),
-      item: {
-        text: group.title,
-        menu: []
-      }
+      filter: compileFilter(group.filter)
     });
   });
 };
 
-interface StyleGroup {
-  title: string;
-  selectors: Record<string, any>;
-  filter: string | RegExp | Function;
-}
-
-const isExclusiveMode = function (editor: Editor, group: StyleGroup) {
+const isExclusiveMode = (editor: Editor, group: Group): boolean => {
   // Exclusive mode can only be disabled when there are groups allowing the same style to be present in multiple groups
   return group === null || Settings.shouldImportExclusive(editor) !== false;
 };
 
-const isUniqueSelector = function (editor: Editor, selector: string, group: StyleGroup, globallyUniqueSelectors: Record<string, any>) {
+const isUniqueSelector = (editor: Editor, selector: string, group: Group, globallyUniqueSelectors: Record<string, boolean>): boolean => {
   return !(isExclusiveMode(editor, group) ? selector in globallyUniqueSelectors : selector in group.selectors);
 };
 
-const markUniqueSelector = function (editor: Editor, selector: string, group: StyleGroup, globallyUniqueSelectors: Record<string, any>) {
+const markUniqueSelector = (editor: Editor, selector: string, group: Group, globallyUniqueSelectors: Record<string, boolean>): void => {
   if (isExclusiveMode(editor, group)) {
     globallyUniqueSelectors[selector] = true;
   } else {
@@ -207,15 +213,15 @@ const markUniqueSelector = function (editor: Editor, selector: string, group: St
   }
 };
 
-const convertSelectorToFormat = function (editor, plugin, selector, group) {
-  let selectorConverter;
+const convertSelectorToFormat = (editor: Editor, plugin: Plugin, selector: string, group: Group): StyleFormat | undefined => {
+  let selectorConverter: SelectorConvertor;
 
   if (group && group.selector_converter) {
     selectorConverter = group.selector_converter;
   } else if (Settings.getSelectorConverter(editor)) {
     selectorConverter = Settings.getSelectorConverter(editor);
   } else {
-    selectorConverter = function () {
+    selectorConverter = () => {
       return defaultConvertSelectorToFormat(editor, selector);
     };
   }
@@ -223,15 +229,15 @@ const convertSelectorToFormat = function (editor, plugin, selector, group) {
   return selectorConverter.call(plugin, selector, group);
 };
 
-const setup = function (editor: Editor) {
-  editor.on('init', function (_e) {
+const setup = (editor: Editor): void => {
+  editor.on('init', () => {
     const model = generate();
 
     const globallyUniqueSelectors = {};
     const selectorFilter = compileFilter(Settings.getSelectorFilter(editor));
     const groups = compileUserDefinedGroups(Settings.getCssGroups(editor));
 
-    const processSelector = function (selector: string, group: StyleGroup) {
+    const processSelector = (selector: string, group: Group): SelectorFormatItem | null => {
       if (isUniqueSelector(editor, selector, group, globallyUniqueSelectors)) {
         markUniqueSelector(editor, selector, group, globallyUniqueSelectors);
 
@@ -240,25 +246,23 @@ const setup = function (editor: Editor) {
           const formatName = format.name || DOMUtils.DOM.uniqueId();
           editor.formatter.register(formatName, format);
 
-          // NOTE: itemDefaults has been removed as it was not supported by bridge and its concept
-          // is handled elsewhere.
-          return Tools.extend({}, {
+          return {
             title: format.title,
             format: formatName
-          });
+          };
         }
       }
 
       return null;
     };
 
-    Tools.each(getSelectors(editor, editor.getDoc(), compileFilter(Settings.getFileFilter(editor))), function (selector: string) {
-      if (selector.indexOf('.mce-') === -1) {
+    Tools.each(getSelectors(editor, editor.getDoc(), compileFilter(Settings.getFileFilter(editor))), (selector) => {
+      if (!internalEditorStyle.test(selector)) {
         if (!selectorFilter || selectorFilter(selector)) {
           const selectorGroups = getGroupsBySelector(groups, selector);
 
           if (selectorGroups.length > 0) {
-            Tools.each(selectorGroups, function (group) {
+            Tools.each(selectorGroups, (group) => {
               const menuItem = processSelector(selector, group);
               if (menuItem) {
                 model.addItemToGroup(group.title, menuItem);

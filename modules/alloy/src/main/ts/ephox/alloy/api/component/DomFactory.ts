@@ -1,11 +1,10 @@
-import { HTMLElement } from '@ephox/dom-globals';
 import { Arr } from '@ephox/katamari';
-import { Element, Html, Node, Traverse } from '@ephox/sugar';
+import { Html, SugarElement, SugarNode, Traverse } from '@ephox/sugar';
 
-import { RawDomSchema, AlloySpec, SketchSpec } from '../../api/component/SpecTypes';
+import { AlloySpec, RawDomSchema, SimpleSpec, SketchSpec } from './SpecTypes';
 
-const getAttrs = (elem: Element) => {
-  const attributes = elem.dom().attributes !== undefined ? elem.dom().attributes : [ ];
+const getAttrs = (elem: SugarElement<Element>): Record<string, string> => {
+  const attributes = elem.dom.attributes !== undefined ? elem.dom.attributes : [ ];
   return Arr.foldl(attributes, (b, attr) => {
     // Make class go through the class path. Do not list it as an attribute.
     if (attr.name === 'class') {
@@ -16,37 +15,39 @@ const getAttrs = (elem: Element) => {
   }, {});
 };
 
-const getClasses = (elem: Element) => Array.prototype.slice.call(elem.dom().classList, 0);
+const getClasses = (elem: SugarElement<Element>): string[] =>
+  Array.prototype.slice.call(elem.dom.classList, 0);
 
 const fromHtml = (html: string): RawDomSchema => {
-  const elem = Element.fromHtml(html);
+  const elem = SugarElement.fromHtml<HTMLElement>(html);
 
   const children = Traverse.children(elem);
   const attrs = getAttrs(elem);
   const classes = getClasses(elem);
-  const contents = children.length === 0 ? { } : { innerHtml: Html.get(elem as Element<HTMLElement>) };
+  const contents = children.length === 0 ? { } : { innerHtml: Html.get(elem) };
 
   return {
-    tag: Node.name(elem),
+    tag: SugarNode.name(elem),
     classes,
     attributes: attrs,
     ...contents
   };
 };
 
-const sketch = <T>(sketcher: { sketch: (spec: { dom: RawDomSchema } & T) => SketchSpec}, html: string, config: T) => sketcher.sketch({
-  dom: fromHtml(html),
-  ...config
-});
+const sketch = <T>(sketcher: { sketch: (spec: { dom: RawDomSchema } & T) => SketchSpec}, html: string, config: T): SketchSpec =>
+  sketcher.sketch({
+    dom: fromHtml(html),
+    ...config
+  });
 
-const dom = (tag: string, classes: string[], attributes = { }, styles = { }) => ({
+const dom = (tag: string, classes: string[], attributes = { }, styles = { }): RawDomSchema => ({
   tag,
   classes,
   attributes,
   styles
 });
 
-const simple = (tag: string, classes: string[], components: AlloySpec[]) => ({
+const simple = (tag: string, classes: string[], components: AlloySpec[]): SimpleSpec => ({
   dom: {
     tag,
     classes

@@ -5,14 +5,15 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { UiFactoryBackstageProviders } from '../../backstage/Backstage';
-import { AlloyTriggers, Button, Container, SketchSpec } from '@ephox/alloy';
-import { formActionEvent } from 'tinymce/themes/silver/ui/general/FormEvents';
-import * as Icons from '../icons/Icons';
-import { Types } from '@ephox/bridge';
-import { Omit } from '../Omit';
+import { AlloyTriggers, Behaviour, Button, Container, SketchSpec } from '@ephox/alloy';
+import { Dialog } from '@ephox/bridge';
 
-type AlertBannerSpec = Omit<Types.AlertBanner.AlertBanner, 'type'>;
+import { formActionEvent } from 'tinymce/themes/silver/ui/general/FormEvents';
+
+import { UiFactoryBackstageProviders } from '../../backstage/Backstage';
+import * as Icons from '../icons/Icons';
+
+type AlertBannerSpec = Omit<Dialog.AlertBanner, 'type'>;
 
 export interface AlertBannerWrapper extends AlertBannerSpec {
   iconTooltip: string;
@@ -47,7 +48,10 @@ export const renderAlertBanner = (spec: AlertBannerWrapper, providersBackstage: 
             // TODO: aria label this button!
             action: (comp) => {
               AlloyTriggers.emitWith(comp, formActionEvent, { name: 'alert-banner', value: spec.url });
-            }
+            },
+            buttonBehaviours: Behaviour.derive([
+              Icons.addFocusableBehaviour()
+            ])
           })
         ]
       },

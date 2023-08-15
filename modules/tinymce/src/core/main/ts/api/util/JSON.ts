@@ -10,8 +10,10 @@ import { Type } from '@ephox/katamari';
 /**
  * JSON parser and serializer class.
  *
+ * @deprecated
  * @class tinymce.util.JSON
  * @static
+ * @summary JSON has been deprecated in TinyMCE 5.10 and has been marked for removal in TinyMCE 6.0. Use the native browser JSON API instead.
  * @example
  * // JSON parse a string into an object
  * var obj = tinymce.util.JSON.parse(somestring);
@@ -20,7 +22,7 @@ import { Type } from '@ephox/katamari';
  * var str = tinymce.util.JSON.serialize(obj);
  */
 
-const serialize = (obj: {}) => {
+const serialize = (obj: any) => {
   const data = JSON.stringify(obj);
 
   if (!Type.isString(data)) {
@@ -35,8 +37,8 @@ const serialize = (obj: {}) => {
 };
 
 interface JSONUtils {
-  serialize (obj: {}): string;
-  parse (text: string): any;
+  serialize: (obj: any) => string;
+  parse: (text: string) => any;
 }
 
 const JSONUtils: JSONUtils = {
@@ -56,7 +58,7 @@ const JSONUtils: JSONUtils = {
    * @param {string} text JSON String to parse into a JavaScript object.
    * @return {Object} Object from input JSON string or undefined if it failed.
    */
-  parse(text: string): any {
+  parse: (text: string): any => {
     try {
       return JSON.parse(text);
     } catch (ex) {

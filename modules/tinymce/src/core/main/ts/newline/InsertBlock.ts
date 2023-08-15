@@ -5,11 +5,11 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { DocumentFragment, Element as DomElement, KeyboardEvent } from '@ephox/dom-globals';
-import { Arr, Obj, Option, Options } from '@ephox/katamari';
-import { Css, Element, Node, PredicateFilter } from '@ephox/sugar';
+import { Arr, Obj, Optional, Optionals } from '@ephox/katamari';
+import { Css, PredicateFilter, SugarElement, SugarNode } from '@ephox/sugar';
+
 import DOMUtils from '../api/dom/DOMUtils';
-import TreeWalker from '../api/dom/TreeWalker';
+import DomTreeWalker from '../api/dom/TreeWalker';
 import Editor from '../api/Editor';
 import * as Settings from '../api/Settings';
 import { EditorEvent } from '../api/util/EventDispatcher';
@@ -18,36 +18,36 @@ import * as CaretContainer from '../caret/CaretContainer';
 import * as NodeType from '../dom/NodeType';
 import { isCaretNode } from '../fmt/FormatContainer';
 import * as NormalizeRange from '../selection/NormalizeRange';
+import { isWhitespaceText } from '../text/Whitespace';
 import * as Zwsp from '../text/Zwsp';
 import * as InsertLi from './InsertLi';
 import * as NewLineUtils from './NewLineUtils';
-import { isWhitespaceText } from '../text/Whitespace';
 
 const trimZwsp = (fragment: DocumentFragment) => {
-  Arr.each(PredicateFilter.descendants(Element.fromDom(fragment), Node.isText), (text) => {
-    const rawNode = text.dom();
+  Arr.each(PredicateFilter.descendants(SugarElement.fromDom(fragment), SugarNode.isText), (text) => {
+    const rawNode = text.dom;
     rawNode.nodeValue = Zwsp.trim(rawNode.nodeValue);
   });
 };
 
-const isEmptyAnchor = function (dom: DOMUtils, elm: DomElement) {
+const isEmptyAnchor = (dom: DOMUtils, elm: Element) => {
   return elm && elm.nodeName === 'A' && dom.isEmpty(elm);
 };
 
-const isTableCell = function (node) {
+const isTableCell = (node) => {
   return node && /^(TD|TH|CAPTION)$/.test(node.nodeName);
 };
 
-const emptyBlock = function (elm) {
+const emptyBlock = (elm) => {
   elm.innerHTML = '<br data-mce-bogus="1">';
 };
 
-const containerAndSiblingName = function (container, nodeName) {
+const containerAndSiblingName = (container, nodeName) => {
   return container.nodeName === nodeName || (container.previousSibling && container.previousSibling.nodeName === nodeName);
 };
 
 // Returns true if the block can be split into two blocks or not
-const canSplitBlock = function (dom, node) {
+const canSplitBlock = (dom, node) => {
   return node &&
     dom.isBlock(node) &&
     !/^(TD|TH|CAPTION|FORM)$/.test(node.nodeName) &&
@@ -56,7 +56,7 @@ const canSplitBlock = function (dom, node) {
 };
 
 // Remove the first empty inline element of the block so this: <p><b><em></em></b>x</p> becomes this: <p>x</p>
-const trimInlineElementsOnLeftSideOfBlock = function (dom, nonEmptyElementsMap, block) {
+const trimInlineElementsOnLeftSideOfBlock = (dom, nonEmptyElementsMap, block) => {
   let node = block;
   const firstChilds = [];
   let i;
@@ -89,7 +89,7 @@ const trimInlineElementsOnLeftSideOfBlock = function (dom, nonEmptyElementsMap, 
   }
 };
 
-const normalizeZwspOffset = function (start, container, offset) {
+const normalizeZwspOffset = (start, container, offset) => {
   if (NodeType.isText(container) === false) {
     return offset;
   } else if (start) {
@@ -99,7 +99,7 @@ const normalizeZwspOffset = function (start, container, offset) {
   }
 };
 
-const includeZwspInRange = function (rng) {
+const includeZwspInRange = (rng) => {
   const newRng = rng.cloneRange();
   newRng.setStart(rng.startContainer, normalizeZwspOffset(true, rng.startContainer, rng.startOffset));
   newRng.setEnd(rng.endContainer, normalizeZwspOffset(false, rng.endContainer, rng.endOffset));
@@ -107,7 +107,7 @@ const includeZwspInRange = function (rng) {
 };
 
 // Trims any linebreaks at the beginning of node user for example when pressing enter in a PRE element
-const trimLeadingLineBreaks = function (node) {
+const trimLeadingLineBreaks = (node) => {
   do {
     if (NodeType.isText(node)) {
       node.nodeValue = node.nodeValue.replace(/^[\r\n]+/, '');
@@ -117,7 +117,7 @@ const trimLeadingLineBreaks = function (node) {
   } while (node);
 };
 
-const getEditableRoot = function (dom, node) {
+const getEditableRoot = (dom, node) => {
   const root = dom.getRoot();
   let parent, editableRoot;
 
@@ -134,32 +134,34 @@ const getEditableRoot = function (dom, node) {
   return parent !== root ? editableRoot : root;
 };
 
-const applyAttributes = (editor: Editor, node: DomElement, forcedRootBlockAttrs: Record<string, string>) => {
+const applyAttributes = (editor: Editor, node: Element, forcedRootBlockAttrs: Record<string, string>) => {
+  const dom = editor.dom;
+
   // Merge and apply style attribute
-  Option.from(forcedRootBlockAttrs.style)
-    .map(editor.dom.parseStyle)
+  Optional.from(forcedRootBlockAttrs.style)
+    .map(dom.parseStyle)
     .each((attrStyles) => {
-      const currentStyles = Css.getAllRaw(Element.fromDom(node));
+      const currentStyles = Css.getAllRaw(SugarElement.fromDom(node));
       const newStyles = { ...currentStyles, ...attrStyles };
-      editor.dom.setStyles(node, newStyles);
+      dom.setStyles(node, newStyles);
     });
 
   // Merge and apply class attribute
-  const attrClassesOpt = Option.from(forcedRootBlockAttrs.class).map((attrClasses) => attrClasses.split(/\s+/));
-  const currentClassesOpt = Option.from(node.className).map((currentClasses) => Arr.filter(currentClasses.split(/\s+/), (clazz) => clazz !== ''));
-  Options.lift2(attrClassesOpt, currentClassesOpt, (attrClasses, currentClasses) => {
+  const attrClassesOpt = Optional.from(forcedRootBlockAttrs.class).map((attrClasses) => attrClasses.split(/\s+/));
+  const currentClassesOpt = Optional.from(node.className).map((currentClasses) => Arr.filter(currentClasses.split(/\s+/), (clazz) => clazz !== ''));
+  Optionals.lift2(attrClassesOpt, currentClassesOpt, (attrClasses, currentClasses) => {
     const filteredClasses = Arr.filter(currentClasses, (clazz) => !Arr.contains(attrClasses, clazz));
     const newClasses = [ ...attrClasses, ...filteredClasses ];
-    editor.dom.setAttrib(node, 'class', newClasses.join(' '));
+    dom.setAttrib(node, 'class', newClasses.join(' '));
   });
 
   // Apply any remaining forced root block attributes
   const appliedAttrs = [ 'style', 'class' ];
   const remainingAttrs = Obj.filter(forcedRootBlockAttrs, (_, attrs) => !Arr.contains(appliedAttrs, attrs));
-  editor.dom.setAttribs(node, remainingAttrs);
+  dom.setAttribs(node, remainingAttrs);
 };
 
-const setForcedBlockAttrs = function (editor: Editor, node) {
+const setForcedBlockAttrs = (editor: Editor, node) => {
   const forcedRootBlockName = Settings.getForcedRootBlock(editor);
 
   if (forcedRootBlockName && forcedRootBlockName.toLowerCase() === node.tagName.toLowerCase()) {
@@ -169,7 +171,7 @@ const setForcedBlockAttrs = function (editor: Editor, node) {
 };
 
 // Wraps any text nodes or inline elements in the specified forced root block name
-const wrapSelfAndSiblingsInDefaultBlock = function (editor: Editor, newBlockName, rng, container, offset) {
+const wrapSelfAndSiblingsInDefaultBlock = (editor: Editor, newBlockName, rng, container, offset) => {
   let newBlock, parentBlock, startNode, node, next, rootBlockName;
   const blockName = newBlockName || 'P';
   const dom = editor.dom, editableRoot = getEditableRoot(dom, container);
@@ -230,7 +232,7 @@ const wrapSelfAndSiblingsInDefaultBlock = function (editor: Editor, newBlockName
 
 // Adds a BR at the end of blocks that only contains an IMG or INPUT since
 // these might be floated and then they won't expand the block
-const addBrToBlockIfNeeded = function (dom, block) {
+const addBrToBlockIfNeeded = (dom, block) => {
   // IE will render the blocks correctly other browsers needs a BR
   block.normalize(); // Remove empty text nodes that got left behind by the extract
 
@@ -241,7 +243,7 @@ const addBrToBlockIfNeeded = function (dom, block) {
   }
 };
 
-const insert = function (editor: Editor, evt?: EditorEvent<KeyboardEvent>) {
+const insert = (editor: Editor, evt?: EditorEvent<KeyboardEvent>) => {
   let tmpRng, container, offset, parentBlock;
   let newBlock, fragment, containerBlock, parentBlockName, newBlockName, isAfterLastNodeInContainer;
   const dom = editor.dom;
@@ -250,7 +252,7 @@ const insert = function (editor: Editor, evt?: EditorEvent<KeyboardEvent>) {
 
   // Creates a new block element by cloning the current one or creating a new one if the name is specified
   // This function will also copy any text formatting from the parent block and add it to the new one
-  const createNewBlock = function (name?) {
+  const createNewBlock = (name?) => {
     let node = container, block, clonedNode, caretNode;
     const textInlineElements = schema.getTextInlineElements();
 
@@ -296,7 +298,7 @@ const insert = function (editor: Editor, evt?: EditorEvent<KeyboardEvent>) {
   };
 
   // Returns true/false if the caret is at the start/end of the parent block element
-  const isCaretAtStartOrEndOfBlock = function (start?) {
+  const isCaretAtStartOrEndOfBlock = (start?) => {
     let node, name;
 
     const normalizedOffset = normalizeZwspOffset(start, container, offset);
@@ -322,7 +324,7 @@ const insert = function (editor: Editor, evt?: EditorEvent<KeyboardEvent>) {
     }
 
     // Walk the DOM and look for text nodes or non empty elements
-    const walker = new TreeWalker(container, parentBlock);
+    const walker = new DomTreeWalker(container, parentBlock);
 
     // If caret is in beginning or end of a text block then jump to the next/previous node
     if (NodeType.isText(container)) {
@@ -357,7 +359,7 @@ const insert = function (editor: Editor, evt?: EditorEvent<KeyboardEvent>) {
     return true;
   };
 
-  const insertNewBlockAfter = function () {
+  const insertNewBlockAfter = () => {
     // If the caret is at the end of a header we produce a P tag after it similar to Word unless we are in a hgroup
     if (/^(H[1-6]|PRE|FIGURE)$/.test(parentBlockName) && containerBlockName !== 'HGROUP') {
       newBlock = createNewBlock(newBlockName);
@@ -377,7 +379,7 @@ const insert = function (editor: Editor, evt?: EditorEvent<KeyboardEvent>) {
   };
 
   // Setup range items and newBlockName
-  NormalizeRange.normalize(dom, rng).each(function (normRng) {
+  NormalizeRange.normalize(dom, rng).each((normRng) => {
     rng.setStart(normRng.startContainer, normRng.startOffset);
     rng.setEnd(normRng.endContainer, normRng.endOffset);
   });

@@ -1,37 +1,31 @@
-import { Pipeline } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { LegacyUnit } from '@ephox/mcagar';
+import { describe, it } from '@ephox/bedrock-client';
+import { assert } from 'chai';
+
 import Editor from 'tinymce/core/api/Editor';
 import Delay from 'tinymce/core/api/util/Delay';
 
-UnitTest.asynctest('browser.tinymce.core.util.DelayTest', function (success, failure) {
-  const suite = LegacyUnit.createSuite();
-
-  const ok = function (value, label) {
-    return LegacyUnit.equal(value, true, label);
-  };
-
-  suite.asyncTest('requestAnimationFrame', function (_, done) {
-    Delay.requestAnimationFrame(function () {
-      ok(true, 'requestAnimationFrame was executed.');
+describe('browser.tinymce.core.util.DelayTest', () => {
+  it('requestAnimationFrame', (done) => {
+    Delay.requestAnimationFrame(() => {
+      assert.ok(true, 'requestAnimationFrame was executed.');
       done();
     });
   });
 
-  suite.asyncTest('setTimeout', function (_, done) {
-    Delay.setTimeout(function () {
-      ok(true, 'setTimeout was executed.');
+  it('setTimeout', (done) => {
+    Delay.setTimeout(() => {
+      assert.ok(true, 'setTimeout was executed.');
       done();
     });
   });
 
-  suite.asyncTest('setInterval', function (_, done) {
+  it('setInterval', (done) => {
     let count = 0;
 
-    const id = Delay.setInterval(function () {
+    const id = Delay.setInterval(() => {
       if (++count === 2) {
         Delay.clearInterval(id);
-        LegacyUnit.equal(count, 2);
+        assert.equal(count, 2);
         done();
       } else if (count > 3) {
         throw new Error('Still executing setInterval.');
@@ -39,33 +33,33 @@ UnitTest.asynctest('browser.tinymce.core.util.DelayTest', function (success, fai
     });
   });
 
-  suite.asyncTest('setEditorTimeout', function (_, done) {
+  it('setEditorTimeout', (done) => {
     const fakeEditor = {} as Editor;
 
-    Delay.setEditorTimeout(fakeEditor, function () {
-      ok(true, 'setEditorTimeout was executed.');
+    Delay.setEditorTimeout(fakeEditor, () => {
+      assert.ok(true, 'setEditorTimeout was executed.');
       done();
     });
   });
 
-  suite.test('setEditorTimeout (removed)', function () {
+  it('setEditorTimeout (removed)', () => {
     const fakeEditor = { removed: true } as Editor;
 
-    Delay.setEditorTimeout(fakeEditor, function () {
+    Delay.setEditorTimeout(fakeEditor, () => {
       throw new Error('Still executing setEditorTimeout.');
     });
 
-    ok(true, 'setEditorTimeout on removed instance.');
+    assert.ok(true, 'setEditorTimeout on removed instance.');
   });
 
-  suite.asyncTest('setEditorInterval', function (_, done) {
+  it('setEditorInterval', (done) => {
     let count = 0;
     const fakeEditor = {} as Editor;
 
-    const id = Delay.setEditorInterval(fakeEditor, function () {
+    const id = Delay.setEditorInterval(fakeEditor, () => {
       if (++count === 2) {
         Delay.clearInterval(id);
-        LegacyUnit.equal(count, 2);
+        assert.equal(count, 2);
         done();
       } else if (count > 3) {
         throw new Error('Still executing setEditorInterval.');
@@ -73,67 +67,63 @@ UnitTest.asynctest('browser.tinymce.core.util.DelayTest', function (success, fai
     });
   });
 
-  suite.test('setEditorInterval (removed)', function () {
+  it('setEditorInterval (removed)', () => {
     const fakeEditor = { removed: true } as Editor;
 
-    Delay.setEditorInterval(fakeEditor, function () {
+    Delay.setEditorInterval(fakeEditor, () => {
       throw new Error('Still executing setEditorInterval.');
     });
 
-    ok(true, 'setEditorTimeout on removed instance.');
+    assert.ok(true, 'setEditorTimeout on removed instance.');
   });
 
-  suite.asyncTest('throttle', function (_, done) {
-    const args = [];
+  it('throttle', (done) => {
+    const args: number[] = [];
 
-    const fn = Delay.throttle(function (a) {
+    const fn = Delay.throttle((a) => {
       args.push(a);
     }, 0);
 
     fn(1);
     fn(2);
 
-    Delay.setTimeout(function () {
-      LegacyUnit.deepEqual(args, [ 2 ]);
+    Delay.setTimeout(() => {
+      assert.deepEqual(args, [ 2 ]);
       done();
     }, 10);
   });
 
-  suite.asyncTest('throttle stop', function (_, done) {
-    const args = [];
+  it('throttle stop', (done) => {
+    const args: number[] = [];
 
-    const fn = Delay.throttle(function (a) {
+    const fn = Delay.throttle((a) => {
       args.push(a);
     }, 0);
 
     fn(1);
     fn.stop();
 
-    Delay.setTimeout(function () {
-      LegacyUnit.deepEqual(args, []);
+    Delay.setTimeout(() => {
+      assert.deepEqual(args, []);
       done();
     }, 10);
   });
 
-  suite.test('clearTimeout', function () {
-    const id = Delay.setTimeout(function () {
+  it('clearTimeout', () => {
+    const id = Delay.setTimeout(() => {
       throw new Error(`clearTimeout didn't work.`);
     });
 
     Delay.clearTimeout(id);
-    ok(true, 'clearTimeout works.');
+    assert.ok(true, 'clearTimeout works.');
   });
 
-  suite.test('clearTimeout', function () {
-    const id = Delay.setInterval(function () {
+  it('clearInterval', () => {
+    const id = Delay.setInterval(() => {
       throw new Error(`clearInterval didn't work.`);
     });
 
     Delay.clearInterval(id);
-    ok(true, 'clearInterval works.');
+    assert.ok(true, 'clearInterval works.');
   });
-
-  Pipeline.async({}, suite.toSteps({}), function () {
-    success();
-  }, failure);
 });

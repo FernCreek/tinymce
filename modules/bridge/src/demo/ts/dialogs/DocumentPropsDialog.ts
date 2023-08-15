@@ -1,7 +1,6 @@
-import { console } from '@ephox/dom-globals';
 import { openDemoDialog } from './DemoDialogHelpers';
 
-export const createDocumentPropsDialog = () => {
+export const createDocumentPropsDialog = (): void => {
   openDemoDialog(
     {
       title: 'Document properties',
@@ -64,7 +63,7 @@ export const createDocumentPropsDialog = () => {
       onSubmit: (api) => {
         const data = api.getData();
 
-        // tslint:disable-next-line:no-console
+        // eslint-disable-next-line no-console
         console.log({
           title: data.title,
           keywords: data.keywords,

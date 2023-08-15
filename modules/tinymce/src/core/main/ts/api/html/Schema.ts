@@ -5,7 +5,8 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Obj } from '@ephox/katamari';
+import { Fun, Obj } from '@ephox/katamari';
+
 import Tools from '../util/Tools';
 
 export type SchemaType = 'html4' | 'html5' | 'html5-strict';
@@ -31,14 +32,15 @@ export interface SchemaSettings {
   valid_styles?: string | Record<string, string>;
   verify_html?: boolean;
   whitespace_elements?: string;
+  padd_empty_block_inline_children?: boolean;
 }
 
-export type Attribute = {
+export interface Attribute {
   required?: boolean;
   defaultValue?: string;
   forcedValue?: string;
   validValues?: any;
-};
+}
 
 export interface DefaultAttribute {
   name: string;
@@ -53,7 +55,7 @@ export interface AttributePattern {
   validValues?: Record<string, string>;
 }
 
-export type ElementRule = {
+export interface ElementRule {
   attributes: Record<string, Attribute>;
   attributesDefault?: DefaultAttribute[];
   attributesForced?: DefaultAttribute[];
@@ -63,7 +65,8 @@ export type ElementRule = {
   paddEmpty?: boolean;
   removeEmpty?: boolean;
   removeEmptyAttrs?: boolean;
-};
+  paddInEmptyBlock?: boolean;
+}
 
 export interface SchemaElement extends ElementRule {
   outputName?: string;
@@ -71,33 +74,33 @@ export interface SchemaElement extends ElementRule {
   pattern?: RegExp;
 }
 
-export type SchemaMap = { [name: string]: {} };
-export type SchemaRegExpMap = { [name: string]: RegExp };
+export interface SchemaMap { [name: string]: {} }
+export interface SchemaRegExpMap { [name: string]: RegExp }
 
 interface Schema {
-  children: Record<string, {}>;
+  children: Record<string, SchemaMap>;
   elements: Record<string, SchemaElement>;
-  getValidStyles (): SchemaMap;
-  getValidClasses (): SchemaMap;
-  getBlockElements (): SchemaMap;
-  getInvalidStyles (): SchemaMap;
-  getShortEndedElements (): SchemaMap;
-  getTextBlockElements (): SchemaMap;
-  getTextInlineElements (): SchemaMap;
-  getBoolAttrs (): SchemaMap;
-  getElementRule (name: string): SchemaElement;
-  getSelfClosingElements (): SchemaMap;
-  getNonEmptyElements (): SchemaMap;
-  getMoveCaretBeforeOnEnterElements (): SchemaMap;
-  getWhiteSpaceElements (): SchemaMap;
-  getSpecialElements (): SchemaRegExpMap;
-  isValidChild (name: string, child: string): boolean;
-  isValid (name: string, attr?: string): boolean;
-  getCustomElements (): SchemaMap;
-  addValidElements (validElements: string): void;
-  setValidElements (validElements: string): void;
-  addCustomElements (customElements: string): void;
-  addValidChildren (validChildren: any): void;
+  getValidStyles: () => Record<string, string[]> | undefined;
+  getValidClasses: () => Record<string, SchemaMap> | undefined;
+  getBlockElements: () => SchemaMap;
+  getInvalidStyles: () => Record<string, SchemaMap> | undefined;
+  getShortEndedElements: () => SchemaMap;
+  getTextBlockElements: () => SchemaMap;
+  getTextInlineElements: () => SchemaMap;
+  getBoolAttrs: () => SchemaMap;
+  getElementRule: (name: string) => SchemaElement | undefined;
+  getSelfClosingElements: () => SchemaMap;
+  getNonEmptyElements: () => SchemaMap;
+  getMoveCaretBeforeOnEnterElements: () => SchemaMap;
+  getWhiteSpaceElements: () => SchemaMap;
+  getSpecialElements: () => SchemaRegExpMap;
+  isValidChild: (name: string, child: string) => boolean;
+  isValid: (name: string, attr?: string) => boolean;
+  getCustomElements: () => SchemaMap;
+  addValidElements: (validElements: string) => void;
+  setValidElements: (validElements: string) => void;
+  addCustomElements: (customElements: string) => void;
+  addValidChildren: (validChildren: any) => void;
 }
 
 /**
@@ -118,10 +121,23 @@ interface Schema {
 const mapCache: any = {}, dummyObj = {};
 const makeMap = Tools.makeMap, each = Tools.each, extend = Tools.extend, explode = Tools.explode, inArray = Tools.inArray;
 
-const split = function (items, delim?) {
+const split = (items: string, delim?: string): string[] => {
   items = Tools.trim(items);
   return items ? items.split(delim || ' ') : [];
 };
+
+const createMap = (defaultValue?: string, extendWith?: SchemaMap): SchemaMap => {
+  const value = makeMap(defaultValue, ' ', makeMap(defaultValue.toUpperCase(), ' '));
+  return extend(value, extendWith);
+};
+
+// A curated list using the textBlockElements map and parts of the blockElements map from the schema
+// TODO: TINY-8728 Investigate if the extras can be added directly to the default text block elements
+export const getTextRootBlockElements = (schema: Schema): SchemaMap =>
+  createMap(
+    'td th li dt dd figcaption caption details summary',
+    schema.getTextBlockElements()
+  );
 
 /**
  * Builds a schema lookup table
@@ -130,15 +146,16 @@ const split = function (items, delim?) {
  * @param {String} type html4, html5 or html5-strict schema type.
  * @return {Object} Schema lookup table.
  */
-const compileSchema = function (type: SchemaType) {
-  const schema: any = {};
+// TODO: Improve return type
+const compileSchema = (type: SchemaType): Record<string, any> => {
+  const schema: Record<string, any> = {};
   let globalAttributes, blockContent;
   let phrasingContent, flowContent, html4BlockContent, html4PhrasingContent;
 
-  const add = function (name: string, attributes?: string, children?: string | string[]) {
+  const add = (name: string, attributes?: string, children?: string | string[]) => {
     let ni, attributesOrder, element;
 
-    const arrayToMap = function (array, obj?) {
+    const arrayToMap = (array, obj?) => {
       const map = {};
       let i, l;
 
@@ -156,8 +173,8 @@ const compileSchema = function (type: SchemaType) {
       children = split(children);
     }
 
-    name = split(name);
-    ni = name.length;
+    const names = split(name);
+    ni = names.length;
     while (ni--) {
       attributesOrder = split([ globalAttributes, attributes ].join(' '));
 
@@ -167,21 +184,21 @@ const compileSchema = function (type: SchemaType) {
         children: arrayToMap(children, dummyObj)
       };
 
-      schema[name[ni]] = element;
+      schema[names[ni]] = element;
     }
   };
 
-  const addAttrs = function (name: string, attributes?: string) {
+  const addAttrs = (name: string, attributes?: string) => {
     let ni, schemaItem, i, l;
 
-    name = split(name);
-    ni = name.length;
-    attributes = split(attributes);
+    const names = split(name);
+    ni = names.length;
+    const attrs = split(attributes);
     while (ni--) {
-      schemaItem = schema[name[ni]];
-      for (i = 0, l = attributes.length; i < l; i++) {
-        schemaItem.attributes[attributes[i]] = {};
-        schemaItem.attributesOrder.push(attributes[i]);
+      schemaItem = schema[names[ni]];
+      for (i = 0, l = attrs.length; i < l; i++) {
+        schemaItem.attributes[attrs[i]] = {};
+        schemaItem.attributesOrder.push(attrs[i]);
       }
     }
   };
@@ -229,7 +246,7 @@ const compileSchema = function (type: SchemaType) {
     html4PhrasingContent = 'acronym applet basefont big font strike tt';
     phrasingContent = [ phrasingContent, html4PhrasingContent ].join(' ');
 
-    each(split(html4PhrasingContent), function (name) {
+    each(split(html4PhrasingContent), (name) => {
       add(name, '', phrasingContent);
     });
 
@@ -239,7 +256,7 @@ const compileSchema = function (type: SchemaType) {
     // Flow content elements from the HTML5 spec (block+inline)
     flowContent = [ blockContent, phrasingContent ].join(' ');
 
-    each(split(html4BlockContent), function (name) {
+    each(split(html4BlockContent), (name) => {
       add(name, '', flowContent);
     });
   }
@@ -378,7 +395,7 @@ const compileSchema = function (type: SchemaType) {
 
   // Delete children of the same name from it's parent
   // For example: form can't have a child of the name form
-  each(split('a form meter progress dfn'), function (name) {
+  each(split('a form meter progress dfn'), (name) => {
     if (schema[name]) {
       delete schema[name].children[name];
     }
@@ -405,7 +422,7 @@ const compileSchema = function (type: SchemaType) {
   return schema;
 };
 
-const compileElementMap = function (value: string | Record<string, string>, mode?: string ) {
+const compileElementMap = (value: string | Record<string, string>, mode?: string ) => {
   let styles;
 
   if (value) {
@@ -418,7 +435,7 @@ const compileElementMap = function (value: string | Record<string, string>, mode
     }
 
     // Convert styles into a rule list
-    each(value, function (value, key) {
+    each(value, (value, key) => {
       styles[key] = styles[key.toUpperCase()] = mode === 'map' ? makeMap(value, /[, ]/) : explode(value, /[, ]/);
     });
   }
@@ -426,14 +443,14 @@ const compileElementMap = function (value: string | Record<string, string>, mode
   return styles;
 };
 
-function Schema(settings?: SchemaSettings): Schema {
+const Schema = (settings?: SchemaSettings): Schema => {
   let elements: Record<string, SchemaElement> = {};
   const children: Record<string, {}> = {};
   let patternElements = [];
   const customElementsMap = {}, specialElements = {} as SchemaRegExpMap;
 
   // Creates an lookup table map object for the specified option or the default value
-  const createLookupTable = function (option: string, defaultValue?: string, extendWith?: string) {
+  const createLookupTable = (option: string, defaultValue?: string, extendWith?: SchemaMap): SchemaMap => {
     let value = settings[option];
 
     if (!value) {
@@ -441,8 +458,7 @@ function Schema(settings?: SchemaSettings): Schema {
       value = mapCache[option];
 
       if (!value) {
-        value = makeMap(defaultValue, ' ', makeMap(defaultValue.toUpperCase(), ' '));
-        value = extend(value, extendWith);
+        value = createMap(defaultValue, extendWith);
 
         mapCache[option] = value;
       }
@@ -476,18 +492,20 @@ function Schema(settings?: SchemaSettings): Schema {
     'meta param embed source wbr track');
   const boolAttrMap = createLookupTable('boolean_attributes', 'checked compact declare defer disabled ismap multiple nohref noresize ' +
     'noshade nowrap readonly selected autoplay loop controls');
-  const nonEmptyElementsMap = createLookupTable('non_empty_elements', 'td th iframe video audio object ' +
-    'script pre code', shortEndedElementsMap);
-  const moveCaretBeforeOnEnterElementsMap = createLookupTable('move_caret_before_on_enter_elements', 'table', nonEmptyElementsMap);
+
+  const nonEmptyOrMoveCaretBeforeOnEnter = 'td th iframe video audio object script code';
+  const nonEmptyElementsMap = createLookupTable('non_empty_elements', nonEmptyOrMoveCaretBeforeOnEnter + ' pre', shortEndedElementsMap);
+  const moveCaretBeforeOnEnterElementsMap = createLookupTable('move_caret_before_on_enter_elements', nonEmptyOrMoveCaretBeforeOnEnter + ' table', shortEndedElementsMap);
+
   const textBlockElementsMap = createLookupTable('text_block_elements', 'h1 h2 h3 h4 h5 h6 p div address pre form ' +
     'blockquote center dir fieldset header footer article section hgroup aside main nav figure');
   const blockElementsMap = createLookupTable('block_elements', 'hr table tbody thead tfoot ' +
     'th tr td li ol ul caption dl dt dd noscript menu isindex option ' +
     'datalist select optgroup figcaption details summary', textBlockElementsMap);
-  const textInlineElementsMap = createLookupTable('text_inline_elements', 'span strong b em i font strike u var cite ' +
+  const textInlineElementsMap = createLookupTable('text_inline_elements', 'span strong b em i font s strike u var cite ' +
     'dfn code mark q sup sub samp');
 
-  each((settings.special || 'script noscript iframe noframes noembed title style textarea xmp').split(' '), function (name) {
+  each((settings.special || 'script noscript iframe noframes noembed title style textarea xmp').split(' '), (name) => {
     specialElements[name] = new RegExp('<\/' + name + '[^>]*>', 'gi');
   });
 
@@ -499,13 +517,13 @@ function Schema(settings?: SchemaSettings): Schema {
   const addValidElements = (validElements: string) => {
     let ei, el, ai, al, matches, element, attr, attrData, elementName, attrName, attrType, attributes, attributesOrder,
       prefix, outputName, globalAttributes, globalAttributesOrder, value;
-    const elementRuleRegExp = /^([#+\-])?([^\[!\/]+)(?:\/([^\[!]+))?(?:(!?)\[([^\]]+)\])?$/,
+    const elementRuleRegExp = /^([#+\-])?([^\[!\/]+)(?:\/([^\[!]+))?(?:(!?)\[([^\]]+)])?$/,
       attrRuleRegExp = /^([!\-])?(\w+[\\:]:\w+|[^=:<]+)?(?:([=:<])(.*))?$/,
       hasPatternsRegExp = /[*?+]/;
 
     if (validElements) {
       // Split valid elements into an array with rules
-      validElements = split(validElements, ',');
+      const validElementsArr = split(validElements, ',');
 
       if (elements['@']) {
         globalAttributes = elements['@'].attributes;
@@ -513,9 +531,9 @@ function Schema(settings?: SchemaSettings): Schema {
       }
 
       // Loop all rules
-      for (ei = 0, el = validElements.length; ei < el; ei++) {
+      for (ei = 0, el = validElementsArr.length; ei < el; ei++) {
         // Parse element rule
-        matches = elementRuleRegExp.exec(validElements[ei]);
+        matches = elementRuleRegExp.exec(validElementsArr[ei]);
         if (matches) {
           // Setup local names for matches
           prefix = matches[1];
@@ -645,26 +663,26 @@ function Schema(settings?: SchemaSettings): Schema {
     }
   };
 
-  const setValidElements = function (validElements: string) {
+  const setValidElements = (validElements: string) => {
     elements = {};
     patternElements = [];
 
     addValidElements(validElements);
 
-    each(schemaItems, function (element, name) {
+    each(schemaItems, (element, name) => {
       children[name] = element.children;
     });
   };
 
   // Adds custom non HTML elements to the schema
-  const addCustomElements = function (customElements: string) {
+  const addCustomElements = (customElements: string) => {
     const customElementRegExp = /^(~)?(.+)$/;
 
     if (customElements) {
       // Flush cached items since we are altering the default maps
       mapCache.text_block_elements = mapCache.block_elements = null;
 
-      each(split(customElements, ','), function (rule) {
+      each(split(customElements, ','), (rule) => {
         const matches = customElementRegExp.exec(rule),
           inline = matches[1] === '~',
           cloneName = inline ? 'span' : 'div',
@@ -691,7 +709,7 @@ function Schema(settings?: SchemaSettings): Schema {
         }
 
         // Add custom elements at span/div positions
-        each(children, function (element, elmName) {
+        each(children, (element, elmName) => {
           if (element[cloneName]) {
             children[elmName] = element = extend({}, children[elmName]);
             element[name] = element[cloneName];
@@ -702,15 +720,15 @@ function Schema(settings?: SchemaSettings): Schema {
   };
 
   // Adds valid children to the schema object
-  const addValidChildren = function (validChildren) {
+  const addValidChildren = (validChildren) => {
     // see: https://html.spec.whatwg.org/#valid-custom-element-name
-    const childRuleRegExp = /^([+\-]?)([A-Za-z0-9_\-\.\u00b7\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u037d\u037f-\u1fff\u200c-\u200d\u203f-\u2040\u2070-\u218f\u2c00-\u2fef\u3001-\ud7ff\uf900-\ufdcf\ufdf0-\ufffd]+)\[([^\]]+)\]$/; // from w3c's custom grammar (above)
+    const childRuleRegExp = /^([+\-]?)([A-Za-z0-9_\-.\u00b7\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u037d\u037f-\u1fff\u200c-\u200d\u203f-\u2040\u2070-\u218f\u2c00-\u2fef\u3001-\ud7ff\uf900-\ufdcf\ufdf0-\ufffd]+)\[([^\]]+)]$/; // from w3c's custom grammar (above)
 
     // Invalidate the schema cache if the schema is mutated
     mapCache[settings.schema] = null;
 
     if (validChildren) {
-      each(split(validChildren, ','), function (rule) {
+      each(split(validChildren, ','), (rule) => {
         const matches = childRuleRegExp.exec(rule);
         let parent, prefix;
 
@@ -726,7 +744,7 @@ function Schema(settings?: SchemaSettings): Schema {
 
           parent = children[matches[2]];
 
-          each(split(matches[3], '|'), function (child) {
+          each(split(matches[3], '|'), (child) => {
             if (prefix === '-') {
               delete parent[child];
             } else {
@@ -759,7 +777,7 @@ function Schema(settings?: SchemaSettings): Schema {
 
   if (!settings.valid_elements) {
     // No valid elements defined then clone the elements from the schema spec
-    each(schemaItems, function (element, name) {
+    each(schemaItems, (element, name) => {
       elements[name] = {
         attributes: element.attributes,
         attributesOrder: element.attributesOrder
@@ -770,29 +788,41 @@ function Schema(settings?: SchemaSettings): Schema {
 
     // Switch these on HTML4
     if (settings.schema !== 'html5') {
-      each(split('strong/b em/i'), function (item) {
-        item = split(item, '/');
-        elements[item[1]].outputName = item[0];
+      each(split('strong/b em/i'), (item) => {
+        const items = split(item, '/');
+        elements[items[1]].outputName = items[0];
       });
     }
 
     // Add default alt attribute for images, removed since alt="" is treated as presentational.
     // elements.img.attributesDefault = [{name: 'alt', value: ''}];
 
+    // By default,
+    // - padd the text inline element if it is empty and also a child of an empty root block
+    // - in all other cases, remove the text inline element if it is empty
+    each(textInlineElementsMap, (_val, name) => {
+      if (elements[name]) {
+        if (settings.padd_empty_block_inline_children) {
+          elements[name].paddInEmptyBlock = true;
+        }
+        elements[name].removeEmpty = true;
+      }
+    });
+
     // Remove these if they are empty by default
-    each(split('ol ul sub sup blockquote span font a table tbody tr strong em b i'), function (name) {
+    each(split('ol ul blockquote a table tbody'), (name) => {
       if (elements[name]) {
         elements[name].removeEmpty = true;
       }
     });
 
     // Padd these by default
-    each(split('p h1 h2 h3 h4 h5 h6 th td pre div address caption li'), function (name) {
+    each(split('p h1 h2 h3 h4 h5 h6 th td pre div address caption li'), (name) => {
       elements[name].paddEmpty = true;
     });
 
     // Remove these if they have no attributes
-    each(split('span'), function (name) {
+    each(split('span'), (name) => {
       elements[name].removeEmptyAttrs = true;
     });
 
@@ -826,7 +856,7 @@ function Schema(settings?: SchemaSettings): Schema {
     legend: 'fieldset',
     area: 'map',
     param: 'video audio object'
-  }, function (parents, item) {
+  }, (parents, item) => {
     if (elements[item]) {
       elements[item].parentsRequired = split(parents);
     }
@@ -834,7 +864,7 @@ function Schema(settings?: SchemaSettings): Schema {
 
   // Delete invalid elements
   if (settings.invalid_elements) {
-    each(explode(settings.invalid_elements), function (item) {
+    each(explode(settings.invalid_elements), (item) => {
       if (elements[item]) {
         delete elements[item];
       }
@@ -863,7 +893,7 @@ function Schema(settings?: SchemaSettings): Schema {
    * @method getValidStyles
    * @type Object
    */
-  const getValidStyles = (): SchemaMap => validStyles;
+  const getValidStyles = Fun.constant(validStyles);
 
   /**
    * Name/value map object with valid styles for each element.
@@ -871,7 +901,7 @@ function Schema(settings?: SchemaSettings): Schema {
    * @method getInvalidStyles
    * @type Object
    */
-  const getInvalidStyles = (): SchemaMap => invalidStyles;
+  const getInvalidStyles = Fun.constant(invalidStyles);
 
   /**
    * Name/value map object with valid classes for each element.
@@ -879,7 +909,7 @@ function Schema(settings?: SchemaSettings): Schema {
    * @method getValidClasses
    * @type Object
    */
-  const getValidClasses = (): SchemaMap => validClasses;
+  const getValidClasses = Fun.constant(validClasses);
 
   /**
    * Returns a map with boolean attributes.
@@ -887,7 +917,7 @@ function Schema(settings?: SchemaSettings): Schema {
    * @method getBoolAttrs
    * @return {Object} Name/value lookup map for boolean attributes.
    */
-  const getBoolAttrs = (): SchemaMap => boolAttrMap;
+  const getBoolAttrs = Fun.constant(boolAttrMap);
 
   /**
    * Returns a map with block elements.
@@ -895,75 +925,78 @@ function Schema(settings?: SchemaSettings): Schema {
    * @method getBlockElements
    * @return {Object} Name/value lookup map for block elements.
    */
-  const getBlockElements = (): SchemaMap => blockElementsMap;
+  const getBlockElements = Fun.constant(blockElementsMap);
 
   /**
-   * Returns a map with text block elements. Such as: p,h1-h6,div,address
+   * Returns a map with text block elements. For example: <code>&#60;p&#62;</code>, <code>&#60;h1&#62;</code> to <code>&#60;h6&#62;</code>, <code>&#60;div&#62;</code> or <code>&#60;address&#62;</code>.
    *
    * @method getTextBlockElements
    * @return {Object} Name/value lookup map for block elements.
    */
-  const getTextBlockElements = (): SchemaMap => textBlockElementsMap;
+  const getTextBlockElements = Fun.constant(textBlockElementsMap);
 
   /**
-   * Returns a map of inline text format nodes for example strong/span or ins.
+   * Returns a map of inline text format nodes. For example: <code>&#60;strong&#62;</code>, <code>&#60;span&#62;</code> or <code>&#60;ins&#62;</code>.
    *
    * @method getTextInlineElements
    * @return {Object} Name/value lookup map for text format elements.
    */
-  const getTextInlineElements = (): SchemaMap => textInlineElementsMap;
+  const getTextInlineElements = Fun.constant(textInlineElementsMap);
 
   /**
-   * Returns a map with short ended elements such as BR or IMG.
+   * Returns a map with short ended elements. For example: <code>&#60;br&#62;</code> or <code>&#60;img&#62;</code>.
    *
    * @method getShortEndedElements
    * @return {Object} Name/value lookup map for short ended elements.
    */
-  const getShortEndedElements = (): SchemaMap => shortEndedElementsMap;
+  const getShortEndedElements = Fun.constant(shortEndedElementsMap);
 
   /**
-   * Returns a map with self closing tags such as <li>.
+   * Returns a map with self closing tags. For example: <code>&#60;li&#62;</code>.
    *
    * @method getSelfClosingElements
    * @return {Object} Name/value lookup map for self closing tags elements.
    */
-  const getSelfClosingElements = (): SchemaMap => selfClosingElementsMap;
+  const getSelfClosingElements = Fun.constant(selfClosingElementsMap);
 
   /**
    * Returns a map with elements that should be treated as contents regardless if it has text
-   * content in them or not such as TD, VIDEO or IMG.
+   * content in them or not. For example: <code>&#60;td&#62;</code>, <code>&#60;video&#62;</code> or <code>&#60;img&#62;</code>.
    *
    * @method getNonEmptyElements
    * @return {Object} Name/value lookup map for non empty elements.
    */
-  const getNonEmptyElements = (): SchemaMap => nonEmptyElementsMap;
+  const getNonEmptyElements = Fun.constant(nonEmptyElementsMap);
 
   /**
    * Returns a map with elements that the caret should be moved in front of after enter is
-   * pressed
+   * pressed.
    *
    * @method getMoveCaretBeforeOnEnterElements
    * @return {Object} Name/value lookup map for elements to place the caret in front of.
    */
-  const getMoveCaretBeforeOnEnterElements = (): SchemaMap => moveCaretBeforeOnEnterElementsMap;
+  const getMoveCaretBeforeOnEnterElements = Fun.constant(moveCaretBeforeOnEnterElementsMap);
 
   /**
-   * Returns a map with elements where white space is to be preserved like PRE or SCRIPT.
+   * Returns a map with elements where white space is to be preserved. For example: <code>&#60;pre&#62;</code> or <code>&#60;script&#62;</code>.
    *
    * @method getWhiteSpaceElements
    * @return {Object} Name/value lookup map for white space elements.
    */
-  const getWhiteSpaceElements = (): SchemaMap => whiteSpaceElementsMap;
+  const getWhiteSpaceElements = Fun.constant(whiteSpaceElementsMap);
 
   /**
    * Returns a map with special elements. These are elements that needs to be parsed
    * in a special way such as script, style, textarea etc. The map object values
    * are regexps used to find the end of the element.
+   * <br>
+   * <em>Deprecated in TinyMCE 5.10 and has been marked for removal in TinyMCE 6.0</em>.
    *
    * @method getSpecialElements
+   * @deprecated
    * @return {Object} Name/value lookup map for special elements.
    */
-  const getSpecialElements = (): SchemaRegExpMap => specialElements;
+  const getSpecialElements = Fun.constant(specialElements);
 
   /**
    * Returns true/false if the specified element and it's child is valid or not
@@ -1034,11 +1067,11 @@ function Schema(settings?: SchemaSettings): Schema {
    * @method getCustomElements
    * @return {Object} Name/value map object of all custom elements.
    */
-  const getCustomElements = (): SchemaMap => customElementsMap;
+  const getCustomElements = Fun.constant(customElementsMap);
 
   /**
    * Parses a valid elements string and adds it to the schema. The valid elements
-   * format is for example "element[attr=default|otherattr]".
+   * format is for example <code>element[attr=default|otherattr]</code>.
    * Existing rules will be replaced with the ones specified, so this extends the schema.
    *
    * @method addValidElements
@@ -1047,7 +1080,7 @@ function Schema(settings?: SchemaSettings): Schema {
 
   /**
    * Parses a valid elements string and sets it to the schema. The valid elements
-   * format is for example "element[attr=default|otherattr]".
+   * format is for example <code>element[attr=default|otherattr]</code>.
    * Existing rules will be replaced with the ones specified, so this extends the schema.
    *
    * @method setValidElements
@@ -1055,7 +1088,7 @@ function Schema(settings?: SchemaSettings): Schema {
    */
 
   /**
-   * Adds custom non HTML elements to the schema.
+   * Adds custom non-HTML elements to the schema.
    *
    * @method addCustomElements
    * @param {String} custom_elements Comma separated list of custom elements to add.
@@ -1063,7 +1096,7 @@ function Schema(settings?: SchemaSettings): Schema {
 
   /**
    * Parses a valid children string and adds them to the schema structure. The valid children
-   * format is for example: "element[child1|child2]".
+   * format is for example <code>element[child1|child2]</code>.
    *
    * @method addValidChildren
    * @param {String} valid_children Valid children elements string to parse
@@ -1094,6 +1127,6 @@ function Schema(settings?: SchemaSettings): Schema {
     addCustomElements,
     addValidChildren
   };
-}
+};
 
 export default Schema;

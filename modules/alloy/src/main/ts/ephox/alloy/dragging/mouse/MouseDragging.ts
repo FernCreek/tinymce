@@ -1,9 +1,8 @@
-import { FieldProcessorAdt } from '@ephox/boulder';
-import { MouseEvent } from '@ephox/dom-globals';
-import { Option } from '@ephox/katamari';
+import { FieldProcessor } from '@ephox/boulder';
+import { Optional } from '@ephox/katamari';
 import { EventArgs } from '@ephox/sugar';
 
-import DelayedFunction from '../../alien/DelayedFunction';
+import { DelayedFunction } from '../../alien/DelayedFunction';
 import { AlloyComponent } from '../../api/component/ComponentApi';
 import * as AlloyEvents from '../../api/events/AlloyEvents';
 import * as NativeEvents from '../../api/events/NativeEvents';
@@ -17,13 +16,15 @@ import * as MouseBlockerEvents from './MouseBlockerEvents';
 import * as MouseData from './MouseData';
 import { MouseDraggingConfig } from './MouseDraggingTypes';
 
-const events = <E>(dragConfig: MouseDraggingConfig<E>, dragState: DraggingState, updateStartState: (comp: AlloyComponent) => void) => [
+const events = <E>(dragConfig: MouseDraggingConfig<E>, dragState: DraggingState, updateStartState: (comp: AlloyComponent) => void): Array<AlloyEvents.AlloyEventKeyAndHandler<EventArgs<MouseEvent>>> => [
   AlloyEvents.run<EventArgs<MouseEvent>>(NativeEvents.mousedown(), (component, simulatedEvent) => {
-    const raw = simulatedEvent.event().raw();
-    if (raw.button !== 0) { return; }
+    const raw = simulatedEvent.event.raw;
+    if (raw.button !== 0) {
+      return;
+    }
     simulatedEvent.stop();
 
-    const stop = () => DragUtils.stop(component, Option.some(blocker), dragConfig, dragState);
+    const stop = () => DragUtils.stop(component, Optional.some(blocker), dragConfig, dragState);
 
     // If the user has moved something outside the area, and has not come back within
     // 200 ms, then drop
@@ -33,7 +34,7 @@ const events = <E>(dragConfig: MouseDraggingConfig<E>, dragState: DraggingState,
       drop: stop,
       delayDrop: delayDrop.schedule,
       forceDrop: stop,
-      move(event) {
+      move: (event) => {
         // Stop any pending drops caused by mouseout
         delayDrop.cancel();
         DragUtils.move(component, dragConfig, dragState, MouseData, event);
@@ -51,7 +52,7 @@ const events = <E>(dragConfig: MouseDraggingConfig<E>, dragState: DraggingState,
   })
 ];
 
-const schema: FieldProcessorAdt[] = [
+const schema: FieldProcessor[] = [
   ...DraggingSchema.schema,
   Fields.output('dragger', {
     handlers: DragUtils.handlers(events)

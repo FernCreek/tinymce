@@ -1,5 +1,5 @@
 import { Universe } from '@ephox/boss';
-import { Option } from '@ephox/katamari';
+import { Optional } from '@ephox/katamari';
 
 /**
  * Creates a look function that searches the current element and parent elements until
@@ -7,10 +7,10 @@ import { Option } from '@ephox/katamari';
  *
  * f: item -> boolean
  */
-const predicate = function <E> (f: (e: E) => boolean) {
-  return function <D> (universe: Universe<E, D>, item: E) {
+const predicate = <E>(f: (e: E) => boolean) => {
+  return <D>(universe: Universe<E, D>, item: E): Optional<E> => {
     return f(item) ?
-      Option.some(item) :
+      Optional.some(item) :
       universe.up().predicate(item, f);
   };
 };
@@ -21,10 +21,10 @@ const predicate = function <E> (f: (e: E) => boolean) {
  *
  * sel: selector
  */
-const selector = function (sel: string) {
-  return function <E, D> (universe: Universe<E, D>, item: E) {
+const selector = (sel: string) => {
+  return <E, D>(universe: Universe<E, D>, item: E): Optional<E> => {
     return universe.is(item, sel) ?
-      Option.some(item) :
+      Optional.some(item) :
       universe.up().selector(item, sel);
   };
 };

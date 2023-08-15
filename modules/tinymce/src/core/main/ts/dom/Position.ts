@@ -5,27 +5,26 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Arr } from '@ephox/katamari';
+import { Arr, Optional } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
-import { Element, Node, Css, Traverse } from '@ephox/sugar';
+import { Css, SugarElement, SugarNode, Traverse } from '@ephox/sugar';
 
 const browser = PlatformDetection.detect().browser;
 
-const firstElement = function (nodes) {
-  return Arr.find(nodes, Node.isElement);
-};
+const firstElement = (nodes: SugarElement<Node>[]): Optional<SugarElement<HTMLElement>> =>
+  Arr.find(nodes, SugarNode.isElement) as Optional<SugarElement<HTMLElement>>;
 
 // Firefox has a bug where caption height is not included correctly in offset calculations of tables
 // this tries to compensate for that by detecting if that offsets are incorrect and then remove the height
-const getTableCaptionDeltaY = function (elm) {
-  if (browser.isFirefox() && Node.name(elm) === 'table') {
-    return firstElement(Traverse.children(elm)).filter(function (elm) {
-      return Node.name(elm) === 'caption';
-    }).bind(function (caption) {
-      return firstElement(Traverse.nextSiblings(caption)).map(function (body) {
-        const bodyTop = body.dom().offsetTop;
-        const captionTop = caption.dom().offsetTop;
-        const captionHeight = caption.dom().offsetHeight;
+const getTableCaptionDeltaY = (elm: SugarElement<Node>) => {
+  if (browser.isFirefox() && SugarNode.name(elm) === 'table') {
+    return firstElement(Traverse.children(elm)).filter((elm) => {
+      return SugarNode.name(elm) === 'caption';
+    }).bind((caption) => {
+      return firstElement(Traverse.nextSiblings(caption)).map((body) => {
+        const bodyTop = body.dom.offsetTop;
+        const captionTop = caption.dom.offsetTop;
+        const captionHeight = caption.dom.offsetHeight;
         return bodyTop <= captionTop ? -captionHeight : 0;
       });
     }).getOr(0);
@@ -34,37 +33,37 @@ const getTableCaptionDeltaY = function (elm) {
   }
 };
 
-const hasChild = (elm, child) => elm.children && Arr.contains(elm.children, child);
+const hasChild = (elm: Element, child: Node) => elm.children && Arr.contains(elm.children, child);
 
-const getPos = function (body, elm, rootElm) {
-  let x = 0, y = 0, offsetParent;
-  let pos;
+const getPos = (body: HTMLElement, elm: HTMLElement | null, rootElm?: Node): { x: number; y: number } => {
+  let x = 0, y = 0;
 
   rootElm = rootElm ? rootElm : body;
 
   if (elm) {
     // Use getBoundingClientRect if it exists since it's faster than looping offset nodes
     // Fallback to offsetParent calculations if the body isn't static better since it stops at the body root
-    if (rootElm === body && elm.getBoundingClientRect && Css.get(Element.fromDom(body), 'position') === 'static') {
-      pos = elm.getBoundingClientRect();
+    if (rootElm === body && elm.getBoundingClientRect && Css.get(SugarElement.fromDom(body), 'position') === 'static') {
+      const pos = elm.getBoundingClientRect();
       return {x: pos.left, y: pos.top};
     }
 
-    offsetParent = elm;
+    let offsetParent: Element = elm;
     while (offsetParent && offsetParent !== rootElm && offsetParent.nodeType && !hasChild(offsetParent, rootElm)) {
-      x += offsetParent.offsetLeft || 0;
-      y += offsetParent.offsetTop || 0;
-      offsetParent = offsetParent.offsetParent;
+      const castOffsetParent = offsetParent as HTMLElement;
+      x += castOffsetParent.offsetLeft || 0;
+      y += castOffsetParent.offsetTop || 0;
+      offsetParent = castOffsetParent.offsetParent;
     }
 
-    offsetParent = elm.parentNode;
+    offsetParent = elm.parentNode as Element;
     while (offsetParent && offsetParent !== rootElm && offsetParent.nodeType && !hasChild(offsetParent, rootElm)) {
       x -= offsetParent.scrollLeft || 0;
       y -= offsetParent.scrollTop || 0;
-      offsetParent = offsetParent.parentNode;
+      offsetParent = offsetParent.parentNode as Element;
     }
 
-    y += getTableCaptionDeltaY(Element.fromDom(elm));
+    y += getTableCaptionDeltaY(SugarElement.fromDom(elm));
   }
 
   return { x, y };

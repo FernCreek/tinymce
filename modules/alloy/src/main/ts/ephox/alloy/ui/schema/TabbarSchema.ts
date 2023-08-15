@@ -1,4 +1,4 @@
-import { FieldProcessorAdt, FieldSchema } from '@ephox/boulder';
+import { FieldSchema } from '@ephox/boulder';
 import { Fun } from '@ephox/katamari';
 
 import { Highlighting } from '../../api/behaviour/Highlighting';
@@ -13,10 +13,10 @@ import * as PartType from '../../parts/PartType';
 import { TabbarDetail } from '../types/TabbarTypes';
 import { TabButtonSpec } from '../types/TabButtonTypes';
 
-const schema: () => FieldProcessorAdt[] = Fun.constant([
-  FieldSchema.strict('tabs'),
+const schema = Fun.constant([
+  FieldSchema.required('tabs'),
 
-  FieldSchema.strict('dom'),
+  FieldSchema.required('dom'),
 
   FieldSchema.defaulted('clickToDismiss', false),
   SketchBehaviours.field('tabbarBehaviours', [ Highlighting, Keying ]),
@@ -27,7 +27,7 @@ const tabsPart = PartType.group<TabbarDetail, TabButtonSpec>({
   factory: TabButton,
   name: 'tabs',
   unit: 'tab',
-  overrides(barDetail) {
+  overrides: (barDetail) => {
     const dismissTab = (tabbar: AlloyComponent, button: AlloyComponent) => {
       Highlighting.dehighlight(tabbar, button);
       AlloyTriggers.emitWith(tabbar, SystemEvents.dismissTab(), {
@@ -45,14 +45,14 @@ const tabsPart = PartType.group<TabbarDetail, TabButtonSpec>({
     };
 
     return {
-      action(button: AlloyComponent) {
+      action: (button: AlloyComponent) => {
         const tabbar = button.getSystem().getByUid(barDetail.uid).getOrDie();
         const activeButton = Highlighting.isHighlighted(tabbar, button);
 
         const response = (() => {
           if (activeButton && barDetail.clickToDismiss) {
             return dismissTab;
-          } else if (! activeButton) {
+          } else if (!activeButton) {
             return changeTab;
           } else {
             return Fun.noop;

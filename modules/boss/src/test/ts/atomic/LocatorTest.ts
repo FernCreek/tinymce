@@ -1,13 +1,13 @@
 import { UnitTest } from '@ephox/bedrock-client';
-import { Option } from '@ephox/katamari';
+import { Optional } from '@ephox/katamari';
+import { KAssert } from '@ephox/katamari-assertions';
+
 import { Gene } from 'ephox/boss/api/Gene';
 import * as Creator from 'ephox/boss/mutant/Creator';
 import * as Locator from 'ephox/boss/mutant/Locator';
 import * as Tracks from 'ephox/boss/mutant/Tracks';
 
-import { KAssert } from '@ephox/katamari-assertions';
-
-UnitTest.test('LocatorTest', function () {
+UnitTest.test('LocatorTest', () => {
   const family = Tracks.track(
     Gene('A', '.', [
       Gene('B', '.'),
@@ -18,7 +18,7 @@ UnitTest.test('LocatorTest', function () {
         Gene('F', '.'),
         Creator.text('cattle')
       ])
-    ]), Option.none());
+    ]), Optional.none());
 
   const getId = (x: Gene) => x.id;
 

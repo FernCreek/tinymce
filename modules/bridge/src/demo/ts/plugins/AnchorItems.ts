@@ -1,11 +1,11 @@
-import { getDemoRegistry } from './../buttons/DemoRegistry';
+import { getDemoRegistry } from '../buttons/DemoRegistry';
 
 const editor = {
   on: (_s, _f) => { },
   off: (_s, _f) => { }
 };
 
-export const registerAnchorItems = () => {
+export const registerAnchorItems = (): void => {
   getDemoRegistry().addToggleButton('anchor', {
     type: 'togglebutton',
     disabled: false,

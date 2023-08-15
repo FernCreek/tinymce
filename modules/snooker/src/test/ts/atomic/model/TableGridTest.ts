@@ -1,27 +1,39 @@
+import { describe, it } from '@ephox/bedrock-client';
 import { Fun } from '@ephox/katamari';
+import { SugarElement } from '@ephox/sugar';
+import { assert } from 'chai';
+
 import * as Structs from 'ephox/snooker/api/Structs';
 import * as TableGrid from 'ephox/snooker/model/TableGrid';
-import { UnitTest, assert } from '@ephox/bedrock-client';
-import { Element } from '@ephox/sugar';
 
-UnitTest.test('TableGrid.subgrid test', function () {
+describe('TableGridTest', () => {
   const r = Structs.rowcells;
-  const en = (fakeElement: any, isNew: boolean) => Structs.elementnew(fakeElement as Element, isNew);
+  const re = () => 'row' as unknown as SugarElement;
+  const ce = () => 'colgroup' as unknown as SugarElement;
+  const en = (fakeElement: any, isNew: boolean) => Structs.elementnew(fakeElement as SugarElement, isNew, false);
 
-  const check = function (expected: { colspan: number; rowspan: number }, row: number, column: number, grid: Structs.RowCells[]) {
+  const check = (expected: { colspan: number; rowspan: number }, row: number, column: number, grid: Structs.RowCells[]) => {
     const actual = TableGrid.subgrid(grid, row, column, Fun.tripleEquals);
-    assert.eq(expected.rowspan, actual.rowspan);
-    assert.eq(expected.colspan, actual.colspan);
+    assert.deepEqual(actual, expected);
   };
 
   const world = [
-    r([ en('a', false), en('a', false), en('a', false) ], 'thead'),
-    r([ en('b', false), en('b', false), en('c', false) ], 'tbody'),
-    r([ en('d', false), en('e', false), en('c', false) ], 'tfoot')
+    r(ce(), [ en('f', false), en('g', false), en('g', false) ], 'colgroup', false),
+    r(re(), [ en('a', false), en('a', false), en('a', false) ], 'thead', false),
+    r(re(), [ en('b', false), en('b', false), en('c', false) ], 'tbody', false),
+    r(re(), [ en('d', false), en('e', false), en('c', false) ], 'tfoot', false)
   ];
 
-  check({ colspan: 3, rowspan: 1 }, 0, 0, world);
-  check({ colspan: 2, rowspan: 1 }, 0, 1, world);
-  check({ colspan: 2, rowspan: 1 }, 1, 0, world);
-  check({ colspan: 1, rowspan: 1 }, 2, 0, world);
+  it('check cols', () => {
+    check({ colspan: 1, rowspan: 1 }, 0, 0, world);
+    check({ colspan: 2, rowspan: 1 }, 0, 1, world);
+  });
+
+  it('check cells', () => {
+    check({ colspan: 3, rowspan: 1 }, 1, 0, world);
+    check({ colspan: 2, rowspan: 1 }, 1, 1, world);
+    check({ colspan: 2, rowspan: 1 }, 2, 0, world);
+    check({ colspan: 1, rowspan: 1 }, 3, 0, world);
+    check({ colspan: 1, rowspan: 2 }, 2, 2, world);
+  });
 });

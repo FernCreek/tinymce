@@ -1,8 +1,9 @@
-import { FieldSchema, ValueSchema } from '@ephox/boulder';
+import { FieldSchema, StructureSchema } from '@ephox/boulder';
 import { Result } from '@ephox/katamari';
-import { BaseToolbarButton, BaseToolbarButtonApi, baseToolbarButtonFields, BaseToolbarButtonInstanceApi } from './ToolbarButton';
 
-export interface BaseToolbarToggleButtonApi<I extends BaseToolbarButtonInstanceApi> extends BaseToolbarButtonApi<I> {
+import { BaseToolbarButton, BaseToolbarButtonSpec, baseToolbarButtonFields, BaseToolbarButtonInstanceApi } from './ToolbarButton';
+
+export interface BaseToolbarToggleButtonSpec<I extends BaseToolbarButtonInstanceApi> extends BaseToolbarButtonSpec<I> {
   active?: boolean;
 }
 
@@ -15,7 +16,7 @@ export interface BaseToolbarToggleButtonInstanceApi extends BaseToolbarButtonIns
   setActive: (state: boolean) => void;
 }
 
-export interface ToolbarToggleButtonApi extends BaseToolbarToggleButtonApi<ToolbarToggleButtonInstanceApi> {
+export interface ToolbarToggleButtonSpec extends BaseToolbarToggleButtonSpec<ToolbarToggleButtonInstanceApi> {
   type?: 'togglebutton';
   onAction: (api: ToolbarToggleButtonInstanceApi) => void;
 }
@@ -34,13 +35,14 @@ export const baseToolbarToggleButtonFields = [
   FieldSchema.defaultedBoolean('active', false)
 ].concat(baseToolbarButtonFields);
 
-export const toggleButtonSchema = ValueSchema.objOf(
+export const toggleButtonSchema = StructureSchema.objOf(
   baseToolbarToggleButtonFields.concat([
-    FieldSchema.strictString('type'),
-    FieldSchema.strictFunction('onAction')
+    FieldSchema.requiredString('type'),
+    FieldSchema.requiredFunction('onAction')
   ])
 );
 
 export const isToggleButton = (spec: any): spec is ToolbarToggleButton => spec.type === 'togglebutton';
 
-export const createToggleButton = (spec: any): Result<ToolbarToggleButton, ValueSchema.SchemaError<any>> => ValueSchema.asRaw<ToolbarToggleButton>('ToggleButton', toggleButtonSchema, spec);
+export const createToggleButton = (spec: ToolbarToggleButtonSpec): Result<ToolbarToggleButton, StructureSchema.SchemaError<any>> =>
+  StructureSchema.asRaw<ToolbarToggleButton>('ToggleButton', toggleButtonSchema, spec);

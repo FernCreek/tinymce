@@ -1,8 +1,8 @@
-import { FieldSchema, Objects, Processor, ValueSchema } from '@ephox/boulder';
+import { FieldSchema, Objects, StructureSchema } from '@ephox/boulder';
 import { Fun } from '@ephox/katamari';
 
 import * as CommonBehaviour from '../../behaviour/common/Behaviour';
-import { NoState, BehaviourState } from '../../behaviour/common/BehaviourState';
+import { BehaviourState, NoState } from '../../behaviour/common/BehaviourState';
 import * as BehaviourTypes from '../../behaviour/common/BehaviourTypes';
 
 export type ConfiguredBehaviour<C extends BehaviourConfigSpec, D extends BehaviourConfigDetail, S extends BehaviourState = BehaviourState> = BehaviourTypes.ConfiguredBehaviour<C, D, S>;
@@ -21,9 +21,9 @@ const derive = (
   capabilities: Array<NamedConfiguredBehaviour<any, any, any>>
 ): AlloyBehaviourRecord => Objects.wrapAll(capabilities);
 
-const simpleSchema: Processor = ValueSchema.objOfOnly([
-  FieldSchema.strict('fields'),
-  FieldSchema.strict('name'),
+const simpleSchema = StructureSchema.objOfOnly([
+  FieldSchema.required('fields'),
+  FieldSchema.required('name'),
   FieldSchema.defaulted('active', { }),
   FieldSchema.defaulted('apis', { }),
   FieldSchema.defaulted('state', NoState),
@@ -36,15 +36,15 @@ const create = <
   S extends BehaviourState,
   A extends BehaviourTypes.BehaviourApisRecord<D, S>,
   E extends BehaviourTypes.BehaviourExtraRecord<E> = {}
->(data: AlloyBehaviourConfig<D, S, A, E>) => {
-  const value = ValueSchema.asRawOrDie('Creating behaviour: ' + data.name, simpleSchema, data);
+>(data: AlloyBehaviourConfig<D, S, A, E>): CommonBehaviour.AlloyBehaviourWithApis<C, D, S, A, E> => {
+  const value = StructureSchema.asRawOrDie('Creating behaviour: ' + data.name, simpleSchema, data);
   return CommonBehaviour.create<C, D, S, A, E>(value.fields, value.name, value.active, value.apis, value.extra, value.state);
 };
 
-const modeSchema: Processor = ValueSchema.objOfOnly([
-  FieldSchema.strict('branchKey'),
-  FieldSchema.strict('branches'),
-  FieldSchema.strict('name'),
+const modeSchema = StructureSchema.objOfOnly([
+  FieldSchema.required('branchKey'),
+  FieldSchema.required('branches'),
+  FieldSchema.required('name'),
   FieldSchema.defaulted('active', { }),
   FieldSchema.defaulted('apis', { }),
   FieldSchema.defaulted('state', NoState),
@@ -57,10 +57,10 @@ const createModes = <
   S extends BehaviourState,
   A extends BehaviourTypes.BehaviourApisRecord<D, S>,
   E extends BehaviourTypes.BehaviourExtraRecord<E> = {}
->(data: BehaviourModeSpec<D, S, A, E>) => {
-  const value = ValueSchema.asRawOrDie('Creating behaviour: ' + data.name, modeSchema, data);
+>(data: BehaviourModeSpec<D, S, A, E>): CommonBehaviour.AlloyBehaviourWithApis<C, D, S, A, E> => {
+  const value = StructureSchema.asRawOrDie('Creating behaviour: ' + data.name, modeSchema, data);
   return CommonBehaviour.createModes<C, D, S, A, E>(
-    ValueSchema.choose(value.branchKey, value.branches),
+    StructureSchema.choose(value.branchKey, value.branches),
     value.name, value.active, value.apis, value.extra, value.state
   );
 };

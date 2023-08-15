@@ -1,5 +1,4 @@
-import { document } from '@ephox/dom-globals';
-import { Class, Css, DomEvent, Element, Traverse } from '@ephox/sugar';
+import { Class, Css, DomEvent, SugarElement, Traverse } from '@ephox/sugar';
 
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
 import { Positioning } from 'ephox/alloy/api/behaviour/Positioning';
@@ -14,13 +13,14 @@ import { Container } from 'ephox/alloy/api/ui/Container';
 import * as DemoContent from 'ephox/alloy/demo/DemoContent';
 import * as DemoSink from 'ephox/alloy/demo/DemoSink';
 import * as HtmlDisplay from 'ephox/alloy/demo/HtmlDisplay';
+
 import * as Frames from './frames/Frames';
 
 export default (): void => {
   const gui = Gui.create();
-  const body = Element.fromDom(document.body);
-  Css.set(gui.element(), 'direction', 'rtl');
-  Class.add(gui.element(), 'gui-root-demo-container');
+  const body = SugarElement.fromDom(document.body);
+  Css.set(gui.element, 'direction', 'rtl');
+  Class.add(gui.element, 'gui-root-demo-container');
   Attachment.attachSystem(body, gui);
 
   const sink = DemoSink.make();
@@ -48,7 +48,7 @@ export default (): void => {
 
   HtmlDisplay.section(
     gui,
-    'Position anchoring to button',
+    'SugarPosition anchoring to button',
     Button.sketch({
       dom: {
         tag: 'button',
@@ -57,13 +57,15 @@ export default (): void => {
       eventOrder: {
         'alloy.execute': [ 'toggling', 'alloy.base.behaviour' ]
       },
-      action(comp) {
+      action: (comp) => {
         if (Toggling.isOn(comp)) {
           Attachment.attach(sink, popup);
-          Positioning.position(sink, {
-            anchor: 'hotspot',
-            hotspot: comp
-          }, popup);
+          Positioning.position(sink, popup, {
+            anchor: {
+              type: 'hotspot',
+              hotspot: comp
+            }
+          });
         } else {
           Attachment.detach(popup);
         }
@@ -82,7 +84,7 @@ export default (): void => {
 
   HtmlDisplay.section(
     gui,
-    'Position anchoring to menu',
+    'SugarPosition anchoring to menu',
     Container.sketch({
       dom: {
         tag: 'ol',
@@ -103,10 +105,12 @@ export default (): void => {
           events: AlloyEvents.derive([
             AlloyEvents.run(NativeEvents.mouseover(), (item) => {
               Attachment.attach(sink, popup);
-              Positioning.position(sink, {
-                anchor: 'submenu',
-                item
-              }, popup);
+              Positioning.position(sink, popup, {
+                anchor: {
+                  type: 'submenu',
+                  item
+                }
+              });
             })
           ])
         })
@@ -116,7 +120,7 @@ export default (): void => {
 
   HtmlDisplay.section(
     gui,
-    'Position anchoring to text selection',
+    'SugarPosition anchoring to text selection',
     Container.sketch({
       dom: {
         tag: 'div'
@@ -143,12 +147,14 @@ export default (): void => {
             tag: 'button',
             innerHtml: 'Show popup at cursor'
           },
-          action(button) {
+          action: (button) => {
             Attachment.attach(sink, popup);
-            Positioning.position(sink, {
-              anchor: 'selection',
-              root: button.getSystem().getByUid('text-editor').getOrDie().element()
-            }, popup);
+            Positioning.position(sink, popup, {
+              anchor: {
+                type: 'selection',
+                root: button.getSystem().getByUid('text-editor').getOrDie().element
+              }
+            });
           }
         })
       ]
@@ -156,7 +162,7 @@ export default (): void => {
   );
 
   // Maybe make a component.
-  const frame = Element.fromTag('iframe');
+  const frame = SugarElement.fromTag('iframe');
   const onLoad = DomEvent.bind(frame, 'load', () => {
     onLoad.unbind();
 
@@ -166,7 +172,7 @@ export default (): void => {
 
   HtmlDisplay.section(
     gui,
-    'Position anchoring to text selection [iframe]',
+    'SugarPosition anchoring to text selection [iframe]',
     Container.sketch({
       components: [
         GuiFactory.external({
@@ -178,12 +184,14 @@ export default (): void => {
             tag: 'button',
             innerHtml: 'Show popup at cursor'
           },
-          action(_button) {
+          action: (_button) => {
             Attachment.attach(sink, popup);
-            Positioning.position(sink, {
-              anchor: 'selection',
-              root: Element.fromDom(Traverse.defaultView(frame).dom().document.body)
-            }, popup);
+            Positioning.position(sink, popup, {
+              anchor: {
+                type: 'selection',
+                root: SugarElement.fromDom(Traverse.defaultView(frame).dom.document.body)
+              }
+            });
           }
         })
       ]

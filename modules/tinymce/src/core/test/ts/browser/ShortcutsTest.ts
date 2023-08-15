@@ -1,21 +1,27 @@
-import { Pipeline } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { LegacyUnit, TinyLoader } from '@ephox/mcagar';
+import { describe, it } from '@ephox/bedrock-client';
+import { TinyHooks } from '@ephox/wrap-mcagar';
+import { assert } from 'chai';
+
 import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
 import Tools from 'tinymce/core/api/util/Tools';
 import Theme from 'tinymce/themes/silver/Theme';
 
-UnitTest.asynctest('browser.tinymce.core.ShortcutsTest', function (success, failure) {
-  const suite = LegacyUnit.createSuite<Editor>();
+describe('browser.tinymce.core.ShortcutsTest', () => {
+  const hook = TinyHooks.bddSetupLight<Editor>({
+    add_unload_trigger: false,
+    disable_nodechange: true,
+    indent: false,
+    entities: 'raw',
+    base_url: '/project/tinymce/js/tinymce'
+  }, [ Theme ]);
 
-  Theme();
-
-  suite.test('Shortcuts formats', function (editor) {
-    const assertShortcut = function (shortcut: string, args, assertState: boolean) {
+  it('Shortcuts formats', () => {
+    const editor = hook.editor();
+    const assertShortcut = (shortcut: string, args, assertState: boolean) => {
       let called = false;
 
-      editor.shortcuts.add(shortcut, '', function () {
+      editor.shortcuts.add(shortcut, '', () => {
         called = true;
       });
 
@@ -29,9 +35,9 @@ UnitTest.asynctest('browser.tinymce.core.ShortcutsTest', function (success, fail
       editor.fire('keydown', args);
 
       if (assertState) {
-        LegacyUnit.equal(called, true, `Shortcut wasn't called: ` + shortcut);
+        assert.isTrue(called, `Shortcut wasn't called: ` + shortcut);
       } else {
-        LegacyUnit.equal(called, false, `Shortcut was called when it shouldn't have been: ` + shortcut);
+        assert.isFalse(called, `Shortcut was called when it shouldn't have been: ` + shortcut);
       }
     };
 
@@ -68,7 +74,8 @@ UnitTest.asynctest('browser.tinymce.core.ShortcutsTest', function (success, fail
     assertShortcut('f12', { keyCode: 123 }, true);
   });
 
-  suite.test('Remove', function (editor) {
+  it('Remove', () => {
+    const editor = hook.editor();
     const testPattern = (pattern: string, keyCode: number, ctrlKey = false) => {
       let called = false;
 
@@ -80,30 +87,20 @@ UnitTest.asynctest('browser.tinymce.core.ShortcutsTest', function (success, fail
         metaKey: false
       });
 
-      editor.shortcuts.add(pattern, '', function () {
+      editor.shortcuts.add(pattern, '', () => {
         called = true;
       });
 
-      editor.fire('keydown', eventArgs());
-      LegacyUnit.equal(called, true, `Shortcut wasn't called when it should have been.`);
+      editor.fire('keydown', eventArgs() as KeyboardEvent);
+      assert.isTrue(called, `Shortcut wasn't called when it should have been.`);
 
       called = false;
       editor.shortcuts.remove(pattern);
-      editor.fire('keydown', eventArgs());
-      LegacyUnit.equal(called, false, `Shortcut was called when it shouldn't.`);
+      editor.fire('keydown', eventArgs() as KeyboardEvent);
+      assert.isFalse(called, `Shortcut was called when it shouldn't.`);
     };
 
     testPattern('ctrl+d', 68, true);
     testPattern('ctrl+F2', 113, true);
   });
-
-  TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
-    Pipeline.async({}, suite.toSteps(editor), onSuccess, onFailure);
-  }, {
-    add_unload_trigger: false,
-    disable_nodechange: true,
-    indent: false,
-    entities: 'raw',
-    base_url: '/project/tinymce/js/tinymce'
-  }, success, failure);
 });

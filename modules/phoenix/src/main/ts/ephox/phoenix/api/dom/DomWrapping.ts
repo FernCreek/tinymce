@@ -1,31 +1,33 @@
 import { DomUniverse } from '@ephox/boss';
-import { Element } from '@ephox/sugar';
-import { Wrapter } from '../data/Types';
+import { Optional } from '@ephox/katamari';
+import { SugarElement } from '@ephox/sugar';
+
+import { SpanWrapRange, SpotPoints, Wrapter } from '../data/Types';
 import * as Wrapping from '../general/Wrapping';
 
 const universe = DomUniverse();
 
-const nu = function (element: Element) {
+const nu = (element: SugarElement): Wrapter<SugarElement> => {
   return Wrapping.nu(universe, element);
 };
 
-const wrapWith = function (base: Element, baseOffset: number, end: Element, endOffset: number, c: () => Wrapter<Element>) {
+const wrapWith = (base: SugarElement, baseOffset: number, end: SugarElement, endOffset: number, c: () => Wrapter<SugarElement>): SugarElement[] => {
   return Wrapping.wrapWith(universe, base, baseOffset, end, endOffset, c);
 };
 
-const wrapper = function (wrapped: Element[], c: () => Wrapter<Element>) {
+const wrapper = (wrapped: SugarElement[], c: () => Wrapter<SugarElement>): SugarElement[] => {
   return Wrapping.wrapper(universe, wrapped, c);
 };
 
-const leaves = function (base: Element, baseOffset: number, end: Element, endOffset: number, c: () => Wrapter<Element>) {
+const leaves = (base: SugarElement, baseOffset: number, end: SugarElement, endOffset: number, c: () => Wrapter<SugarElement>): Optional<SpotPoints<SugarElement>> => {
   return Wrapping.leaves(universe, base, baseOffset, end, endOffset, c);
 };
 
-const reuse = function (base: Element, baseOffset: number, end: Element, endOffset: number, predicate: (e: Element) => boolean, nu: () => Wrapter<Element>) {
+const reuse = (base: SugarElement, baseOffset: number, end: SugarElement, endOffset: number, predicate: (e: SugarElement) => boolean, nu: () => Wrapter<SugarElement>): SugarElement[] => {
   return Wrapping.reuse(universe, base, baseOffset, end, endOffset, predicate, nu);
 };
 
-const spans = function (base: Element, baseOffset: number, end: Element, endOffset: number, exclusions?: (e: Element) => boolean) {
+const spans = (base: SugarElement, baseOffset: number, end: SugarElement, endOffset: number, exclusions?: (e: SugarElement) => boolean): Optional<SpanWrapRange<SugarElement>> => {
   return Wrapping.spans(universe, base, baseOffset, end, endOffset, exclusions);
 };
 

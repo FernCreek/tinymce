@@ -1,33 +1,32 @@
-import { Debugging, Gui, GuiFactory, Channels } from '@ephox/alloy';
-import { console, document } from '@ephox/dom-globals';
-import { Option } from '@ephox/katamari';
-import { Class, Element, Insert, DomEvent } from '@ephox/sugar';
+import { Channels, Debugging, Gui, GuiFactory } from '@ephox/alloy';
+import { Fun, Optional } from '@ephox/katamari';
+import { Class, DomEvent, Insert, SugarElement } from '@ephox/sugar';
+
 import * as ColourPicker from 'ephox/acid/gui/ColourPicker';
+
 import { strings } from '../../../../i18n/en';
 
 const gui = Gui.create();
-const body = Element.fromDom(document.body);
-Class.add(gui.element(), 'gui-root-demo-container');
-Insert.append(body, gui.element());
+const body = SugarElement.fromDom(document.body);
+Class.add(gui.element, 'gui-root-demo-container');
+Insert.append(body, gui.element);
 
-DomEvent.bind(Element.fromDom(document), 'mouseup', (evt) => {
-  if (evt.raw().button === 0) {
+DomEvent.bind(SugarElement.fromDom(document), 'mouseup', (evt) => {
+  if (evt.raw.button === 0) {
     gui.broadcastOn([ Channels.mouseReleased() ], {
-      target: evt.target()
+      target: evt.target
     });
   }
 });
 
 const fakeTranslate = (key: string): string =>
-  Option.from(strings[key]).getOrThunk(() => {
-    // tslint:disable-next-line:no-console
+  Optional.from(strings[key]).getOrThunk(() => {
+    // eslint-disable-next-line no-console
     console.error('Missing translation for ' + key);
     return key;
   });
 
-const fakeGetClass = (key: string): string => key;
-
-const colourPickerFactory = ColourPicker.makeFactory(fakeTranslate, fakeGetClass);
+const colourPickerFactory = ColourPicker.makeFactory(fakeTranslate, Fun.identity);
 
 const colourPicker = GuiFactory.build(colourPickerFactory.sketch({
   dom: {

@@ -1,5 +1,6 @@
 import { Assertions, Chain, NamedChain } from '@ephox/agar';
 import { UnitTest } from '@ephox/bedrock-client';
+import { Fun } from '@ephox/katamari';
 import { Css } from '@ephox/sugar';
 
 import * as Boxes from 'ephox/alloy/alien/Boxes';
@@ -18,7 +19,7 @@ UnitTest.asynctest('HotspotPositionTest', (success, failure) => {
   GuiSetup.setup((_store, _doc, _body) => {
     const hotspot = GuiFactory.build(
       Button.sketch({
-        action() { },
+        action: Fun.noop,
         dom: {
           styles: {
             position: 'absolute',
@@ -45,7 +46,7 @@ UnitTest.asynctest('HotspotPositionTest', (success, failure) => {
 
   }, (_doc, _body, gui, _component, _store) => {
     const cSetupAnchor = Chain.mapper((hotspot) => ({
-      anchor: 'hotspot',
+      type: 'hotspot',
       hotspot,
       layouts: {
         onLtr: () => [ Layout.northeast, Layout.southeast ],
@@ -54,7 +55,7 @@ UnitTest.asynctest('HotspotPositionTest', (success, failure) => {
     }));
 
     const cAssertLayoutDirection = (direction: 'top' | 'bottom'): Chain<any, any> => Chain.op((data: { popup: AlloyComponent }) => {
-      const popup = data.popup.element();
+      const popup = data.popup.element;
       // Swap the direction name, as the style used is opposite
       const style = direction === 'top' ? 'bottom' : 'top';
       Assertions.assertEq(`Assert layout direction is ${direction}`, true, Css.getRaw(popup, style).isSome());
@@ -87,5 +88,5 @@ UnitTest.asynctest('HotspotPositionTest', (success, failure) => {
         ])
       ])
     ];
-  }, () => { success(); }, failure);
+  }, success, failure);
 });

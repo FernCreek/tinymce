@@ -5,18 +5,19 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Node } from '@ephox/dom-globals';
-import { Arr, Option, Unicode } from '@ephox/katamari';
+import { Arr, Optional, Unicode } from '@ephox/katamari';
+
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import Editor from 'tinymce/core/api/Editor';
 import Tools from 'tinymce/core/api/util/Tools';
+
 import * as Settings from '../api/Settings';
 import * as TextSearch from '../text/TextSearch';
 import { generatePathRange, resolvePathRange } from '../utils/PathRange';
 import * as Utils from '../utils/Utils';
 import { BlockPattern, BlockPatternMatch, Pattern } from './PatternTypes';
 
-const stripPattern = (dom: DOMUtils, block: Node, pattern: BlockPattern) => {
+const stripPattern = (dom: DOMUtils, block: Node, pattern: BlockPattern): void => {
   // The pattern could be across fragmented text nodes, so we need to find the end
   // of the pattern and then remove all elements between the start/end range
   const firstTextNode = TextSearch.textAfter(block, 0, block);
@@ -57,15 +58,9 @@ const applyPattern = (editor: Editor, match: BlockPatternMatch): boolean => {
 };
 
 // Finds a matching pattern to the specified text
-const findPattern = <P extends Pattern>(patterns: P[], text: string): Option<P> => {
+const findPattern = <P extends Pattern>(patterns: P[], text: string): Optional<P> => {
   const nuText = text.replace(Unicode.nbsp, ' ');
-  return Arr.find(patterns, (pattern) => {
-    if (text.indexOf(pattern.start) !== 0 && nuText.indexOf(pattern.start) !== 0) {
-      return false;
-    }
-
-    return true;
-  });
+  return Arr.find(patterns, (pattern) => text.indexOf(pattern.start) === 0 || nuText.indexOf(pattern.start) === 0);
 };
 
 const findPatterns = (editor: Editor, patterns: BlockPattern[]): BlockPatternMatch[] => {
@@ -95,7 +90,7 @@ const findPatterns = (editor: Editor, patterns: BlockPattern[]): BlockPatternMat
   }).getOr([]);
 };
 
-const applyMatches = (editor: Editor, matches: BlockPatternMatch[]) => {
+const applyMatches = (editor: Editor, matches: BlockPatternMatch[]): void => {
   if (matches.length === 0) {
     return;
   }

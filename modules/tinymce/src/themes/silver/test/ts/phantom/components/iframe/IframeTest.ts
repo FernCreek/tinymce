@@ -1,17 +1,26 @@
 import { ApproxStructure, Assertions } from '@ephox/agar';
-import { AlloyComponent, Composing, GuiFactory, TestHelpers } from '@ephox/alloy';
-import { UnitTest } from '@ephox/bedrock-client';
-import { Option } from '@ephox/katamari';
+import { AlloyComponent, Composing, GuiFactory, Representing, TestHelpers } from '@ephox/alloy';
+import { describe, it } from '@ephox/bedrock-client';
+import { Optional } from '@ephox/katamari';
 import { PlatformDetection } from '@ephox/sand';
 
 import { renderIFrame } from 'tinymce/themes/silver/ui/dialog/IFrame';
-import { RepresentingSteps } from '../../../module/ReperesentingSteps';
+
 import TestProviders from '../../../module/TestProviders';
 
-UnitTest.asynctest('IFrame component Test', (success, failure) => {
-  const platformNeedsSandboxing = !(PlatformDetection.detect().browser.isIE() || PlatformDetection.detect().browser.isEdge());
+describe('phantom.tinymce.themes.silver.components.iframe.IFrameTest', () => {
+  const browser = PlatformDetection.detect().browser;
+  const platformNeedsSandboxing = !(browser.isIE() || browser.isEdge());
 
-  const sAssertInitialIframeStructure = (component: AlloyComponent) => Assertions.sAssertStructure(
+  const hook = TestHelpers.GuiSetup.bddSetup((_store, _doc, _body) => GuiFactory.build(
+    renderIFrame({
+      name: 'frame-a',
+      label: Optional.some('iframe label'),
+      sandboxed: true
+    }, TestProviders)
+  ));
+
+  const assertInitialIframeStructure = (component: AlloyComponent) => Assertions.assertStructure(
     'Checking initial structure',
     ApproxStructure.build((s, str, arr) => {
       const labelStructure = s.element('label', {
@@ -47,13 +56,13 @@ UnitTest.asynctest('IFrame component Test', (success, failure) => {
         children: [ labelStructure, iframeStructure ]
       });
     }),
-    component.element()
+    component.element
   );
 
-  const sAssertSandboxedIframeContent = (frame: AlloyComponent, content: string) =>
+  const assertSandboxedIframeContent = (frame: AlloyComponent, content: string) =>
     // Can't check content inside the iframe due to permission issues.
     // So instead, check that there is a source tag now.
-    Assertions.sAssertStructure(
+    Assertions.assertStructure(
       'Checking to see that the src tag is now set on the iframe',
       ApproxStructure.build((s, str, _arr) => s.element('iframe', {
         classes: [ ],
@@ -61,13 +70,13 @@ UnitTest.asynctest('IFrame component Test', (success, failure) => {
           srcdoc: str.contains(content)
         }
       })),
-      frame.element()
+      frame.element
     );
 
-  const sAssertStandardIframeContent = (frame: AlloyComponent) =>
+  const assertStandardIframeContent = (frame: AlloyComponent) =>
     // TODO: See if we can match the contents inside the iframe body. That may not be possible though,
-    //       as attempting to use sAssertStructure is throwing permission errors from tests
-    Assertions.sAssertStructure(
+    //       as attempting to use assertStructure is throwing permission errors from tests
+    Assertions.assertStructure(
       'Checking to see that the src tag is now set on the iframe',
       ApproxStructure.build((s, str, _arr) => s.element('iframe', {
         classes: [],
@@ -75,32 +84,22 @@ UnitTest.asynctest('IFrame component Test', (success, failure) => {
           src: str.is(`javascript:''`)
         }
       })),
-      frame.element()
+      frame.element
     );
 
-  TestHelpers.GuiSetup.setup(
-    (_store, _doc, _body) => GuiFactory.build(
-      renderIFrame({
-        name: 'frame-a',
-        label: Option.some('iframe label'),
-        sandboxed: true
-      }, TestProviders)
-    ),
-    (_doc, _body, _gui, component, _store) => {
+  it('Check basic structure', () => {
+    assertInitialIframeStructure(hook.component());
+  });
 
-      const frame = Composing.getCurrent(component).getOrDie(
-        'Could not find internal frame field'
-      );
-
-      // TODO: Make a webdriver test re: keyboard navigation.
-      const content = '<p><span class="me">Me</span></p>';
-      return [
-        sAssertInitialIframeStructure(component),
-        RepresentingSteps.sSetValue('Setting to a paragraph', frame, content),
-        platformNeedsSandboxing ? sAssertSandboxedIframeContent(frame, content) : sAssertStandardIframeContent(frame)
-      ];
-    },
-    success,
-    failure
-  );
+  it('Check iframe content structure', () => {
+    const component = hook.component();
+    const frame = Composing.getCurrent(component).getOrDie('Could not find internal frame field');
+    const content = '<p><span class="me">Me</span></p>';
+    Representing.setValue(frame, content);
+    if (platformNeedsSandboxing) {
+      assertSandboxedIframeContent(frame, content);
+    } else {
+      assertStandardIframeContent(frame);
+    }
+  });
 });

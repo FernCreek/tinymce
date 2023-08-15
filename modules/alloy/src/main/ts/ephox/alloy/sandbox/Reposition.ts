@@ -1,5 +1,5 @@
-import { FieldSchema, ValueSchema } from '@ephox/boulder';
-import { Option } from '@ephox/katamari';
+import { FieldSchema, StructureSchema } from '@ephox/boulder';
+import { Optional } from '@ephox/katamari';
 
 import { NamedConfiguredBehaviour } from '../api/behaviour/Behaviour';
 import { Receiving } from '../api/behaviour/Receiving';
@@ -8,11 +8,11 @@ import { AlloyComponent } from '../api/component/ComponentApi';
 import * as AlloyTriggers from '../api/events/AlloyTriggers';
 import * as SystemEvents from '../api/events/SystemEvents';
 import * as Channels from '../api/messages/Channels';
-import { ReceivingConfig, ReceivingConfigSpec } from '../behaviour/receiving/ReceivingTypes';
+import { ReceivingChannelSpec, ReceivingConfig, ReceivingConfigSpec } from '../behaviour/receiving/ReceivingTypes';
 
 export interface RepositionReceivingDetail {
   doReposition: (sandbox: AlloyComponent) => void;
-  fireEventInstead: Option<{
+  fireEventInstead: Optional<{
     event: string;
   }>;
 }
@@ -24,11 +24,11 @@ export interface RepositionReceivingSpec {
   };
 }
 
-const schema = ValueSchema.objOfOnly([
+const schema = StructureSchema.objOfOnly([
   FieldSchema.optionObjOf('fireEventInstead', [
     FieldSchema.defaulted('event', SystemEvents.repositionRequested())
   ]),
-  FieldSchema.strictFunction('doReposition')
+  FieldSchema.requiredFunction('doReposition')
 ]);
 
 const receivingConfig = (rawSpec: RepositionReceivingSpec): NamedConfiguredBehaviour<ReceivingConfigSpec, ReceivingConfig> => {
@@ -38,11 +38,11 @@ const receivingConfig = (rawSpec: RepositionReceivingSpec): NamedConfiguredBehav
   });
 };
 
-const receivingChannel = (rawSpec: RepositionReceivingSpec) => {
-  const detail: RepositionReceivingDetail = ValueSchema.asRawOrDie('Reposition', schema, rawSpec);
+const receivingChannel = (rawSpec: RepositionReceivingSpec): Record<string, ReceivingChannelSpec> => {
+  const detail: RepositionReceivingDetail = StructureSchema.asRawOrDie('Reposition', schema, rawSpec);
   return {
     [ Channels.repositionPopups() ]: {
-      onReceive(sandbox: AlloyComponent) {
+      onReceive: (sandbox: AlloyComponent) => {
         if (Sandboxing.isOpen(sandbox)) {
           detail.fireEventInstead.fold(
             () => detail.doReposition(sandbox),

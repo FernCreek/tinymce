@@ -5,12 +5,12 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Range } from '@ephox/dom-globals';
-import { Arr, Fun, Option, Options } from '@ephox/katamari';
-import { Compare, Element, Node, Traverse } from '@ephox/sugar';
+import { Arr, Fun, Obj, Optional, Optionals } from '@ephox/katamari';
+import { Compare, SugarElement, SugarNode, Traverse } from '@ephox/sugar';
+
 import DOMUtils from '../api/dom/DOMUtils';
-import Selection from '../api/dom/Selection';
-import TreeWalker from '../api/dom/TreeWalker';
+import EditorSelection from '../api/dom/Selection';
+import DomTreeWalker from '../api/dom/TreeWalker';
 import Editor from '../api/Editor';
 import Tools from '../api/util/Tools';
 import { IdBookmark, IndexBookmark } from '../bookmark/BookmarkTypes';
@@ -18,39 +18,39 @@ import * as GetBookmark from '../bookmark/GetBookmark';
 import * as NodeType from '../dom/NodeType';
 import * as TableCellSelection from './TableCellSelection';
 
-const getStartNode = function (rng) {
+const getStartNode = (rng) => {
   const sc = rng.startContainer, so = rng.startOffset;
   if (NodeType.isText(sc)) {
-    return so === 0 ? Option.some(Element.fromDom(sc)) : Option.none();
+    return so === 0 ? Optional.some(SugarElement.fromDom(sc)) : Optional.none();
   } else {
-    return Option.from(sc.childNodes[so]).map(Element.fromDom);
+    return Optional.from(sc.childNodes[so]).map(SugarElement.fromDom);
   }
 };
 
-const getEndNode = function (rng) {
+const getEndNode = (rng) => {
   const ec = rng.endContainer, eo = rng.endOffset;
   if (NodeType.isText(ec)) {
-    return eo === ec.data.length ? Option.some(Element.fromDom(ec)) : Option.none();
+    return eo === ec.data.length ? Optional.some(SugarElement.fromDom(ec)) : Optional.none();
   } else {
-    return Option.from(ec.childNodes[eo - 1]).map(Element.fromDom);
+    return Optional.from(ec.childNodes[eo - 1]).map(SugarElement.fromDom);
   }
 };
 
-const getFirstChildren = function (node) {
+const getFirstChildren = (node) => {
   return Traverse.firstChild(node).fold(
     Fun.constant([ node ]),
-    function (child) {
+    (child) => {
       return [ node ].concat(getFirstChildren(child));
     }
   );
 };
 
-const getLastChildren = function (node) {
+const getLastChildren = (node) => {
   return Traverse.lastChild(node).fold(
     Fun.constant([ node ]),
-    function (child) {
-      if (Node.name(child) === 'br') {
-        return Traverse.prevSibling(child).map(function (sibling) {
+    (child) => {
+      if (SugarNode.name(child) === 'br') {
+        return Traverse.prevSibling(child).map((sibling) => {
           return [ node ].concat(getLastChildren(sibling));
         }).getOr([]);
       } else {
@@ -60,21 +60,22 @@ const getLastChildren = function (node) {
   );
 };
 
-const hasAllContentsSelected = function (elm, rng) {
-  return Options.lift2(getStartNode(rng), getEndNode(rng), function (startNode, endNode) {
+const hasAllContentsSelected = (elm, rng) => {
+  return Optionals.lift2(getStartNode(rng), getEndNode(rng), (startNode, endNode) => {
     const start = Arr.find(getFirstChildren(elm), Fun.curry(Compare.eq, startNode));
     const end = Arr.find(getLastChildren(elm), Fun.curry(Compare.eq, endNode));
     return start.isSome() && end.isSome();
   }).getOr(false);
 };
 
-const moveEndPoint = (dom: DOMUtils, rng: Range, node, start: boolean): void => {
-  const root = node, walker = new TreeWalker(node, root);
-  const nonEmptyElementsMap = dom.schema.getNonEmptyElements();
+const moveEndPoint = (dom: DOMUtils, rng: Range, node: Node, start: boolean): void => {
+  const root = node, walker = new DomTreeWalker(node, root);
+  const moveCaretBeforeOnEnterElementsMap = Obj.filter(dom.schema.getMoveCaretBeforeOnEnterElements(), (_, name) =>
+    !Arr.contains([ 'td', 'th', 'table' ], name.toLowerCase())
+  );
 
   do {
-    // Text node
-    if (node.nodeType === 3 && Tools.trim(node.nodeValue).length !== 0) {
+    if (NodeType.isText(node) && Tools.trim(node.nodeValue).length !== 0) {
       if (start) {
         rng.setStart(node, 0);
       } else {
@@ -85,7 +86,7 @@ const moveEndPoint = (dom: DOMUtils, rng: Range, node, start: boolean): void => 
     }
 
     // BR/IMG/INPUT elements but not table cells
-    if (nonEmptyElementsMap[node.nodeName] && !/^(TD|TH)$/.test(node.nodeName)) {
+    if (moveCaretBeforeOnEnterElementsMap[node.nodeName]) {
       if (start) {
         rng.setStartBefore(node);
       } else {
@@ -122,7 +123,7 @@ const runOnRanges = (editor: Editor, executor: (rng: Range, fake: boolean) => vo
   const fakeSelectionNodes = TableCellSelection.getCellsFromEditor(editor);
   if (fakeSelectionNodes.length > 0) {
     Arr.each(fakeSelectionNodes, (elem) => {
-      const node = elem.dom();
+      const node = elem.dom;
       const fakeNodeRng = editor.dom.createRng();
       fakeNodeRng.setStartBefore(node);
       fakeNodeRng.setEndAfter(node);
@@ -133,7 +134,7 @@ const runOnRanges = (editor: Editor, executor: (rng: Range, fake: boolean) => vo
   }
 };
 
-const preserve = (selection: Selection, fillBookmark: boolean, executor: (bookmark: IdBookmark | IndexBookmark) => void) => {
+const preserve = (selection: EditorSelection, fillBookmark: boolean, executor: (bookmark: IdBookmark | IndexBookmark) => void) => {
   const bookmark = GetBookmark.getPersistentBookmark(selection, fillBookmark);
   executor(bookmark);
   selection.moveToBookmark(bookmark);

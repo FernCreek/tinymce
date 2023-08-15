@@ -1,15 +1,13 @@
 import { Assert, UnitTest } from '@ephox/bedrock-client';
-import { Logger, Pipeline, Step } from 'ephox/agar/api/Main';
-import { createFile } from 'ephox/agar/api/Files';
-import { Blob } from '@ephox/dom-globals';
 import { Fun } from '@ephox/katamari';
-import {
-  createDataTransferItemFromFile,
-  createDataTransferItemFromString,
-  getData
-} from 'ephox/agar/datatransfer/DataTransferItem';
-import { createDataTransfer } from 'ephox/agar/datatransfer/DataTransfer';
 import { KAssert } from '@ephox/katamari-assertions';
+
+import { createFile } from 'ephox/agar/api/Files';
+import * as Logger from 'ephox/agar/api/Logger';
+import { Pipeline } from 'ephox/agar/api/Pipeline';
+import { Step } from 'ephox/agar/api/Step';
+import { createDataTransfer } from 'ephox/agar/datatransfer/DataTransfer';
+import { createDataTransferItemFromFile, createDataTransferItemFromString, getData } from 'ephox/agar/datatransfer/DataTransferItem';
 
 UnitTest.asynctest('DataTransferItemTest', (success, failure) => {
   Pipeline.async({}, [
@@ -17,6 +15,7 @@ UnitTest.asynctest('DataTransferItemTest', (success, failure) => {
       const fileItem = createDataTransferItemFromFile(createDataTransfer(), createFile('a.txt', 1234, new Blob([ '123' ], { type: 'text/plain' })));
 
       Assert.eq('Should be the expected kind', 'file', fileItem.kind);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       Assert.eq('Should be a noop', Fun.noop, fileItem.getAsString);
       Assert.eq('Should be expected file', 'a.txt', fileItem.getAsFile().name);
       Assert.eq('Should be expected file', 'text/plain', fileItem.getAsFile().type);
@@ -39,7 +38,5 @@ UnitTest.asynctest('DataTransferItemTest', (success, failure) => {
         }
       });
     }))
-  ], () => {
-    success();
-  }, failure);
+  ], success, failure);
 });

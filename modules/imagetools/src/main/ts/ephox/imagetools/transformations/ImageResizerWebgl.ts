@@ -1,5 +1,6 @@
-import { HTMLCanvasElement, HTMLImageElement, WebGLProgram, WebGLRenderingContext } from '@ephox/dom-globals';
-import { Promise } from '../util/Promise';
+import { Obj, Optional } from '@ephox/katamari';
+import Promise from '@ephox/wrap-promise-polyfill';
+
 import * as Canvas from '../util/Canvas';
 import * as ImageSize from '../util/ImageSize';
 
@@ -11,8 +12,8 @@ import * as ImageSize from '../util/ImageSize';
  * @param dH {Number} Height that the image should be scaled to
  * @returns {Promise}
  */
-function scale(image: HTMLImageElement, dW: number, dH: number): Promise<HTMLCanvasElement> {
-  return new Promise(function (resolve, reject) {
+const scale = (image: HTMLImageElement, dW: number, dH: number): Promise<HTMLCanvasElement> => {
+  return new Promise((resolve, reject) => {
     const sW = ImageSize.getWidth(image);
     const sH = ImageSize.getHeight(image);
     const wRatio = dW / sW;
@@ -29,7 +30,7 @@ function scale(image: HTMLImageElement, dW: number, dH: number): Promise<HTMLCan
 
     resolve(canvas);
   });
-}
+};
 
 interface Shaders {
   bilinear: {
@@ -113,7 +114,7 @@ const shaders: Shaders = {
   }
 };
 
-function _drawImage(canvas: HTMLCanvasElement, image: HTMLImageElement, wRatio: number, hRatio: number): void {
+const _drawImage = (canvas: HTMLCanvasElement, image: HTMLImageElement, wRatio: number, hRatio: number): void => {
   const gl = Canvas.get3dContext(canvas);
   if (!gl) {
     throw new Error(`Your environment doesn't support WebGL.`);
@@ -160,23 +161,23 @@ function _drawImage(canvas: HTMLCanvasElement, image: HTMLImageElement, wRatio: 
 
   // lets draw...
   gl.drawArrays(gl.TRIANGLES, 0, 6);
-}
+};
 
-function _loadFloatBuffer(gl: WebGLRenderingContext, program: WebGLProgram, attrName: string, bufferData: ArrayLike<number> | ArrayBufferLike) {
+const _loadFloatBuffer = (gl: WebGLRenderingContext, program: WebGLProgram, attrName: string, bufferData: ArrayLike<number> | ArrayBufferLike) => {
   const attr = gl.getAttribLocation(program, attrName);
   const buffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(bufferData), gl.STATIC_DRAW);
   gl.enableVertexAttribArray(attr);
   gl.vertexAttribPointer(attr, 2, gl.FLOAT, false, 0, 0);
-}
+};
 
-function _createProgram(gl: WebGLRenderingContext): WebGLProgram {
+const _createProgram = (gl: WebGLRenderingContext): WebGLProgram => {
   const program = gl.createProgram() as WebGLProgram;
 
   for (const type in shaders.bilinear) {
-    if (Object.hasOwnProperty.call(shaders.bilinear, type)) {
-      gl.attachShader(program, _loadShader(gl, shaders.bilinear[type], type));
+    if (Obj.has(shaders.bilinear, type)) {
+      _loadShader(gl, shaders.bilinear[type], type).each((shader) => gl.attachShader(program, shader));
     }
   }
 
@@ -187,20 +188,21 @@ function _createProgram(gl: WebGLRenderingContext): WebGLProgram {
     throw new Error('Cannot create a program: ' + err);
   }
   return program;
-}
+};
 
-function _loadShader(gl: WebGLRenderingContext, source: string, type: string) {
-  const shader = gl.createShader((gl as any)[type]);
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
+const _loadShader = (gl: WebGLRenderingContext, source: string, type: string): Optional<WebGLShader> => {
+  return Optional.from(gl.createShader((gl as any)[type])).map((shader) => {
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
 
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    const err = gl.getShaderInfoLog(shader);
-    gl.deleteShader(shader);
-    throw new Error('Cannot compile a ' + type + ' shader: ' + err);
-  }
-  return shader;
-}
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      const err = gl.getShaderInfoLog(shader);
+      gl.deleteShader(shader);
+      throw new Error('Cannot compile a ' + type + ' shader: ' + err);
+    }
+    return shader;
+  });
+};
 
 export {
   scale

@@ -1,5 +1,5 @@
-import { FieldProcessorAdt, FieldSchema, Processor, ValueSchema } from '@ephox/boulder';
-import { Fun, Obj, Option, Thunk } from '@ephox/katamari';
+import { StructureProcessor, FieldSchema, StructureSchema, FieldProcessor } from '@ephox/boulder';
+import { Fun, Obj, Optional, Optionals, Thunk } from '@ephox/katamari';
 
 import { AlloyComponent } from '../../api/component/ComponentApi';
 import * as AlloyEvents from '../../api/events/AlloyEvents';
@@ -9,10 +9,21 @@ import * as DomModification from '../../dom/DomModification';
 import { CustomEvent } from '../../events/SimulatedEvent';
 import { BehaviourConfigAndState } from './BehaviourBlob';
 import { BehaviourState, BehaviourStateInitialiser } from './BehaviourState';
-import { AlloyBehaviour, BehaviourActiveSpec, BehaviourApiFunc, BehaviourApisRecord, BehaviourConfigDetail, BehaviourConfigSpec, BehaviourExtraRecord, BehaviourInfo, ConfiguredBehaviour, NamedConfiguredBehaviour } from './BehaviourTypes';
+import {
+  AlloyBehaviour, BehaviourActiveSpec, BehaviourApiFunc, BehaviourApisRecord, BehaviourConfigDetail, BehaviourConfigSpec, BehaviourExtraRecord,
+  BehaviourInfo, NamedConfiguredBehaviour
+} from './BehaviourTypes';
 
-type WrappedApiFunc<T extends (comp: AlloyComponent, config: any, state: any, ...args: any[]) => any> = T extends (comp: AlloyComponent, config: any, state: any, ...args: infer P) => infer R ? (comp: AlloyComponent, ...args: P) => R : never;
+export type WrappedApiFunc<T extends (comp: AlloyComponent, config: any, state: any, ...args: any[]) => any> = T extends (comp: AlloyComponent, config: any, state: any, ...args: infer P) => infer R ? (comp: AlloyComponent, ...args: P) => R : never;
 type Executor<D extends BehaviourConfigDetail, S extends BehaviourState> = (component: AlloyComponent, bconfig: D, bState: S) => void;
+
+export type AlloyBehaviourWithApis<
+  C extends BehaviourConfigSpec,
+  D extends BehaviourConfigDetail,
+  S extends BehaviourState,
+  A extends BehaviourApisRecord<D, S>,
+  E extends BehaviourExtraRecord<E>
+> = AlloyBehaviour<C, D, S> & { [K in keyof A]: WrappedApiFunc<A[K]> } & E;
 
 const executeEvent = <C extends BehaviourConfigSpec, S extends BehaviourState>(bConfig: C, bState: S, executor: Executor<C, S>): AlloyEvents.AlloyEventKeyAndHandler<CustomEvent> => AlloyEvents.runOnExecute((component) => {
   executor(component, bConfig, bState);
@@ -28,8 +39,8 @@ const create = <
   S extends BehaviourState,
   A extends BehaviourApisRecord<D, S>,
   E extends BehaviourExtraRecord<E>
->(schema: FieldProcessorAdt[], name: string, active: BehaviourActiveSpec<D, S>, apis: A, extra: E, state: BehaviourStateInitialiser<D, S>) => {
-  const configSchema = ValueSchema.objOfOnly(schema);
+>(schema: FieldProcessor[], name: string, active: BehaviourActiveSpec<D, S>, apis: A, extra: E, state: BehaviourStateInitialiser<D, S>): AlloyBehaviourWithApis<C, D, S, A, E> => {
+  const configSchema = StructureSchema.objOfOnly(schema);
   const schemaSchema = FieldSchema.optionObjOf(name, [
     FieldSchema.optionObjOfOnly('config', schema)
   ]);
@@ -42,7 +53,7 @@ const createModes = <
   S extends BehaviourState,
   A extends BehaviourApisRecord<D, S>,
   E extends BehaviourExtraRecord<E>
->(modes: Processor, name: string, active: BehaviourActiveSpec<D, S>, apis: A, extra: E, state: BehaviourStateInitialiser<D, S>) => {
+>(modes: StructureProcessor, name: string, active: BehaviourActiveSpec<D, S>, apis: A, extra: E, state: BehaviourStateInitialiser<D, S>): AlloyBehaviourWithApis<C, D, S, A, E> => {
   const configSchema = modes;
   const schemaSchema = FieldSchema.optionObjOf(name, [
     FieldSchema.optionOf('config', modes)
@@ -71,7 +82,7 @@ const wrapApi = <D extends BehaviourConfigDetail, S extends BehaviourState>(bNam
 // I think the "revoke" idea is fragile at best.
 const revokeBehaviour = (name: string): NamedConfiguredBehaviour<any, any, any> => ({
   key: name,
-  value: undefined as unknown as ConfiguredBehaviour<any, any, any>
+  value: undefined
 });
 
 const doCreate = <
@@ -80,8 +91,8 @@ const doCreate = <
   S extends BehaviourState,
   A extends BehaviourApisRecord<D, S>,
   E extends BehaviourExtraRecord<E>
->(configSchema: Processor, schemaSchema: FieldProcessorAdt, name: string, active: BehaviourActiveSpec<D, S>, apis: A, extra: E, state: BehaviourStateInitialiser<D, S>) => {
-  const getConfig = (info: BehaviourInfo<D, S>) => Obj.hasNonNullableKey(info, name) ? info[name]() : Option.none<BehaviourConfigAndState<D, S>>();
+>(configSchema: StructureProcessor, schemaSchema: FieldProcessor, name: string, active: BehaviourActiveSpec<D, S>, apis: A, extra: E, state: BehaviourStateInitialiser<D, S>): AlloyBehaviourWithApis<C, D, S, A, E> => {
+  const getConfig = (info: BehaviourInfo<D, S>) => Obj.hasNonNullableKey(info, name) ? info[name]() : Optional.none<BehaviourConfigAndState<D, S>>();
 
   const wrappedApis = Obj.map(apis, (apiF, apiName) => wrapApi(name, apiF, apiName)) as { [K in keyof A]: WrappedApiFunc<A[K]> };
 
@@ -91,34 +102,32 @@ const doCreate = <
     ...wrappedExtra,
     ...wrappedApis,
     revoke: Fun.curry(revokeBehaviour, name),
-    config(spec) {
-      const prepared = ValueSchema.asRawOrDie(name + '-config', configSchema, spec);
+    config: (spec) => {
+      const prepared = StructureSchema.asRawOrDie(name + '-config', configSchema, spec);
 
       return {
         key: name,
         value: {
           config: prepared,
           me,
-          configAsRaw: Thunk.cached(() => ValueSchema.asRawOrDie(name + '-config', configSchema, spec)),
+          configAsRaw: Thunk.cached(() => StructureSchema.asRawOrDie(name + '-config', configSchema, spec)),
           initialConfig: spec,
           state
         }
       };
     },
 
-    schema() {
-      return schemaSchema;
+    schema: Fun.constant(schemaSchema),
+
+    exhibit: (info: BehaviourInfo<D, S>, base: DomDefinitionDetail) => {
+      return Optionals.lift2(getConfig(info), Obj.get(active, 'exhibit'), (behaviourInfo, exhibitor) => {
+        return exhibitor(base, behaviourInfo.config, behaviourInfo.state);
+      }).getOrThunk(() => DomModification.nu({ }));
     },
 
-    exhibit(info: BehaviourInfo<D, S>, base: DomDefinitionDetail) {
-      return getConfig(info).bind((behaviourInfo) => Obj.get(active, 'exhibit').map((exhibitor) => exhibitor(base, behaviourInfo.config, behaviourInfo.state))).getOr(DomModification.nu({ }));
-    },
+    name: Fun.constant(name),
 
-    name() {
-      return name;
-    },
-
-    handlers(info: BehaviourInfo<D, S>) {
+    handlers: (info: BehaviourInfo<D, S>) => {
       return getConfig(info).map((behaviourInfo) => {
         const getEvents = Obj.get(active, 'events').getOr(() => ({ }));
         return getEvents(behaviourInfo.config, behaviourInfo.state);

@@ -1,21 +1,34 @@
 import { Objects } from '@ephox/boulder';
-import { Touch, TouchEvent } from '@ephox/dom-globals';
-import { Cell, Obj, Option } from '@ephox/katamari';
-import { Compare, Element, EventArgs } from '@ephox/sugar';
+import { Cell, Obj, Optional, Singleton } from '@ephox/katamari';
+import { Compare, EventArgs, SugarElement } from '@ephox/sugar';
 
-import DelayedFunction from '../alien/DelayedFunction';
+import { DelayedFunction } from '../alien/DelayedFunction';
 import * as NativeEvents from '../api/events/NativeEvents';
 import * as SystemEvents from '../api/events/SystemEvents';
 import { GuiEventSettings } from './GuiEvents';
+
+type EventHandler = (event: EventArgs<Event>) => Optional<boolean>;
+
+export interface TouchHistoryData {
+  readonly x: number;
+  readonly y: number;
+  readonly target: SugarElement;
+}
+
+interface Monitor {
+  readonly fireIfReady: (event: EventArgs<Event>, type: string) => Optional<boolean>;
+}
 
 const SIGNIFICANT_MOVE = 5;
 
 const LONGPRESS_DELAY = 400;
 
-const getTouch = (event: EventArgs<TouchEvent>): Option<Touch> => {
-  const raw = event.raw();
-  if (raw.touches === undefined || raw.touches.length !== 1) { return Option.none(); }
-  return Option.some(raw.touches[0]);
+const getTouch = (event: EventArgs<TouchEvent>): Optional<Touch> => {
+  const raw = event.raw;
+  if (raw.touches === undefined || raw.touches.length !== 1) {
+    return Optional.none();
+  }
+  return Optional.some(raw.touches[0]);
 };
 
 // Check to see if the touch has changed a *significant* amount
@@ -25,19 +38,12 @@ const isFarEnough = (touch: Touch, data: TouchHistoryData): boolean => {
   return distX > SIGNIFICANT_MOVE || distY > SIGNIFICANT_MOVE;
 };
 
-export interface TouchHistoryData {
-  x: number;
-  y: number;
-  target: Element;
-}
-
-const monitor = (settings: GuiEventSettings) => {
+const monitor = (settings: GuiEventSettings): Monitor => {
   /* A tap event is a combination of touchstart and touchend on the same element
    * without a *significant* touchmove in between.
    */
 
-  // Need a return value, so can't use Singleton.value;
-  const startData: Cell<Option<TouchHistoryData>> = Cell(Option.none());
+  const startData = Singleton.value<TouchHistoryData>();
   const longpressFired = Cell<boolean>(false);
 
   const longpress = DelayedFunction((event: EventArgs) => {
@@ -45,37 +51,39 @@ const monitor = (settings: GuiEventSettings) => {
     longpressFired.set(true);
   }, LONGPRESS_DELAY);
 
-  const handleTouchstart = (event: EventArgs<TouchEvent>): Option<boolean> => {
+  const handleTouchstart = (event: EventArgs<TouchEvent>): Optional<boolean> => {
     getTouch(event).each((touch) => {
       longpress.cancel();
 
       const data = {
         x: touch.clientX,
         y: touch.clientY,
-        target: event.target()
+        target: event.target
       };
 
       longpress.schedule(event);
       longpressFired.set(false);
-      startData.set(Option.some(data));
+      startData.set(data);
     });
-    return Option.none();
+    return Optional.none();
   };
 
-  const handleTouchmove = (event: EventArgs<TouchEvent>): Option<boolean> => {
+  const handleTouchmove = (event: EventArgs<TouchEvent>): Optional<boolean> => {
     longpress.cancel();
     getTouch(event).each((touch) => {
-      startData.get().each((data) => {
-        if (isFarEnough(touch, data)) { startData.set(Option.none()); }
+      startData.on((data) => {
+        if (isFarEnough(touch, data)) {
+          startData.clear();
+        }
       });
     });
-    return Option.none();
+    return Optional.none();
   };
 
-  const handleTouchend = (event: EventArgs): Option<boolean> => {
+  const handleTouchend = (event: EventArgs): Optional<boolean> => {
     longpress.cancel();
 
-    const isSame = (data: TouchHistoryData) => Compare.eq(data.target, event.target());
+    const isSame = (data: TouchHistoryData) => Compare.eq(data.target, event.target);
 
     return startData.get().filter(isSame).map((_data) => {
       if (longpressFired.get()) {
@@ -87,13 +95,14 @@ const monitor = (settings: GuiEventSettings) => {
     });
   };
 
-  const handlers: Record<string, (event: EventArgs) => Option<boolean>> = Objects.wrapAll([
+  const handlers: Record<string, EventHandler> = Objects.wrapAll([
     { key: NativeEvents.touchstart(), value: handleTouchstart },
     { key: NativeEvents.touchmove(), value: handleTouchmove },
     { key: NativeEvents.touchend(), value: handleTouchend }
-  ]);
+  ] as Array<{ key: string; value: EventHandler }>);
 
-  const fireIfReady = (event: EventArgs, type: string): Option<boolean> => Obj.get(handlers, type).bind((handler) => handler(event));
+  const fireIfReady = (event: EventArgs<Event>, type: string): Optional<boolean> =>
+    Obj.get(handlers, type).bind((handler) => handler(event));
 
   return {
     fireIfReady

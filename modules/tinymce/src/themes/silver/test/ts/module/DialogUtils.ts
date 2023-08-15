@@ -1,12 +1,16 @@
-import { Chain, Mouse, UiFinder } from '@ephox/agar';
-import { Types } from '@ephox/bridge';
-import { Body } from '@ephox/sugar';
+import { UiFinder } from '@ephox/agar';
+import { TestHelpers } from '@ephox/alloy';
+import { SugarBody } from '@ephox/sugar';
+import { TinyUiActions } from '@ephox/wrap-mcagar';
 
 import Editor from 'tinymce/core/api/Editor';
+import { Dialog } from 'tinymce/core/api/ui/Ui';
+import { WindowParams } from 'tinymce/core/api/WindowManager';
 
-const cOpen = <T>(editor: Editor, spec: Types.Dialog.DialogApi<T>, params: Record<string, any>) => Chain.injectThunked(() => editor.windowManager.open(spec, params));
+const open = <T>(editor: Editor, spec: Dialog.DialogSpec<T>, params: WindowParams): Dialog.DialogInstanceApi<T> =>
+  editor.windowManager.open(spec, params);
 
-const cOpenWithStore = <T>(editor: Editor, spec: Types.Dialog.DialogApi<T>, params: Record<string, any>, store: any) => {
+const openWithStore = <T>(editor: Editor, spec: Dialog.DialogSpec<T>, params: WindowParams, store: TestHelpers.TestStore) => {
   const dialogSpec = {
     onSubmit: store.adder('onSubmit'),
     onClose: store.adder('onClose'),
@@ -15,28 +19,16 @@ const cOpenWithStore = <T>(editor: Editor, spec: Types.Dialog.DialogApi<T>, para
     onAction: store.adder('onAction'),
     ...spec
   };
-  return cOpen(editor, dialogSpec, params);
+  return open(editor, dialogSpec, params);
 };
 
-const sOpen = <T>(editor: Editor, spec: Types.Dialog.DialogApi<T>, params: Record<string, any>) =>
-  Chain.asStep({}, [ cOpen(editor, spec, params) ]);
-
-const cClose = Chain.fromChainsWith(Body.body(), [
-  Mouse.cClickOn('[aria-label="Close"]'),
-  UiFinder.cNotExists('[role="dialog"]')
-]);
-
-const sClose = Chain.asStep({}, [ cClose ]);
-
-const sWaitForOpen = (selector: string = '[role=dialog]') => UiFinder.sWaitForVisible('Wait for the dialog to open', Body.body(), selector);
+const close = (editor: Editor) => {
+  TinyUiActions.closeDialog(editor);
+  UiFinder.notExists(SugarBody.body(), 'div[role=dialog]');
+};
 
 export {
-  sOpen,
-  sClose,
-
-  cOpen,
-  cOpenWithStore,
-  cClose,
-
-  sWaitForOpen
+  close,
+  open,
+  openWithStore
 };

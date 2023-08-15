@@ -1,15 +1,16 @@
 import { Assert, UnitTest } from '@ephox/bedrock-client';
-import * as Arrays from 'ephox/polaris/api/Arrays';
-import * as fc from 'fast-check';
 import { Testable } from '@ephox/dispute';
+import * as fc from 'fast-check';
+
+import * as Arrays from 'ephox/polaris/api/Arrays';
 
 const { tArray, tNumber } = Testable;
 
 const is = <T> (a: T) => (b: T) => a === b;
 
-UnitTest.test('sliceby: unit tests', function () {
+UnitTest.test('sliceby: unit tests', () => {
 
-  const check = function (expected: number[], input: number[], pred: (x: number, i: number) => boolean) {
+  const check = (expected: number[], input: number[], pred: (x: number, i: number) => boolean) => {
     const actual = Arrays.sliceby(input, pred);
     Assert.eq('sliceby', expected, actual, tArray(tNumber));
   };
@@ -20,7 +21,7 @@ UnitTest.test('sliceby: unit tests', function () {
   check([ 1, 2, 3 ], [ 1, 2, 3, 4 ], is(4));
 });
 
-UnitTest.test('sliceby: property tests', function () {
+UnitTest.test('sliceby: property tests', () => {
 
   fc.assert(fc.property(
     fc.array(fc.nat()),

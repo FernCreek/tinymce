@@ -7,14 +7,14 @@
 
 import { Cell, LazyValue } from '@ephox/katamari';
 
-export default function (doAction) {
+export default (doAction) => {
   // Start the activity in idle state.
   const action = Cell(
     LazyValue.pure({})
   );
 
-  const start = function (value) {
-    const future = LazyValue.nu(function (callback) {
+  const start = (value) => {
+    const future = LazyValue.nu((callback) => {
       return doAction(value).get(callback);
     });
 
@@ -23,8 +23,8 @@ export default function (doAction) {
   };
 
   // Idle will fire g once the current action is complete.
-  const idle = function (g) {
-    action.get().get(function () {
+  const idle = (g) => {
+    action.get().get(() => {
       g();
     });
   };
@@ -33,4 +33,4 @@ export default function (doAction) {
     start,
     idle
   };
-}
+};

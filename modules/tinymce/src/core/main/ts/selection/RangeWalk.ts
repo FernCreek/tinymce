@@ -5,29 +5,16 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Node } from '@ephox/dom-globals';
 import DOMUtils from '../api/dom/DOMUtils';
+import * as NodeType from '../dom/NodeType';
+import * as RangeNodes from './RangeNodes';
 import { RangeLikeObject } from './RangeTypes';
 
-const clampToExistingChildren = (container: Node, index: number) => {
-  const childNodes = container.childNodes;
-
-  if (index >= childNodes.length) {
-    index = childNodes.length - 1;
-  } else if (index < 0) {
-    index = 0;
-  }
-
-  return childNodes[index] || container;
-};
-
-const getEndChild = (container: Node, index: number) => clampToExistingChildren(container, index - 1);
-
 const walk = (dom: DOMUtils, rng: RangeLikeObject, callback: (nodes: Node[]) => void) => {
-  let startContainer = rng.startContainer;
   const startOffset = rng.startOffset;
-  let endContainer = rng.endContainer;
+  const startContainer = RangeNodes.getNode(rng.startContainer, startOffset);
   const endOffset = rng.endOffset;
+  const endContainer = RangeNodes.getNode(rng.endContainer, endOffset - 1);
 
   // If the range is at the beginning or the end of our content and there is no selection then one of these
   // containers will be null. Doesn't happen in the TinyMCE demo but I don't know why.
@@ -42,25 +29,23 @@ const walk = (dom: DOMUtils, rng: RangeLikeObject, callback: (nodes: Node[]) => 
    * @param {Array} nodes Nodes to exclude items from.
    * @return {Array} Array with nodes excluding the start/end container if needed.
    */
-  const exclude = function (nodes: Node[]) {
-    let node;
-
+  const exclude = (nodes: Node[]) => {
     // First node is excluded
-    node = nodes[0];
-    if (node.nodeType === 3 && node === startContainer && startOffset >= node.nodeValue.length) {
+    const firstNode = nodes[0];
+    if (NodeType.isText(firstNode) && firstNode === startContainer && startOffset >= firstNode.data.length) {
       nodes.splice(0, 1);
     }
 
     // Last node is excluded
-    node = nodes[nodes.length - 1];
-    if (endOffset === 0 && nodes.length > 0 && node === endContainer && node.nodeType === 3) {
+    const lastNode = nodes[nodes.length - 1];
+    if (endOffset === 0 && nodes.length > 0 && lastNode === endContainer && NodeType.isText(lastNode)) {
       nodes.splice(nodes.length - 1, 1);
     }
 
     return nodes;
   };
 
-  const collectSiblings = function (node: Node, name: string, endNode?: Node) {
+  const collectSiblings = (node: Node | undefined, name: string, endNode?: Node) => {
     const siblings = [];
 
     for (; node && node !== endNode; node = node[name]) {
@@ -70,17 +55,10 @@ const walk = (dom: DOMUtils, rng: RangeLikeObject, callback: (nodes: Node[]) => 
     return siblings;
   };
 
-  const findEndPoint = function (node: Node, root: Node) {
-    do {
-      if (node.parentNode === root) {
-        return node;
-      }
+  const findEndPoint = (node: Node, root: Node) =>
+    dom.getParent(node, (node) => node.parentNode === root, root);
 
-      node = node.parentNode;
-    } while (node);
-  };
-
-  const walkBoundary = function (startNode: Node, endNode: Node, next?: boolean) {
+  const walkBoundary = (startNode: Node, endNode: Node, next?: boolean) => {
     const siblingName = next ? 'nextSibling' : 'previousSibling';
 
     for (let node = startNode, parent = node.parentNode; node && node !== endNode; node = parent) {
@@ -97,16 +75,6 @@ const walk = (dom: DOMUtils, rng: RangeLikeObject, callback: (nodes: Node[]) => 
     }
   };
 
-  // If index based start position then resolve it
-  if (startContainer.nodeType === 1 && startContainer.hasChildNodes()) {
-    startContainer = clampToExistingChildren(startContainer, startOffset);
-  }
-
-  // If index based end position then resolve it
-  if (endContainer.nodeType === 1 && endContainer.hasChildNodes()) {
-    endContainer = getEndChild(endContainer, endOffset);
-  }
-
   // Same container
   if (startContainer === endContainer) {
     return callback(exclude([ startContainer ]));
@@ -116,25 +84,13 @@ const walk = (dom: DOMUtils, rng: RangeLikeObject, callback: (nodes: Node[]) => 
   const ancestor = dom.findCommonAncestor(startContainer, endContainer);
 
   // Process left side
-  for (let node = startContainer; node; node = node.parentNode) {
-    if (node === endContainer) {
-      return walkBoundary(startContainer, ancestor, true);
-    }
-
-    if (node === ancestor) {
-      break;
-    }
+  if (dom.isChildOf(startContainer, endContainer)) {
+    return walkBoundary(startContainer, ancestor, true);
   }
 
   // Process right side
-  for (let node = endContainer; node; node = node.parentNode) {
-    if (node === startContainer) {
-      return walkBoundary(endContainer, ancestor);
-    }
-
-    if (node === ancestor) {
-      break;
-    }
+  if (dom.isChildOf(endContainer, startContainer)) {
+    return walkBoundary(endContainer, ancestor);
   }
 
   // Find start/end point

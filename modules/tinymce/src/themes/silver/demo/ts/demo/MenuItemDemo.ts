@@ -1,12 +1,14 @@
-import { console } from '@ephox/dom-globals';
+import { Fun } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
+
 import * as MockDemo from './MockDemo';
 
 declare let tinymce: any;
 
-// tslint:disable:no-console
+/* eslint-disable no-console */
 
-export default function () {
+export default () => {
   const DemoState = MockDemo.mockFeatureState();
   const DemoState2 = MockDemo.mockFeatureState();
 
@@ -24,11 +26,11 @@ export default function () {
       File: [ 'x1', 'x2', 'x3', '|', 't1', '|', 'd1' ]
     },
 
-    setup(ed: Editor) {
+    setup: (ed: Editor) => {
       ed.ui.registry.addMenuItem('x1', {
         icon: 'drop',
         text: 'Text with icon',
-        onAction() {
+        onAction: () => {
           console.log('Just Text click');
         }
       });
@@ -36,7 +38,7 @@ export default function () {
       ed.ui.registry.addMenuItem('x2', {
         // icon: Icons.getOr('bold', () => 'oh no'),
         text: 'Just Text',
-        onAction() {
+        onAction: () => {
           console.log('Just Text click');
         }
       });
@@ -45,7 +47,7 @@ export default function () {
         // icon: Icons.getOr('bold', () => 'oh no'),
         text: 'Just Text with shortcut',
         shortcut: 'Ctrl+Alt+Delete',
-        onAction() {
+        onAction: () => {
           console.log('Just Text click');
         }
       });
@@ -53,18 +55,18 @@ export default function () {
       ed.ui.registry.addToggleMenuItem('t1', {
         text: 'button with Toggle',
         shortcut: '⌘+C',
-        onSetup: (comp) => {
+        onSetup: (api) => {
           // debugger;
           // TODO: TS narrowing, when config toggling = true
           // then the comp interface should include comp.toggleOn otherwise it should complain
           const state = DemoState.get();
           console.log(state);
-          comp.setActive(state);
-          return () => { };
+          api.setActive(state);
+          return Fun.noop;
         },
-        onAction(comp) {
+        onAction: (api) => {
           DemoState.toggle();
-          comp.setActive(DemoState.get());
+          api.setActive(DemoState.get());
           console.log('button with Toggle click - current state is: ' + DemoState.get());
         }
       });
@@ -76,7 +78,7 @@ export default function () {
           {
             type: 'menuitem',
             text: 'Nested 1',
-            onAction() {
+            onAction: () => {
               console.log('clicked nested 1');
             }
           },
@@ -84,7 +86,7 @@ export default function () {
             type: 'menuitem',
             text: 'Nested 2',
             icon: 'drop',
-            onAction() {
+            onAction: () => {
               console.log('clicked nested 1');
             }
           },
@@ -92,25 +94,25 @@ export default function () {
             type: 'menuitem',
             text: 'Nested 3',
             shortcut: 'X',
-            onAction() {
+            onAction: () => {
               console.log('clicked nested 1');
             }
           },
           {
             type: 'togglemenuitem',
             text: 'nested Toggle',
-            onSetup: (comp) => {
+            onSetup: (api) => {
               // debugger;
               // TODO: TS narrowing, when config toggling = true
               // then the comp interface should include comp.toggleOn otherwise it should complain
               const state = DemoState2.get();
               console.log(state);
-              comp.setActive(state);
-              return () => { };
+              api.setActive(state);
+              return Fun.noop;
             },
-            onAction(comp) {
+            onAction: (api) => {
               DemoState2.toggle();
-              comp.setActive(DemoState2.get());
+              api.setActive(DemoState2.get());
               console.log('button with Toggle click - current state is: ' + DemoState2.get());
             }
           },
@@ -130,4 +132,4 @@ export default function () {
       });
     }
   });
-}
+};

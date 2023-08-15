@@ -6,22 +6,23 @@
  */
 
 import { Arr, Unicode } from '@ephox/katamari';
-import { Insert, Remove, Element, Node, Text, SelectorFilter, Traverse } from '@ephox/sugar';
+import { Insert, Remove, SelectorFilter, SugarElement, SugarNode, SugarText, Traverse } from '@ephox/sugar';
+
 import * as ElementType from './ElementType';
 
-const getLastChildren = function (elm) {
-  const children = [];
-  let rawNode = elm.dom();
+const getLastChildren = (elm: SugarElement<Node>): SugarElement<Node>[] => {
+  const children: SugarElement<Node>[] = [];
+  let rawNode = elm.dom;
 
   while (rawNode) {
-    children.push(Element.fromDom(rawNode));
+    children.push(SugarElement.fromDom(rawNode));
     rawNode = rawNode.lastChild;
   }
 
   return children;
 };
 
-const removeTrailingBr = function (elm) {
+const removeTrailingBr = (elm: SugarElement<Node>): void => {
   const allBrs = SelectorFilter.descendants(elm, 'br');
   const brs = Arr.filter(getLastChildren(elm).slice(-1), ElementType.isBr);
   if (allBrs.length === brs.length) {
@@ -29,22 +30,22 @@ const removeTrailingBr = function (elm) {
   }
 };
 
-const fillWithPaddingBr = function (elm) {
+const fillWithPaddingBr = (elm: SugarElement<Node>): void => {
   Remove.empty(elm);
-  Insert.append(elm, Element.fromHtml('<br data-mce-bogus="1">'));
+  Insert.append(elm, SugarElement.fromHtml('<br data-mce-bogus="1">'));
 };
 
-const isPaddingContents = function (elm) {
-  return Node.isText(elm) ? Text.get(elm) === Unicode.nbsp : ElementType.isBr(elm);
+const isPaddingContents = (elm: SugarElement<Node>): boolean => {
+  return SugarNode.isText(elm) ? SugarText.get(elm) === Unicode.nbsp : ElementType.isBr(elm);
 };
 
-const isPaddedElement = function (elm) {
+const isPaddedElement = (elm: SugarElement<Node>): boolean => {
   return Arr.filter(Traverse.children(elm), isPaddingContents).length === 1;
 };
 
-const trimBlockTrailingBr = function (elm) {
-  Traverse.lastChild(elm).each(function (lastChild) {
-    Traverse.prevSibling(lastChild).each(function (lastChildPrevSibling) {
+const trimBlockTrailingBr = (elm: SugarElement<Node>): void => {
+  Traverse.lastChild(elm).each((lastChild) => {
+    Traverse.prevSibling(lastChild).each((lastChildPrevSibling) => {
       if (ElementType.isBlock(elm) && ElementType.isBr(lastChild) && ElementType.isBlock(lastChildPrevSibling)) {
         Remove.remove(lastChild);
       }

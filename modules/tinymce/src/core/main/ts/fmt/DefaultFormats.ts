@@ -5,12 +5,12 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import Tools from '../api/util/Tools';
 import DOMUtils from '../api/dom/DOMUtils';
+import Tools from '../api/util/Tools';
 import * as NodeType from '../dom/NodeType';
-import { Formats } from '../api/fmt/Format';
+import { Formats, FormatVars } from './FormatTypes';
 
-const get = function (dom: DOMUtils) {
+const get = (dom: DOMUtils) => {
   const formats: Formats = {
     valigntop: [
       { selector: 'td,th', styles: { verticalAlign: 'top' }}
@@ -42,7 +42,7 @@ const get = function (dom: DOMUtils) {
         defaultBlock: 'div'
       },
       {
-        selector: 'img,table',
+        selector: 'img,table,audio,video',
         collapsed: false,
         styles: {
           float: 'left'
@@ -69,7 +69,7 @@ const get = function (dom: DOMUtils) {
         preview: 'font-family font-size'
       },
       {
-        selector: 'img',
+        selector: 'img,audio,video',
         collapsed: false,
         styles: {
           display: 'block',
@@ -107,7 +107,7 @@ const get = function (dom: DOMUtils) {
         defaultBlock: 'div'
       },
       {
-        selector: 'img,table',
+        selector: 'img,table,audio,video',
         collapsed: false,
         styles: {
           float: 'right'
@@ -147,13 +147,15 @@ const get = function (dom: DOMUtils) {
 
     strikethrough: [
       { inline: 'span', styles: { textDecoration: 'line-through' }, exact: true },
-      { inline: 'strike', remove: 'all', preserve_attributes: [ 'class', 'style' ] }
+      { inline: 'strike', remove: 'all', preserve_attributes: [ 'class', 'style' ] },
+      { inline: 's', remove: 'all', preserve_attributes: [ 'class', 'style' ] }
     ],
 
     forecolor: { inline: 'span', styles: { color: '%value' }, links: true, remove_similar: true, clear_child_styles: true },
     hilitecolor: { inline: 'span', styles: { backgroundColor: '%value' }, links: true, remove_similar: true, clear_child_styles: true },
     fontname: { inline: 'span', toggle: false, styles: { fontFamily: '%value' }, clear_child_styles: true },
     fontsize: { inline: 'span', toggle: false, styles: { fontSize: '%value' }, clear_child_styles: true },
+    lineheight: { selector: 'h1,h2,h3,h4,h5,h6,p,li,td,th,div', defaultBlock: 'p', styles: { lineHeight: '%value' }},
     fontsize_class: { inline: 'span', attributes: { class: '%value' }},
     blockquote: { block: 'blockquote', wrapper: true, remove: 'all' },
     subscript: { inline: 'sub' },
@@ -162,20 +164,30 @@ const get = function (dom: DOMUtils) {
 
     link: {
       inline: 'a', selector: 'a', remove: 'all', split: true, deep: true,
-      onmatch(node, _fmt, _itemName) {
+      onmatch: (node, _fmt, _itemName) => {
         return NodeType.isElement(node) && node.hasAttribute('href');
       },
 
-      onformat(elm, _fmt, vars) {
+      onformat: (elm, _fmt, vars?: FormatVars) => {
         Tools.each(vars, (value, key) => {
           dom.setAttrib(elm, key, value);
         });
       }
     },
 
+    lang: {
+      inline: 'span',
+      clear_child_styles: true,
+      remove_similar: true,
+      attributes: {
+        'lang': '%value',
+        'data-mce-lang': (vars) => vars?.customValue ?? null
+      }
+    },
+
     removeformat: [
       {
-        selector: 'b,strong,em,i,font,u,strike,sub,sup,dfn,code,samp,kbd,var,cite,mark,q,del,ins',
+        selector: 'b,strong,em,i,font,u,strike,s,sub,sup,dfn,code,samp,kbd,var,cite,mark,q,del,ins,small',
         remove: 'all',
         split: true,
         expand: false,
@@ -187,7 +199,7 @@ const get = function (dom: DOMUtils) {
     ]
   };
 
-  Tools.each('p h1 h2 h3 h4 h5 h6 div address pre div dt dd samp'.split(/\s/), function (name) {
+  Tools.each('p h1 h2 h3 h4 h5 h6 div address pre dt dd samp'.split(/\s/), (name) => {
     formats[name] = { block: name, remove: 'all' };
   });
 

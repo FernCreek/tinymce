@@ -5,39 +5,51 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Element as DomElement, HTMLTableCellElement, HTMLTableRowElement, HTMLTableCaptionElement } from '@ephox/dom-globals';
-import { Arr, Option, Options } from '@ephox/katamari';
+import { CellOpSelection, Selections, TableSelection } from '@ephox/darwin';
+import { Arr, Fun, Optionals } from '@ephox/katamari';
 import { TableLookup } from '@ephox/snooker';
-import { Element } from '@ephox/sugar';
-import Editor from 'tinymce/core/api/Editor';
-import * as CellOperations from '../queries/CellOperations';
-import { Selections } from '../selection/Selections';
-import * as Ephemera from './Ephemera';
+import { Attribute, Compare, SelectorFind, SugarElement, SugarElements, SugarNode } from '@ephox/sugar';
 
-const getSelectionStartFromSelector = <T extends DomElement>(selector: string) => (editor: Editor) => Option.from(editor.dom.getParent(editor.selection.getStart(), selector)).map((n) => Element.fromDom(n) as Element<T>);
+import { ephemera } from './Ephemera';
 
-const getSelectionStartCaption = getSelectionStartFromSelector<HTMLTableCaptionElement>('caption');
+const getSelectionCellFallback = (element: SugarElement<Node>) =>
+  TableLookup.table(element).bind((table) =>
+    TableSelection.retrieve(table, ephemera.firstSelectedSelector)
+  ).fold(Fun.constant(element), (cells) => cells[0]);
 
-const getSelectionStartCell = getSelectionStartFromSelector<HTMLTableCellElement>('th,td');
+const getSelectionFromSelector = <T extends Element>(selector: string) =>
+  (initCell: SugarElement<Node>, isRoot?: (el: SugarElement<Node>) => boolean) => {
+    const cellName = SugarNode.name(initCell);
+    const cell = cellName === 'col' || cellName === 'colgroup' ? getSelectionCellFallback(initCell) : initCell;
+    return SelectorFind.closest<T>(cell, selector, isRoot);
+  };
 
-const getSelectionStartCellOrCaption = getSelectionStartFromSelector<HTMLTableCellElement | HTMLTableCaptionElement>('th,td,caption');
+const getSelectionCaption = getSelectionFromSelector<HTMLTableCaptionElement>('caption');
 
-const getCellsFromSelection = (editor: Editor): HTMLTableCellElement[] =>
-  getSelectionStartCell(editor)
-    .map((cell) => CellOperations.selection(cell, Selections(editor)))
-    .map((cells) => Arr.map(cells, (cell) => cell.dom()))
-    .getOr([]);
+const getSelectionCellOrCaption = getSelectionFromSelector<HTMLTableCellElement | HTMLTableCaptionElement>('th,td,caption');
 
-const getRowsFromSelection = (editor: Editor): HTMLTableRowElement[] => {
-  const cellOpt = getSelectionStartCell(editor);
+const getSelectionCell = getSelectionFromSelector<HTMLTableCellElement>('th,td');
+
+const getCellsFromSelection = (selections: Selections): SugarElement<HTMLTableCellElement>[] =>
+  CellOpSelection.selection(selections);
+
+const getRowsFromSelection = (selected: SugarElement<Node>, selector: string): SugarElement<HTMLTableRowElement>[] => {
+  const cellOpt = getSelectionCell(selected);
   const rowsOpt = cellOpt.bind((cell) => TableLookup.table(cell))
-    .map((table) => TableLookup.rows(table))
-    .map((rows) => Arr.map(rows, (row) => row.dom()));
-
-  return Options.lift2(cellOpt, rowsOpt, (cell, rows) =>
-    Arr.filter(rows, (row) => Arr.exists(row.cells, (rowCell) => editor.dom.getAttrib(rowCell, Ephemera.selected) === '1' || rowCell === cell.dom()))
+    .map((table) => TableLookup.rows(table));
+  return Optionals.lift2(cellOpt, rowsOpt, (cell, rows) =>
+    Arr.filter(rows, (row) =>
+      Arr.exists(SugarElements.fromDom(row.dom.cells), (rowCell) =>
+        Attribute.get(rowCell, selector) === '1' || Compare.eq(rowCell, cell)
+      )
+    )
   ).getOr([]);
 };
 
-export { getSelectionStartCaption, getSelectionStartCell, getSelectionStartCellOrCaption, getCellsFromSelection, getRowsFromSelection };
-
+export {
+  getSelectionCaption,
+  getSelectionCell,
+  getSelectionCellOrCaption,
+  getCellsFromSelection,
+  getRowsFromSelection
+};

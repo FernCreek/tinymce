@@ -1,20 +1,26 @@
 import { Universe } from '@ephox/boss';
-import { Arr, Fun, Option } from '@ephox/katamari';
+import { Arr, Fun, Optional } from '@ephox/katamari';
 
-const eq = function <E, D> (universe: Universe<E, D>, item: E) {
+interface SubsetAncestors<E> {
+  readonly firstpath: E[];
+  readonly secondpath: E[];
+  readonly shared: Optional<E>;
+}
+
+const eq = <E, D>(universe: Universe<E, D>, item: E): (e: E) => boolean => {
   return Fun.curry(universe.eq, item);
 };
 
-const unsafeSubset = function <E, D> (universe: Universe<E, D>, common: E, ps1: E[], ps2: E[]) {
+const unsafeSubset = <E, D>(universe: Universe<E, D>, common: E, ps1: E[], ps2: E[]): Optional<E[]> => {
   const children = universe.property().children(common);
   if (universe.eq(common, ps1[0])) {
-    return Option.some([ ps1[0] ]);
+    return Optional.some([ ps1[0] ]);
   }
   if (universe.eq(common, ps2[0])) {
-    return Option.some([ ps2[0] ]);
+    return Optional.some([ ps2[0] ]);
   }
 
-  const finder = function (ps: E[]) {
+  const finder = (ps: E[]) => {
     // ps is calculated bottom-up, but logically we're searching top-down
     const topDown = Arr.reverse(ps);
 
@@ -30,8 +36,8 @@ const unsafeSubset = function <E, D> (universe: Universe<E, D>, common: E, ps1: 
   const endIndex = finder(ps2);
 
   // Return all common children between first and last
-  return startIndex.bind(function (sIndex) {
-    return endIndex.map(function (eIndex) {
+  return startIndex.bind((sIndex) => {
+    return endIndex.map((eIndex) => {
       // This is required because the range could be backwards.
       const first = Math.min(sIndex, eIndex);
       const last = Math.max(sIndex, eIndex);
@@ -42,18 +48,18 @@ const unsafeSubset = function <E, D> (universe: Universe<E, D>, common: E, ps1: 
 };
 
 // Note: this can be exported if it is required in the future.
-const ancestors = function <E, D> (universe: Universe<E, D>, start: E, end: E, isRoot: (x: E) => boolean = Fun.never) {
+const ancestors = <E, D>(universe: Universe<E, D>, start: E, end: E, isRoot: (x: E) => boolean = Fun.never): SubsetAncestors<E> => {
   // Inefficient if no isRoot is supplied.
   // TODO: Andy knows there is a graph-based algorithm to find a common parent, but can't remember it
   //        This also includes something to get the subset after finding the common parent
   const ps1 = [ start ].concat(universe.up().all(start));
   const ps2 = [ end ].concat(universe.up().all(end));
 
-  const prune = function (path: E[]) {
+  const prune = (path: E[]) => {
     const index = Arr.findIndex(path, isRoot);
-    return index.fold(function () {
+    return index.fold(() => {
       return path;
-    }, function (ind) {
+    }, (ind) => {
       return path.slice(0, ind + 1);
     });
   };
@@ -61,14 +67,14 @@ const ancestors = function <E, D> (universe: Universe<E, D>, start: E, end: E, i
   const pruned1 = prune(ps1);
   const pruned2 = prune(ps2);
 
-  const shared = Arr.find(pruned1, function (x) {
+  const shared = Arr.find(pruned1, (x) => {
     return Arr.exists(pruned2, eq(universe, x));
   });
 
   return {
-    firstpath: Fun.constant(pruned1),
-    secondpath: Fun.constant(pruned2),
-    shared: Fun.constant(shared)
+    firstpath: pruned1,
+    secondpath: pruned2,
+    shared
   };
 };
 
@@ -77,10 +83,10 @@ const ancestors = function <E, D> (universe: Universe<E, D>, start: E, end: E, i
  *
  * Then return all children of the common element such that start and end are included.
  */
-const subset = function <E, D> (universe: Universe<E, D>, start: E, end: E) {
+const subset = <E, D>(universe: Universe<E, D>, start: E, end: E): Optional<E[]> => {
   const ancs = ancestors(universe, start, end);
-  return ancs.shared().bind(function (shared) {
-    return unsafeSubset(universe, shared, ancs.firstpath(), ancs.secondpath());
+  return ancs.shared.bind((shared) => {
+    return unsafeSubset(universe, shared, ancs.firstpath, ancs.secondpath);
   });
 };
 

@@ -1,6 +1,5 @@
-import { console, document, setTimeout } from '@ephox/dom-globals';
-import { Arr, Fun, Option, Result } from '@ephox/katamari';
-import { Class, Element, EventArgs, Value } from '@ephox/sugar';
+import { Arr, Fun, Optional, Result } from '@ephox/katamari';
+import { Class, EventArgs, SugarElement, Value } from '@ephox/sugar';
 
 import * as AddEventsBehaviour from 'ephox/alloy/api/behaviour/AddEventsBehaviour';
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
@@ -24,12 +23,12 @@ import { AnchorSpec, SelectionAnchorSpec, SubmenuAnchorSpec } from 'ephox/alloy/
 
 import * as DemoRenders from './forms/DemoRenders';
 
-// tslint:disable:no-console
+/* eslint-disable no-console */
 
 export default (): void => {
   const gui = Gui.create();
-  const body = Element.fromDom(document.body);
-  Class.add(gui.element(), 'gui-root-demo-container');
+  const body = SugarElement.fromDom(document.body);
+  Class.add(gui.element, 'gui-root-demo-container');
   Attachment.attachSystem(body, gui);
 
   const sink = DemoSink.make();
@@ -72,7 +71,7 @@ export default (): void => {
           GuiFactory.text(t)
         ],
         anchor: (comp) => ({
-          anchor: 'submenu',
+          type: 'submenu',
           item: comp
         }),
         onShow: (component, _tooltip) => {
@@ -99,26 +98,28 @@ export default (): void => {
       tag: 'div'
     },
 
-    onEscape() {
+    onEscape: () => {
       console.log('inline.menu.escape');
-      return Option.some<boolean>(true);
+      return Optional.some<boolean>(true);
     },
 
-    onExecute() {
+    onExecute: () => {
       console.log('inline.menu.execute');
-      return Option.some<boolean>(true);
+      return Optional.some<boolean>(true);
     },
 
-    onOpenMenu(_sandbox, _menu) {
+    onOpenMenu: (_sandbox, _menu) => {
       // handled by inline view itself
     },
 
-    onOpenSubmenu(sandbox, item, submenu) {
+    onOpenSubmenu: (sandbox, item, submenu) => {
       const sink = lazySink(sandbox).getOrDie();
-      Positioning.position(sink, {
-        anchor: 'submenu',
-        item
-      }, submenu);
+      Positioning.position(sink, submenu, {
+        anchor: {
+          type: 'submenu',
+          item
+        }
+      });
 
     },
 
@@ -166,12 +167,14 @@ export default (): void => {
       },
       events: AlloyEvents.derive([
         AlloyEvents.run<EventArgs>(NativeEvents.contextmenu(), (component, simulatedEvent) => {
-          simulatedEvent.event().kill();
-          InlineView.showAt(inlineComp, {
-            anchor: 'makeshift',
-            x: simulatedEvent.event().x(),
-            y: simulatedEvent.event().y()
-          }, inlineMenu);
+          simulatedEvent.event.kill();
+          InlineView.showAt(inlineComp, inlineMenu, {
+            anchor: {
+              type: 'makeshift',
+              x: simulatedEvent.event.x,
+              y: simulatedEvent.event.y
+            }
+          });
         })
       ])
     })
@@ -200,17 +203,17 @@ export default (): void => {
             AddEventsBehaviour.config('adhoc-show-popup', [
               AlloyEvents.run(NativeEvents.focusin(), (input) => {
                 const emptyAnchor: SubmenuAnchorSpec = {
-                  anchor: 'submenu',
+                  type: 'submenu',
                   item: input
                 };
 
                 const nonEmptyAnchor: SelectionAnchorSpec = {
-                  anchor: 'selection',
-                  root: gui.element()
+                  type: 'selection',
+                  root: gui.element
                 };
 
-                const anchor: AnchorSpec = Value.get(input.element()).length > 0 ? nonEmptyAnchor : emptyAnchor;
-                InlineView.showAt(inlineComp, anchor, Container.sketch({
+                const anchor: AnchorSpec = Value.get(input.element).length > 0 ? nonEmptyAnchor : emptyAnchor;
+                InlineView.showAt(inlineComp, Container.sketch({
                   containerBehaviours: Behaviour.derive([
                     Keying.config({
                       mode: 'flow',
@@ -223,25 +226,31 @@ export default (): void => {
                         tag: 'button',
                         innerHtml: 'B'
                       },
-                      action() { console.log('inline bold'); }
+                      action: () => {
+                        console.log('inline bold');
+                      }
                     }),
                     Button.sketch({
                       dom: {
                         tag: 'button',
                         innerHtml: 'I'
                       },
-                      action() { console.log('inline italic'); }
+                      action: () => {
+                        console.log('inline italic');
+                      }
                     }),
                     Button.sketch({
                       dom: {
                         tag: 'button',
                         innerHtml: 'U'
                       },
-                      action() { console.log('inline underline'); }
+                      action: () => {
+                        console.log('inline underline');
+                      }
                     })
                   ]
 
-                }));
+                }), { anchor });
               })
             ])
           ])

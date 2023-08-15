@@ -5,14 +5,16 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import Editor from 'tinymce/core/api/Editor';
+
 import * as Actions from '../core/Actions';
 
-const register = function (editor) {
-  editor.addCommand('ApplyUnorderedListStyle', function (ui, value) {
+const register = (editor: Editor): void => {
+  editor.addCommand('ApplyUnorderedListStyle', (ui, value) => {
     Actions.applyListFormat(editor, 'UL', value['list-style-type']);
   });
 
-  editor.addCommand('ApplyOrderedListStyle', function (ui, value) {
+  editor.addCommand('ApplyOrderedListStyle', (ui, value) => {
     Actions.applyListFormat(editor, 'OL', value['list-style-type']);
   });
 };

@@ -6,14 +6,15 @@
  */
 
 import PluginManager from 'tinymce/core/api/PluginManager';
+
 import * as Commands from './api/Commands';
 import * as FilterContent from './core/FilterContent';
 import * as Buttons from './ui/Buttons';
 
-export default function () {
-  PluginManager.add('toc', function (editor) {
+export default (): void => {
+  PluginManager.add('toc', (editor) => {
     Commands.register(editor);
     Buttons.register(editor);
     FilterContent.setup(editor);
   });
-}
+};

@@ -1,60 +1,49 @@
-import { Option } from '@ephox/katamari';
-import { Event, Events, Bindable } from '@ephox/porkbun';
+import { Optional } from '@ephox/katamari';
+import { Event, Events } from '@ephox/porkbun';
+import { EventArgs, SugarPosition } from '@ephox/sugar';
+
 import { DragMode } from '../api/DragApis';
-import { Position, EventArgs } from '@ephox/sugar';
+import { DragEvents, DragState } from './DragTypes';
 
-export interface InDragEvent {
-  info: () => Position;
-}
+export const InDrag = (): DragState => {
 
-interface InDragEvents {
-  registry: {
-    move: Bindable<InDragEvent>;
-  };
-  trigger: {
-    move: (info: Position) => void;
-  };
-}
+  let previous = Optional.none<SugarPosition>();
 
-export default function () {
-
-  let previous = Option.none<Position>();
-
-  const reset = function () {
-    previous = Option.none();
+  const reset = () => {
+    previous = Optional.none();
   };
 
   // Return position delta between previous position and nu position,
   // or None if this is the first. Set the previous position to nu.
-  const update = function (mode: DragMode, nu: Position) {
-    const result = previous.map(function (old) {
+  const update = (mode: DragMode, nu: SugarPosition) => {
+    const result = previous.map((old) => {
       return mode.compare(old, nu);
     });
 
-    previous = Option.some(nu);
+    previous = Optional.some(nu);
     return result;
   };
 
-  const onEvent = function (event: EventArgs, mode: DragMode) {
+  const onEvent = (event: EventArgs, mode: DragMode) => {
     const dataOption = mode.extract(event);
 
     // Dragster move events require a position delta. The moveevent is only triggered
     // on the second and subsequent dragster move events. The first is dropped.
-    dataOption.each(function (data) {
+    dataOption.each((data) => {
       const offset = update(mode, data);
-      offset.each(function (d) {
+      offset.each((d) => {
         events.trigger.move(d);
       });
     });
   };
 
-  const events = Events.create({
+  const events: DragEvents = Events.create({
     move: Event([ 'info' ])
-  }) as InDragEvents;
+  });
 
   return {
     onEvent,
     reset,
     events: events.registry
   };
-}
+};

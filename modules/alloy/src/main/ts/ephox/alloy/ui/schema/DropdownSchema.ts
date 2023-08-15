@@ -1,5 +1,5 @@
-import { FieldSchema, FieldProcessorAdt } from '@ephox/boulder';
-import { Fun, Option } from '@ephox/katamari';
+import { FieldSchema } from '@ephox/boulder';
+import { Fun, Optional } from '@ephox/katamari';
 
 import { Coupling } from '../../api/behaviour/Coupling';
 import { Focusing } from '../../api/behaviour/Focusing';
@@ -13,16 +13,16 @@ import * as PartType from '../../parts/PartType';
 import * as AnchorLayouts from '../../positioning/mode/AnchorLayouts';
 import { DropdownDetail, DropdownSpec } from '../types/DropdownTypes';
 
-const schema: () => FieldProcessorAdt[] = Fun.constant([
-  FieldSchema.strict('dom'),
-  FieldSchema.strict('fetch'),
+const schema = Fun.constant([
+  FieldSchema.required('dom'),
+  FieldSchema.required('fetch'),
   Fields.onHandler('onOpen'),
   Fields.onKeyboardHandler('onExecute'),
-  FieldSchema.defaulted('getHotspot', Option.some),
+  FieldSchema.defaulted('getHotspot', Optional.some),
   FieldSchema.defaulted('getAnchorOverrides', Fun.constant({ })),
   AnchorLayouts.schema(),
   SketchBehaviours.field('dropdownBehaviours', [ Toggling, Coupling, Keying, Focusing ]),
-  FieldSchema.strict('toggleClass'),
+  FieldSchema.required('toggleClass'),
   FieldSchema.defaulted('eventOrder', { }),
   FieldSchema.option('lazySink'),
   FieldSchema.defaulted('matchWidth', false),
@@ -38,7 +38,7 @@ const parts: () => PartType.PartTypeAdt[] = Fun.constant([
       Fields.tieredMenuMarkers()
     ],
     name: 'menu',
-    defaults(detail) {
+    defaults: (detail) => {
       return {
         onExecute: detail.onExecute
       };
@@ -48,7 +48,8 @@ const parts: () => PartType.PartTypeAdt[] = Fun.constant([
   InternalSink.partType()
 ]);
 
-const name = () => 'Dropdown';
+const name = Fun.constant('Dropdown');
+
 export {
   name,
   schema,

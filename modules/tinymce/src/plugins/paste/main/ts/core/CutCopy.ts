@@ -5,22 +5,27 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { ClipboardEvent, DataTransfer, Range } from '@ephox/dom-globals';
+import { Fun } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
 import Delay from 'tinymce/core/api/util/Delay';
+
 import * as InternalHtml from './InternalHtml';
 
 interface SelectionContentData {
-  html: string;
-  text: string;
+  readonly html: string;
+  readonly text: string;
 }
+
+type DoneFn = () => void;
+type FallbackFn = (html: string, done: DoneFn) => void;
 
 const hasWorkingClipboardApi = (clipboardData: DataTransfer | null): clipboardData is DataTransfer =>
   // iOS supports the clipboardData API but it doesn't do anything for cut operations
   Env.iOS === false && typeof clipboardData?.setData === 'function';
 
-const setHtml5Clipboard = (clipboardData: DataTransfer | null, html: string, text: string) => {
+const setHtml5Clipboard = (clipboardData: DataTransfer | null, html: string, text: string): boolean => {
   if (hasWorkingClipboardApi(clipboardData)) {
     try {
       clipboardData.clearData();
@@ -36,10 +41,7 @@ const setHtml5Clipboard = (clipboardData: DataTransfer | null, html: string, tex
   }
 };
 
-type DoneFn = () => void;
-type FallbackFn = (html: string, done: DoneFn) => void;
-
-const setClipboardData = (evt: ClipboardEvent, data: SelectionContentData, fallback: FallbackFn, done: DoneFn) => {
+const setClipboardData = (evt: ClipboardEvent, data: SelectionContentData, fallback: FallbackFn, done: DoneFn): void => {
   if (setHtml5Clipboard(evt.clipboardData, data.html, data.text)) {
     evt.preventDefault();
     done();
@@ -79,25 +81,26 @@ const fallback = (editor: Editor): FallbackFn => (html, done) => {
   }, 0);
 };
 
-const getData = (editor: Editor): SelectionContentData => (
-  {
-    html: editor.selection.getContent({ contextual: true }),
-    text: editor.selection.getContent({ format: 'text' })
-  }
-);
+const getData = (editor: Editor): SelectionContentData => ({
+  html: editor.selection.getContent({ contextual: true }),
+  text: editor.selection.getContent({ format: 'text' })
+});
 
-const isTableSelection = (editor: Editor): boolean => !!editor.dom.getParent(editor.selection.getStart(), 'td[data-mce-selected],th[data-mce-selected]', editor.getBody());
+const isTableSelection = (editor: Editor): boolean =>
+  !!editor.dom.getParent(editor.selection.getStart(), 'td[data-mce-selected],th[data-mce-selected]', editor.getBody());
 
-const hasSelectedContent = (editor: Editor): boolean => !editor.selection.isCollapsed() || isTableSelection(editor);
+const hasSelectedContent = (editor: Editor): boolean =>
+  !editor.selection.isCollapsed() || isTableSelection(editor);
 
-const cut = (editor: Editor) => (evt: ClipboardEvent) => {
+const cut = (editor: Editor) => (evt: ClipboardEvent): void => {
   if (hasSelectedContent(editor)) {
     editor.dom.updateCachedStylesOnElements(editor.selection.getSelectedBlocks());
     setClipboardData(evt, getData(editor), fallback(editor), () => {
-      if (Env.browser.isChrome()) {
+      if (Env.browser.isChrome() || Env.browser.isFirefox()) {
         const rng = editor.selection.getRng();
         // Chrome fails to execCommand from another execCommand with this message:
         // "We don't execute document.execCommand() this time, because it is called recursively.""
+        // Firefox 82 now also won't run recursive commands, but it doesn't log an error
         Delay.setEditorTimeout(editor, () => { // detach
           // Restore the range before deleting, as Chrome on Android will
           // collapse the selection after a cut event has fired.
@@ -111,13 +114,13 @@ const cut = (editor: Editor) => (evt: ClipboardEvent) => {
   }
 };
 
-const copy = (editor: Editor) => (evt: ClipboardEvent) => {
+const copy = (editor: Editor) => (evt: ClipboardEvent): void => {
   if (hasSelectedContent(editor)) {
-    setClipboardData(evt, getData(editor), fallback(editor), () => {});
+    setClipboardData(evt, getData(editor), fallback(editor), Fun.noop);
   }
 };
 
-const register = (editor: Editor) => {
+const register = (editor: Editor): void => {
   if (!editor.settings.plugins.includes('qtinterface')) { // We have our own cut/copy handlers for qt interaction
     editor.on('cut', cut(editor));
     editor.on('copy', copy(editor));

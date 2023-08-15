@@ -5,15 +5,13 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import {
-  AddEventsBehaviour, AlloyEvents, Behaviour, GuiFactory, Highlighting, InlineView, ItemTypes, Menu, SystemEvents
-} from '@ephox/alloy';
-import { InlineContent, Types } from '@ephox/bridge';
-import { console } from '@ephox/dom-globals';
-import { Arr, Cell, Option, Throttler, Thunk } from '@ephox/katamari';
-import { Element, Remove } from '@ephox/sugar';
+import { AddEventsBehaviour, AlloyEvents, Behaviour, GuiFactory, Highlighting, InlineView, ItemTypes, Menu, SystemEvents } from '@ephox/alloy';
+import { InlineContent } from '@ephox/bridge';
+import { Arr, Cell, Optional, Singleton, Throttler, Thunk } from '@ephox/katamari';
+import { Remove, SugarElement } from '@ephox/sugar';
 
 import Editor from 'tinymce/core/api/Editor';
+
 import { AutocompleteContext, getContext } from './autocomplete/AutocompleteContext';
 import { AutocompleterEditorEvents, AutocompleterUiApi } from './autocomplete/AutocompleteEditorEvents';
 import { AutocompleteLookupData, AutocompleteLookupInfo, lookup, lookupWithContext } from './autocomplete/AutocompleteLookup';
@@ -26,12 +24,12 @@ import { createAutocompleteItems, createMenuFrom, FocusMode } from './ui/menus/m
 
 interface ActiveAutocompleter {
   triggerChar: string;
-  element: Element;
+  element: SugarElement;
   matchLength: number;
 }
 
 const register = (editor: Editor, sharedBackstage: UiFactoryBackstageShared) => {
-  const activeAutocompleter = Cell<Option<ActiveAutocompleter>>(Option.none());
+  const activeAutocompleter = Singleton.value<ActiveAutocompleter>();
   const processingAction = Cell<boolean>(false);
 
   const autocompleter = GuiFactory.build(
@@ -64,11 +62,11 @@ const register = (editor: Editor, sharedBackstage: UiFactoryBackstageShared) => 
     if (isActive()) {
       // Unwrap the content if an incomplete mention
       const lastElement = activeAutocompleter.get().map((ac) => ac.element);
-      AutocompleteTag.detect(lastElement.getOr(Element.fromDom(editor.selection.getNode()))).each(Remove.unwrap);
+      AutocompleteTag.detect(lastElement.getOr(SugarElement.fromDom(editor.selection.getNode()))).each(Remove.unwrap);
 
       // Hide the menu and reset
       hideIfNecessary();
-      activeAutocompleter.set(Option.none());
+      activeAutocompleter.clear();
       processingAction.set(false);
     }
   };
@@ -80,7 +78,7 @@ const register = (editor: Editor, sharedBackstage: UiFactoryBackstageShared) => 
   const getAutocompleters: () => Autocompleters.AutocompleterDatabase = Thunk.cached(() => Autocompleters.register(editor));
 
   const getCombinedItems = (triggerChar: string, matches: AutocompleteLookupData[]): ItemTypes.ItemSpec[] => {
-    const columns = Arr.findMap(matches, (m) => Option.from(m.columns)).getOr(1);
+    const columns = Arr.findMap(matches, (m) => Optional.from(m.columns)).getOr(1);
 
     return Arr.bind(matches, (match) => {
       const choices = match.items;
@@ -91,7 +89,7 @@ const register = (editor: Editor, sharedBackstage: UiFactoryBackstageShared) => 
         (itemValue, itemMeta) => {
           const nr = editor.selection.getRng();
           getContext(editor.dom, nr, triggerChar).fold(
-            // tslint:disable-next-line:no-console
+            // eslint-disable-next-line no-console
             () => console.error('Lost context. Cursor probably moved'),
             ({ range }) => {
               const autocompleterApi: InlineContent.AutocompleterInstanceApi = {
@@ -112,7 +110,8 @@ const register = (editor: Editor, sharedBackstage: UiFactoryBackstageShared) => 
         },
         columns,
         ItemResponse.BUBBLE_TO_SANDBOX,
-        sharedBackstage
+        sharedBackstage,
+        match.highlightOn
       );
     });
   };
@@ -123,11 +122,11 @@ const register = (editor: Editor, sharedBackstage: UiFactoryBackstageShared) => 
       const wrapper = AutocompleteTag.create(editor, context.range);
 
       // store the element/context
-      activeAutocompleter.set(Option.some({
+      activeAutocompleter.set({
         triggerChar: context.triggerChar,
         element: wrapper,
         matchLength: context.text.length
-      }));
+      });
       processingAction.set(false);
     }
   };
@@ -137,14 +136,9 @@ const register = (editor: Editor, sharedBackstage: UiFactoryBackstageShared) => 
     ac.matchLength = context.text.length;
 
     // Display the autocompleter menu
-    const columns: Types.ColumnTypes = Arr.findMap(lookupData, (ld) => Option.from(ld.columns)).getOr(1);
+    const columns: InlineContent.ColumnTypes = Arr.findMap(lookupData, (ld) => Optional.from(ld.columns)).getOr(1);
     InlineView.showAt(
       autocompleter,
-      {
-        anchor: 'node',
-        root: Element.fromDom(editor.getBody()),
-        node: Option.from(ac.element)
-      },
       Menu.sketch(
         createMenuFrom(
           createPartialMenuWithAlloyItems('autocompleter-value', true, items, columns, 'normal'),
@@ -153,16 +147,23 @@ const register = (editor: Editor, sharedBackstage: UiFactoryBackstageShared) => 
           // Use the constant.
           'normal'
         )
-      )
+      ),
+      {
+        anchor: {
+          type: 'node',
+          root: SugarElement.fromDom(editor.getBody()),
+          node: Optional.from(ac.element)
+        }
+      }
     );
 
     InlineView.getContent(autocompleter).each(Highlighting.highlightFirst);
   };
 
-  const doLookup = (fetchOptions?: Record<string, any>): Option<AutocompleteLookupInfo> =>
+  const doLookup = (fetchOptions?: Record<string, any>): Optional<AutocompleteLookupInfo> =>
     activeAutocompleter.get().map(
-      (ac) => getContext(editor.dom, editor.selection.getRng(), ac.triggerChar).
-        bind((newContext) => lookupWithContext(editor, getAutocompleters, newContext, fetchOptions))
+      (ac) => getContext(editor.dom, editor.selection.getRng(), ac.triggerChar)
+        .bind((newContext) => lookupWithContext(editor, getAutocompleters, newContext, fetchOptions))
     ).getOrThunk(() => lookup(editor, getAutocompleters));
 
   const load = (fetchOptions?: Record<string, any>) => {
@@ -217,7 +218,9 @@ const register = (editor: Editor, sharedBackstage: UiFactoryBackstageShared) => 
     getView: () => InlineView.getContent(autocompleter)
   };
 
-  AutocompleterEditorEvents.setup(autocompleterUiApi, editor);
+  if (editor.hasPlugin('rtc') === false) {
+    AutocompleterEditorEvents.setup(autocompleterUiApi, editor);
+  }
 };
 
 export const Autocompleter = {

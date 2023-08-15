@@ -5,16 +5,19 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import * as Delete from '../core/Delete';
 import Editor from 'tinymce/core/api/Editor';
 
-const get = function (editor: Editor) {
-  return {
-    backspaceDelete(isForward: boolean) {
-      Delete.backspaceDelete(editor, isForward);
-    }
-  };
-};
+import * as Delete from '../core/Delete';
+
+export interface Api {
+  readonly backspaceDelete: (isForward: boolean) => void;
+}
+
+const get = (editor: Editor): Api => ({
+  backspaceDelete: (isForward: boolean) => {
+    Delete.backspaceDelete(editor, isForward);
+  }
+});
 
 export {
   get

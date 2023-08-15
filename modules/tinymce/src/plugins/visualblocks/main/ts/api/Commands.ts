@@ -5,12 +5,14 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import * as VisualBlocks from '../core/VisualBlocks';
-import Editor from 'tinymce/core/api/Editor';
 import { Cell } from '@ephox/katamari';
 
-const register = function (editor: Editor, pluginUrl: string, enabledState: Cell<boolean>) {
-  editor.addCommand('mceVisualBlocks', function () {
+import Editor from 'tinymce/core/api/Editor';
+
+import * as VisualBlocks from '../core/VisualBlocks';
+
+const register = (editor: Editor, pluginUrl: string, enabledState: Cell<boolean>): void => {
+  editor.addCommand('mceVisualBlocks', () => {
     VisualBlocks.toggleVisualBlocks(editor, pluginUrl, enabledState);
   });
 };

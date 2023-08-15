@@ -5,8 +5,9 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { Obj, Optional } from '@ephox/katamari';
+
 import { Decorator } from './Wrapping';
-import { Option } from '@ephox/katamari';
 
 export interface AnnotatorSettings {
   decorate: Decorator;
@@ -15,11 +16,16 @@ export interface AnnotatorSettings {
 
 export interface AnnotationsRegistry {
   register: (name: string, settings: AnnotatorSettings) => void;
-  lookup: (name: string) => Option<AnnotatorSettings>;
+  lookup: (name: string) => Optional<AnnotatorSettings>;
+}
+
+interface Annotation {
+  readonly name: string;
+  readonly settings: AnnotatorSettings;
 }
 
 const create = (): AnnotationsRegistry => {
-  const annotations = { };
+  const annotations: Record<string, Annotation> = { };
 
   const register = (name: string, settings: AnnotatorSettings): void => {
     annotations[name] = {
@@ -28,7 +34,8 @@ const create = (): AnnotationsRegistry => {
     };
   };
 
-  const lookup = (name: string): Option<AnnotatorSettings> => annotations.hasOwnProperty(name) ? Option.from(annotations[name]).map((a) => a.settings) : Option.none();
+  const lookup = (name: string): Optional<AnnotatorSettings> =>
+    Obj.get(annotations, name).map((a) => a.settings);
 
   return {
     register,

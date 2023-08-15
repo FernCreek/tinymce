@@ -1,32 +1,38 @@
 import { Assert, UnitTest } from '@ephox/bedrock-client';
-import { DataTransfer, navigator } from '@ephox/dom-globals';
-import { Cell, Option } from '@ephox/katamari';
-import { Body, DomEvent, Element, Insert, Remove } from '@ephox/sugar';
+import { Singleton } from '@ephox/katamari';
+import { DomEvent, Insert, Remove, SugarBody, SugarElement } from '@ephox/sugar';
+
+import { Chain } from 'ephox/agar/api/Chain';
+import * as ChainSequence from 'ephox/agar/api/ChainSequence';
 import { cCopy, cCut, sPasteDataTransfer, sPasteFiles, sPasteItems } from 'ephox/agar/api/Clipboard';
 import { createFileFromString } from 'ephox/agar/api/Files';
-import { Chain, Logger, Step, ChainSequence, StepSequence } from 'ephox/agar/api/Main';
+import * as Logger from 'ephox/agar/api/Logger';
 import { Pipeline } from 'ephox/agar/api/Pipeline';
+import { Step } from 'ephox/agar/api/Step';
+import * as StepSequence from 'ephox/agar/api/StepSequence';
 
-if (! /phantom/i.test(navigator.userAgent)) {
+if (!/phantom/i.test(navigator.userAgent)) {
   UnitTest.asynctest('ClipboardTest', (success, failure) => {
-    const pastebin = Element.fromHtml('<div class="pastebin"></div>');
-    const pasteState = Cell(Option.none<DataTransfer>());
+    const pastebin = SugarElement.fromHtml('<div class="pastebin"></div>');
+    const pasteState = Singleton.value<DataTransfer>();
 
-    Insert.append(Body.body(), pastebin);
+    Insert.append(SugarBody.body(), pastebin);
 
     const cutUnbinder = DomEvent.bind(pastebin, 'cut', (evt) => {
-      const dataTransfer = evt.raw().clipboardData;
+      const dataTransfer = evt.raw.clipboardData;
+      dataTransfer.clearData();
       dataTransfer.setData('text/plain', 'cut-data');
     });
 
     const copyUnbinder = DomEvent.bind(pastebin, 'copy', (evt) => {
-      const dataTransfer = evt.raw().clipboardData;
+      const dataTransfer = evt.raw.clipboardData;
+      dataTransfer.clearData();
       dataTransfer.setData('text/plain', 'copy-data');
     });
 
     const pasteUnbinder = DomEvent.bind(pastebin, 'paste', (evt) => {
-      const dataTransfer = evt.raw().clipboardData;
-      pasteState.set(Option.some(dataTransfer));
+      const dataTransfer = evt.raw.clipboardData;
+      pasteState.set(dataTransfer);
     });
 
     Pipeline.runStep({}, StepSequence.sequenceSame([
@@ -78,14 +84,14 @@ if (! /phantom/i.test(navigator.userAgent)) {
       Logger.t('Cut', Chain.isolate(pastebin, ChainSequence.sequence([
         cCut,
         Chain.op((dataTransfer: DataTransfer) => {
-          Assert.eq('Should be extected cut data', 'cut-data', dataTransfer.getData('text/plain'));
+          Assert.eq('Should be extracted cut data', 'cut-data', dataTransfer.getData('text/plain'));
         })
       ]))),
 
       Logger.t('Copy', Chain.isolate(pastebin, ChainSequence.sequence([
         cCopy,
         Chain.op((dataTransfer: DataTransfer) => {
-          Assert.eq('Should be extected copy data', 'copy-data', dataTransfer.getData('text/plain'));
+          Assert.eq('Should be extracted copy data', 'copy-data', dataTransfer.getData('text/plain'));
         })
       ])))
     ]), () => {

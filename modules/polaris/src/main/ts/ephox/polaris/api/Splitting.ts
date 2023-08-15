@@ -26,16 +26,15 @@ const adt: {
   { excludeWithout: [ 'item' ] }
 ]);
 
-const cata = function <T, U> (
+const cata = <T, U>(
   subject: Splitting<T>,
   onInclude: SplittingHandler<T, U>,
   onExcludeWith: SplittingHandler<T, U>,
   onExcludeWithout: SplittingHandler<T, U>
-) {
+): U => {
   return subject.fold(onInclude, onExcludeWith, onExcludeWithout);
 };
 
-// tslint:disable-next-line:variable-name
 export const Splitting = {
   include: adt.include,
   excludeWith: adt.excludeWith,

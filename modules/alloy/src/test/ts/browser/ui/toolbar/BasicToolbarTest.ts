@@ -33,7 +33,7 @@ UnitTest.asynctest('BasicToolbarTest', (success, failure) => {
             classes: [ 'not-shell-toolbar' ]
           },
           components: [
-            Toolbar.parts().groups({
+            Toolbar.parts.groups({
               dom: {
                 tag: 'div',
                 attributes: {
@@ -83,7 +83,7 @@ UnitTest.asynctest('BasicToolbarTest', (success, failure) => {
             })
           ]
         })),
-        component.element()
+        component.element
       ),
 
       Step.sync(() => {
@@ -126,7 +126,7 @@ UnitTest.asynctest('BasicToolbarTest', (success, failure) => {
             })
           ]
         })),
-        component.element()
+        component.element
       ),
 
       Step.sync(() => {
@@ -179,10 +179,10 @@ UnitTest.asynctest('BasicToolbarTest', (success, failure) => {
             })
           ]
         })),
-        component.element()
+        component.element
       ),
 
       GuiSetup.mRemoveStyles
     ];
-  }, () => { success(); }, failure);
+  }, success, failure);
 });

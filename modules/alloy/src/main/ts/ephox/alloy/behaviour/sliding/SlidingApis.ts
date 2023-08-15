@@ -1,38 +1,40 @@
-import { Option } from '@ephox/katamari';
-import { Class, Classes, Css, Element } from '@ephox/sugar';
+import { Optional } from '@ephox/katamari';
+import { Class, Classes, Css, SugarElement } from '@ephox/sugar';
 
 import { AlloyComponent } from '../../api/component/ComponentApi';
 import { SlidingConfig, SlidingState } from './SlidingTypes';
 import { getAnimationRoot } from './SlidingUtils';
 
-const getDimensionProperty = (slideConfig: SlidingConfig) => slideConfig.dimension.property;
+const getDimensionProperty = (slideConfig: SlidingConfig): string =>
+  slideConfig.dimension.property;
 
-const getDimension = (slideConfig: SlidingConfig, elem: Element) => slideConfig.dimension.getDimension(elem);
+const getDimension = (slideConfig: SlidingConfig, elem: SugarElement): string =>
+  slideConfig.dimension.getDimension(elem);
 
-const disableTransitions = (component: AlloyComponent, slideConfig: SlidingConfig) => {
+const disableTransitions = (component: AlloyComponent, slideConfig: SlidingConfig): void => {
   const root = getAnimationRoot(component, slideConfig);
   Classes.remove(root, [ slideConfig.shrinkingClass, slideConfig.growingClass ]);
 };
 
-const setShrunk = (component: AlloyComponent, slideConfig: SlidingConfig) => {
-  Class.remove(component.element(), slideConfig.openClass);
-  Class.add(component.element(), slideConfig.closedClass);
-  Css.set(component.element(), getDimensionProperty(slideConfig), '0px');
-  Css.reflow(component.element());
+const setShrunk = (component: AlloyComponent, slideConfig: SlidingConfig): void => {
+  Class.remove(component.element, slideConfig.openClass);
+  Class.add(component.element, slideConfig.closedClass);
+  Css.set(component.element, getDimensionProperty(slideConfig), '0px');
+  Css.reflow(component.element);
 };
 
-const setGrown = (component: AlloyComponent, slideConfig: SlidingConfig) => {
-  Class.remove(component.element(), slideConfig.closedClass);
-  Class.add(component.element(), slideConfig.openClass);
-  Css.remove(component.element(), getDimensionProperty(slideConfig));
+const setGrown = (component: AlloyComponent, slideConfig: SlidingConfig): void => {
+  Class.remove(component.element, slideConfig.closedClass);
+  Class.add(component.element, slideConfig.openClass);
+  Css.remove(component.element, getDimensionProperty(slideConfig));
 };
 
-const doImmediateShrink = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState, _calculatedSize: Option<string>) => {
+const doImmediateShrink = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState, _calculatedSize: Optional<string>): void => {
   slideState.setCollapsed();
 
   // Force current dimension to begin transition
-  Css.set(component.element(), getDimensionProperty(slideConfig), getDimension(slideConfig, component.element()));
-  Css.reflow(component.element());
+  Css.set(component.element, getDimensionProperty(slideConfig), getDimension(slideConfig, component.element));
+  Css.reflow(component.element);
 
   disableTransitions(component, slideConfig);
 
@@ -41,13 +43,13 @@ const doImmediateShrink = (component: AlloyComponent, slideConfig: SlidingConfig
   slideConfig.onShrunk(component);
 };
 
-const doStartShrink = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState, calculatedSize: Option<string>) => {
-  const size = calculatedSize.getOrThunk(() => getDimension(slideConfig, component.element()));
+const doStartShrink = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState, calculatedSize: Optional<string>): void => {
+  const size = calculatedSize.getOrThunk(() => getDimension(slideConfig, component.element));
   slideState.setCollapsed();
 
   // Force current dimension to begin transition
-  Css.set(component.element(), getDimensionProperty(slideConfig), size);
-  Css.reflow(component.element());
+  Css.set(component.element, getDimensionProperty(slideConfig), size);
+  Css.reflow(component.element);
 
   const root = getAnimationRoot(component, slideConfig);
   Class.remove(root, slideConfig.growingClass);
@@ -57,29 +59,29 @@ const doStartShrink = (component: AlloyComponent, slideConfig: SlidingConfig, sl
 };
 
 // A "smartShrink" will do an immediate shrink if no shrinking is scheduled to happen
-const doStartSmartShrink = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState) => {
-  const size: string = getDimension(slideConfig, component.element());
+const doStartSmartShrink = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState): void => {
+  const size: string = getDimension(slideConfig, component.element);
   const shrinker = size === '0px' ? doImmediateShrink : doStartShrink;
-  shrinker(component, slideConfig, slideState, Option.some(size));
+  shrinker(component, slideConfig, slideState, Optional.some(size));
 };
 
 // Showing is complex due to the inability to transition to "auto".
 // We also can't cache the dimension as the parents may have resized since it was last shown.
-const doStartGrow = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState) => {
+const doStartGrow = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState): void => {
   // Start the growing animation styles
   const root = getAnimationRoot(component, slideConfig);
 
   // Record whether this is interrupting a shrink and its current size
   const wasShrinking = Class.has(root, slideConfig.shrinkingClass);
-  const beforeSize = getDimension(slideConfig, component.element());
+  const beforeSize = getDimension(slideConfig, component.element);
   setGrown(component, slideConfig);
-  const fullSize = getDimension(slideConfig, component.element());
+  const fullSize = getDimension(slideConfig, component.element);
 
   // If the grow is interrupting a shrink, use the size from before the grow as the start size
   // And reflow so that the animation works.
   const startPartialGrow = () => {
-    Css.set(component.element(), getDimensionProperty(slideConfig), beforeSize);
-    Css.reflow(component.element());
+    Css.set(component.element, getDimensionProperty(slideConfig), beforeSize);
+    Css.reflow(component.element);
   };
 
   // If the grow is not interrupting a shrink, start from 0 (shrunk)
@@ -96,48 +98,57 @@ const doStartGrow = (component: AlloyComponent, slideConfig: SlidingConfig, slid
 
   setGrown(component, slideConfig);
 
-  Css.set(component.element(), getDimensionProperty(slideConfig), fullSize);
+  Css.set(component.element, getDimensionProperty(slideConfig), fullSize);
   slideState.setExpanded();
   slideConfig.onStartGrow(component);
 };
 
-const refresh = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState) => {
+const refresh = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState): void => {
   if (slideState.isExpanded()) {
-    Css.remove(component.element(), getDimensionProperty(slideConfig));
-    const fullSize = getDimension(slideConfig, component.element());
-    Css.set(component.element(), getDimensionProperty(slideConfig), fullSize);
+    Css.remove(component.element, getDimensionProperty(slideConfig));
+    const fullSize = getDimension(slideConfig, component.element);
+    Css.set(component.element, getDimensionProperty(slideConfig), fullSize);
   }
 };
 
-const grow = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState) => {
-  if (!slideState.isExpanded()) { doStartGrow(component, slideConfig, slideState); }
+const grow = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState): void => {
+  if (!slideState.isExpanded()) {
+    doStartGrow(component, slideConfig, slideState);
+  }
 };
 
-const shrink = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState) => {
-  if (slideState.isExpanded()) { doStartSmartShrink(component, slideConfig, slideState); }
+const shrink = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState): void => {
+  if (slideState.isExpanded()) {
+    doStartSmartShrink(component, slideConfig, slideState);
+  }
 };
 
-const immediateShrink = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState) => {
-  if (slideState.isExpanded()) { doImmediateShrink(component, slideConfig, slideState, Option.none()); }
+const immediateShrink = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState): void => {
+  if (slideState.isExpanded()) {
+    doImmediateShrink(component, slideConfig, slideState, Optional.none());
+  }
 };
 
-const hasGrown = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState) => slideState.isExpanded();
+const hasGrown = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState): boolean =>
+  slideState.isExpanded();
 
-const hasShrunk = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState) => slideState.isCollapsed();
+const hasShrunk = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState): boolean =>
+  slideState.isCollapsed();
 
-const isGrowing = (component: AlloyComponent, slideConfig: SlidingConfig, _slideState: SlidingState) => {
+const isGrowing = (component: AlloyComponent, slideConfig: SlidingConfig, _slideState: SlidingState): boolean => {
   const root = getAnimationRoot(component, slideConfig);
   return Class.has(root, slideConfig.growingClass) === true;
 };
 
-const isShrinking = (component: AlloyComponent, slideConfig: SlidingConfig, _slideState: SlidingState) => {
+const isShrinking = (component: AlloyComponent, slideConfig: SlidingConfig, _slideState: SlidingState): boolean => {
   const root = getAnimationRoot(component, slideConfig);
   return Class.has(root, slideConfig.shrinkingClass) === true;
 };
 
-const isTransitioning = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState) => isGrowing(component, slideConfig, slideState) === true || isShrinking(component, slideConfig, slideState) === true;
+const isTransitioning = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState): boolean =>
+  isGrowing(component, slideConfig, slideState) || isShrinking(component, slideConfig, slideState);
 
-const toggleGrow = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState) => {
+const toggleGrow = (component: AlloyComponent, slideConfig: SlidingConfig, slideState: SlidingState): void => {
   const f = slideState.isExpanded() ? doStartSmartShrink : doStartGrow;
   f(component, slideConfig, slideState);
 };

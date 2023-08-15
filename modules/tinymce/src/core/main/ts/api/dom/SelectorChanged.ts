@@ -5,14 +5,14 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Node, Element } from '@ephox/dom-globals';
-import { Arr } from '@ephox/katamari';
+import { Arr, Obj, Optional } from '@ephox/katamari';
+
 import Editor from '../Editor';
-import DOMUtils from './DOMUtils';
 import Tools from '../util/Tools';
+import DOMUtils from './DOMUtils';
 
 const deleteFromCallbackMap = (callbackMap, selector, callback) => {
-  if (callbackMap && callbackMap.hasOwnProperty(selector)) {
+  if (callbackMap && Obj.has(callbackMap, selector)) {
     const newCallbacks = Arr.filter(callbackMap[selector], (cb) => cb !== callback);
 
     if (newCallbacks.length === 0) {
@@ -29,40 +29,45 @@ export default (dom: DOMUtils, editor: Editor) => {
   let selectorChangedData: Record<string, SelectorChangedCallback[]>;
   let currentSelectors: Record<string, SelectorChangedCallback[]>;
 
+  const findMatchingNode = (selector: string, nodes: Node[]): Optional<Node> =>
+    Arr.find(nodes, (node) => dom.is(node, selector));
+
+  const getParents = (elem: Element): Element[] =>
+    dom.getParents(elem, null, dom.getRoot());
+
   return {
-    selectorChangedWithUnbind(selector: string, callback: SelectorChangedCallback): { unbind: () => void } {
+    selectorChangedWithUnbind: (selector: string, callback: SelectorChangedCallback): { unbind: () => void } => {
       if (!selectorChangedData) {
         selectorChangedData = {};
         currentSelectors = {};
 
-        editor.on('NodeChange', function (e) {
-          const node = e.element, parents = dom.getParents(node, null, dom.getRoot()), matchedSelectors = {};
+        editor.on('NodeChange', (e) => {
+          const node = e.element;
+          const parents = getParents(node);
+          const matchedSelectors = {};
 
           // Check for new matching selectors
-          Tools.each(selectorChangedData, function (callbacks, selector) {
-            Tools.each(parents, function (node) {
-              if (dom.is(node, selector)) {
-                if (!currentSelectors[selector]) {
-                  // Execute callbacks
-                  Tools.each(callbacks, function (callback) {
-                    callback(true, { node, selector, parents });
-                  });
+          Tools.each(selectorChangedData, (callbacks, selector) => {
+            findMatchingNode(selector, parents).each((node) => {
+              if (!currentSelectors[selector]) {
+                // Execute callbacks
+                Arr.each(callbacks, (callback) => {
+                  callback(true, { node, selector, parents });
+                });
 
-                  currentSelectors[selector] = callbacks;
-                }
-
-                matchedSelectors[selector] = callbacks;
-                return false;
+                currentSelectors[selector] = callbacks;
               }
+
+              matchedSelectors[selector] = callbacks;
             });
           });
 
           // Check if current selectors still match
-          Tools.each(currentSelectors, function (callbacks, selector) {
+          Tools.each(currentSelectors, (callbacks, selector) => {
             if (!matchedSelectors[selector]) {
               delete currentSelectors[selector];
 
-              Tools.each(callbacks, function (callback) {
+              Tools.each(callbacks, (callback) => {
                 callback(false, { node, selector, parents });
               });
             }
@@ -77,8 +82,13 @@ export default (dom: DOMUtils, editor: Editor) => {
 
       selectorChangedData[selector].push(callback);
 
+      // Setup the initial state if selected already
+      findMatchingNode(selector, getParents(editor.selection.getStart())).each(() => {
+        currentSelectors[selector] = selectorChangedData[selector];
+      });
+
       return {
-        unbind() {
+        unbind: () => {
           deleteFromCallbackMap(selectorChangedData, selector, callback);
           deleteFromCallbackMap(currentSelectors, selector, callback);
         }

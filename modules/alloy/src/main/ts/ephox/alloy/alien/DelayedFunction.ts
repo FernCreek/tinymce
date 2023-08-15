@@ -1,6 +1,9 @@
-import { setTimeout, clearTimeout } from '@ephox/dom-globals';
+export interface DelayedFunction<T extends (...args: any[]) => void> {
+  readonly schedule: (...args: Parameters<T>) => void;
+  readonly cancel: () => void;
+}
 
-export default <T extends (...args: any[]) => void>(fun: T, delay: number) => {
+export const DelayedFunction = <T extends (...args: any[]) => void>(fun: T, delay: number): DelayedFunction<T> => {
   let ref: number | null = null;
 
   const schedule = (...args: Parameters<T>): void => {

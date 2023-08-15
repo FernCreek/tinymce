@@ -1,11 +1,12 @@
 import { Chain, NamedChain } from '@ephox/agar';
 import { UnitTest } from '@ephox/bedrock-client';
+import { Fun } from '@ephox/katamari';
 
 import * as GuiFactory from 'ephox/alloy/api/component/GuiFactory';
+import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
 import { Button } from 'ephox/alloy/api/ui/Button';
 import { Container } from 'ephox/alloy/api/ui/Container';
 import * as ChainUtils from 'ephox/alloy/test/ChainUtils';
-import * as GuiSetup from 'ephox/alloy/api/testhelpers/GuiSetup';
 import * as PositionTestUtils from 'ephox/alloy/test/PositionTestUtils';
 import * as Sinks from 'ephox/alloy/test/Sinks';
 
@@ -14,7 +15,7 @@ UnitTest.asynctest('HotspotPositionTest', (success, failure) => {
   GuiSetup.setup((_store, _doc, _body) => {
     const hotspot = GuiFactory.build(
       Button.sketch({
-        action() { },
+        action: Fun.noop,
         dom: {
           styles: {
             position: 'absolute',
@@ -41,7 +42,7 @@ UnitTest.asynctest('HotspotPositionTest', (success, failure) => {
 
   }, (_doc, _body, gui, _component, _store) => {
     const cSetupAnchor = Chain.mapper((hotspot) => ({
-      anchor: 'hotspot',
+      type: 'hotspot',
       hotspot
     }));
 
@@ -66,5 +67,5 @@ UnitTest.asynctest('HotspotPositionTest', (success, failure) => {
         ])
       ])
     ];
-  }, () => { success(); }, failure);
+  }, success, failure);
 });

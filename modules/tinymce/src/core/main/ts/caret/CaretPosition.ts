@@ -5,15 +5,17 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { ClientRect, Document, Element, Node, Range } from '@ephox/dom-globals';
-import { Arr, Fun, Options, Unicode } from '@ephox/katamari';
+import { Arr, Fun, Optionals, Unicode } from '@ephox/katamari';
+
 import DOMUtils from '../api/dom/DOMUtils';
 import * as NodeType from '../dom/NodeType';
-import * as GeomClientRect from '../geom/ClientRect';
+import * as ClientRect from '../geom/ClientRect';
 import * as RangeNodes from '../selection/RangeNodes';
 import * as ExtendingChar from '../text/ExtendingChar';
 import * as Predicate from '../util/Predicate';
 import * as CaretCandidate from './CaretCandidate';
+
+type GeomClientRect = ClientRect.ClientRect;
 
 /**
  * This module contains logic for creating caret positions within a document a caretposition
@@ -31,12 +33,12 @@ const isElement = NodeType.isElement;
 const isCaretCandidate = CaretCandidate.isCaretCandidate;
 const isBlock = NodeType.matchStyleValues('display', 'block table');
 const isFloated = NodeType.matchStyleValues('float', 'left right');
-const isValidElementCaretCandidate = Predicate.and(isElement, isCaretCandidate, Fun.not(isFloated));
+const isValidElementCaretCandidate = Predicate.and(isElement, isCaretCandidate, Fun.not(isFloated)) as (node: Node) => node is Element;
 const isNotPre = Fun.not(NodeType.matchStyleValues('white-space', 'pre pre-line pre-wrap'));
 const isText = NodeType.isText;
 const isBr = NodeType.isBr;
 const nodeIndex = DOMUtils.nodeIndex;
-const resolveIndex = RangeNodes.getNode;
+const resolveIndex = RangeNodes.getNodeUnsafe;
 const createRange = (doc: Document): Range => 'createRange' in doc ? doc.createRange() : DOMUtils.DOM.createRng();
 const isWhiteSpace = (chr: string): boolean => chr && /[\r\n\t ]/.test(chr);
 const isRange = (rng: any): rng is Range => !!rng.setStart && !!rng.setEnd;
@@ -44,10 +46,9 @@ const isRange = (rng: any): rng is Range => !!rng.setStart && !!rng.setEnd;
 const isHiddenWhiteSpaceRange = (range: Range): boolean => {
   const container = range.startContainer;
   const offset = range.startOffset;
-  let text;
 
   if (isWhiteSpace(range.toString()) && isNotPre(container.parentNode) && NodeType.isText(container)) {
-    text = container.data;
+    const text = container.data;
 
     if (isWhiteSpace(text[offset - 1]) || isWhiteSpace(text[offset + 1])) {
       return true;
@@ -59,7 +60,7 @@ const isHiddenWhiteSpaceRange = (range: Range): boolean => {
 
 // Hack for older WebKit versions that doesn't
 // support getBoundingClientRect on BR elements
-const getBrClientRect = (brNode: Element): ClientRect => {
+const getBrClientRect = (brNode: Element): GeomClientRect => {
   const doc = brNode.ownerDocument;
   const rng = createRange(doc);
   const nbsp = doc.createTextNode(Unicode.nbsp);
@@ -68,14 +69,14 @@ const getBrClientRect = (brNode: Element): ClientRect => {
   parentNode.insertBefore(nbsp, brNode);
   rng.setStart(nbsp, 0);
   rng.setEnd(nbsp, 1);
-  const clientRect = GeomClientRect.clone(rng.getBoundingClientRect());
+  const clientRect = ClientRect.clone(rng.getBoundingClientRect());
   parentNode.removeChild(nbsp);
 
   return clientRect;
 };
 
 // Safari will not return a rect for <p>a<br>|b</p> for some odd reason
-const getBoundingClientRectWebKitText = (rng: Range): ClientRect => {
+const getBoundingClientRectWebKitText = (rng: Range): GeomClientRect | null => {
   const sc = rng.startContainer;
   const ec = rng.endContainer;
   const so = rng.startOffset;
@@ -89,16 +90,17 @@ const getBoundingClientRectWebKitText = (rng: Range): ClientRect => {
   }
 };
 
-const isZeroRect = (r) => r.left === 0 && r.right === 0 && r.top === 0 && r.bottom === 0;
+const isZeroRect = (r: GeomClientRect): boolean =>
+  r.left === 0 && r.right === 0 && r.top === 0 && r.bottom === 0;
 
-const getBoundingClientRect = (item: Element | Range): ClientRect => {
-  let clientRect;
+const getBoundingClientRect = (item: Element | Range): GeomClientRect => {
+  let clientRect: GeomClientRect;
 
   const clientRects = item.getClientRects();
   if (clientRects.length > 0) {
-    clientRect = GeomClientRect.clone(clientRects[0]);
+    clientRect = ClientRect.clone(clientRects[0]);
   } else {
-    clientRect = GeomClientRect.clone(item.getBoundingClientRect());
+    clientRect = ClientRect.clone(item.getBoundingClientRect());
   }
 
   if (!isRange(item) && isBr(item) && isZeroRect(clientRect)) {
@@ -112,25 +114,24 @@ const getBoundingClientRect = (item: Element | Range): ClientRect => {
   return clientRect;
 };
 
-const collapseAndInflateWidth = (clientRect: ClientRect, toStart: boolean): GeomClientRect.ClientRect => {
-  const newClientRect = GeomClientRect.collapse(clientRect, toStart);
+const collapseAndInflateWidth = (clientRect: GeomClientRect, toStart: boolean): GeomClientRect => {
+  const newClientRect = ClientRect.collapse(clientRect, toStart);
   newClientRect.width = 1;
   newClientRect.right = newClientRect.left + 1;
 
   return newClientRect;
 };
 
-const getCaretPositionClientRects = (caretPosition: CaretPosition): ClientRect[] => {
-  const clientRects = [];
-  let beforeNode, node;
+const getCaretPositionClientRects = (caretPosition: CaretPosition): GeomClientRect[] => {
+  const clientRects: GeomClientRect[] = [];
 
-  const addUniqueAndValidRect = function (clientRect) {
+  const addUniqueAndValidRect = (clientRect: GeomClientRect) => {
     if (clientRect.height === 0) {
       return;
     }
 
     if (clientRects.length > 0) {
-      if (GeomClientRect.isEqual(clientRect, clientRects[clientRects.length - 1])) {
+      if (ClientRect.isEqual(clientRect, clientRects[clientRects.length - 1])) {
         return;
       }
     }
@@ -138,7 +139,7 @@ const getCaretPositionClientRects = (caretPosition: CaretPosition): ClientRect[]
     clientRects.push(clientRect);
   };
 
-  const addCharacterOffset = function (container, offset) {
+  const addCharacterOffset = (container: Text, offset: number) => {
     const range = createRange(container.ownerDocument);
 
     if (offset < container.data.length) {
@@ -178,14 +179,16 @@ const getCaretPositionClientRects = (caretPosition: CaretPosition): ClientRect[]
     }
   };
 
-  if (isText(caretPosition.container())) {
-    addCharacterOffset(caretPosition.container(), caretPosition.offset());
+  const container = caretPosition.container();
+  const offset = caretPosition.offset();
+  if (isText(container)) {
+    addCharacterOffset(container, offset);
     return clientRects;
   }
 
-  if (isElement(caretPosition.container())) {
+  if (isElement(container)) {
     if (caretPosition.isAtEnd()) {
-      node = resolveIndex(caretPosition.container(), caretPosition.offset());
+      const node = resolveIndex(container, offset);
       if (isText(node)) {
         addCharacterOffset(node, node.data.length);
       }
@@ -194,7 +197,7 @@ const getCaretPositionClientRects = (caretPosition: CaretPosition): ClientRect[]
         addUniqueAndValidRect(collapseAndInflateWidth(getBoundingClientRect(node), false));
       }
     } else {
-      node = resolveIndex(caretPosition.container(), caretPosition.offset());
+      const node = resolveIndex(container, offset);
       if (isText(node)) {
         addCharacterOffset(node, 0);
       }
@@ -204,7 +207,7 @@ const getCaretPositionClientRects = (caretPosition: CaretPosition): ClientRect[]
         return clientRects;
       }
 
-      beforeNode = resolveIndex(caretPosition.container(), caretPosition.offset() - 1);
+      const beforeNode = resolveIndex(caretPosition.container(), caretPosition.offset() - 1);
       if (isValidElementCaretCandidate(beforeNode) && !isBr(beforeNode)) {
         if (isBlock(beforeNode) || isBlock(node) || !isValidElementCaretCandidate(node)) {
           addUniqueAndValidRect(collapseAndInflateWidth(getBoundingClientRect(beforeNode), false));
@@ -224,12 +227,12 @@ export interface CaretPosition {
   container: () => Node;
   offset: () => number;
   toRange: () => Range;
-  getClientRects: () => ClientRect[];
+  getClientRects: () => GeomClientRect[];
   isVisible: () => boolean;
   isAtStart: () => boolean;
   isAtEnd: () => boolean;
   isEqual: (caretPosition: CaretPosition) => boolean;
-  getNode: (before?: boolean) => Node;
+  getNode: (before?: boolean) => Node | undefined;
 }
 
 /**
@@ -240,7 +243,7 @@ export interface CaretPosition {
  * @param {Number} offset Offset within that container node.
  * @param {Array} clientRects Optional client rects array for the position.
  */
-export function CaretPosition(container: Node, offset: number, clientRects?): CaretPosition {
+export const CaretPosition = (container: Node, offset: number, clientRects?: GeomClientRect[]): CaretPosition => {
   const isAtStart = () => {
     if (isText(container)) {
       return offset === 0;
@@ -265,7 +268,7 @@ export function CaretPosition(container: Node, offset: number, clientRects?): Ca
     return range;
   };
 
-  const getClientRects = (): ClientRect[] => {
+  const getClientRects = (): GeomClientRect[] => {
     if (!clientRects) {
       clientRects = getCaretPositionClientRects(CaretPosition(container, offset));
     }
@@ -277,7 +280,8 @@ export function CaretPosition(container: Node, offset: number, clientRects?): Ca
 
   const isEqual = (caretPosition: CaretPosition) => caretPosition && container === caretPosition.container() && offset === caretPosition.offset();
 
-  const getNode = (before?: boolean): Node => resolveIndex(container, before ? offset - 1 : offset);
+  const getNode = (before?: boolean): Node | undefined =>
+    resolveIndex(container, before ? offset - 1 : offset);
 
   return {
     /**
@@ -356,53 +360,53 @@ export function CaretPosition(container: Node, offset: number, clientRects?): Ca
      */
     getNode
   };
-}
+};
 
-export namespace CaretPosition {
-  /**
-   * Creates a caret position from the start of a range.
-   *
-   * @method fromRangeStart
-   * @param {DOMRange} range DOM Range to create caret position from.
-   * @return {tinymce.caret.CaretPosition} Caret position from the start of DOM range.
-   */
-  export const fromRangeStart = (range: Range) => CaretPosition(range.startContainer, range.startOffset);
+/**
+ * Creates a caret position from the start of a range.
+ *
+ * @method fromRangeStart
+ * @param {DOMRange} range DOM Range to create caret position from.
+ * @return {tinymce.caret.CaretPosition} Caret position from the start of DOM range.
+ */
+CaretPosition.fromRangeStart = (range: Range) => CaretPosition(range.startContainer, range.startOffset);
 
-  /**
-   * Creates a caret position from the end of a range.
-   *
-   * @method fromRangeEnd
-   * @param {DOMRange} range DOM Range to create caret position from.
-   * @return {tinymce.caret.CaretPosition} Caret position from the end of DOM range.
-   */
-  export const fromRangeEnd = (range: Range) => CaretPosition(range.endContainer, range.endOffset);
+/**
+ * Creates a caret position from the end of a range.
+ *
+ * @method fromRangeEnd
+ * @param {DOMRange} range DOM Range to create caret position from.
+ * @return {tinymce.caret.CaretPosition} Caret position from the end of DOM range.
+ */
+CaretPosition.fromRangeEnd = (range: Range) => CaretPosition(range.endContainer, range.endOffset);
 
-  /**
-   * Creates a caret position from a node and places the offset after it.
-   *
-   * @method after
-   * @param {Node} node Node to get caret position from.
-   * @return {tinymce.caret.CaretPosition} Caret position from the node.
-   */
-  export const after = (node: Node) => CaretPosition(node.parentNode, nodeIndex(node) + 1);
+/**
+ * Creates a caret position from a node and places the offset after it.
+ *
+ * @method after
+ * @param {Node} node Node to get caret position from.
+ * @return {tinymce.caret.CaretPosition} Caret position from the node.
+ */
+CaretPosition.after = (node: Node) => CaretPosition(node.parentNode, nodeIndex(node) + 1);
 
-  /**
-   * Creates a caret position from a node and places the offset before it.
-   *
-   * @method before
-   * @param {Node} node Node to get caret position from.
-   * @return {tinymce.caret.CaretPosition} Caret position from the node.
-   */
-  export const before = (node: Node) => CaretPosition(node.parentNode, nodeIndex(node));
+/**
+ * Creates a caret position from a node and places the offset before it.
+ *
+ * @method before
+ * @param {Node} node Node to get caret position from.
+ * @return {tinymce.caret.CaretPosition} Caret position from the node.
+ */
+CaretPosition.before = (node: Node) => CaretPosition(node.parentNode, nodeIndex(node));
 
-  export const isAbove = (pos1: CaretPosition, pos2: CaretPosition): boolean => Options.lift2(Arr.head(pos2.getClientRects()), Arr.last(pos1.getClientRects()), GeomClientRect.isAbove).getOr(false);
+CaretPosition.isAbove = (pos1: CaretPosition, pos2: CaretPosition): boolean =>
+  Optionals.lift2(Arr.head(pos2.getClientRects()), Arr.last(pos1.getClientRects()), ClientRect.isAbove).getOr(false);
 
-  export const isBelow = (pos1: CaretPosition, pos2: CaretPosition): boolean => Options.lift2(Arr.last(pos2.getClientRects()), Arr.head(pos1.getClientRects()), GeomClientRect.isBelow).getOr(false);
+CaretPosition.isBelow = (pos1: CaretPosition, pos2: CaretPosition): boolean =>
+  Optionals.lift2(Arr.last(pos2.getClientRects()), Arr.head(pos1.getClientRects()), ClientRect.isBelow).getOr(false);
 
-  export const isAtStart = (pos: CaretPosition) => pos ? pos.isAtStart() : false;
-  export const isAtEnd = (pos: CaretPosition) => pos ? pos.isAtEnd() : false;
-  export const isTextPosition = (pos: CaretPosition) => pos ? NodeType.isText(pos.container()) : false;
-  export const isElementPosition = (pos: CaretPosition) => isTextPosition(pos) === false;
-}
+CaretPosition.isAtStart = (pos: CaretPosition) => pos ? pos.isAtStart() : false;
+CaretPosition.isAtEnd = (pos: CaretPosition) => pos ? pos.isAtEnd() : false;
+CaretPosition.isTextPosition = (pos: CaretPosition) => pos ? NodeType.isText(pos.container()) : false;
+CaretPosition.isElementPosition = (pos: CaretPosition) => CaretPosition.isTextPosition(pos) === false;
 
 export default CaretPosition;

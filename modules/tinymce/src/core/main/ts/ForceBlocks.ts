@@ -5,10 +5,11 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Node } from '@ephox/dom-globals';
-import { Arr, Fun } from '@ephox/katamari';
-import { Element } from '@ephox/sugar';
+import { Arr, Fun, Obj } from '@ephox/katamari';
+import { SugarElement } from '@ephox/sugar';
+
 import Editor from './api/Editor';
+import { SchemaMap } from './api/html/Schema';
 import * as Settings from './api/Settings';
 import * as Bookmarks from './bookmark/Bookmarks';
 import * as NodeType from './dom/NodeType';
@@ -22,11 +23,10 @@ import * as EditorFocus from './focus/EditorFocus';
  * @class tinymce.ForceBlocks
  */
 
-const isBlockElement = function (blockElements, node) {
-  return blockElements.hasOwnProperty(node.nodeName);
-};
+const isBlockElement = (blockElements: SchemaMap, node: Node) =>
+  Obj.has(blockElements, node.nodeName);
 
-const isValidTarget = function (blockElements, node) {
+const isValidTarget = (blockElements, node) => {
   if (NodeType.isText(node)) {
     return true;
   } else if (NodeType.isElement(node)) {
@@ -36,9 +36,9 @@ const isValidTarget = function (blockElements, node) {
   }
 };
 
-const hasBlockParent = function (blockElements, root, node) {
-  return Arr.exists(Parents.parents(Element.fromDom(node), Element.fromDom(root)), function (elm) {
-    return isBlockElement(blockElements, elm.dom());
+const hasBlockParent = (blockElements, root, node) => {
+  return Arr.exists(Parents.parents(SugarElement.fromDom(node), SugarElement.fromDom(root)), (elm) => {
+    return isBlockElement(blockElements, elm.dom);
   });
 };
 
@@ -56,7 +56,7 @@ const shouldRemoveTextNode = (blockElements, node) => {
   return false;
 };
 
-const addRootBlocks = function (editor: Editor) {
+const addRootBlocks = (editor: Editor) => {
   const dom = editor.dom, selection = editor.selection;
   const schema = editor.schema, blockElements = schema.getBlockElements();
   let node: Node = selection.getStart();
@@ -116,7 +116,7 @@ const addRootBlocks = function (editor: Editor) {
   }
 };
 
-const setup = function (editor: Editor) {
+const setup = (editor: Editor) => {
   if (Settings.getForcedRootBlock(editor)) {
     editor.on('NodeChange', Fun.curry(addRootBlocks, editor));
   }

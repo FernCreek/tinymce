@@ -5,9 +5,11 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Range, Node } from '@ephox/dom-globals';
+import { Num } from '@ephox/katamari';
 
-const getSelectedNode = function (range: Range): Node {
+import * as NodeType from '../dom/NodeType';
+
+const getSelectedNode = (range: Range): Node => {
   const startContainer = range.startContainer,
     startOffset = range.startOffset;
 
@@ -18,19 +20,28 @@ const getSelectedNode = function (range: Range): Node {
   return null;
 };
 
-const getNode = function (container: Node, offset: number): Node {
-  if (container.nodeType === 1 && container.hasChildNodes()) {
-    if (offset >= container.childNodes.length) {
-      offset = container.childNodes.length - 1;
-    }
-
-    container = container.childNodes[offset];
+const getNode = (container: Node, offset: number): Node => {
+  if (NodeType.isElement(container) && container.hasChildNodes()) {
+    const childNodes = container.childNodes;
+    const safeOffset = Num.clamp(offset, 0, childNodes.length - 1);
+    return childNodes[safeOffset];
+  } else {
+    return container;
   }
+};
 
-  return container;
+/** @deprecated Use getNode instead */
+const getNodeUnsafe = (container: Node, offset: number): Node | undefined => {
+  // If a negative offset is used on an element then `undefined` should be returned
+  if (offset < 0 && NodeType.isElement(container) && container.hasChildNodes()) {
+    return undefined;
+  } else {
+    return getNode(container, offset);
+  }
 };
 
 export {
   getSelectedNode,
-  getNode
+  getNode,
+  getNodeUnsafe
 };

@@ -5,12 +5,17 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-function getImageSize(img) {
+export interface ImageSize {
+  readonly w: number;
+  readonly h: number;
+}
+
+const getImageSize = (img: HTMLImageElement): ImageSize | null => {
   let width, height;
 
-  function isPxValue(value) {
+  const isPxValue = (value: string) => {
     return /^[0-9\.]+px$/.test(value);
-  }
+  };
 
   width = img.style.width;
   height = img.style.height;
@@ -36,9 +41,9 @@ function getImageSize(img) {
   }
 
   return null;
-}
+};
 
-function setImageSize(img, size) {
+const setImageSize = (img: HTMLImageElement, size: ImageSize | null): void => {
   let width, height;
 
   if (size) {
@@ -55,18 +60,16 @@ function setImageSize(img, size) {
     height = img.height;
 
     if (width || height) {
-      img.setAttribute('width', size.w);
-      img.setAttribute('height', size.h);
+      img.setAttribute('width', String(size.w));
+      img.setAttribute('height', String(size.h));
     }
   }
-}
+};
 
-function getNaturalImageSize(img) {
-  return {
-    w: img.naturalWidth,
-    h: img.naturalHeight
-  };
-}
+const getNaturalImageSize = (img: HTMLImageElement): ImageSize => ({
+  w: img.naturalWidth,
+  h: img.naturalHeight
+});
 
 export {
   getImageSize,

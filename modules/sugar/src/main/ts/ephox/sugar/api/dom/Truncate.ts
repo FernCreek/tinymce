@@ -1,8 +1,15 @@
-import { Element, Html, Replication } from '@ephox/sugar';
+import { SugarElement } from '../node/SugarElement';
+import * as SugarShadowDom from '../node/SugarShadowDom';
+import * as Html from '../properties/Html';
+import * as Replication from './Replication';
 
-const getHtml = (element: Element<any>): string => {
-  const clone = Replication.shallow(element);
-  return Html.getOuter(clone);
+const getHtml = (element: SugarElement<any>): string => {
+  if (SugarShadowDom.isShadowRoot(element)) {
+    return '#shadow-root';
+  } else {
+    const clone = Replication.shallow(element);
+    return Html.getOuter(clone);
+  }
 };
 
 export {

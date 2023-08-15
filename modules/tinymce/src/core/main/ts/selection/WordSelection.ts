@@ -6,23 +6,24 @@
  */
 
 import { Type } from '@ephox/katamari';
+
+import EditorSelection from '../api/dom/Selection';
+import Editor from '../api/Editor';
 import * as CaretContainer from '../caret/CaretContainer';
 import CaretPosition from '../caret/CaretPosition';
-import Selection from '../api/dom/Selection';
-import Editor from '../api/Editor';
 
-const hasSelectionModifyApi = function (editor: Editor) {
-  return Type.isFunction((<any> editor.selection.getSel()).modify);
+const hasSelectionModifyApi = (editor: Editor): boolean => {
+  return Type.isFunction((editor.selection.getSel() as any).modify);
 };
 
-const moveRel = function (forward: boolean, selection: Selection, pos: CaretPosition) {
+const moveRel = (forward: boolean, selection: EditorSelection, pos: CaretPosition): boolean => {
   const delta = forward ? 1 : -1;
   selection.setRng(CaretPosition(pos.container(), pos.offset() + delta).toRange());
-  (<any> selection.getSel()).modify('move', forward ? 'forward' : 'backward', 'word');
+  (selection.getSel() as any).modify('move', forward ? 'forward' : 'backward', 'word');
   return true;
 };
 
-const moveByWord = function (forward: boolean, editor: Editor) {
+const moveByWord = (forward: boolean, editor: Editor): boolean => {
   const rng = editor.selection.getRng();
   const pos = forward ? CaretPosition.fromRangeEnd(rng) : CaretPosition.fromRangeStart(rng);
 

@@ -1,13 +1,14 @@
-import { Arr, Fun, Obj, Option } from '@ephox/katamari';
-import { Position } from '@ephox/sugar';
+import { Arr, Num, Obj, Optional } from '@ephox/katamari';
+import { SugarPosition } from '@ephox/sugar';
+
 import * as Boxes from '../../alien/Boxes';
 import { AnchorBox } from './LayoutTypes';
 
 export interface BoundsRestriction {
-  left: Option<number>;
-  right: Option<number>;
-  top: Option<number>;
-  bottom: Option<number>;
+  readonly left: Optional<number>;
+  readonly right: Optional<number>;
+  readonly top: Optional<number>;
+  readonly bottom: Optional<number>;
 }
 
 export const enum AnchorBoxBounds {
@@ -43,21 +44,16 @@ export const boundsRestriction = (
   )
 );
 
-export const adjustBounds = (bounds: Boxes.Bounds, boundsRestrictions: BoundsRestriction, bubbleOffsets: Position) => {
-  const applyRestriction = (dir: BoundsRestrictionKeys, current: number) => {
-    const bubbleOffset = dir === 'top' || dir === 'bottom' ? bubbleOffsets.top() : bubbleOffsets.left();
-    return Obj.get(boundsRestrictions, dir).bind(Fun.identity)
-      .bind((restriction): Option<number> => {
-        // Ensure the restriction is within the current bounds
-        if (dir === 'left' || dir === 'top') {
-          return restriction >= current ? Option.some(restriction) : Option.none();
-        } else {
-          return restriction <= current ? Option.some(restriction) : Option.none();
-        }
-      })
-      .map((restriction) => restriction + bubbleOffset)
-      .getOr(current);
-  };
+export const adjustBounds = (bounds: Boxes.Bounds, restriction: BoundsRestriction, bubbleOffset: SugarPosition): Boxes.Bounds => {
+  const applyRestriction = (dir: BoundsRestrictionKeys, current: number) =>
+    restriction[dir].map((pos) => {
+      const isVerticalAxis = dir === 'top' || dir === 'bottom';
+      const offset = isVerticalAxis ? bubbleOffset.top : bubbleOffset.left;
+      const comparator = dir === 'left' || dir === 'top' ? Math.max : Math.min;
+      const newPos = comparator(pos, current) + offset;
+      // Ensure the new restricted position is within the current bounds
+      return isVerticalAxis ? Num.clamp(newPos, bounds.y, bounds.bottom) : Num.clamp(newPos, bounds.x, bounds.right);
+    }).getOr(current);
 
   const adjustedLeft = applyRestriction('left', bounds.x);
   const adjustedTop = applyRestriction('top', bounds.y);

@@ -5,8 +5,8 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Node } from '@ephox/dom-globals';
 import { Fun } from '@ephox/katamari';
+
 import * as Dimensions from '../dom/Dimensions';
 import * as ClientRect from '../geom/ClientRect';
 import * as ArrUtils from '../util/ArrUtils';
@@ -15,17 +15,25 @@ import CaretPosition from './CaretPosition';
 import * as CaretUtils from './CaretUtils';
 import { CaretWalker } from './CaretWalker';
 
-export interface ClientRectLine extends ClientRect.ClientRect {
+type GeomClientRect = ClientRect.ClientRect;
+
+interface LineClientRect extends GeomClientRect {
   line: number;
 }
+
+export interface LinePosClientRect extends LineClientRect {
+  position: CaretPosition;
+}
+
+export interface LineNodeClientRect extends Dimensions.NodeClientRect, LineClientRect { }
 
 export enum VDirection {
   Up = -1,
   Down = 1
 }
 
-type PosPredicate = (rect1: ClientRect.ClientRect, rect2: ClientRect.ClientRect) => boolean;
-type RectPredicate = (rect: ClientRectLine) => boolean;
+type PosPredicate = (rect1: GeomClientRect, rect2: GeomClientRect) => boolean;
+type RectPredicate = (rect: GeomClientRect) => boolean;
 
 const findUntil = (direction: VDirection, root: Node, predicateFn: (node: Node) => boolean, node: Node): void => {
   while ((node = CaretUtils.findNode(node, direction, CaretCandidate.isEditableCaretCandidate, root))) {
@@ -35,20 +43,19 @@ const findUntil = (direction: VDirection, root: Node, predicateFn: (node: Node) 
   }
 };
 
-const walkUntil = (direction: VDirection, isAboveFn: PosPredicate, isBeflowFn: PosPredicate, root: Node, predicateFn: RectPredicate, caretPosition: CaretPosition): ClientRectLine[] => {
+const walkUntil = (direction: VDirection, isAboveFn: PosPredicate, isBeflowFn: PosPredicate, root: Node, predicateFn: RectPredicate, caretPosition: CaretPosition): LineNodeClientRect[] => {
   let line = 0;
-  const result = [];
+  const result: LineNodeClientRect[] = [];
 
-  const add = function (node: Node) {
-    let i, clientRect, clientRects;
+  const add = (node: Node) => {
 
-    clientRects = Dimensions.getClientRects([ node ]);
+    let clientRects = Dimensions.getClientRects([ node ]);
     if (direction === -1) {
       clientRects = clientRects.reverse();
     }
 
-    for (i = 0; i < clientRects.length; i++) {
-      clientRect = clientRects[i];
+    for (let i = 0; i < clientRects.length; i++) {
+      const clientRect = clientRects[i] as LineNodeClientRect;
       if (isBeflowFn(clientRect, targetClientRect)) {
         continue;
       }
@@ -79,19 +86,28 @@ const walkUntil = (direction: VDirection, isAboveFn: PosPredicate, isBeflowFn: P
   return result;
 };
 
-const aboveLineNumber = (lineNumber: number, clientRect: ClientRectLine) => clientRect.line > lineNumber;
-const isLineNumber = (lineNumber: number, clientRect: ClientRectLine) => clientRect.line === lineNumber;
-const upUntil = Fun.curry(walkUntil, VDirection.Up, ClientRect.isAbove, ClientRect.isBelow) as (root: Node, predicateFn: RectPredicate, caretPosition: CaretPosition) => ClientRectLine[];
-const downUntil = Fun.curry(walkUntil, VDirection.Down, ClientRect.isBelow, ClientRect.isAbove) as (root: Node, predicateFn: RectPredicate, caretPosition: CaretPosition) => ClientRectLine[];
+const aboveLineNumber = <T extends LineClientRect>(lineNumber: number, clientRect: T): boolean =>
+  clientRect.line > lineNumber;
 
-const positionsUntil = (direction: VDirection, root: Node, predicateFn: RectPredicate, node: Node): ClientRectLine[] => {
+const isLineNumber = <T extends LineClientRect>(lineNumber: number, clientRect: T): boolean =>
+  clientRect.line === lineNumber;
+
+const upUntil: (root: Node, predicateFn: RectPredicate, caretPosition: CaretPosition) => LineNodeClientRect[] =
+  Fun.curry(walkUntil, VDirection.Up, ClientRect.isAbove, ClientRect.isBelow);
+
+const downUntil: (root: Node, predicateFn: RectPredicate, caretPosition: CaretPosition) => LineNodeClientRect[] =
+  Fun.curry(walkUntil, VDirection.Down, ClientRect.isBelow, ClientRect.isAbove);
+
+const positionsUntil = (direction: VDirection, root: Node, predicateFn: RectPredicate, node: Node): LinePosClientRect[] => {
   const caretWalker = CaretWalker(root);
-  let walkFn, isBelowFn, isAboveFn,
-    caretPosition;
-  const result = [];
-  let line = 0, clientRect;
+  let walkFn: (caretPosition: CaretPosition | null) => CaretPosition | null;
+  let isBelowFn: PosPredicate;
+  let isAboveFn: PosPredicate;
+  let caretPosition: CaretPosition;
+  const result: LinePosClientRect[] = [];
+  let line = 0;
 
-  const getClientRect = function (caretPosition) {
+  const getClientRect = (caretPosition: CaretPosition) => {
     if (direction === 1) {
       return ArrUtils.last(caretPosition.getClientRects());
     }
@@ -118,17 +134,17 @@ const positionsUntil = (direction: VDirection, root: Node, predicateFn: RectPred
       continue;
     }
 
-    clientRect = getClientRect(caretPosition);
+    const rect = getClientRect(caretPosition);
 
-    if (isAboveFn(clientRect, targetClientRect)) {
+    if (isAboveFn(rect, targetClientRect)) {
       continue;
     }
 
-    if (result.length > 0 && isBelowFn(clientRect, ArrUtils.last(result))) {
+    if (result.length > 0 && isBelowFn(rect, ArrUtils.last(result))) {
       line++;
     }
 
-    clientRect = ClientRect.clone(clientRect);
+    const clientRect = ClientRect.clone(rect) as LinePosClientRect;
     clientRect.position = caretPosition;
     clientRect.line = line;
 
@@ -142,8 +158,8 @@ const positionsUntil = (direction: VDirection, root: Node, predicateFn: RectPred
   return result;
 };
 
-const isAboveLine = (lineNumber: number) => (clientRect: ClientRectLine) => aboveLineNumber(lineNumber, clientRect);
-const isLine = (lineNumber: number) => (clientRect: ClientRectLine) => isLineNumber(lineNumber, clientRect);
+const isAboveLine = (lineNumber: number) => <T extends LineClientRect>(clientRect: T): boolean => aboveLineNumber(lineNumber, clientRect);
+const isLine = (lineNumber: number) => <T extends LineClientRect>(clientRect: T): boolean => isLineNumber(lineNumber, clientRect);
 
 export {
   upUntil,

@@ -5,16 +5,17 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { Type } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
 import Delay from 'tinymce/core/api/util/Delay';
 import LocalStorage from 'tinymce/core/api/util/LocalStorage';
 import Tools from 'tinymce/core/api/util/Tools';
+
 import * as Events from '../api/Events';
 import * as Settings from '../api/Settings';
-import { Type } from '@ephox/katamari';
-import { DOMParser } from '@ephox/dom-globals';
 
-const isEmpty = (editor: Editor, html?: string) => {
+const isEmpty = (editor: Editor, html?: string): boolean => {
   if (Type.isUndefined(html)) {
     return editor.dom.isEmpty(editor.getBody());
   } else {
@@ -29,7 +30,7 @@ const isEmpty = (editor: Editor, html?: string) => {
   }
 };
 
-const hasDraft = (editor: Editor) => {
+const hasDraft = (editor: Editor): boolean => {
   const time = parseInt(LocalStorage.getItem(Settings.getAutoSavePrefix(editor) + 'time'), 10) || 0;
 
   if (new Date().getTime() - time > Settings.getAutoSaveRetention(editor)) {
@@ -40,7 +41,7 @@ const hasDraft = (editor: Editor) => {
   return true;
 };
 
-const removeDraft = (editor: Editor, fire?: boolean) => {
+const removeDraft = (editor: Editor, fire?: boolean): void => {
   const prefix = Settings.getAutoSavePrefix(editor);
 
   LocalStorage.removeItem(prefix + 'draft');
@@ -51,7 +52,7 @@ const removeDraft = (editor: Editor, fire?: boolean) => {
   }
 };
 
-const storeDraft = (editor: Editor) => {
+const storeDraft = (editor: Editor): void => {
   const prefix = Settings.getAutoSavePrefix(editor);
 
   if (!isEmpty(editor) && editor.isDirty()) {
@@ -61,7 +62,7 @@ const storeDraft = (editor: Editor) => {
   }
 };
 
-const restoreDraft = (editor: Editor) => {
+const restoreDraft = (editor: Editor): void => {
   const prefix = Settings.getAutoSavePrefix(editor);
 
   if (hasDraft(editor)) {
@@ -70,16 +71,14 @@ const restoreDraft = (editor: Editor) => {
   }
 };
 
-const startStoreDraft = (editor: Editor) => {
+const startStoreDraft = (editor: Editor): void => {
   const interval = Settings.getAutoSaveInterval(editor);
-  Delay.setInterval(() => {
-    if (!editor.removed) {
-      storeDraft(editor);
-    }
+  Delay.setEditorInterval(editor, () => {
+    storeDraft(editor);
   }, interval);
 };
 
-const restoreLastDraft = (editor: Editor) => {
+const restoreLastDraft = (editor: Editor): void => {
   editor.undoManager.transact(() => {
     restoreDraft(editor);
     removeDraft(editor);

@@ -5,11 +5,11 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Node } from '@ephox/dom-globals';
 import Editor from 'tinymce/core/api/Editor';
+
 import * as Utils from './Utils';
 
-const registerFormats = (editor: Editor) => {
+const registerFormats = (editor: Editor): void => {
   editor.formatter.register('namedAnchor', {
     inline: 'a',
     selector: Utils.namedAnchorSelector,
@@ -19,7 +19,7 @@ const registerFormats = (editor: Editor) => {
     attributes: {
       id: '%value'
     },
-    onmatch(node: Node, _fmt, _itemName: string) {
+    onmatch: (node: Node, _fmt, _itemName: string) => {
       return Utils.isNamedAnchor(node);
     }
   });

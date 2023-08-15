@@ -1,30 +1,34 @@
-import { Assert, UnitTest } from '@ephox/bedrock-client';
-import * as Strings from 'ephox/katamari/api/Strings';
+import { describe, it } from '@ephox/bedrock-client';
+import { assert } from 'chai';
 import fc from 'fast-check';
 
-UnitTest.test('isEmpty: unit test', () => {
-  const check = (expected, str) => {
-    Assert.eq('isEmpty', expected, Strings.isEmpty(str));
-  };
+import * as Strings from 'ephox/katamari/api/Strings';
 
-  check(false, 'a');
-  check(false, ' ');
-  check(true, '');
-});
+describe('atomic.katamari.api.str.EmptyTest', () => {
+  it('isEmpty unit test', () => {
+    const check = (expected: boolean, str: string) => {
+      assert.equal(Strings.isEmpty(str), expected);
+    };
 
-UnitTest.test('isNotEmpty: unit test', () => {
-  const check = (expected, str) => {
-    Assert.eq('isNotEmpty', expected, Strings.isNotEmpty(str));
-  };
+    check(false, 'a');
+    check(false, ' ');
+    check(true, '');
+  });
 
-  check(true, 'a');
-  check(true, ' ');
-  check(false, '');
-});
+  it('isNonEmpty unit test', () => {
+    const check = (expected: boolean, str: string) => {
+      assert.equal(Strings.isNotEmpty(str), expected);
+    };
 
-UnitTest.test('A string with length 1 or larger should never be empty', () => {
-  fc.assert(fc.property(fc.string(1, 40), (str) => {
-    Assert.eq('isEmpty', false, Strings.isEmpty(str));
-    Assert.eq('isNotEmpty', true, Strings.isNotEmpty(str));
-  }));
+    check(true, 'a');
+    check(true, ' ');
+    check(false, '');
+  });
+
+  it('A string with length 1 or larger should never be empty', () => {
+    fc.assert(fc.property(fc.string(1, 40), (str) => {
+      assert.isFalse(Strings.isEmpty(str));
+      assert.isTrue(Strings.isNotEmpty(str));
+    }));
+  });
 });

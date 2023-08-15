@@ -1,62 +1,30 @@
-import { Pipeline, UiFinder, GeneralSteps, Chain, Logger, UiControls, Assertions, Mouse } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { TinyLoader, TinyUi } from '@ephox/mcagar';
+import { FocusTools } from '@ephox/agar';
+import { describe, it } from '@ephox/bedrock-client';
+import { SugarDocument } from '@ephox/sugar';
+import { TinyHooks, TinyUiActions } from '@ephox/wrap-mcagar';
 
-import LinkPlugin from 'tinymce/plugins/link/Plugin';
+import Editor from 'tinymce/core/api/Editor';
+import Plugin from 'tinymce/plugins/link/Plugin';
 import Theme from 'tinymce/themes/silver/Theme';
-import { Element, Attr } from '@ephox/sugar';
-import { document } from '@ephox/dom-globals';
 
-const cFakeEvent = function (name) {
-  return Chain.label('Fake event',
-    Chain.op(function (elm: Element) {
-      const evt = document.createEvent('HTMLEvents');
-      evt.initEvent(name, true, true);
-      elm.dom().dispatchEvent(evt);
-    })
-  );
-};
+import { TestLinkUi } from '../module/TestLinkUi';
 
-const cCloseDialog = Chain.fromChains([
-  UiFinder.cFindIn('button:contains("Cancel")'),
-  Mouse.cClick
-]);
-
-const cFindByLabelFor = (labelText: string) => Chain.binder((outer: Element) => UiFinder.findIn(outer, 'label:contains("' + labelText + '")').bind((labelEle) => UiFinder.findIn(outer, '#' + Attr.get(labelEle, 'for'))));
-
-UnitTest.asynctest('browser.tinymce.plugins.link.UrlInputTest', (success, failure) => {
-  Theme();
-  LinkPlugin();
-
-  TinyLoader.setupLight(function (editor, onSuccess, onFailure) {
-    const tinyUi = TinyUi(editor);
-
-    Pipeline.async({}, [
-      Logger.t('insert url by typing', GeneralSteps.sequence([
-        tinyUi.sClickOnToolbar('click on link button', 'button[aria-label="Insert/edit link"]'),
-        Chain.asStep({}, [
-          Chain.fromParent(tinyUi.cWaitForPopup('Wait for dialog', 'div[role="dialog"]'),
-            [
-              Chain.fromChains([
-                cFindByLabelFor('URL'),
-                UiControls.cSetValue('http://www.test.com/'),
-                cFakeEvent('input')
-              ]),
-              Chain.fromChains([
-                cFindByLabelFor('Text to display'),
-                UiControls.cGetValue,
-                Assertions.cAssertEq('should be the same url', 'http://www.test.com/')
-              ]),
-              cCloseDialog
-            ]
-          )
-        ])
-
-      ]))
-    ], onSuccess, onFailure);
-  }, {
+describe('browser.tinymce.plugins.link.UrlInputTest', () => {
+  const hook = TinyHooks.bddSetupLight<Editor>({
     plugins: 'link',
     toolbar: 'link',
     base_url: '/project/tinymce/js/tinymce'
-  }, success, failure);
+  }, [ Plugin, Theme ]);
+
+  it('TBA: insert url by typing', async () => {
+    const editor = hook.editor();
+    await TestLinkUi.pOpenLinkDialog(editor);
+    const focused = FocusTools.setActiveValue(SugarDocument.getDocument(), 'http://www.test.com/');
+    TestLinkUi.fireEvent(focused, 'input');
+    TestLinkUi.assertDialogContents({
+      href: 'http://www.test.com/',
+      text: 'http://www.test.com/'
+    });
+    TinyUiActions.closeDialog(editor);
+  });
 });

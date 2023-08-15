@@ -5,19 +5,21 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Types } from '@ephox/bridge';
-import { Arr, Obj, Option, Options } from '@ephox/katamari';
+import { Arr, Obj, Optional, Optionals } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
+import { Dialog } from 'tinymce/core/api/ui/Ui';
+
 import * as Settings from '../api/Settings';
 import { CustomTabSpecs, TabSpecs } from '../Plugin';
+import * as KeyboardNavTab from './KeyboardNavTab';
 import * as KeyboardShortcutsTab from './KeyboardShortcutsTab';
 import * as PluginsTab from './PluginsTab';
 import * as VersionTab from './VersionTab';
-import * as KeyboardNavTab from './KeyboardNavTab';
 
 interface TabData {
-  tabs: TabSpecs;
-  names: string[];
+  readonly tabs: TabSpecs;
+  readonly names: string[];
 }
 
 const parseHelpTabsSetting = (tabsFromSettings: Settings.HelpTabsSetting, tabs: TabSpecs): TabData => {
@@ -52,7 +54,7 @@ const getNamesFromTabs = (tabs: TabSpecs): TabData => {
   return { tabs, names };
 };
 
-const parseCustomTabs = (editor: Editor, customTabs: CustomTabSpecs) => {
+const parseCustomTabs = (editor: Editor, customTabs: CustomTabSpecs): TabData => {
   const shortcuts = KeyboardShortcutsTab.tab();
   const nav = KeyboardNavTab.tab();
   const plugins = PluginsTab.tab(editor);
@@ -71,13 +73,13 @@ const parseCustomTabs = (editor: Editor, customTabs: CustomTabSpecs) => {
   );
 };
 
-const init = (editor: Editor, customTabs: CustomTabSpecs): () => void => () => {
+const init = (editor: Editor, customTabs: CustomTabSpecs) => (): void => {
   // const tabSpecs: Record<string, Types.Dialog.TabApi> = customTabs.get();
   const { tabs, names } = parseCustomTabs(editor, customTabs);
-  const foundTabs: Option<Types.Dialog.TabApi>[] = Arr.map(names, (name) => Obj.get(tabs, name));
-  const dialogTabs: Types.Dialog.TabApi[] = Options.cat(foundTabs);
+  const foundTabs: Optional<Dialog.TabSpec>[] = Arr.map(names, (name) => Obj.get(tabs, name));
+  const dialogTabs: Dialog.TabSpec[] = Optionals.cat(foundTabs);
 
-  const body: Types.Dialog.TabPanelApi = {
+  const body: Dialog.TabPanelSpec = {
     type: 'tabpanel',
     tabs: dialogTabs
   };

@@ -6,19 +6,22 @@
  */
 
 import { Cell, Obj } from '@ephox/katamari';
+
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import SaxParser from 'tinymce/core/api/html/SaxParser';
 import Schema from 'tinymce/core/api/html/Schema';
 import Writer from 'tinymce/core/api/html/Writer';
+
 import { MediaData } from './Types';
 
 type AttrList = Array<{ name: string; value: string }> & { map: Record<string, string> };
 
 const DOM = DOMUtils.DOM;
 
-const addPx = (value: string) => /^[0-9.]+$/.test(value) ? (value + 'px') : value;
+const addPx = (value: string): string =>
+  /^[0-9.]+$/.test(value) ? (value + 'px') : value;
 
-const setAttributes = (attrs: AttrList, updatedAttrs: Record<string, any>) => {
+const setAttributes = (attrs: AttrList, updatedAttrs: Record<string, string>): void => {
   Obj.each(updatedAttrs, (val, name) => {
     const value = '' + val;
 
@@ -64,25 +67,25 @@ const updateHtml = (html: string, data: Partial<MediaData>, updateAll?: boolean)
   const writer = Writer();
   const isEphoxEmbed = Cell<boolean>(false);
   let sourceCount = 0;
-  let hasImage;
+  let hasImage: boolean;
 
   SaxParser({
     validate: false,
     allow_conditional_comments: true,
 
-    comment(text) {
+    comment: (text) => {
       writer.comment(text);
     },
 
-    cdata(text) {
+    cdata: (text) => {
       writer.cdata(text);
     },
 
-    text(text, raw) {
+    text: (text, raw) => {
       writer.text(text, raw);
     },
 
-    start(name, attrs, empty) {
+    start: (name, attrs, empty) => {
       if (isEphoxEmbed.get()) {
         // Don't make any changes to children of an EME embed
       } else if (Obj.has(attrs.map, 'data-ephox-embed-iri')) {
@@ -153,7 +156,7 @@ const updateHtml = (html: string, data: Partial<MediaData>, updateAll?: boolean)
       writer.start(name, attrs, empty);
     },
 
-    end(name) {
+    end: (name) => {
       if (!isEphoxEmbed.get()) {
         if (name === 'video' && updateAll) {
           for (let index = 0; index < 2; index++) {
@@ -161,7 +164,7 @@ const updateHtml = (html: string, data: Partial<MediaData>, updateAll?: boolean)
               const attrs: any = [];
               attrs.map = {};
 
-              if (sourceCount < index) {
+              if (sourceCount <= index) {
                 setAttributes(attrs, {
                   src: data[sources[index]],
                   type: data[sources[index] + 'mime']

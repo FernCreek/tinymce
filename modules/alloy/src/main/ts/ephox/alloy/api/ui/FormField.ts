@@ -1,14 +1,14 @@
 import { Id } from '@ephox/katamari';
-import { Attr } from '@ephox/sugar';
+import { Attribute } from '@ephox/sugar';
 
-import { AlloyComponent } from '../../api/component/ComponentApi';
-import { SketchSpec } from '../../api/component/SpecTypes';
 import * as AlloyParts from '../../parts/AlloyParts';
 import * as FormFieldSchema from '../../ui/schema/FormFieldSchema';
 import { FormFieldApis, FormFieldDetail, FormFieldSketcher, FormFieldSpec } from '../../ui/types/FormFieldTypes';
 import { Composing } from '../behaviour/Composing';
 import { Representing } from '../behaviour/Representing';
+import { AlloyComponent } from '../component/ComponentApi';
 import * as SketchBehaviours from '../component/SketchBehaviours';
+import { SketchSpec } from '../component/SpecTypes';
 import * as AlloyEvents from '../events/AlloyEvents';
 import * as Sketcher from './Sketcher';
 import { CompositeSketchFactory } from './UiSketcher';
@@ -18,7 +18,7 @@ const factory: CompositeSketchFactory<FormFieldDetail, FormFieldSpec> = (detail,
     detail.fieldBehaviours,
     [
       Composing.config({
-        find(container) {
+        find: (container) => {
           return AlloyParts.getPart(container, detail, 'field');
         }
       }),
@@ -26,10 +26,10 @@ const factory: CompositeSketchFactory<FormFieldDetail, FormFieldSpec> = (detail,
       Representing.config({
         store: {
           mode: 'manual',
-          getValue(field) {
+          getValue: (field) => {
             return Composing.getCurrent(field).bind(Representing.getValue);
           },
-          setValue(field, value) {
+          setValue: (field, value) => {
             Composing.getCurrent(field).each((current) => {
               Representing.setValue(current, value);
             });
@@ -47,14 +47,14 @@ const factory: CompositeSketchFactory<FormFieldDetail, FormFieldSpec> = (detail,
         const id = Id.generate(detail.prefix);
         ps.label().each((label) => {
           // TODO: Find a nicer way of doing this.
-          Attr.set(label.element(), 'for', id);
-          Attr.set(field.element(), 'id', id);
+          Attribute.set(label.element, 'for', id);
+          Attribute.set(field.element, 'id', id);
         });
 
         ps['aria-descriptor']().each((descriptor) => {
           const descriptorId = Id.generate(detail.prefix);
-          Attr.set(descriptor.element(), 'id', descriptorId);
-          Attr.set(field.element(), 'aria-describedby', descriptorId);
+          Attribute.set(descriptor.element, 'id', descriptorId);
+          Attribute.set(field.element, 'aria-describedby', descriptorId);
         });
       });
     })

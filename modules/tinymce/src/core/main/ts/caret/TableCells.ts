@@ -6,23 +6,26 @@
  */
 
 // eslint-disable-next-line max-len
-import { ClientRect, HTMLElement, HTMLTableDataCellElement, HTMLTableHeaderCellElement, HTMLTableCaptionElement } from '@ephox/dom-globals';
-import { Arr, Fun, Option } from '@ephox/katamari';
-import { Element, SelectorFilter } from '@ephox/sugar';
-import { findClosestHorizontalPosition, getLastLinePositions, getFirstLinePositions } from './LineReader';
-import { CaretPosition } from './CaretPosition';
-import { clone as roundRect } from '../geom/ClientRect';
+import { Arr, Fun, Optional } from '@ephox/katamari';
+import { SelectorFilter, SugarElement } from '@ephox/sugar';
 
-type GetAxisValue = (rect: ClientRect) => number;
+import * as ClientRect from '../geom/ClientRect';
+import { CaretPosition } from './CaretPosition';
+import { findClosestHorizontalPosition, getFirstLinePositions, getLastLinePositions } from './LineReader';
+
+type GeomClientRect = ClientRect.ClientRect;
+
+type GetAxisValue = (rect: GeomClientRect) => number;
 type IsTargetCorner = (corner: Corner, y: number) => boolean;
+type CellOrCaption = HTMLTableCellElement | HTMLTableCaptionElement;
 
 interface Corner {
-  x: number;
-  y: number;
-  cell: HTMLElement;
+  readonly x: number;
+  readonly y: number;
+  readonly cell: CellOrCaption;
 }
 
-const deflate = (rect: ClientRect, delta: number): ClientRect => ({
+const deflate = (rect: GeomClientRect, delta: number): GeomClientRect => ({
   left: rect.left - delta,
   top: rect.top - delta,
   right: rect.right + delta * 2,
@@ -31,23 +34,23 @@ const deflate = (rect: ClientRect, delta: number): ClientRect => ({
   height: rect.height + delta
 });
 
-const getCorners = (getYAxisValue, tds: HTMLElement[]): Corner[] => Arr.bind(tds, (td) => {
-  const rect = deflate(roundRect(td.getBoundingClientRect()), -1);
+const getCorners = (getYAxisValue: GetAxisValue, tds: CellOrCaption[]): Corner[] => Arr.bind(tds, (td) => {
+  const rect = deflate(ClientRect.clone(td.getBoundingClientRect()), -1);
   return [
     { x: rect.left, y: getYAxisValue(rect), cell: td },
     { x: rect.right, y: getYAxisValue(rect), cell: td }
   ];
 });
 
-const findClosestCorner = (corners: Corner[], x: number, y: number): Option<Corner> =>
+const findClosestCorner = (corners: Corner[], x: number, y: number): Optional<Corner> =>
   Arr.foldl(corners, (acc, newCorner) => acc.fold(
-    () => Option.some(newCorner),
+    () => Optional.some(newCorner),
     (oldCorner) => {
       const oldDist = Math.sqrt(Math.abs(oldCorner.x - x) + Math.abs(oldCorner.y - y));
       const newDist = Math.sqrt(Math.abs(newCorner.x - x) + Math.abs(newCorner.y - y));
-      return Option.some(newDist < oldDist ? newCorner : oldCorner);
+      return Optional.some(newDist < oldDist ? newCorner : oldCorner);
     }
-  ), Option.none());
+  ), Optional.none());
 
 const getClosestCell = (
   getYAxisValue: GetAxisValue,
@@ -55,12 +58,11 @@ const getClosestCell = (
   table: HTMLElement,
   x: number,
   y: number
-): Option<HTMLElement> => {
-  type TableThing = HTMLTableDataCellElement | HTMLTableHeaderCellElement | HTMLTableCaptionElement;
-  const cells = SelectorFilter.descendants<TableThing>(
-    Element.fromDom(table),
+): Optional<CellOrCaption> => {
+  const cells = SelectorFilter.descendants<CellOrCaption>(
+    SugarElement.fromDom(table),
     'td,th,caption'
-  ).map((e) => e.dom());
+  ).map((e) => e.dom);
   const corners = Arr.filter(
     getCorners(getYAxisValue, cells),
     (corner) => isTargetCorner(corner, y)
@@ -69,23 +71,23 @@ const getClosestCell = (
   return findClosestCorner(corners, x, y).map((corner) => corner.cell);
 };
 
-const getBottomValue = (rect: ClientRect) => rect.bottom;
-const getTopValue = (rect: ClientRect) => rect.top;
+const getBottomValue = (rect: GeomClientRect) => rect.bottom;
+const getTopValue = (rect: GeomClientRect) => rect.top;
 const isAbove = (corner: Corner, y: number) => corner.y < y;
 const isBelow = (corner: Corner, y: number) => corner.y > y;
 
-const getClosestCellAbove = Fun.curry(getClosestCell, getBottomValue, isAbove);
-const getClosestCellBelow = Fun.curry(getClosestCell, getTopValue, isBelow);
+const getClosestCellAbove: (table: HTMLElement, x: number, y: number) => Optional<CellOrCaption> = Fun.curry(getClosestCell, getBottomValue, isAbove);
+const getClosestCellBelow: (table: HTMLElement, x: number, y: number) => Optional<CellOrCaption> = Fun.curry(getClosestCell, getTopValue, isBelow);
 
-const findClosestPositionInAboveCell = (table: HTMLElement, pos: CaretPosition): Option<CaretPosition> =>
-  Arr.head(pos.getClientRects()).
-    bind((rect) => getClosestCellAbove(table, rect.left, rect.top)).
-    bind((cell) => findClosestHorizontalPosition(getLastLinePositions(cell), pos));
+const findClosestPositionInAboveCell = (table: HTMLElement, pos: CaretPosition): Optional<CaretPosition> =>
+  Arr.head(pos.getClientRects())
+    .bind((rect) => getClosestCellAbove(table, rect.left, rect.top))
+    .bind((cell) => findClosestHorizontalPosition(getLastLinePositions(cell), pos));
 
-const findClosestPositionInBelowCell = (table: HTMLElement, pos: CaretPosition): Option<CaretPosition> =>
-  Arr.last(pos.getClientRects()).
-    bind((rect) => getClosestCellBelow(table, rect.left, rect.top)).
-    bind((cell) => findClosestHorizontalPosition(getFirstLinePositions(cell), pos));
+const findClosestPositionInBelowCell = (table: HTMLElement, pos: CaretPosition): Optional<CaretPosition> =>
+  Arr.last(pos.getClientRects())
+    .bind((rect) => getClosestCellBelow(table, rect.left, rect.top))
+    .bind((cell) => findClosestHorizontalPosition(getFirstLinePositions(cell), pos));
 
 export {
   getClosestCellAbove,

@@ -1,5 +1,6 @@
-import { Fun } from '@ephox/katamari';
-import { Compare, Element, PredicateExists } from '@ephox/sugar';
+import { after, before } from '@ephox/bedrock-client';
+import { Fun, Optional } from '@ephox/katamari';
+import { Compare, PredicateExists, SugarElement } from '@ephox/sugar';
 
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
 import { Positioning } from 'ephox/alloy/api/behaviour/Positioning';
@@ -7,7 +8,13 @@ import { AlloyComponent } from 'ephox/alloy/api/component/ComponentApi';
 import * as GuiFactory from 'ephox/alloy/api/component/GuiFactory';
 import { Container } from 'ephox/alloy/api/ui/Container';
 
-const fixedSink = () => GuiFactory.build(
+interface Sinks {
+  readonly fixed: () => AlloyComponent;
+  readonly relative: () => AlloyComponent;
+  readonly popup: () => AlloyComponent;
+}
+
+const fixedSink = (): AlloyComponent => GuiFactory.build(
   Container.sketch({
     dom: {
       styles: {
@@ -23,7 +30,7 @@ const fixedSink = () => GuiFactory.build(
   })
 );
 
-const relativeSink = () => GuiFactory.build(
+const relativeSink = (): AlloyComponent => GuiFactory.build(
   Container.sketch({
     dom: {
       tag: 'div',
@@ -40,7 +47,7 @@ const relativeSink = () => GuiFactory.build(
   })
 );
 
-const popup = () => GuiFactory.build(
+const popup = (): AlloyComponent => GuiFactory.build(
   Container.sketch({
     dom: {
       innerHtml: 'Demo day',
@@ -54,15 +61,38 @@ const popup = () => GuiFactory.build(
   })
 );
 
-const isInside = (sinkComponent: AlloyComponent, popupComponent: AlloyComponent) => {
-  const isSink = (el: Element) => Compare.eq(el, sinkComponent.element());
+const isInside = (sinkComponent: AlloyComponent, popupComponent: AlloyComponent): boolean => {
+  const isSink = (el: SugarElement) => Compare.eq(el, sinkComponent.element);
 
-  return PredicateExists.closest(popupComponent.element(), isSink);
+  return PredicateExists.closest(popupComponent.element, isSink);
+};
+
+const bddSetup = (): Sinks => {
+  let fixed: Optional<AlloyComponent>;
+  let relative: Optional<AlloyComponent>;
+  let pop: Optional<AlloyComponent>;
+
+  before(() => {
+    fixed = Optional.some(fixedSink());
+    relative = Optional.some(relativeSink());
+    pop = Optional.some(popup());
+  });
+
+  after(() => {
+    fixed = relative = pop = Optional.none();
+  });
+
+  return {
+    fixed: () => fixed.getOrDie('Fixed sink not initialized'),
+    relative: () => relative.getOrDie('Relative sink not initialized'),
+    popup: () => pop.getOrDie('Popup not initialized')
+  };
 };
 
 export {
   fixedSink,
   isInside,
   relativeSink,
-  popup
+  popup,
+  bddSetup
 };

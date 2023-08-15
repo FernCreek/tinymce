@@ -6,14 +6,13 @@
  */
 
 import Promise from 'tinymce/core/api/util/Promise';
-import { Blob, FileReader } from '@ephox/dom-globals';
 
-const blobToBase64 = function (blob: Blob) {
-  return new Promise<string>(function (resolve) {
+const blobToBase64 = (blob: Blob): Promise<string> => {
+  return new Promise((resolve) => {
     const reader = new FileReader();
 
-    reader.onloadend = function () {
-      resolve(reader.result.split(',')[1]);
+    reader.onloadend = () => {
+      resolve((reader.result as string).split(',')[1]);
     };
 
     reader.readAsDataURL(blob);

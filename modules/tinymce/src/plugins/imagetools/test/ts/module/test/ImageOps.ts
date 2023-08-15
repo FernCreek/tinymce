@@ -1,146 +1,117 @@
-import { Chain, Guard, Mouse, Pipeline, Step, UiFinder, Logger } from '@ephox/agar';
-import { Fun, Result } from '@ephox/katamari';
-import { TinyDom, TinyUi } from '@ephox/mcagar';
-import { Attr } from '@ephox/sugar';
+import { Mouse, UiFinder, Waiter } from '@ephox/agar';
+import { Arr, Fun } from '@ephox/katamari';
+import { Attribute, SugarBody, SugarElement, SugarLocation, SugarShadowDom, Traverse } from '@ephox/sugar';
+import { TinyDom, TinyUiActions } from '@ephox/wrap-mcagar';
 
-export default function (editor) {
-  const ui = TinyUi(editor);
+import Editor from 'tinymce/core/api/Editor';
 
-  const cHasState = function (predicate) {
-    return Chain.control(
-      Chain.binder(function (element) {
-        return predicate(element) ? Result.value(element) : Result.error(`Predicate didn't match.`);
-      }),
-      Guard.addLogging('Assert element has state')
-    );
-  };
-
-  const cWaitForState = function (predicate) {
-    return Chain.control(
-      cHasState(predicate),
-      Guard.tryUntil('Predicate has failed.', 10, 3000)
-    );
-  };
-
-  const cDragDrop = Chain.control(
-    Chain.fromChains([
-      UiFinder.cFindIn('.tox-slider__handle'),
-      Mouse.cMouseDown,
-      Mouse.cMouseMoveTo(5, 0),
-      Mouse.cMouseUpTo(5, 0)
-    ]),
-    Guard.addLogging('Drag and drop')
-  );
-
-  const cExecCommandFromDialog = function (label) {
-    let cInteractWithUi;
-
-    switch (label) {
-      case 'Rotate counterclockwise':
-      case 'Rotate clockwise':
-      case 'Flip vertically':
-      case 'Flip horizontally':
-        // Orientation operations, like Flip or Rotate are grouped in a sub-panel
-        cInteractWithUi = cClickToolbarButton(label);
-        label = 'Orientation';
-        break;
-
-      case 'Brightness':
-      case 'Contrast':
-      case 'Color levels':
-      case 'Gamma':
-        cInteractWithUi = cDragDrop;
-        break;
-
-      default:
-        cInteractWithUi = Chain.wait(1);
-    }
-
-    return Chain.control(
-      Chain.fromChains([
-        cClickToolbarButton('Edit image'),
-        Chain.fromParent(ui.cWaitForPopup('wait for Edit Image dialog', '[role="dialog"]'), [
-          ui.cWaitForUi('wait for canvas', '.tox-image-tools__image > img'),
-          Chain.wait(200),
-          cClickToolbarButton(label),
-          cInteractWithUi,
-          Chain.wait(200),
-          cClickButton('Apply'),
-          cClickButton('Save'),
-          cWaitForDialogClose()
-        ])
-      ]),
-      Guard.addLogging(`Execute ${label} command from dialog`)
-    );
-  };
-
-  const cWaitForUi = function (label, selector) {
-    return Chain.control(
-      UiFinder.cWaitForState(label, selector, Fun.constant(true)),
-      Guard.addLogging('Wait for UI')
-    );
-  };
-
-  const cWaitForDialogClose = () => Chain.control(
-    UiFinder.cNotExists('[role="dialog"]'),
-    Guard.tryUntil('Waiting for dialog to go away', 10, 3000)
-  );
-
-  const cClickButton = function (text) {
-    return Chain.control(
-      Chain.fromChains([
-        cWaitForUi('wait for ' + text + ' button', 'button:contains(' + text + ')'),
-        cWaitForState(function (el) {
-          return Attr.get(el, 'disabled') === undefined;
-        }),
-        Mouse.cClick
-      ]),
-      Guard.addLogging('Wait for UI')
-    );
-  };
-
-  const cClickToolbarButton = function (label) {
-    return Chain.control(
-      Chain.fromChains([
-        UiFinder.cFindIn('button[aria-label="' + label + '"]'),
-        cWaitForState(function (el) {
-          return Attr.get(el, 'disabled') === undefined;
-        }),
-        Mouse.cClick
-      ]),
-      Guard.addLogging('Wait for UI')
-    );
-  };
-
-  const sWaitForUrlChange = function (imgEl, origUrl) {
-    return Logger.t('Wait for url change', Chain.asStep(imgEl, [
-      cWaitForState(function (el) {
-        return Attr.get(el, 'src') !== origUrl;
-      })
-    ]));
-  };
-
-  const sExec = function (execFromToolbar, label) {
-    return Logger.t(`Execute ${label}`, Step.async(function (next, die) {
-      const imgEl = TinyDom.fromDom(editor.selection.getNode());
-      const origUrl = Attr.get(imgEl, 'src');
-
-      Pipeline.async({}, [
-        Chain.asStep(imgEl, [
-          Mouse.cClick,
-          ui.cWaitForPopup('wait for Imagetools toolbar', '.tox-pop__dialog div'),
-          execFromToolbar ? cClickToolbarButton(label) : cExecCommandFromDialog(label)
-        ]),
-        sWaitForUrlChange(imgEl, origUrl)
-      ], function () {
-        next();
-      }, die);
-    }));
-  };
-
-  return {
-    sExecToolbar: Fun.curry(sExec, true),
-    sExecDialog: Fun.curry(sExec, false),
-    cClickToolbarButton
-  };
+export interface ImageOps {
+  readonly pExecToolbar: (editor: Editor, label: string) => Promise<void>;
+  readonly pExecDialog: (editor: Editor, label: string) => Promise<void>;
+  readonly pClickContextToolbarButton: (editor: Editor, label: string) => Promise<void>;
 }
+
+const orientationActions = [
+  'Rotate counterclockwise',
+  'Rotate clockwise',
+  'Flip vertically',
+  'Flip horizontally'
+];
+
+const adjustmentActions = [
+  'Brightness',
+  'Contrast',
+  'Color levels',
+  'Gamma'
+];
+
+const isOrientationAction = (action: string) => Arr.contains(orientationActions, action);
+const isAdjustmentAction = (action: string) => Arr.contains(adjustmentActions, action);
+
+const doSliderDragDrop = (dialog: SugarElement<Node>) => {
+  const handle = UiFinder.findIn(dialog, '.tox-slider__handle').getOrDie();
+  Mouse.mouseDown(handle);
+  Mouse.mouseMoveTo(handle, 5, 0);
+  Mouse.mouseUpTo(handle, 5, 0);
+};
+
+const doCropDragDrop = (dialog: SugarElement<Node>, handleSelector: string, dx: number, dy: number) => {
+  const handle = UiFinder.findIn(dialog, handleSelector).getOrDie();
+  Mouse.mouseDown(handle);
+  const overlay = Traverse.lastChild(SugarBody.body()).getOrDie('Cannot find drag overlay');
+  const handlePos = SugarLocation.absolute(handle);
+  Mouse.mouseMoveTo(overlay, handlePos.left + dx, handlePos.top + dy);
+  Mouse.mouseUpTo(overlay, handlePos.left + dx, handlePos.top + dy);
+};
+
+const pAction = async (editor: Editor, dialog: SugarElement<Node>, action: string): Promise<void> => {
+  if (isOrientationAction(action)) {
+    return pClickDialogToolbarButton(editor, action);
+  } else if (isAdjustmentAction(action)) {
+    doSliderDragDrop(dialog);
+  } else if (action === 'Crop') {
+    doCropDragDrop(dialog, '.tox-croprect-handle-ne', -10, 10);
+    doCropDragDrop(dialog, '.tox-croprect-handle-sw', 10, -10);
+  } else {
+    return Waiter.pWait(1);
+  }
+};
+
+const pExecCommandFromDialog = async (editor: Editor, action: string) => {
+  await pClickContextToolbarButton(editor, 'Edit image');
+  const dialog = await TinyUiActions.pWaitForDialog(editor);
+  await Waiter.pWait(200);
+  const buttonLabel = isOrientationAction(action) ? 'Orientation' : action;
+  await pClickDialogToolbarButton(editor, buttonLabel);
+  await pAction(editor, dialog, action);
+  await Waiter.pWait(200);
+  await pClickButton(dialog, 'Apply');
+  await pClickButton(dialog, 'Save');
+  await pWaitForDialogClose(editor);
+};
+
+const pWaitForDialogClose = async (editor: Editor) => {
+  const rootNode = SugarShadowDom.getRootNode(TinyDom.container(editor));
+  const container = SugarShadowDom.getContentContainer(rootNode);
+  await Waiter.pTryUntil('Waiting for dialog to go away', () => UiFinder.notExists(container, '[role="dialog"]'));
+};
+
+const pClickButton = async (dialog: SugarElement<Node>, text: string) => {
+  const button = await UiFinder.pWaitFor('Wait for dialog button to be enabled', dialog, 'button:contains(' + text + '):not(:disabled)');
+  Mouse.click(button);
+};
+
+const pClickContextToolbarButton = async (editor: Editor, label: string) => {
+  const toolbar = await TinyUiActions.pWaitForPopup(editor, '.tox-pop__dialog .tox-toolbar');
+  Mouse.clickOn(toolbar, `button[aria-label="${label}"]:not(:disabled)`);
+};
+
+const pClickDialogToolbarButton = async (editor: Editor, label: string) => {
+  const toolbar = await TinyUiActions.pWaitForPopup(editor, '.tox-dialog .tox-image-tools__toolbar');
+  Mouse.clickOn(toolbar, `button[aria-label="${label}"]:not(:disabled)`);
+};
+
+const pWaitForUrlChange = (imgEl: SugarElement<Element>, origUrl: string | undefined) =>
+  Waiter.pTryUntilPredicate('Wait for url change', () => Attribute.get(imgEl, 'src') !== origUrl);
+
+const pExec = async (execFromToolbar: boolean, editor: Editor, label: string) => {
+  const imgEl = SugarElement.fromDom(editor.selection.getNode());
+  const origUrl = Attribute.get(imgEl, 'src');
+
+  Mouse.click(imgEl);
+  await TinyUiActions.pWaitForPopup(editor, '.tox-pop__dialog div');
+
+  if (execFromToolbar) {
+    await pClickContextToolbarButton(editor, label);
+  } else {
+    await pExecCommandFromDialog(editor, label);
+  }
+
+  await pWaitForUrlChange(imgEl, origUrl);
+};
+
+export const ImageOps: ImageOps = {
+  pExecToolbar: Fun.curry(pExec, true),
+  pExecDialog: Fun.curry(pExec, false),
+  pClickContextToolbarButton
+};

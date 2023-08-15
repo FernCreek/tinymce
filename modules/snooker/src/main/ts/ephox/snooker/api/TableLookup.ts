@@ -1,53 +1,76 @@
-import { Element as DomElement, HTMLTableCellElement, HTMLTableElement, HTMLTableRowElement } from '@ephox/dom-globals';
-import { Arr, Fun, Option } from '@ephox/katamari';
-import { Element, Node, SelectorFilter, SelectorFind, Selectors, Traverse } from '@ephox/sugar';
+import { Arr, Fun, Optional } from '@ephox/katamari';
+import { SelectorFilter, SelectorFind, Selectors, SugarElement, SugarNode, Traverse } from '@ephox/sugar';
+
 import { getAttrValue } from '../util/CellUtils';
 import * as LayerSelector from '../util/LayerSelector';
 import * as Structs from './Structs';
 
 // lookup inside this table
-const lookup = <T extends DomElement = DomElement> (tags: string[], element: Element, isRoot: (e: Element) => boolean = Fun.never): Option<Element<T>> => {
+const lookup = <T extends Element> (tags: string[], element: SugarElement<Node>, isRoot: (e: SugarElement<Node>) => boolean = Fun.never): Optional<SugarElement<T>> => {
   // If the element we're inspecting is the root, we definitely don't want it.
   if (isRoot(element)) {
-    return Option.none();
+    return Optional.none();
   }
   // This looks a lot like SelectorFind.closest, with one big exception - the isRoot check.
   // The code here will look for parents if passed a table, SelectorFind.closest with that specific isRoot check won't.
-  if (Arr.contains(tags, Node.name(element))) {
-    return Option.some(element);
+  if (Arr.contains(tags, SugarNode.name(element))) {
+    return Optional.some(element as SugarElement<T>);
   }
 
-  const isRootOrUpperTable = (elm: Element) => Selectors.is(elm, 'table') || isRoot(elm);
+  const isRootOrUpperTable = (elm: SugarElement) => Selectors.is(elm, 'table') || isRoot(elm);
 
-  return SelectorFind.ancestor(element, tags.join(','), isRootOrUpperTable);
+  return SelectorFind.ancestor<T>(element, tags.join(','), isRootOrUpperTable);
 };
 
 /*
  * Identify the optional cell that element represents.
  */
-const cell = (element: Element, isRoot?: (e: Element) => boolean) => lookup<HTMLTableCellElement>([ 'td', 'th' ], element, isRoot);
+const cell = (element: SugarElement<Node>, isRoot?: (e: SugarElement) => boolean): Optional<SugarElement<HTMLTableCellElement>> =>
+  lookup<HTMLTableCellElement>([ 'td', 'th' ], element, isRoot);
 
-const cells = (ancestor: Element): Element<HTMLTableCellElement>[] => LayerSelector.firstLayer(ancestor, 'th,td');
+const cells = (ancestor: SugarElement<Node>): SugarElement<HTMLTableCellElement>[] =>
+  LayerSelector.firstLayer(ancestor, 'th,td');
 
-const notCell = (element: Element, isRoot?: (e: Element) => boolean) => lookup<DomElement>([ 'caption', 'tr', 'tbody', 'tfoot', 'thead' ], element, isRoot);
+const columns = (ancestor: SugarElement<Node>): SugarElement<HTMLTableColElement>[] => {
+  if (Selectors.is(ancestor, 'colgroup')) {
+    return SelectorFilter.children<HTMLTableColElement>(ancestor, 'col');
+  } else {
+    return Arr.bind(columnGroups(ancestor), (columnGroup) =>
+      SelectorFilter.children<HTMLTableColElement>(columnGroup, 'col')
+    );
+  }
+};
 
-const neighbours = <T extends DomElement = DomElement> (selector: string) => (element: Element): Option<Element<T>[]> =>
+const notCell = (element: SugarElement<Node>, isRoot?: (e: SugarElement) => boolean): Optional<SugarElement<Element>> =>
+  lookup<Element>([ 'caption', 'tr', 'tbody', 'tfoot', 'thead' ], element, isRoot);
+
+const neighbours = <T extends Element = Element> (selector: string) => (element: SugarElement<Node>): Optional<SugarElement<T>[]> =>
   Traverse.parent(element).map((parent) => SelectorFilter.children(parent, selector));
 
 const neighbourCells = neighbours<HTMLTableCellElement>('th,td');
 const neighbourRows = neighbours<HTMLTableRowElement>('tr');
 
-const firstCell = (ancestor: Element) => SelectorFind.descendant<HTMLTableCellElement>(ancestor, 'th,td');
+const firstCell = (ancestor: SugarElement<Node>): Optional<SugarElement<HTMLTableCellElement>> =>
+  SelectorFind.descendant<HTMLTableCellElement>(ancestor, 'th,td');
 
-const table = (element: Element, isRoot?: (e: Element) => boolean) => SelectorFind.closest<HTMLTableElement>(element, 'table', isRoot);
+const table = (element: SugarElement<Node>, isRoot?: (e: SugarElement) => boolean): Optional<SugarElement<HTMLTableElement>> =>
+  SelectorFind.closest<HTMLTableElement>(element, 'table', isRoot);
 
-const row = (element: Element, isRoot?: (e: Element) => boolean) => lookup<HTMLTableRowElement>([ 'tr' ], element, isRoot);
+const row = (element: SugarElement<Node>, isRoot?: (e: SugarElement) => boolean): Optional<SugarElement<HTMLTableRowElement>> =>
+  lookup<HTMLTableRowElement>([ 'tr' ], element, isRoot);
 
-const rows = (ancestor: Element): Element<HTMLTableRowElement>[] => LayerSelector.firstLayer(ancestor, 'tr');
+const rows = (ancestor: SugarElement<Node>): SugarElement<HTMLTableRowElement>[] =>
+  LayerSelector.firstLayer(ancestor, 'tr');
 
-const attr = (element: Element, property: string) => getAttrValue(element, property);
+const columnGroups = (ancestor: SugarElement<Node>): SugarElement<HTMLTableColElement>[] => table(ancestor).fold(
+  Fun.constant([]),
+  (table) => SelectorFilter.children<HTMLTableColElement>(table, 'colgroup')
+);
 
-const grid = (element: Element, rowProp: string, colProp: string) => {
+const attr = (element: SugarElement<Element>, property: string): number =>
+  getAttrValue(element, property);
+
+const grid = (element: SugarElement<Element>, rowProp: string, colProp: string): Structs.Grid => {
   const rowsCount = attr(element, rowProp);
   const cols = attr(element, colProp);
   return Structs.grid(rowsCount, cols);
@@ -64,5 +87,7 @@ export {
   notCell,
   neighbourRows,
   attr,
-  grid
+  grid,
+  columnGroups,
+  columns
 };

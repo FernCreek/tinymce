@@ -1,6 +1,4 @@
-import { console, document } from '@ephox/dom-globals';
-import { Fun } from '@ephox/katamari';
-import { Class, Css, Element, Replication } from '@ephox/sugar';
+import { Class, Css, Replication, SugarElement } from '@ephox/sugar';
 
 import * as Behaviour from 'ephox/alloy/api/behaviour/Behaviour';
 import { DragnDrop } from 'ephox/alloy/api/behaviour/DragnDrop';
@@ -12,9 +10,9 @@ import * as HtmlDisplay from 'ephox/alloy/demo/HtmlDisplay';
 
 export default (): void => {
   const gui = Gui.create();
-  const body = Element.fromDom(document.body);
-  Class.add(gui.element(), 'gui-root-demo-container');
-  // Css.set(gui.element(), 'direction', 'rtl');
+  const body = SugarElement.fromDom(document.body);
+  Class.add(gui.element, 'gui-root-demo-container');
+  // Css.set(gui.element, 'direction', 'rtl');
 
   Attachment.attachSystem(body, gui);
   Css.set(body, 'margin-bottom', '2000px');
@@ -36,8 +34,8 @@ export default (): void => {
         mode: 'drop',
         type: 'text/plain',
         dropEffect,
-        onDrop(_component, dropEvent) {
-          // tslint:disable-next-line:no-console
+        onDrop: (_component, dropEvent) => {
+          // eslint-disable-next-line no-console
           console.log('onDrop', {
             data: dropEvent.data,
             files: dropEvent.files
@@ -77,31 +75,29 @@ export default (): void => {
         type: 'text/plain',
         phoneyTypes: [ '-x-alloy/something' ],
         effectAllowed,
-        getData(_component) {
+        getData: (_component) => {
           return data;
         },
-        getImage(component) {
+        getImage: (component) => {
+          const clone = Replication.deep(component.element);
+          Css.set(clone, 'background-color', 'blue');
           return {
-            element() {
-              const clone = Replication.deep(component.element());
-              Css.set(clone, 'background-color', 'blue');
-              return clone;
-            },
-            x: Fun.constant(0),
-            y: Fun.constant(0)
+            element: clone,
+            x: 0,
+            y: 0
           };
         },
         canDrag: (_component, _target) =>
         // console.log('canDrag');
           true,
         onDragstart: (_component, _simulatedEvent) => {
-          // console.log('onDragstart', component.element().dom());
+          // console.log('onDragstart', component.element.dom);
         },
         onDragover: (_component, _simulatedEvent) => {
-          // console.log('onDragover', component.element().dom());
+          // console.log('onDragover', component.element.dom);
         },
         onDragend: (_component, _simulatedEvent) => {
-          // console.log('onDragend', component.element().dom());
+          // console.log('onDragend', component.element.dom);
         }
       })
     ])

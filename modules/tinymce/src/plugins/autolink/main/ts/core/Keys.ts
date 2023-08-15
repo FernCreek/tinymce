@@ -7,26 +7,34 @@
 
 import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
+
 import * as Settings from '../api/Settings';
 
 const rangeEqualsDelimiterOrSpace = function (rangeString, delimiter) {
   return rangeString === delimiter || rangeString === ' ' || rangeString.charCodeAt(0) === 160;
 };
 
-const handleSpacebar = function (editor) {
-  parseCurrentLine(editor, 0, '');
-};
+const isTextNode = (node: Node): node is Text =>
+  node.nodeType === 3;
 
-const handleEnter = function (editor) {
-  parseCurrentLine(editor, -1, '');
-};
+const isElement = (node: Node): node is Element =>
+  node.nodeType === 1;
 
-const scopeIndex = function (container, index) {
+const handleBracket = (editor: Editor): void =>
+  parseCurrentLine(editor, -1);
+
+const handleSpacebar = (editor: Editor): void =>
+  parseCurrentLine(editor, 0);
+
+const handleEnter = (editor: Editor): void =>
+  parseCurrentLine(editor, -1);
+
+const scopeIndex = (container: Node, index: number): number => {
   if (index < 0) {
     index = 0;
   }
 
-  if (container.nodeType === 3) {
+  if (isTextNode(container)) {
     const len = container.data.length;
 
     if (index > len) {
@@ -37,16 +45,16 @@ const scopeIndex = function (container, index) {
   return index;
 };
 
-const setStart = function (rng, container, offset) {
-  if (container.nodeType !== 1 || container.hasChildNodes()) {
+const setStart = (rng: Range, container: Node, offset: number): void => {
+  if (!isElement(container) || container.hasChildNodes()) {
     rng.setStart(container, scopeIndex(container, offset));
   } else {
     rng.setStartBefore(container);
   }
 };
 
-const setEnd = function (rng, container, offset) {
-  if (container.nodeType !== 1 || container.hasChildNodes()) {
+const setEnd = (rng: Range, container: Node, offset: number): void => {
+  if (!isElement(container) || container.hasChildNodes()) {
     rng.setEnd(container, scopeIndex(container, offset));
   } else {
     rng.setEndAfter(container);
@@ -63,7 +71,7 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
   const defaultLinkTarget = Settings.getDefaultLinkTarget(editor);
 
   // Never create a link when we are inside a link
-  if (editor.selection.getNode().tagName === 'A') {
+  if (editor.dom.getParent(editor.selection.getNode(), 'a[href]') !== null) {
     return;
   }
 
@@ -96,13 +104,13 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
     endContainer = rng.endContainer;
 
     // Get a text node
-    if (endContainer.nodeType !== 3 && endContainer.firstChild) {
-      while (endContainer.nodeType !== 3 && endContainer.firstChild) {
+    if (!isTextNode(endContainer) && endContainer.firstChild) {
+      while (!isTextNode(endContainer) && endContainer.firstChild) {
         endContainer = endContainer.firstChild;
       }
 
       // Move range to text node
-      if (endContainer.nodeType === 3) {
+      if (isTextNode(endContainer)) {
         setStart(rng, endContainer, 0);
         setEnd(rng, endContainer, endContainer.nodeValue.length);
       }
@@ -208,10 +216,10 @@ const parseCurrentLine = function (editor, endOffset, delimiter) {
   }
 };
 
-const setup = function (editor: Editor) {
-  let autoUrlDetectState;
+const setup = (editor: Editor): void => {
+  let autoUrlDetectState: boolean | undefined;
 
-  editor.on('keydown', function (e) {
+  editor.on('keydown', (e) => {
     if (e.keyCode === 13) {
       return handleEnter(editor);
     }
@@ -219,7 +227,7 @@ const setup = function (editor: Editor) {
 
   // Internet Explorer has built-in automatic linking for most cases
   if (Env.browser.isIE()) {
-    editor.on('focus', function () {
+    editor.on('focus', () => {
       if (!autoUrlDetectState) {
         autoUrlDetectState = true;
 
@@ -234,7 +242,7 @@ const setup = function (editor: Editor) {
     return;
   }
 
-  editor.on('keyup', function (e) {
+  editor.on('keyup', (e) => {
     if (e.keyCode === 32) {
       return handleSpacebar(editor);
     }

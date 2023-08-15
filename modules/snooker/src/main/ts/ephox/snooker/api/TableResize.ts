@@ -1,34 +1,37 @@
-import { HTMLTableElement } from '@ephox/dom-globals';
 import { Bindable, Event, Events } from '@ephox/porkbun';
-import { Element } from '@ephox/sugar';
+import { SugarElement } from '@ephox/sugar';
+
 import * as Adjustments from '../resize/Adjustments';
 import { BarManager } from '../resize/BarManager';
 import * as BarPositions from '../resize/BarPositions';
+import { ResizeBehaviour } from './ResizeBehaviour';
 import { ResizeWire } from './ResizeWire';
 import { TableSize } from './TableSize';
 
-type ColInfo = BarPositions.ColInfo;
 type BarPositions<A> = BarPositions.BarPositions<A>;
+type ResizeType = 'row' | 'col';
 
 export interface BeforeTableResizeEvent {
-  readonly table: () => Element;
+  readonly table: SugarElement;
+  readonly type: ResizeType;
 }
 
 export interface AfterTableResizeEvent {
-  readonly table: () => Element;
+  readonly table: SugarElement;
+  readonly type: ResizeType;
 }
 
-type TableResizeEventRegistry = {
+interface TableResizeEventRegistry {
   readonly beforeResize: Bindable<BeforeTableResizeEvent>;
   readonly afterResize: Bindable<AfterTableResizeEvent>;
   readonly startDrag: Bindable<{}>;
-};
+}
 
 interface TableResizeEvents {
   readonly registry: TableResizeEventRegistry;
   readonly trigger: {
-    readonly beforeResize: (table: Element) => void;
-    readonly afterResize: (table: Element) => void;
+    readonly beforeResize: (table: SugarElement, type: ResizeType) => void;
+    readonly afterResize: (table: SugarElement, type: ResizeType) => void;
     readonly startDrag: () => void;
   };
 }
@@ -42,22 +45,24 @@ export interface TableResize {
   readonly events: TableResizeEventRegistry;
 }
 
-const create = (wire: ResizeWire, vdirection: BarPositions<ColInfo>, lazySizing: (element: Element<HTMLTableElement>) => TableSize): TableResize => {
+const create = (wire: ResizeWire, resizing: ResizeBehaviour, lazySizing: (element: SugarElement<HTMLTableElement>) => TableSize): TableResize => {
   const hdirection = BarPositions.height;
-  const manager = BarManager(wire, vdirection, hdirection);
+  const vdirection = BarPositions.width;
+  const manager = BarManager(wire);
 
-  const events = Events.create({
-    beforeResize: Event([ 'table' ]),
-    afterResize: Event([ 'table' ]),
-    startDrag: Event([])
-  }) as TableResizeEvents;
+  const events: TableResizeEvents = Events.create({
+    beforeResize: Event([ 'table', 'type' ]),
+    afterResize: Event([ 'table', 'type' ]),
+    startDrag: Event([]),
+  });
 
   manager.events.adjustHeight.bind((event) => {
-    const table = event.table();
-    events.trigger.beforeResize(table);
-    const delta = hdirection.delta(event.delta(), table);
-    Adjustments.adjustHeight(table, delta, event.row(), hdirection);
-    events.trigger.afterResize(table);
+    const table = event.table;
+    events.trigger.beforeResize(table, 'row');
+    const delta = hdirection.delta(event.delta, table);
+    // TODO: Use the resizing behaviour for heights as well
+    Adjustments.adjustHeight(table, delta, event.row, hdirection);
+    events.trigger.afterResize(table, 'row');
   });
 
   manager.events.startAdjust.bind((_event) => {
@@ -65,12 +70,12 @@ const create = (wire: ResizeWire, vdirection: BarPositions<ColInfo>, lazySizing:
   });
 
   manager.events.adjustWidth.bind((event) => {
-    const table = event.table();
-    events.trigger.beforeResize(table);
-    const delta = vdirection.delta(event.delta(), table);
+    const table = event.table;
+    events.trigger.beforeResize(table, 'col');
+    const delta = vdirection.delta(event.delta, table);
     const tableSize = lazySizing(table);
-    Adjustments.adjustWidth(table, delta, event.column(), vdirection, tableSize);
-    events.trigger.afterResize(table);
+    Adjustments.adjustWidth(table, delta, event.column, resizing, tableSize);
+    events.trigger.afterResize(table, 'col');
   });
 
   return {

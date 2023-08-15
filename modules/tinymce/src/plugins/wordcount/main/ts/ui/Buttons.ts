@@ -5,21 +5,21 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import * as Dialog from './Dialog';
 import Editor from 'tinymce/core/api/Editor';
-import { WordCountApi } from '../api/Api';
 
-const register = (editor: Editor, api: WordCountApi) => {
+const register = (editor: Editor): void => {
+  const onAction = () => editor.execCommand('mceWordCount');
+
   editor.ui.registry.addButton('wordcount', {
     tooltip: 'Word count',
     icon: 'character-count',
-    onAction: () => Dialog.open(editor, api)
+    onAction
   });
 
   editor.ui.registry.addMenuItem('wordcount', {
     text: 'Word count',
     icon: 'character-count',
-    onAction: () => Dialog.open(editor, api)
+    onAction
   });
 };
 

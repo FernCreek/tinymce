@@ -1,79 +1,71 @@
-import { Pipeline, Step } from '@ephox/agar';
-import { Arr } from '@ephox/katamari';
-import { LegacyUnit } from '@ephox/mcagar';
-import * as FakeStorage from 'tinymce/core/api/util/FakeStorage';
-import { UnitTest } from '@ephox/bedrock-client';
+import { beforeEach, describe, it } from '@ephox/bedrock-client';
+import { assert } from 'chai';
 
-UnitTest.asynctest('browser.tinymce.core.util.LocalStorageTest', (success, failure) => {
-  const suite = LegacyUnit.createSuite();
+import * as FakeStorage from 'tinymce/core/api/util/FakeStorage';
+
+describe('browser.tinymce.core.util.LocalStorageTest', () => {
   const LocalStorage = FakeStorage.create();
 
-  const teardown = Step.sync(function () {
+  beforeEach(() => {
     LocalStorage.clear();
   });
 
-  const appendTeardown = function (steps) {
-    return Arr.bind(steps, function (step) {
-      return [ step, teardown ];
-    });
-  };
-
-  suite.test('setItem', function () {
+  it('setItem', () => {
     LocalStorage.setItem('a', '1');
-    LegacyUnit.equal(LocalStorage.getItem('a'), '1');
+    assert.equal(LocalStorage.getItem('a'), '1');
     LocalStorage.setItem('a', '2');
-    LegacyUnit.equal(LocalStorage.getItem('a'), '2');
+    assert.equal(LocalStorage.getItem('a'), '2');
     LocalStorage.setItem('a', '3');
-    LegacyUnit.equal(LocalStorage.getItem('a'), '3');
+    assert.equal(LocalStorage.getItem('a'), '3');
     LocalStorage.setItem('a', null);
-    LegacyUnit.equal(LocalStorage.getItem('a'), 'null');
+    assert.equal(LocalStorage.getItem('a'), 'null');
     LocalStorage.setItem('a', undefined);
-    LegacyUnit.equal(LocalStorage.getItem('a'), 'undefined');
+    assert.equal(LocalStorage.getItem('a'), 'undefined');
     LocalStorage.setItem('a', new Date(0).toString());
-    LegacyUnit.equal(LocalStorage.getItem('a'), new Date(0).toString());
+    assert.equal(LocalStorage.getItem('a'), new Date(0).toString());
   });
 
-  suite.test('getItem', function () {
+  it('getItem', () => {
     LocalStorage.setItem('a', '1');
-    LegacyUnit.equal(LocalStorage.getItem('a'), '1');
+    assert.equal(LocalStorage.getItem('a'), '1');
     LocalStorage.setItem('a', '0');
-    LegacyUnit.equal(LocalStorage.getItem('a'), '0');
-    LegacyUnit.equal(LocalStorage.getItem('b'), null);
+    assert.equal(LocalStorage.getItem('a'), '0');
+    assert.isNull(LocalStorage.getItem('b'));
   });
 
-  suite.test('removeItem', function () {
+  it('removeItem', () => {
     LocalStorage.setItem('a', '1');
-    LegacyUnit.equal(LocalStorage.getItem('a'), '1');
+    assert.equal(LocalStorage.getItem('a'), '1');
     LocalStorage.removeItem('a');
-    LegacyUnit.equal(LocalStorage.getItem('a'), null);
+    assert.isNull(LocalStorage.getItem('a'));
   });
 
-  suite.test('key', function () {
+  it('key', () => {
     LocalStorage.setItem('a', '1');
-    LegacyUnit.equal(LocalStorage.key(0), 'a');
-    LegacyUnit.equal(LocalStorage.length, 1);
+    assert.equal(LocalStorage.key(0), 'a');
+    assert.lengthOf(LocalStorage, 1);
   });
 
-  suite.test('length', function () {
-    LegacyUnit.equal(LocalStorage.length, 0);
+  it('length', () => {
+    assert.lengthOf(LocalStorage, 0);
     LocalStorage.setItem('a', '1');
-    LegacyUnit.equal(LocalStorage.length, 1);
+    assert.lengthOf(LocalStorage, 1);
   });
 
-  suite.test('clear', function () {
-    LegacyUnit.equal(LocalStorage.length, 0);
+  it('clear', () => {
+    assert.lengthOf(LocalStorage, 0);
     LocalStorage.setItem('a', '1');
-    LegacyUnit.equal(LocalStorage.length, 1);
+    assert.lengthOf(LocalStorage, 1);
   });
 
-  suite.test('setItem key and value with commas', function () {
+  it('setItem key and value with commas', () => {
     LocalStorage.setItem('a,1', '1,2');
     LocalStorage.setItem('b,2', '2,3');
-    LegacyUnit.equal(LocalStorage.getItem('a,1'), '1,2');
-    LegacyUnit.equal(LocalStorage.getItem('b,2'), '2,3');
+    assert.equal(LocalStorage.getItem('a,1'), '1,2');
+    assert.equal(LocalStorage.getItem('b,2'), '2,3');
   });
 
-  suite.test('setItem with two large values', function () {
+  it('setItem with two large values', () => {
     let data = '';
 
     for (let i = 0; i < 1024; i++) {
@@ -83,11 +75,11 @@ UnitTest.asynctest('browser.tinymce.core.util.LocalStorageTest', (success, failu
     LocalStorage.clear();
     LocalStorage.setItem('a', data + '1');
     LocalStorage.setItem('b', data);
-    LegacyUnit.equal(LocalStorage.getItem('a').length, 1024 + 1);
-    LegacyUnit.equal(LocalStorage.getItem('b').length, 1024);
+    assert.lengthOf(LocalStorage.getItem('a'), 1024 + 1);
+    assert.lengthOf(LocalStorage.getItem('b'), 1024);
   });
 
-  suite.test('setItem with two large keys', function () {
+  it('setItem with two large keys', () => {
     let key = '';
 
     for (let i = 0; i < 1024; i++) {
@@ -97,13 +89,7 @@ UnitTest.asynctest('browser.tinymce.core.util.LocalStorageTest', (success, failu
     LocalStorage.clear();
     LocalStorage.setItem(key + '1', 'a');
     LocalStorage.setItem(key + '2', 'b');
-    LegacyUnit.equal(LocalStorage.key(0), key + '1');
-    LegacyUnit.equal(LocalStorage.key(1), key + '2');
+    assert.equal(LocalStorage.key(0), key + '1');
+    assert.equal(LocalStorage.key(1), key + '2');
   });
-
-  LocalStorage.clear();
-  const steps = appendTeardown(suite.toSteps({}));
-  Pipeline.async({}, steps, function () {
-    success();
-  }, failure);
 });

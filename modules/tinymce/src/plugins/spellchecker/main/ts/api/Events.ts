@@ -6,14 +6,13 @@
  */
 
 import Editor from 'tinymce/core/api/Editor';
+import { EditorEvent } from 'tinymce/core/api/util/EventDispatcher';
 
-const fireSpellcheckStart = function (editor: Editor) {
-  return editor.fire('SpellcheckStart');
-};
+const fireSpellcheckStart = (editor: Editor): EditorEvent<{}> =>
+  editor.fire('SpellcheckStart');
 
-const fireSpellcheckEnd = function (editor: Editor) {
-  return editor.fire('SpellcheckEnd');
-};
+const fireSpellcheckEnd = (editor: Editor): EditorEvent<{}> =>
+  editor.fire('SpellcheckEnd');
 
 export {
   fireSpellcheckStart,

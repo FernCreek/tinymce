@@ -1,9 +1,9 @@
 import { Step } from '@ephox/agar';
+import { TestHelpers } from '@ephox/alloy';
 import { Objects } from '@ephox/boulder';
 import { Cell, Fun } from '@ephox/katamari';
-import { TestHelpers } from '@ephox/alloy';
 
-export default function () {
+export default () => {
   const store = TestHelpers.TestStore();
 
   const editorState = {
@@ -11,8 +11,8 @@ export default function () {
     content: Cell('')
   };
 
-  const sPrepareState = function (node, content) {
-    return Step.sync(function () {
+  const sPrepareState = (node, content) => {
+    return Step.sync(() => {
       editorState.start.set(node);
       editorState.content.set(content);
     });
@@ -25,14 +25,14 @@ export default function () {
       select: Fun.noop
     },
 
-    insertContent(data) {
+    insertContent: (data) => {
       store.adder({ method: 'insertContent', data })();
     },
-    execCommand(name, ui, args) {
+    execCommand: (name, ui, args) => {
       store.adder({ method: 'execCommand', data: Objects.wrap(name, args) })();
     },
     dom: {
-      createHTML(tag, attributes, innerText) {
+      createHTML: (tag, attributes, innerText) => {
         return { tag, attributes, innerText };
       },
       encode: Fun.identity
@@ -55,4 +55,4 @@ export default function () {
     sClear: store.sClear,
     sPrepareState
   };
-}
+};

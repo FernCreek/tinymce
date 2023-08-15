@@ -1,74 +1,105 @@
-import { Chain, Logger, Pipeline } from '@ephox/agar';
-import { Assert, UnitTest } from '@ephox/bedrock-client';
-import { Editor as McEditor } from '@ephox/mcagar';
+import { Waiter } from '@ephox/agar';
+import { before, describe, it } from '@ephox/bedrock-client';
+import { McEditor } from '@ephox/wrap-mcagar';
+import { assert } from 'chai';
 
 import Editor from 'tinymce/core/api/Editor';
 import EditorManager from 'tinymce/core/api/EditorManager';
+import PromisePolyfill from 'tinymce/core/api/util/Promise';
 import Theme from 'tinymce/themes/silver/Theme';
 
-UnitTest.asynctest('browser.tinymce.core.EditorRemoveTest', (success, failure) => {
-  Theme();
+describe('browser.tinymce.core.EditorRemoveTest', () => {
+  before(() => {
+    Theme();
+  });
 
   const settings = {
     base_url: '/project/tinymce/js/tinymce'
   };
 
-  const cAssertTextareaDisplayStyle = (expected) => Chain.op((editor: any) => {
+  const assertTextareaDisplayStyle = (editor: Editor, expected: string) => {
     const textareaElement = editor.getElement();
+    assert.equal(textareaElement.style.display, expected, 'element does not have the expected style');
+  };
 
-    Assert.eq('element does not have the expected style', expected, textareaElement.style.display);
+  const testRemoveStyles = (editor: Editor, expectedStyle: string) => {
+    assertTextareaDisplayStyle(editor, 'none');
+    editor.remove();
+    assertTextareaDisplayStyle(editor, expectedStyle);
+    EditorManager.init({ selector: '#tinymce' });
+    assertTextareaDisplayStyle(editor, expectedStyle);
+    McEditor.remove(editor);
+  };
+
+  it('remove editor without initializing it', () => {
+    const editor = new Editor('editor', {}, EditorManager);
+    editor.remove();
   });
 
-  const cCreateEditor = Chain.injectThunked(() => new Editor('editor', {}, EditorManager));
+  it('remove editor after stylesheets load', async () => {
+    await McEditor.pFromHtml('<textarea></textarea>', {
+      ...settings,
+      setup: (editor: Editor) => {
+        editor.on('PreInit', () => {
+          // Hook the function called when stylesheets are loaded
+          // so we can remove the editor right after starting to load them.
+          const realLoadAll = editor.ui.styleSheetLoader.loadAll;
+          editor.ui.styleSheetLoader.loadAll = (...args) => {
+            realLoadAll.apply(editor.ui.styleSheetLoader, args);
+            editor.ui.styleSheetLoader.loadAll = realLoadAll;
+            editor.remove();
+          };
+        });
+      }
+    }).then(
+      () => PromisePolyfill.reject('Expected editor would not load completely'),
+      (err) => {
+        // As we have deliberately removed the editor during the loading process
+        // we have to intercept the error that is thrown by McEditor.pFromHtml.
+        if (err === McEditor.errorMessageEditorRemoved) {
+          return PromisePolyfill.resolve();
+        } else {
+          return PromisePolyfill.reject(err);
+        }
+      }
+    );
+    // allow the stylesheet loading to finish
+    await Waiter.pWait(50);
+  });
 
-  const cRemoveEditor = Chain.op((editor: any) => editor.remove());
+  it('remove editor where the body has been removed', async () => {
+    const editor = await McEditor.pFromHtml<Editor>('<textarea></textarea>', settings);
+    const body = editor.getBody();
+    body.parentNode.removeChild(body);
+    McEditor.remove(editor);
+  });
 
-  Pipeline.async({}, [
-    Logger.t('remove editor without initializing it', Chain.asStep({}, [
-      cCreateEditor,
-      cRemoveEditor
-    ])),
+  it('init editor with no display style', async () => {
+    const editor = await McEditor.pFromHtml<Editor>('<textarea id="tinymce"></textarea>', settings);
+    testRemoveStyles(editor, '');
+  });
 
-    Logger.t('remove editor where the body has been removed', Chain.asStep({}, [
-      McEditor.cFromHtml('<textarea></textarea>', settings),
-      Chain.mapper((value) => {
-        const body = value.getBody();
-        body.parentNode.removeChild(body);
-        return value;
-      }),
-      McEditor.cRemove
-    ])),
+  it('init editor with display: none', async () => {
+    const editor = await McEditor.pFromHtml<Editor>('<textarea id="tinymce" style="display: none;"></textarea>', settings);
+    testRemoveStyles(editor, 'none');
+  });
 
-    Logger.t('init editor with no display style', Chain.asStep({}, [
-      McEditor.cFromHtml('<textarea id="tinymce"></textarea>', settings),
-      cAssertTextareaDisplayStyle('none'),
-      cRemoveEditor,
-      cAssertTextareaDisplayStyle(''),
-      Chain.op((_editor) => { EditorManager.init({ selector: '#tinymce' }); }),
-      cAssertTextareaDisplayStyle(''),
-      McEditor.cRemove
-    ])),
+  it('init editor with display: block', async () => {
+    const editor = await McEditor.pFromHtml<Editor>('<textarea id="tinymce" style="display: block;"></textarea>', settings);
+    testRemoveStyles(editor, 'block');
+  });
 
-    Logger.t('init editor with display: none', Chain.asStep({}, [
-      McEditor.cFromHtml('<textarea id="tinymce" style="display: none;"></textarea>', settings),
-      cAssertTextareaDisplayStyle('none'),
-      cRemoveEditor,
-      cAssertTextareaDisplayStyle('none'),
-      Chain.op((_editor) => { EditorManager.init({ selector: '#tinymce' }); }),
-      cAssertTextareaDisplayStyle('none'),
-      McEditor.cRemove
-    ])),
-
-    Logger.t('init editor with display: block', Chain.asStep({}, [
-      McEditor.cFromHtml('<textarea id="tinymce" style="display: block;"></textarea>', settings),
-      cAssertTextareaDisplayStyle('none'),
-      cRemoveEditor,
-      cAssertTextareaDisplayStyle('block'),
-      Chain.op((_editor) => { EditorManager.init({ selector: '#tinymce' }); }),
-      cAssertTextareaDisplayStyle('block'),
-      McEditor.cRemove
-    ]))
-  ], () => {
-    success();
-  }, failure);
+  it('TINY-7730: remove editor that unbinds mousedown in the remove handler', async () => {
+    const editor = await McEditor.pFromSettings({
+      ...settings,
+      setup: (editor: Editor) => {
+        editor.on('remove', () => {
+          // the native events have all been unbound
+          // so unbinding 'mousedown' now must do nothing or it will throw an exception
+          editor.off('mousedown');
+        });
+      }
+    });
+    editor.remove();
+  });
 });

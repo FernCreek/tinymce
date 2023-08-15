@@ -5,20 +5,21 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { HTMLFormElement } from '@ephox/dom-globals';
 import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
+import Editor from 'tinymce/core/api/Editor';
 import Tools from 'tinymce/core/api/util/Tools';
+
 import * as Settings from '../api/Settings';
 
-const displayErrorMessage = function (editor, message) {
+const displayErrorMessage = (editor: Editor, message: string): void => {
   editor.notificationManager.open({
     text: message,
     type: 'error'
   });
 };
 
-const save = function (editor) {
-  const formObj = DOMUtils.DOM.getParent(editor.id, 'form') as HTMLFormElement;
+const save = (editor: Editor): void => {
+  const formObj = DOMUtils.DOM.getParent(editor.id, 'form');
 
   if (Settings.enableWhenDirty(editor) && !editor.isDirty()) {
     return;
@@ -52,7 +53,7 @@ const save = function (editor) {
   }
 };
 
-const cancel = function (editor) {
+const cancel = (editor: Editor): void => {
   const h = Tools.trim(editor.startContent);
 
   // Use callback instead

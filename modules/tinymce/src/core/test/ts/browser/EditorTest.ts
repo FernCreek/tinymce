@@ -1,40 +1,53 @@
-import { Pipeline, UiFinder } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import { document } from '@ephox/dom-globals';
-import { LegacyUnit, TinyLoader } from '@ephox/mcagar';
-import { Body, Attr, Class } from '@ephox/sugar';
+import { UiFinder } from '@ephox/agar';
+import { context, describe, it } from '@ephox/bedrock-client';
+import { Fun } from '@ephox/katamari';
+import { Attribute, Class, SugarBody } from '@ephox/sugar';
+import { TinyHooks, TinySelections } from '@ephox/wrap-mcagar';
+import { assert } from 'chai';
+
 import Editor from 'tinymce/core/api/Editor';
 import EditorManager from 'tinymce/core/api/EditorManager';
 import Env from 'tinymce/core/api/Env';
-import * as HtmlUtils from '../module/test/HtmlUtils';
+import PluginManager from 'tinymce/core/api/PluginManager';
 import URI from 'tinymce/core/api/util/URI';
 import Theme from 'tinymce/themes/silver/Theme';
 
-UnitTest.asynctest('browser.tinymce.core.EditorTest', function (success, failure) {
-  const suite = LegacyUnit.createSuite<Editor>();
+import * as HtmlUtils from '../module/test/HtmlUtils';
 
-  Theme();
+describe('browser.tinymce.core.EditorTest', () => {
+  const hook = TinyHooks.bddSetup<Editor>({
+    selector: 'textarea',
+    add_unload_trigger: false,
+    disable_nodechange: true,
+    custom_elements: 'custom1,~custom2',
+    extended_valid_elements: 'custom1,custom2,script[*]',
+    entities: 'raw',
+    indent: false,
+    base_url: '/project/tinymce/js/tinymce'
+  }, [ Theme ]);
 
-  suite.test('Event: change', function (editor) {
+  it('TBA: Event: change', () => {
+    const editor = hook.editor();
     let level, lastLevel;
 
-    editor.on('change', function (e) {
+    editor.on('change', (e) => {
       level = e.level;
       lastLevel = e.lastLevel;
     });
 
     editor.setContent('');
     editor.insertContent('a');
-    LegacyUnit.equal(level.content.toLowerCase(), '<p>a</p>');
-    LegacyUnit.equal(lastLevel.content, editor.undoManager.data[0].content);
+    assert.equal(level.content.toLowerCase(), '<p>a</p>', 'Event: change');
+    assert.equal(lastLevel.content, editor.undoManager.data[0].content, 'Event: change');
 
     editor.off('change');
   });
 
-  suite.test('Event: beforeExecCommand', function (editor) {
+  it('TBA: Event: beforeExecCommand', () => {
+    const editor = hook.editor();
     let cmd, ui, value;
 
-    editor.on('BeforeExecCommand', function (e) {
+    editor.on('BeforeExecCommand', (e) => {
       cmd = e.command;
       ui = e.ui;
       value = e.value;
@@ -44,114 +57,119 @@ UnitTest.asynctest('browser.tinymce.core.EditorTest', function (success, failure
 
     editor.setContent('');
     editor.insertContent('a');
-    LegacyUnit.equal(editor.getContent(), '');
-    LegacyUnit.equal(cmd, 'mceInsertContent');
-    LegacyUnit.equal(ui, false);
-    LegacyUnit.equal(value, 'a');
+    assert.equal(editor.getContent(), '', 'BeforeExecCommand');
+    assert.equal(cmd, 'mceInsertContent', 'BeforeExecCommand');
+    assert.isFalse(ui, 'BeforeExecCommand');
+    assert.equal(value, 'a', 'BeforeExecCommand');
 
     editor.off('BeforeExecCommand');
     editor.setContent('');
     editor.insertContent('a');
-    LegacyUnit.equal(editor.getContent(), '<p>a</p>');
+    assert.equal(editor.getContent(), '<p>a</p>', 'BeforeExecCommand');
   });
 
-  suite.test('urls - relativeURLs', function (editor) {
+  it('TBA: urls - relativeURLs', () => {
+    const editor = hook.editor();
     editor.settings.relative_urls = true;
     editor.documentBaseURI = new URI('http://www.site.com/dirA/dirB/dirC/');
 
     editor.setContent('<a href="test.html">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="test.html">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="test.html">test</a></p>', 'urls - relativeURLs');
 
     editor.setContent('<a href="../test.html">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="../test.html">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="../test.html">test</a></p>', 'urls - relativeURLs');
 
     editor.setContent('<a href="test/test.html">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="test/test.html">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="test/test.html">test</a></p>', 'urls - relativeURLs');
 
     editor.setContent('<a href="/test.html">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="../../../test.html">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="../../../test.html">test</a></p>', 'urls - relativeURLs');
 
     editor.setContent('<a href="http://www.somesite.com/test/file.htm">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="http://www.somesite.com/test/file.htm">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="http://www.somesite.com/test/file.htm">test</a></p>', 'urls - relativeURLs');
 
     editor.setContent('<a href="//www.site.com/test/file.htm">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="../../../test/file.htm">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="../../../test/file.htm">test</a></p>', 'urls - relativeURLs');
 
     editor.setContent('<a href="//www.somesite.com/test/file.htm">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="//www.somesite.com/test/file.htm">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="//www.somesite.com/test/file.htm">test</a></p>', 'urls - relativeURLs');
   });
 
-  suite.test('urls - absoluteURLs', function (editor) {
+  it('TBA: urls - absoluteURLs', () => {
+    const editor = hook.editor();
     editor.settings.relative_urls = false;
     editor.settings.remove_script_host = true;
     editor.documentBaseURI = new URI('http://www.site.com/dirA/dirB/dirC/');
 
     editor.setContent('<a href="test.html">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="/dirA/dirB/dirC/test.html">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="/dirA/dirB/dirC/test.html">test</a></p>', 'urls - absoluteURLs');
 
     editor.setContent('<a href="../test.html">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="/dirA/dirB/test.html">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="/dirA/dirB/test.html">test</a></p>', 'urls - absoluteURLs');
 
     editor.setContent('<a href="test/test.html">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="/dirA/dirB/dirC/test/test.html">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="/dirA/dirB/dirC/test/test.html">test</a></p>', 'urls - absoluteURLs');
 
     editor.setContent('<a href="http://www.somesite.com/test/file.htm">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="http://www.somesite.com/test/file.htm">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="http://www.somesite.com/test/file.htm">test</a></p>', 'urls - absoluteURLs');
 
     editor.settings.relative_urls = false;
     editor.settings.remove_script_host = false;
 
     editor.setContent('<a href="test.html">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="http://www.site.com/dirA/dirB/dirC/test.html">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="http://www.site.com/dirA/dirB/dirC/test.html">test</a></p>', 'urls - absoluteURLs');
 
     editor.setContent('<a href="../test.html">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="http://www.site.com/dirA/dirB/test.html">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="http://www.site.com/dirA/dirB/test.html">test</a></p>', 'urls - absoluteURLs');
 
     editor.setContent('<a href="test/test.html">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="http://www.site.com/dirA/dirB/dirC/test/test.html">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="http://www.site.com/dirA/dirB/dirC/test/test.html">test</a></p>', 'urls - absoluteURLs');
 
     editor.setContent('<a href="http://www.somesite.com/test/file.htm">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="http://www.somesite.com/test/file.htm">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="http://www.somesite.com/test/file.htm">test</a></p>', 'urls - absoluteURLs');
 
     editor.setContent('<a href="//www.site.com/test/file.htm">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="//www.site.com/test/file.htm">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="//www.site.com/test/file.htm">test</a></p>', 'urls - absoluteURLs');
 
     editor.setContent('<a href="//www.somesite.com/test/file.htm">test</a>');
-    LegacyUnit.equal(editor.getContent(), '<p><a href="//www.somesite.com/test/file.htm">test</a></p>');
+    assert.equal(editor.getContent(), '<p><a href="//www.somesite.com/test/file.htm">test</a></p>', 'urls - absoluteURLs');
   });
 
-  suite.test('WebKit Serialization range bug', function (editor) {
+  it('TBA: WebKit Serialization range bug', () => {
     if (Env.webkit) {
+      const editor = hook.editor();
       // Note that if we create the P with this invalid content directly, Chrome cleans it up differently to other browsers so we don't
       // wind up testing the serialization functionality we were aiming for and the test fails.
       const p = editor.dom.create('p', {}, '123<table><tbody><tr><td>X</td></tr></tbody></table>456');
       editor.dom.replace(p, editor.getBody().firstChild);
 
-      LegacyUnit.equal(editor.getContent(), '<p>123</p><table><tbody><tr><td>X</td></tr></tbody></table><p>456</p>');
+      assert.equal(editor.getContent(), '<p>123</p><table><tbody><tr><td>X</td></tr></tbody></table><p>456</p>', 'WebKit Serialization range bug');
     }
   });
 
-  suite.test('editor_methods - getParam', function (editor) {
+  it('TBA: editor_methods - getParam', () => {
+    const editor = hook.editor();
     editor.settings.test = 'a,b,c';
-    LegacyUnit.equal(editor.getParam('test', '', 'hash').c, 'c');
+    assert.equal(editor.getParam('test', '', 'hash').c, 'c', 'editor_methods - getParam');
 
     editor.settings.test = 'a';
-    LegacyUnit.equal(editor.getParam('test', '', 'hash').a, 'a');
+    assert.equal(editor.getParam('test', '', 'hash').a, 'a', 'editor_methods - getParam');
 
     editor.settings.test = 'a=b';
-    LegacyUnit.equal(editor.getParam('test', '', 'hash').a, 'b');
+    assert.equal(editor.getParam('test', '', 'hash').a, 'b', 'editor_methods - getParam');
 
     editor.settings.test = 'a=b;c=d,e';
-    LegacyUnit.equal(editor.getParam('test', '', 'hash').c, 'd,e');
+    assert.equal(editor.getParam('test', '', 'hash').c, 'd,e', 'editor_methods - getParam');
 
     editor.settings.test = 'a=b,c=d';
-    LegacyUnit.equal(editor.getParam('test', '', 'hash').c, 'd');
+    assert.equal(editor.getParam('test', '', 'hash').c, 'd', 'editor_methods - getParam');
   });
 
-  suite.test('setContent', function (editor) {
+  it('TBA: setContent', () => {
+    const editor = hook.editor();
     let count;
 
-    const callback = function (e) {
+    const callback = (e) => {
       e.content = e.content.replace(/test/, 'X');
       count++;
     };
@@ -160,66 +178,71 @@ UnitTest.asynctest('browser.tinymce.core.EditorTest', function (success, failure
     editor.on('BeforeSetContent', callback);
     count = 0;
     editor.setContent('<p>test</p>');
-    LegacyUnit.equal(editor.getContent(), '<p>X</p>');
-    LegacyUnit.equal(count, 2);
+    assert.equal(editor.getContent(), '<p>X</p>', 'setContent');
+    assert.equal(count, 2, 'setContent');
     editor.off('SetContent', callback);
     editor.off('BeforeSetContent', callback);
 
     count = 0;
     editor.setContent('<p>test</p>');
-    LegacyUnit.equal(editor.getContent(), '<p>test</p>');
-    LegacyUnit.equal(count, 0);
+    assert.equal(editor.getContent(), '<p>test</p>', 'setContent');
+    assert.equal(count, 0, 'setContent');
   });
 
-  suite.test('setContent with comment bug #4409', function (editor) {
+  it('TBA: setContent with comment bug #4409', () => {
+    const editor = hook.editor();
     editor.setContent('<!-- x --><br>');
     editor.settings.disable_nodechange = false;
     editor.nodeChanged();
     editor.settings.disable_nodechange = true;
-    LegacyUnit.equal(editor.getContent(), '<!-- x --><p>\u00a0</p>');
+    assert.equal(editor.getContent(), '<!-- x --><p>\u00a0</p>', 'setContent with comment bug #4409');
   });
 
-  suite.test('custom elements', function (editor) {
+  it('TBA: custom elements', () => {
+    const editor = hook.editor();
     editor.setContent('<custom1>c1</custom1><custom2>c1</custom2>');
-    LegacyUnit.equal(editor.getContent(), '<custom1>c1</custom1><p><custom2>c1</custom2></p>');
+    assert.equal(editor.getContent(), '<custom1>c1</custom1><p><custom2>c1</custom2></p>', 'custom elements');
   });
 
-  suite.test('Store/restore tabindex', function (editor) {
+  it('TBA: Store/restore tabindex', () => {
+    const editor = hook.editor();
     editor.setContent('<span tabindex="42">abc</span>');
-    LegacyUnit.equal(editor.getContent({ format: 'raw' }).toLowerCase(), '<p><span data-mce-tabindex="42">abc</span></p>');
-    LegacyUnit.equal(editor.getContent(), '<p><span tabindex="42">abc</span></p>');
+    assert.equal(editor.getContent({ format: 'raw' }).toLowerCase(), '<p><span data-mce-tabindex="42">abc</span></p>', 'Store/restore tabindex');
+    assert.equal(editor.getContent(), '<p><span tabindex="42">abc</span></p>', 'Store/restore tabindex');
   });
 
-  suite.test('show/hide/isHidden and events', function (editor) {
+  it('TBA: show/hide/isHidden and events', () => {
+    const editor = hook.editor();
     let lastEvent;
 
-    editor.on('show hide', function (e) {
+    editor.on('show hide', (e) => {
       lastEvent = e;
     });
 
-    LegacyUnit.equal(editor.isHidden(), false, 'Initial isHidden state');
+    assert.isFalse(editor.isHidden(), 'Initial isHidden state');
 
     editor.hide();
-    LegacyUnit.equal(editor.isHidden(), true, 'After hide isHidden state');
-    LegacyUnit.equal(lastEvent.type, 'hide');
+    assert.isTrue(editor.isHidden(), 'After hide isHidden state');
+    assert.equal('hide', lastEvent.type, 'show/hide/isHidden and events');
 
     lastEvent = null;
     editor.hide();
-    LegacyUnit.equal(lastEvent, null);
+    assert.isNull(lastEvent, 'show/hide/isHidden and events');
 
     editor.show();
-    LegacyUnit.equal(editor.isHidden(), false, 'After show isHidden state');
-    LegacyUnit.equal(lastEvent.type, 'show');
+    assert.isFalse(editor.isHidden(), 'After show isHidden state');
+    assert.equal(lastEvent.type, 'show', 'show/hide/isHidden and events');
 
     lastEvent = null;
     editor.show();
-    LegacyUnit.equal(lastEvent, null);
+    assert.isNull(lastEvent, 'show/hide/isHidden and events');
   });
 
-  suite.test('hide save content and hidden state while saving', function (editor) {
+  it('TBA: hide save content and hidden state while saving', () => {
+    const editor = hook.editor();
     let lastEvent, hiddenStateWhileSaving;
 
-    editor.on('SaveContent', function (e) {
+    editor.on('SaveContent', (e) => {
       lastEvent = e;
       hiddenStateWhileSaving = editor.isHidden();
     });
@@ -228,32 +251,35 @@ UnitTest.asynctest('browser.tinymce.core.EditorTest', function (success, failure
     editor.hide();
 
     const elm: any = document.getElementById(editor.id);
-    LegacyUnit.equal(hiddenStateWhileSaving, false, 'False isHidden state while saving');
-    LegacyUnit.equal(lastEvent.content, '<p>xyz</p>');
-    LegacyUnit.equal(elm.value, '<p>xyz</p>');
+    assert.isFalse(hiddenStateWhileSaving, 'False isHidden state while saving');
+    assert.equal(lastEvent.content, '<p>xyz</p>', 'hide save content and hidden state while saving');
+    assert.equal(elm.value, '<p>xyz</p>', 'hide save content and hidden state while saving');
 
     editor.show();
   });
 
-  suite.test('insertContent', function (editor) {
+  it('TBA: insertContent', () => {
+    const editor = hook.editor();
     editor.setContent('<p>ab</p>');
-    LegacyUnit.setSelection(editor, 'p', 1);
+    TinySelections.setCursor(editor, [ 0, 0 ], 1);
     editor.insertContent('c');
-    LegacyUnit.equal(editor.getContent(), '<p>acb</p>');
+    assert.equal(editor.getContent(), '<p>acb</p>', 'insertContent');
   });
 
-  suite.test('insertContent merge', function (editor) {
+  it('TBA: insertContent merge', () => {
+    const editor = hook.editor();
     editor.setContent('<p><strong>a</strong></p>');
-    LegacyUnit.setSelection(editor, 'p', 1);
+    TinySelections.setCursor(editor, [ 0, 0 ], 1);
     editor.insertContent('<em><strong>b</strong></em>', { merge: true });
-    LegacyUnit.equal(editor.getContent(), '<p><strong>a<em>b</em></strong></p>');
+    assert.equal(editor.getContent(), '<p><strong>a<em>b</em></strong></p>', 'insertContent merge');
   });
 
-  suite.test('addCommand', function (editor) {
+  it('TBA: addCommand', () => {
+    const editor = hook.editor();
     const scope = {};
     let lastScope, lastArgs;
 
-    const callback = function () {
+    const callback = function () { // Arrow function cannot be used with 'arguments'.
       // eslint-disable-next-line
       lastScope = this;
       lastArgs = arguments;
@@ -263,21 +289,22 @@ UnitTest.asynctest('browser.tinymce.core.EditorTest', function (success, failure
     editor.addCommand('CustomCommand2', callback);
 
     editor.execCommand('CustomCommand1', false, 'value', { extra: true });
-    LegacyUnit.equal(lastArgs[0], false);
-    LegacyUnit.equal(lastArgs[1], 'value');
-    LegacyUnit.equal(lastScope === scope, true);
+    assert.isFalse(lastArgs[0], 'addCommand');
+    assert.equal( lastArgs[1], 'value', 'addCommand');
+    assert.strictEqual(lastScope, scope, 'addCommand');
 
     editor.execCommand('CustomCommand2');
-    LegacyUnit.equal(typeof lastArgs[0], 'undefined');
-    LegacyUnit.equal(typeof lastArgs[1], 'undefined');
-    LegacyUnit.equal(lastScope === editor, true);
+    assert.isUndefined(lastArgs[0], 'addCommand');
+    assert.isUndefined(lastArgs[1], 'addCommand');
+    assert.strictEqual(lastScope, editor, 'addCommand');
   });
 
-  suite.test('addQueryStateHandler', function (editor) {
+  it('TBA: addQueryStateHandler', () => {
+    const editor = hook.editor();
     const scope = {};
     let lastScope, currentState;
 
-    const callback = function () {
+    const callback = function () { // Arrow function cannot be used with 'this'.
       // eslint-disable-next-line
       lastScope = this;
       return currentState;
@@ -287,37 +314,41 @@ UnitTest.asynctest('browser.tinymce.core.EditorTest', function (success, failure
     editor.addQueryStateHandler('CustomCommand2', callback);
 
     currentState = false;
-    LegacyUnit.equal(editor.queryCommandState('CustomCommand1'), false);
-    LegacyUnit.equal(lastScope === scope, true, 'Scope is not custom scope');
+    assert.equal(false, editor.queryCommandState('CustomCommand1'), 'addQueryStateHandler');
+    assert.equal(true, lastScope === scope, 'Scope is not custom scope');
 
     currentState = true;
-    LegacyUnit.equal(editor.queryCommandState('CustomCommand2'), true);
-    LegacyUnit.equal(lastScope === editor, true, 'Scope is not editor');
+    assert.equal(true, editor.queryCommandState('CustomCommand2'), 'addQueryStateHandler');
+    assert.equal(true, lastScope === editor, 'Scope is not editor');
   });
 
-  suite.test('Block script execution', function (editor) {
+  it('TBA: Block script execution', () => {
+    const editor = hook.editor();
     editor.setContent('<script></script><script type="x"></script><script type="mce-x"></script><p>x</p>');
-    LegacyUnit.equal(
+    assert.equal(
       HtmlUtils.cleanHtml(editor.getBody().innerHTML),
       '<script type="mce-no/type"></script>' +
       '<script type="mce-x"></script>' +
       '<script type="mce-x"></script>' +
-      '<p>x</p>'
+      '<p>x</p>',
+      'Block script execution'
     );
-    LegacyUnit.equal(
+    assert.equal(
       editor.getContent(),
       '<script></script>' +
       '<script type="x"></script>' +
       '<script type="x"></script>' +
-      '<p>x</p>'
+      '<p>x</p>',
+      'Block script execution'
     );
   });
 
-  suite.test('addQueryValueHandler', function (editor) {
+  it('TBA: addQueryValueHandler', () => {
+    const editor = hook.editor();
     const scope = {};
     let lastScope, currentValue;
 
-    const callback = function () {
+    const callback = function () { // Arrow function cannot be used with 'this'.
       // eslint-disable-next-line
       lastScope = this;
       return currentValue;
@@ -327,121 +358,152 @@ UnitTest.asynctest('browser.tinymce.core.EditorTest', function (success, failure
     editor.addQueryValueHandler('CustomCommand2', callback);
 
     currentValue = 'a';
-    LegacyUnit.equal(editor.queryCommandValue('CustomCommand1'), 'a');
-    LegacyUnit.equal(lastScope === scope, true, 'Scope is not custom scope');
+    assert.equal(editor.queryCommandValue('CustomCommand1'), 'a', 'addQueryValueHandler');
+    assert.strictEqual(lastScope, scope, 'Scope is not custom scope');
 
     currentValue = 'b';
-    LegacyUnit.equal(editor.queryCommandValue('CustomCommand2'), 'b');
-    LegacyUnit.equal(lastScope === editor, true, 'Scope is not editor');
+    assert.equal(editor.queryCommandValue('CustomCommand2'), 'b', 'addQueryValueHandler');
+    assert.strictEqual(lastScope, editor, 'Scope is not editor');
   });
 
-  suite.test('setDirty/isDirty', function (editor) {
+  it('TBA: setDirty/isDirty', () => {
+    const editor = hook.editor();
     let lastArgs = null;
 
-    editor.on('dirty', function (e) {
+    editor.on('dirty', (e) => {
       lastArgs = e;
     });
 
     editor.setDirty(false);
-    LegacyUnit.equal(lastArgs, null);
-    LegacyUnit.equal(editor.isDirty(), false);
+    assert.isNull(lastArgs, 'setDirty/isDirty');
+    assert.isFalse(editor.isDirty(), 'setDirty/isDirty');
 
     editor.setDirty(true);
-    LegacyUnit.equal(lastArgs.type, 'dirty');
-    LegacyUnit.equal(editor.isDirty(), true);
+    assert.equal(lastArgs.type, 'dirty', 'setDirty/isDirty');
+    assert.isTrue( editor.isDirty(), 'setDirty/isDirty');
 
     lastArgs = null;
     editor.setDirty(true);
-    LegacyUnit.equal(lastArgs, null);
-    LegacyUnit.equal(editor.isDirty(), true);
+    assert.isNull(lastArgs, 'setDirty/isDirty');
+    assert.isTrue(editor.isDirty(), 'setDirty/isDirty');
 
     editor.setDirty(false);
-    LegacyUnit.equal(lastArgs, null);
-    LegacyUnit.equal(editor.isDirty(), false);
+    assert.isNull(lastArgs, 'setDirty/isDirty');
+    assert.isFalse(editor.isDirty(), 'setDirty/isDirty');
   });
 
-  suite.test('setMode', function (editor) {
+  it('TBA: setMode', () => {
+    const editor = hook.editor();
     let clickCount = 0;
 
     const isDisabled = (selector) => {
-      const elm = UiFinder.findIn(Body.body(), selector);
-      return elm.forall((elm) => Attr.has(elm, 'disabled') || Class.has(elm, 'tox-tbtn--disabled'));
+      const elm = UiFinder.findIn(SugarBody.body(), selector);
+      return elm.forall((elm) => Attribute.has(elm, 'disabled') || Class.has(elm, 'tox-tbtn--disabled'));
     };
 
-    editor.on('click', function () {
+    editor.on('click', () => {
       clickCount++;
     });
 
     editor.dom.fire(editor.getBody(), 'click');
-    LegacyUnit.equal(clickCount, 1);
+    assert.equal(clickCount, 1, 'setMode');
 
     editor.setMode('readonly');
-    LegacyUnit.equal(isDisabled('.tox-editor-container button:last'), true);
+    assert.isTrue(isDisabled('.tox-editor-container button:last'), 'setMode');
     editor.dom.fire(editor.getBody(), 'click');
-    LegacyUnit.equal(clickCount, 1);
+    assert.equal(clickCount, 1, 'setMode');
 
     editor.setMode('design');
     editor.dom.fire(editor.getBody(), 'click');
-    LegacyUnit.equal(isDisabled('.tox-editor-container button:last'), false);
-    LegacyUnit.equal(clickCount, 2);
+    assert.isFalse(isDisabled('.tox-editor-container button:last'), 'setMode');
+    assert.equal(clickCount, 2, 'setMode');
   });
 
-  suite.test('translate', function (editor) {
+  it('TBA: translate', () => {
+    const editor = hook.editor();
     EditorManager.addI18n('en', {
       'input i18n': 'output i18n',
       'value:{0}{1}': 'value translation:{0}{1}'
     });
 
-    LegacyUnit.equal(editor.translate('input i18n'), 'output i18n');
-    LegacyUnit.equal(editor.translate([ 'value:{0}{1}', 'a', 'b' ]), 'value translation:ab');
+    assert.equal(editor.translate('input i18n'), 'output i18n', 'translate');
+    assert.equal(editor.translate([ 'value:{0}{1}', 'a', 'b' ]), 'value translation:ab', 'translate');
   });
 
-  suite.test('Treat some paragraphs as empty contents', function (editor) {
+  it('TBA: Treat some paragraphs as empty contents', () => {
+    const editor = hook.editor();
     editor.setContent('<p><br /></p>');
-    LegacyUnit.equal(editor.getContent(), '');
+    assert.equal(editor.getContent(), '', 'Treat some paragraphs as empty contents');
 
     editor.setContent('<p>\u00a0</p>');
-    LegacyUnit.equal(editor.getContent(), '');
+    assert.equal(editor.getContent(), '', 'Treat some paragraphs as empty contents');
   });
 
-  suite.test('kamer word boundaries', function (editor) {
+  it('TBA: kamer word boundaries', () => {
+    const editor = hook.editor();
     editor.setContent('<p>!\u200b!\u200b!</p>');
-    LegacyUnit.equal(editor.getContent(), '<p>!\u200b!\u200b!</p>');
+    assert.equal(editor.getContent(), '<p>!\u200b!\u200b!</p>', 'kamer word boundaries');
   });
 
-  suite.test('Preserve whitespace pre elements', function (editor) {
+  it('TBA: Preserve whitespace pre elements', () => {
+    const editor = hook.editor();
     editor.setContent('<pre> </pre>');
-    LegacyUnit.equal(editor.getContent(), '<pre> </pre>');
+    assert.equal(editor.getContent(), '<pre> </pre>', 'kamer word boundaries');
   });
 
-  suite.test('hasFocus', function (editor) {
+  it('TBA: hasFocus', () => {
+    const editor = hook.editor();
     editor.focus();
-    LegacyUnit.equal(editor.hasFocus(), true);
+    assert.isTrue(editor.hasFocus(), 'hasFocus');
 
     const input = document.createElement('input');
     document.body.appendChild(input);
 
     input.focus();
-    LegacyUnit.equal(editor.hasFocus(), false);
+    assert.isFalse(editor.hasFocus(), 'hasFocus');
 
     editor.focus();
-    LegacyUnit.equal(editor.hasFocus(), true);
+    assert.isTrue(editor.hasFocus(), 'hasFocus');
 
     input.parentNode.removeChild(input);
   });
 
-  TinyLoader.setup(function (editor, onSuccess, onFailure) {
-    Pipeline.async({}, suite.toSteps(editor), function () {
-      onSuccess();
-    }, onFailure);
-  }, {
-    selector: 'textarea',
-    add_unload_trigger: false,
-    disable_nodechange: true,
-    custom_elements: 'custom1,~custom2',
-    extended_valid_elements: 'custom1,custom2,script[*]',
-    entities: 'raw',
-    indent: false,
-    base_url: '/project/tinymce/js/tinymce'
-  }, success, failure);
+  context('hasPlugin', () => {
+    const checkWithoutManager = (title: string, plugins: string, plugin: string, expected: boolean) => {
+      const editor = hook.editor();
+      editor.settings.plugins = plugins;
+      assert.equal(editor.hasPlugin(plugin), expected, title);
+    };
+
+    const checkWithManager = (title: string, plugins: string, plugin: string, addToManager: boolean, expected: boolean) => {
+      const editor = hook.editor();
+      if (addToManager) {
+        PluginManager.add('ParticularPlugin', Fun.noop);
+      }
+
+      editor.settings.plugins = plugins;
+      assert.equal(editor.hasPlugin(plugin, true), expected, title);
+
+      if (addToManager) {
+        PluginManager.remove('ParticularPlugin');
+      }
+    };
+
+    it('TINY-766: Checking without requiring a plugin to be loaded', () => {
+      checkWithoutManager('Plugin does not exist', 'Plugin Is Not Here', 'ParticularPlugin', false);
+      checkWithoutManager('Plugin does exist with spaces', 'Has ParticularPlugin In List', 'ParticularPlugin', true);
+      checkWithoutManager('Plugin does exist with commas', 'Has,ParticularPlugin,In,List', 'ParticularPlugin', true);
+      checkWithoutManager('Plugin does exist with spaces and commas', 'Has, ParticularPlugin, In, List', 'ParticularPlugin', true);
+      checkWithoutManager('Plugin does not patch to OtherPlugin', 'Has OtherPlugin In List', 'Plugin', false);
+    });
+
+    it('TINY-766: Checking while requiring a plugin to be loaded', () => {
+      checkWithManager('Plugin does not exist', 'Plugin Is Not Here', 'ParticularPlugin', true, false);
+      checkWithManager('Plugin does exist with spaces', 'Has ParticularPlugin In List', 'ParticularPlugin', true, true);
+      checkWithManager('Plugin does exist with commas', 'Has,ParticularPlugin,In,List', 'ParticularPlugin', true, true);
+      checkWithManager('Plugin does exist with spaces and commas', 'Has, ParticularPlugin, In, List', 'ParticularPlugin', true, true);
+      checkWithManager('Plugin does not patch to OtherPlugin', 'Has OtherPlugin In List', 'Plugin', true, false);
+      checkWithManager('Plugin which has not loaded does not return true', 'Has ParticularPlugin In List', 'ParticularPlugin', false, false);
+    });
+  });
 });

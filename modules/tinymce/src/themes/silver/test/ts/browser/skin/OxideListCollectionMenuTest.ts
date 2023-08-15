@@ -1,174 +1,152 @@
-import { ApproxStructure, Assertions, Chain, FocusTools, Keyboard, Keys, Logger, Pipeline, UiFinder } from '@ephox/agar';
+import { ApproxStructure, Assertions, FocusTools, Keys } from '@ephox/agar';
 import { TestHelpers } from '@ephox/alloy';
-import { UnitTest } from '@ephox/bedrock-client';
-import { Menu } from '@ephox/bridge';
-import { document } from '@ephox/dom-globals';
-import { TinyLoader, TinyUi } from '@ephox/mcagar';
-import { Body, Element } from '@ephox/sugar';
+import { describe, it } from '@ephox/bedrock-client';
+import { SugarDocument } from '@ephox/sugar';
+import { TinyHooks, TinyUiActions } from '@ephox/wrap-mcagar';
 
 import Editor from 'tinymce/core/api/Editor';
 import Theme from 'tinymce/themes/silver/Theme';
 
-UnitTest.asynctest('OxideListCollectionMenuTest', (success, failure) => {
-  Theme();
-
+describe('browser.tinymce.themes.silver.skin.OxideListCollectionMenuTest', () => {
   const store = TestHelpers.TestStore();
+  const hook = TinyHooks.bddSetup<Editor>({
+    toolbar: 'list-button',
+    base_url: '/project/tinymce/js/tinymce',
+    setup: (ed: Editor) => {
+      ed.ui.registry.addMenuButton('list-button', {
+        type: 'menubutton',
+        fetch: (callback) => {
+          callback([
+            {
+              type: 'togglemenuitem',
+              text: 'Alpha',
+              active: true,
+              shortcut: 'Ctrl+A',
+              icon: 'fake-icon-name',
+              onAction: store.adder('togglemenuitem.onAction')
+            }, {
+              type: 'nestedmenuitem',
+              text: 'Beta',
+              icon: 'fake-icon-name',
+              getSubmenuItems: () => [
+                {
+                  type: 'menuitem',
+                  text: 'Beta-1'
+                }
+              ]
+            }, {
+              type: 'separator'
+            }, {
+              type: 'menuitem',
+              text: 'Gamma',
+              shortcut: 'Ctrl+C',
+              icon: 'fake-icon-name'
+            }
+          ]);
+        }
+      });
+    }
+  }, [ Theme ]);
 
-  TinyLoader.setup(
-    (editor, onSuccess, onFailure) => {
-      const tinyUi = TinyUi(editor);
-      const doc = Element.fromDom(document);
+  TestHelpers.GuiSetup.bddAddStyles(SugarDocument.getDocument(), [
+    ':focus { background-color: rgb(222, 224, 226); }'
+  ]);
 
-      Pipeline.async({ }, Logger.ts(
-        'Check structure of list collection',
-        [
-          TestHelpers.GuiSetup.mAddStyles(doc, [
-            ':focus { background-color: rgb(222, 224, 226); }'
-          ]),
-          tinyUi.sClickOnToolbar('Click on toolbar button', 'button'),
-          UiFinder.sWaitForVisible('Waiting for menu', Body.body(), '[role="menu"]'),
-          Chain.asStep(Body.body(), [
-            UiFinder.cFindIn('[role="menu"]'),
-            Assertions.cAssertStructure(
-              'Checking structure',
-              ApproxStructure.build((s, str, arr) => s.element('div', {
-                classes: [ arr.has('tox-menu'), arr.has('tox-collection'), arr.has('tox-collection--list') ],
+  it('Check structure of list collection', async () => {
+    const editor = hook.editor();
+    const doc = SugarDocument.getDocument();
+    TinyUiActions.clickOnToolbar(editor, 'button');
+    const menu = await TinyUiActions.pWaitForPopup(editor, '[role="menu"]');
+    Assertions.assertStructure(
+      'Checking structure',
+      ApproxStructure.build((s, str, arr) => s.element('div', {
+        classes: [ arr.has('tox-menu'), arr.has('tox-collection'), arr.has('tox-collection--list') ],
+        children: [
+          s.element('div', {
+            classes: [ arr.has('tox-collection__group') ],
+            children: [
+              s.element('div', {
+                classes: [ arr.has('tox-collection__item') ],
+                attrs: {
+                  title: str.is('Alpha')
+                },
                 children: [
                   s.element('div', {
-                    classes: [ arr.has('tox-collection__group') ],
+                    classes: [ arr.has('tox-collection__item-icon') ],
                     children: [
-                      s.element('div', {
-                        classes: [ arr.has('tox-collection__item') ],
-                        attrs: {
-                          title: str.is('Alpha')
-                        },
-                        children: [
-                          s.element('div', {
-                            classes: [ arr.has('tox-collection__item-icon') ],
-                            children: [
-                              s.element('svg', {})
-                            ]
-                          }),
-                          s.element('div', {
-                            classes: [ arr.has('tox-collection__item-label') ]
-                          }),
-                          s.element('div', {
-                            classes: [ arr.has('tox-collection__item-accessory') ]
-                          }),
-                          s.element('div', {
-                            classes: [ arr.has('tox-collection__item-checkmark') ],
-                            children: [
-                              s.element('svg', {})
-                            ]
-                          })
-                        ]
-                      }),
-                      s.element('div', {
-                        classes: [ arr.has('tox-collection__item') ],
-                        attrs: {
-                          title: str.is('Beta')
-                        },
-                        children: [
-                          s.element('div', {
-                            classes: [ arr.has('tox-collection__item-icon') ],
-                            children: [
-                              s.element('svg', {})
-                            ]
-                          }),
-                          s.element('div', {
-                            classes: [ arr.has('tox-collection__item-label') ]
-                          }),
-                          s.element('div', {
-                            classes: [ arr.has('tox-collection__item-caret') ]
-                          })
-                        ]
-                      })
+                      s.element('svg', {})
                     ]
                   }),
                   s.element('div', {
-                    classes: [ arr.has('tox-collection__group') ],
+                    classes: [ arr.has('tox-collection__item-label') ]
+                  }),
+                  s.element('div', {
+                    classes: [ arr.has('tox-collection__item-accessory') ]
+                  }),
+                  s.element('div', {
+                    classes: [ arr.has('tox-collection__item-checkmark') ],
                     children: [
-                      s.element('div', {
-                        classes: [ arr.has('tox-collection__item') ],
-                        attrs: {
-                          title: str.is('Gamma')
-                        },
-                        children: [
-                          s.element('div', {
-                            classes: [ arr.has('tox-collection__item-icon') ],
-                            children: [
-                              s.element('svg', {})
-                            ]
-                          }),
-                          s.element('div', {
-                            classes: [ arr.has('tox-collection__item-label') ]
-                          }),
-                          s.element('div', {
-                            classes: [ arr.has('tox-collection__item-accessory') ]
-                          })
-                        ]
-                      })
+                      s.element('svg', {})
                     ]
                   })
                 ]
-              }))
-            )
-          ]),
-          FocusTools.sTryOnSelector('Focus should be on Alpha', doc, '.tox-collection__item:contains(Alpha)'),
-          Keyboard.sKeydown(doc, Keys.down(), { }),
-          FocusTools.sTryOnSelector('Focus should be on Beta', doc, '.tox-collection__item:contains(Beta)'),
-          Keyboard.sKeydown(doc, Keys.down(), { }),
-          FocusTools.sTryOnSelector('Focus should be on Gamma', doc, '.tox-collection__item:contains(Gamma)'),
-          TestHelpers.GuiSetup.mRemoveStyles
-        ]
-      ), onSuccess, onFailure);
-    },
-    {
-      theme: 'silver',
-      menubar: true,
-      toolbar: 'list-button',
-      base_url: '/project/tinymce/js/tinymce',
-      setup: (ed: Editor) => {
-        ed.ui.registry.addMenuButton('list-button', {
-          type: 'menubutton',
-          fetch: (callback) => {
-            callback([
-              {
-                type: 'togglemenuitem',
-                text: 'Alpha',
-                active: true,
-                shortcut: 'Ctrl+A',
-                icon: 'fake-icon-name',
-                onAction: store.adder('togglemenuitem.onAction')
-              } as Menu.ToggleMenuItemApi,
-              {
-                type: 'nestedmenuitem',
-                text: 'Beta',
-                icon: 'fake-icon-name',
-                getSubmenuItems: () => [
-                  {
-                    type: 'menuitem',
-                    text: 'Beta-1'
-                  }
+              }),
+              s.element('div', {
+                classes: [ arr.has('tox-collection__item') ],
+                attrs: {
+                  title: str.is('Beta')
+                },
+                children: [
+                  s.element('div', {
+                    classes: [ arr.has('tox-collection__item-icon') ],
+                    children: [
+                      s.element('svg', {})
+                    ]
+                  }),
+                  s.element('div', {
+                    classes: [ arr.has('tox-collection__item-label') ]
+                  }),
+                  s.element('div', {
+                    classes: [ arr.has('tox-collection__item-caret') ]
+                  })
                 ]
-              } as Menu.NestedMenuItemApi,
-              {
-                type: 'separator'
-              },
-              {
-                type: 'menuitem',
-                text: 'Gamma',
-                shortcut: 'Ctrl+C',
-                icon: 'fake-icon-name'
-              } as Menu.MenuItemApi
-            ]);
-          }
-        });
-      }
-    },
-    () => {
-      success();
-    },
-    failure
-  );
+              })
+            ]
+          }),
+          s.element('div', {
+            classes: [ arr.has('tox-collection__group') ],
+            children: [
+              s.element('div', {
+                classes: [ arr.has('tox-collection__item') ],
+                attrs: {
+                  title: str.is('Gamma')
+                },
+                children: [
+                  s.element('div', {
+                    classes: [ arr.has('tox-collection__item-icon') ],
+                    children: [
+                      s.element('svg', {})
+                    ]
+                  }),
+                  s.element('div', {
+                    classes: [ arr.has('tox-collection__item-label') ]
+                  }),
+                  s.element('div', {
+                    classes: [ arr.has('tox-collection__item-accessory') ]
+                  })
+                ]
+              })
+            ]
+          })
+        ]
+      })),
+      menu
+    );
+
+    await FocusTools.pTryOnSelector('Focus should be on Alpha', doc, '.tox-collection__item:contains(Alpha)');
+    TinyUiActions.keydown(editor, Keys.down());
+    await FocusTools.pTryOnSelector('Focus should be on Beta', doc, '.tox-collection__item:contains(Beta)');
+    TinyUiActions.keydown(editor, Keys.down());
+    await FocusTools.pTryOnSelector('Focus should be on Gamma', doc, '.tox-collection__item:contains(Gamma)');
+  });
 });

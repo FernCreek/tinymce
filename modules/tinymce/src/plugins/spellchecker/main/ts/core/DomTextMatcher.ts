@@ -5,40 +5,45 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { HTMLElement, Range } from '@ephox/dom-globals';
+import Editor from 'tinymce/core/api/Editor';
 
-function isContentEditableFalse(node) {
-  return node && node.nodeType === 1 && node.contentEditable === 'false';
+const isContentEditableFalse = (node: Node | null): boolean =>
+  node && node.nodeType === 1 && (node as HTMLElement).contentEditable === 'false';
+
+export interface Match {
+  start: number;
+  end: number;
+  text: string;
+  data: Record<string, any>;
+  stencil?: Element;
 }
-
-export type Match = Record<string, string>;
 
 export interface DomTextMatcher {
-  text: string;
-  matches: string[];
-  each: (cb: Function) => DomTextMatcher;
-  filter: (cb: Function) => DomTextMatcher;
-  reset: () => DomTextMatcher;
-  matchFromElement: (element: HTMLElement) => Match;
-  elementFromMatch: (match: Match) => HTMLElement;
-  find: (regex: RegExp, data: Record<string, string>) => DomTextMatcher;
-  add: (start: number, length: number, data: Record<string, string>) => DomTextMatcher;
-  wrap: (cb: Function) => DomTextMatcher;
-  unwrap: (match?: Match) => DomTextMatcher;
-  replace: (match: Match, text: string) => Range;
-  rangeFromMatch: (match: Match) => Range;
-  indexOf: (match: Match) => number;
+  readonly text: string;
+  readonly matches: Match[];
+  readonly each: (cb: Function) => this;
+  readonly filter: (cb: Function) => this;
+  readonly reset: () => DomTextMatcher;
+  readonly matchFromElement: (element: Element) => Match;
+  readonly elementFromMatch: (match: Match) => Element;
+  readonly find: (regex: RegExp, data: Record<string, any>) => this;
+  readonly add: (start: number, length: number, data: Record<string, any>) => this;
+  readonly wrap: (cb: Function) => this;
+  readonly unwrap: (match?: Match) => this;
+  readonly replace: (match: Match, text: string) => Range;
+  readonly rangeFromMatch: (match: Match) => Range;
+  readonly indexOf: (match: Match) => number;
 }
 
-export const DomTextMatcher = function (node, editor): DomTextMatcher {
-  let m, matches = [];
+export const DomTextMatcher = (node: Element, editor: Editor): DomTextMatcher => {
+  let m, matches: Match[] = [];
   const dom = editor.dom;
 
   const blockElementsMap = editor.schema.getBlockElements(); // H1-H6, P, TD etc
   const hiddenTextElementsMap = editor.schema.getWhiteSpaceElements(); // TEXTAREA, PRE, STYLE, SCRIPT
   const shortEndedElementsMap = editor.schema.getShortEndedElements(); // BR, IMG, INPUT
 
-  function createMatch(m, data) {
+  const createMatch = (m: RegExpExecArray, data: Record<string, string>): Match => {
     if (!m[0]) {
       throw new Error('findAndReplaceDOMText cannot handle zero-length matches');
     }
@@ -49,13 +54,11 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
       text: m[0],
       data
     };
-  }
+  };
 
-  function getText(node) {
-    let txt;
-
+  const getText = (node: Node) => {
     if (node.nodeType === 3) {
-      return node.data;
+      return (node as Text).data;
     }
 
     if (hiddenTextElementsMap[node.nodeName] && !blockElementsMap[node.nodeName]) {
@@ -66,7 +69,7 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
       return '\n';
     }
 
-    txt = '';
+    let txt = '';
 
     if (blockElementsMap[node.nodeName] || shortEndedElementsMap[node.nodeName]) {
       txt += '\n';
@@ -79,15 +82,15 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
     }
 
     return txt;
-  }
+  };
 
-  function stepThroughMatches(node, matches, replaceFn) {
+  const stepThroughMatches = (node, matches, replaceFn) => {
     let startNode, endNode, startNodeIndex,
       endNodeIndex, innerNodes = [], atIndex = 0, curNode = node,
       matchLocation, matchIndex = 0;
 
     matches = matches.slice(0);
-    matches.sort(function (a, b) {
+    matches.sort((a, b) => {
       return a.start - b.start;
     });
 
@@ -165,31 +168,31 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
         }
       }
     }
-  }
+  };
 
   /**
   * Generates the actual replaceFn which splits up text nodes
   * and inserts the replacement element.
   */
-  function genReplacer(callback) {
-    function makeReplacementNode(fill, matchIndex) {
+  const genReplacer = (callback: (match: Match) => Element) => {
+    const makeReplacementNode = (fill: string, matchIndex: number) => {
       const match = matches[matchIndex];
 
       if (!match.stencil) {
         match.stencil = callback(match);
       }
 
-      const clone = match.stencil.cloneNode(false);
-      clone.setAttribute('data-mce-index', matchIndex);
+      const clone = match.stencil.cloneNode(false) as Element;
+      clone.setAttribute('data-mce-index', '' + matchIndex);
 
       if (fill) {
         clone.appendChild(dom.doc.createTextNode(fill));
       }
 
       return clone;
-    }
+    };
 
-    return function (range) {
+    return (range) => {
       let before;
       let after;
       let parentNode;
@@ -249,21 +252,21 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
 
       return elB;
     };
-  }
+  };
 
-  function unwrapElement(element) {
+  const unwrapElement = (element: Element): void => {
     const parentNode = element.parentNode;
     while (element.childNodes.length > 0) {
       parentNode.insertBefore(element.childNodes[0], element);
     }
     parentNode.removeChild(element);
-  }
+  };
 
-  function hasClass(elm) {
+  const hasClass = (elm: Element): boolean => {
     return elm.className.indexOf('mce-spellchecker-word') !== -1;
-  }
+  };
 
-  function getWrappersByIndex(index) {
+  const getWrappersByIndex = (index: number | string) => {
     const elements = node.getElementsByTagName('*'), wrappers = [];
 
     index = typeof index === 'number' ? '' + index : null;
@@ -279,7 +282,7 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
     }
 
     return wrappers;
-  }
+  };
 
   /**
   * Returns the index of a specific match object or -1 if it isn't found.
@@ -287,7 +290,7 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
   * @param  {Match} match Text match object.
   * @return {Number} Index of match or -1 if it isn't found.
   */
-  function indexOf(match) {
+  const indexOf = (match: Match) => {
     let i = matches.length;
     while (i--) {
       if (matches[i] === match) {
@@ -296,7 +299,7 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
     }
 
     return -1;
-  }
+  };
 
   /**
   * Filters the matches. If the callback returns true it stays if not it gets removed.
@@ -304,10 +307,10 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
   * @param {Function} callback Callback to execute for each match.
   * @return {DomTextMatcher} Current DomTextMatcher instance.
   */
-  function filter(callback) {
-    const filteredMatches = [];
+  function filter(callback: (match: Match, index: number) => boolean) {
+    const filteredMatches: Match[] = [];
 
-    each(function (match, i) {
+    each((match, i) => {
       if (callback(match, i)) {
         filteredMatches.push(match);
       }
@@ -325,7 +328,7 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
   * @param {Function} callback  Callback to execute for each match.
   * @return {DomTextMatcher} Current DomTextMatcher instance.
   */
-  function each(callback) {
+  function each(callback: (match: Match, index: number) => boolean | void) {
     for (let i = 0, l = matches.length; i < l; i++) {
       if (callback(matches[i], i) === false) {
         break;
@@ -343,7 +346,7 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
   * @param {Function} callback Callback to execute in order to create elements for matches.
   * @return {DomTextMatcher} Current DomTextMatcher instance.
   */
-  function wrap(callback) {
+  function wrap(callback: (match: Match) => Element) {
     if (matches.length) {
       stepThroughMatches(node, matches, genReplacer(callback));
     }
@@ -359,7 +362,7 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
   * @param {Object} [data] Optional custom data element for the match.
   * @return {DomTextMatcher} Current DomTextMatcher instance.
   */
-  function find(regex, data) {
+  function find(regex: RegExp, data: Record<string, any>) {
     if (text && regex.global) {
       while ((m = regex.exec(text))) {
         matches.push(createMatch(m, data));
@@ -375,7 +378,7 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
   * @param {Object} [match] Optional match object.
   * @return {DomTextMatcher} Current DomTextMatcher instance.
   */
-  function unwrap(match?) {
+  function unwrap(match?: Match) {
     let i;
     const elements = getWrappersByIndex(match ? indexOf(match) : null);
 
@@ -393,9 +396,9 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
   * @param {DOMElement} element Element to return match object for.
   * @return {Object} Match object for the specified element.
   */
-  function matchFromElement(element) {
+  const matchFromElement = (element: Element) => {
     return matches[element.getAttribute('data-mce-index')];
-  }
+  };
 
   /**
   * Returns a DOM element from the specified match element. This will be the first element if it's split
@@ -404,9 +407,9 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
   * @param {Object} match Match element to get first element of.
   * @return {DOMElement} DOM element for the specified match object.
   */
-  function elementFromMatch(match) {
+  const elementFromMatch = (match: Match) => {
     return getWrappersByIndex(indexOf(match))[0];
-  }
+  };
 
   /**
   * Adds match the specified range for example a grammar line.
@@ -416,7 +419,7 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
   * @param {Object} data Custom data object for match.
   * @return {DomTextMatcher} Current DomTextMatcher instance.
   */
-  function add(start, length, data) {
+  function add(start: number, length: number, data: Record<string, any>) {
     matches.push({
       start,
       end: start + length,
@@ -433,7 +436,7 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
   * @param  {Object} match Match object to get range for.
   * @return {DOMRange} DOM Range for the specified match.
   */
-  function rangeFromMatch(match) {
+  const rangeFromMatch = (match: Match) => {
     const wrappers = getWrappersByIndex(indexOf(match));
 
     const rng = editor.dom.createRng();
@@ -441,7 +444,7 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
     rng.setEndAfter(wrappers[wrappers.length - 1]);
 
     return rng;
-  }
+  };
 
   /**
   * Replaces the specified match with the specified text.
@@ -450,7 +453,7 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
   * @param {String} text Text to replace the match with.
   * @return {DOMRange} DOM range produced after the replace.
   */
-  function replace(match, text) {
+  const replace = (match: Match, text: string) => {
     const rng = rangeFromMatch(match);
 
     rng.deleteContents();
@@ -460,7 +463,7 @@ export const DomTextMatcher = function (node, editor): DomTextMatcher {
     }
 
     return rng;
-  }
+  };
 
   /**
   * Resets the DomTextMatcher instance. This will remove any wrapped nodes and remove any matches.

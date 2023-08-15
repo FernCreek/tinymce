@@ -5,22 +5,29 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Menu, Toolbar } from '@ephox/bridge';
 import { Cell } from '@ephox/katamari';
+
 import Editor from 'tinymce/core/api/Editor';
+import { Menu, Toolbar } from 'tinymce/core/api/ui/Ui';
 import Tools from 'tinymce/core/api/util/Tools';
+
 import * as Settings from '../api/Settings';
 import * as Actions from '../core/Actions';
 import { DomTextMatcher } from '../core/DomTextMatcher';
 
 type LastSuggestion = Actions.LastSuggestion;
 
+interface LanguageValue {
+  readonly name: string;
+  readonly value: string;
+}
+
 const spellcheckerEvents = 'SpellcheckStart SpellcheckEnd';
 
-const buildMenuItems = function (listName: string, languageValues) {
+const buildMenuItems = (listName: string, languageValues: LanguageValue[]) => {
   const items = [];
 
-  Tools.each(languageValues, function (languageValue) {
+  Tools.each(languageValues, (languageValue) => {
     items.push({
       selectable: true,
       text: languageValue.name,
@@ -31,24 +38,24 @@ const buildMenuItems = function (listName: string, languageValues) {
   return items;
 };
 
-const getItems = function (editor) {
-  return Tools.map(Settings.getLanguages(editor).split(','), function (langPair) {
-    langPair = langPair.split('=');
+const getItems = (editor: Editor): LanguageValue[] => {
+  return Tools.map(Settings.getLanguages(editor).split(','), (langPair) => {
+    const langPairs = langPair.split('=');
 
     return {
-      name: langPair[0],
-      value: langPair[1]
+      name: langPairs[0],
+      value: langPairs[1]
     };
   });
 };
 
-const register = function (editor: Editor, pluginUrl: string, startedState: Cell<boolean>, textMatcherState: Cell<DomTextMatcher>, currentLanguageState: Cell<string>, lastSuggestionsState: Cell<LastSuggestion>) {
+const register = (editor: Editor, pluginUrl: string, startedState: Cell<boolean>, textMatcherState: Cell<DomTextMatcher>, currentLanguageState: Cell<string>, lastSuggestionsState: Cell<LastSuggestion>): void => {
   const languageMenuItems = buildMenuItems('Language', getItems(editor));
-  const startSpellchecking = function () {
+  const startSpellchecking = () => {
     Actions.spellcheck(editor, pluginUrl, startedState, textMatcherState, lastSuggestionsState, currentLanguageState);
   };
 
-  const buttonArgs: Toolbar.ToolbarToggleButtonApi = {
+  const buttonArgs: Toolbar.ToolbarToggleButtonSpec = {
     tooltip: 'Spellcheck',
     onAction: startSpellchecking,
     icon: 'spell-check',
@@ -63,12 +70,12 @@ const register = function (editor: Editor, pluginUrl: string, startedState: Cell
     }
   };
 
-  const splitButtonArgs: Toolbar.ToolbarSplitButtonApi = {
+  const splitButtonArgs: Toolbar.ToolbarSplitButtonSpec = {
     ...buttonArgs,
-    type : 'splitbutton',
-    select : (value) => value === currentLanguageState.get(),
-    fetch : (callback) => {
-      const items = Tools.map(languageMenuItems, (languageItem): Menu.ChoiceMenuItemApi => ({
+    type: 'splitbutton',
+    select: (value) => value === currentLanguageState.get(),
+    fetch: (callback) => {
+      const items = Tools.map(languageMenuItems, (languageItem): Menu.ChoiceMenuItemSpec => ({
         type: 'choiceitem',
         value: languageItem.data,
         text: languageItem.text

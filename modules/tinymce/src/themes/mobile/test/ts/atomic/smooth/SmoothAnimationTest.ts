@@ -1,14 +1,15 @@
-import * as SmoothAnimation from 'tinymce/themes/mobile/ios/smooth/SmoothAnimation';
 import { UnitTest } from '@ephox/bedrock-client';
 import { KAssert } from '@ephox/katamari-assertions';
 
-UnitTest.test('Smooth Animation AdjustTest', function () {
-  const checkNone = function (label, value, destination, amount) {
+import * as SmoothAnimation from 'tinymce/themes/mobile/ios/smooth/SmoothAnimation';
+
+UnitTest.test('Smooth Animation AdjustTest', () => {
+  const checkNone = (label, value, destination, amount) => {
     const actual = SmoothAnimation.adjust(value, destination, amount);
     KAssert.eqNone(label, actual);
   };
 
-  const check = function (label, expected, value, destination, amount) {
+  const check = (label, expected, value, destination, amount) => {
     const actual = SmoothAnimation.adjust(value, destination, amount);
     KAssert.eqSome(label, expected, actual);
   };

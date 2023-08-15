@@ -5,10 +5,14 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { Cell } from '@ephox/katamari';
+
+import Editor from 'tinymce/core/api/Editor';
+
 import * as Dialog from '../ui/Dialog';
 
-const register = function (editor, headState) {
-  editor.addCommand('mceFullPageProperties', function () {
+const register = (editor: Editor, headState: Cell<string>): void => {
+  editor.addCommand('mceFullPageProperties', () => {
     Dialog.open(editor, headState);
   });
 };

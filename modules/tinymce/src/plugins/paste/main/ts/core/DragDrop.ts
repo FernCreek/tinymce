@@ -5,34 +5,35 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { MouseEvent, Range } from '@ephox/dom-globals';
+import { Cell } from '@ephox/katamari';
+
 import RangeUtils from 'tinymce/core/api/dom/RangeUtils';
 import Editor from 'tinymce/core/api/Editor';
 import Delay from 'tinymce/core/api/util/Delay';
+
 import { Clipboard } from '../api/Clipboard';
 import * as Settings from '../api/Settings';
 import { ClipboardContents } from './Clipboard';
 import * as InternalHtml from './InternalHtml';
 import * as Utils from './Utils';
 
-const getCaretRangeFromEvent = function (editor: Editor, e: MouseEvent) {
-  return RangeUtils.getCaretRangeFromPoint(e.clientX, e.clientY, editor.getDoc());
-};
+const getCaretRangeFromEvent = (editor: Editor, e: MouseEvent): Range =>
+  RangeUtils.getCaretRangeFromPoint(e.clientX, e.clientY, editor.getDoc());
 
-const isPlainTextFileUrl = function (content: ClipboardContents) {
+const isPlainTextFileUrl = (content: ClipboardContents): boolean => {
   const plainTextContent = content['text/plain'];
   return plainTextContent ? plainTextContent.indexOf('file://') === 0 : false;
 };
 
-const setFocusedRange = function (editor: Editor, rng: Range) {
+const setFocusedRange = (editor: Editor, rng: Range): void => {
   editor.focus();
   editor.selection.setRng(rng);
 };
 
-const setup = function (editor: Editor, clipboard: Clipboard, draggingInternallyState) {
+const setup = (editor: Editor, clipboard: Clipboard, draggingInternallyState: Cell<boolean>): void => {
   // Block all drag/drop events
   if (Settings.shouldBlockDrop(editor)) {
-    editor.on('dragend dragover draggesture dragdrop drop drag', function (e) {
+    editor.on('dragend dragover draggesture dragdrop drop drag', (e) => {
       e.preventDefault();
       e.stopPropagation();
     });
@@ -40,7 +41,7 @@ const setup = function (editor: Editor, clipboard: Clipboard, draggingInternally
 
   // Prevent users from dropping data images on Gecko
   if (!Settings.shouldPasteDataImages(editor)) {
-    editor.on('drop', function (e) {
+    editor.on('drop', (e) => {
       const dataTransfer = e.dataTransfer;
 
       if (dataTransfer && dataTransfer.files && dataTransfer.files.length > 0) {
@@ -49,7 +50,7 @@ const setup = function (editor: Editor, clipboard: Clipboard, draggingInternally
     });
   }
 
-  editor.on('drop', function (e) {
+  editor.on('drop', (e) => {
     const rng = getCaretRangeFromEvent(editor, e);
 
     if (e.isDefaultPrevented() || draggingInternallyState.get()) {
@@ -73,8 +74,8 @@ const setup = function (editor: Editor, clipboard: Clipboard, draggingInternally
         e.preventDefault();
 
         // FF 45 doesn't paint a caret when dragging in text in due to focus call by execCommand
-        Delay.setEditorTimeout(editor, function () {
-          editor.undoManager.transact(function () {
+        Delay.setEditorTimeout(editor, () => {
+          editor.undoManager.transact(() => {
             if (dropContent['mce-internal']) {
               editor.execCommand('Delete');
             }
@@ -94,13 +95,13 @@ const setup = function (editor: Editor, clipboard: Clipboard, draggingInternally
     }
   });
 
-  editor.on('dragstart', function (_e) {
+  editor.on('dragstart', (_e) => {
     if (!editor.plugins.qtinterface) { // Causes a graphical artifact in QtWebkit
       draggingInternallyState.set(true);
     }
   });
 
-  editor.on('dragover dragend', function (e) {
+  editor.on('dragover dragend', (e) => {
     if (Settings.shouldPasteDataImages(editor) && draggingInternallyState.get() === false) {
       e.preventDefault();
       setFocusedRange(editor, getCaretRangeFromEvent(editor, e));

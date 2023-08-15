@@ -1,46 +1,49 @@
-import { Option } from '@ephox/katamari';
-import { Awareness, Compare, Element, SelectorFind } from '@ephox/sugar';
-import { Response } from '../selection/Response';
-import * as CellSelection from '../selection/CellSelection';
-import * as Util from '../selection/Util';
+import { Optional } from '@ephox/katamari';
+import { Awareness, Compare, SelectorFind, SugarElement } from '@ephox/sugar';
+
 import { SelectionAnnotation } from '../api/SelectionAnnotation';
+import * as CellSelection from '../selection/CellSelection';
 import { IdentifiedExt } from '../selection/Identified';
+import { Response } from '../selection/Response';
+import * as Util from '../selection/Util';
 
 // Based on a start and finish, select the appropriate box of cells
-const sync = function (container: Element, isRoot: (element: Element) => boolean, start: Element, soffset: number, finish: Element, foffset: number, selectRange: (container: Element, boxes: Element[], start: Element, finish: Element) => void) {
+const sync = (container: SugarElement, isRoot: (element: SugarElement) => boolean, start: SugarElement, soffset: number, finish: SugarElement,
+              foffset: number, selectRange: (container: SugarElement, boxes: SugarElement[], start: SugarElement, finish: SugarElement) => void): Optional<Response> => {
   if (!(Compare.eq(start, finish) && soffset === foffset)) {
-    return SelectorFind.closest(start, 'td,th', isRoot).bind(function (s) {
-      return SelectorFind.closest(finish, 'td,th', isRoot).bind(function (f) {
+    return SelectorFind.closest(start, 'td,th', isRoot).bind((s) => {
+      return SelectorFind.closest(finish, 'td,th', isRoot).bind((f) => {
         return detect(container, isRoot, s, f, selectRange);
       });
     });
   } else {
-    return Option.none<Response>();
+    return Optional.none<Response>();
   }
 };
 
 // If the cells are different, and there is a rectangle to connect them, select the cells.
-const detect = function (container: Element, isRoot: (element: Element) => boolean, start: Element, finish: Element, selectRange: (container: Element, boxes: Element[], start: Element, finish: Element) => void) {
+const detect = (container: SugarElement, isRoot: (element: SugarElement) => boolean, start: SugarElement, finish: SugarElement,
+                selectRange: (container: SugarElement, boxes: SugarElement[], start: SugarElement, finish: SugarElement) => void): Optional<Response> => {
   if (!Compare.eq(start, finish)) {
-    return CellSelection.identify(start, finish, isRoot).bind(function (cellSel) {
+    return CellSelection.identify(start, finish, isRoot).bind((cellSel) => {
       const boxes = cellSel.boxes.getOr([]);
-      if (boxes.length > 0) {
+      if (boxes.length > 1) {
         selectRange(container, boxes, cellSel.start, cellSel.finish);
-        return Option.some(Response.create(
-          Option.some(Util.makeSitus(start, 0, start, Awareness.getEnd(start))),
+        return Optional.some(Response.create(
+          Optional.some(Util.makeSitus(start, 0, start, Awareness.getEnd(start))),
           true
         ));
       } else {
-        return Option.none<Response>();
+        return Optional.none<Response>();
       }
     });
   } else {
-    return Option.none<Response>();
+    return Optional.none<Response>();
   }
 };
 
-const update = function (rows: number, columns: number, container: Element, selected: Element[], annotations: SelectionAnnotation) {
-  const updateSelection = function (newSels: IdentifiedExt) {
+const update = (rows: number, columns: number, container: SugarElement, selected: SugarElement[], annotations: SelectionAnnotation): Optional<SugarElement[]> => {
+  const updateSelection = (newSels: IdentifiedExt) => {
     annotations.clearBeforeUpdate(container);
     annotations.selectRange(container, newSels.boxes, newSels.start, newSels.finish);
     return newSels.boxes;

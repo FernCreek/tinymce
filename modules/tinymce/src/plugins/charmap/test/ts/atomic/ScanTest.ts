@@ -1,9 +1,10 @@
-import { Assertions } from '@ephox/agar';
-import { UnitTest } from '@ephox/bedrock-client';
-import * as Scan from 'tinymce/plugins/charmap/core/Scan';
-import { CharMap } from 'tinymce/plugins/charmap/core/CharMap';
+import { describe, it } from '@ephox/bedrock-client';
+import { assert } from 'chai';
 
-UnitTest.test('atomic.tinymce.plugins.charmap.ScanTest', () => {
+import { CharMap } from 'tinymce/plugins/charmap/core/CharMap';
+import * as Scan from 'tinymce/plugins/charmap/core/Scan';
+
+describe('atomic.tinymce.plugins.charmap.ScanTest', () => {
   const charMap: CharMap = {
     name: 'All',
     characters: [
@@ -16,20 +17,17 @@ UnitTest.test('atomic.tinymce.plugins.charmap.ScanTest', () => {
     ]
   };
 
-  const testCharCode = () => {
-    Assertions.assertEq('$ should match the dollar sign', [{ value: '$', icon: '$', text: 'dollar sign' }], Scan.scan(charMap, '$'));
-    Assertions.assertEq('À should match the "A - grave" and "a - grave"', [{ value: 'À', icon: 'À', text: 'A - grave' }, { value: 'à', icon: 'à', text: 'a - grave' }], Scan.scan(charMap, 'À'));
-    Assertions.assertEq('𝅘𝅥𝅮 should match "Musical Symbol Eighth Note"', [{ value: '𝅘𝅥𝅮', icon: '𝅘𝅥𝅮', text: 'Musical Symbol Eighth Note' }], Scan.scan(charMap, '𝅘𝅥𝅮'));
-  };
+  it('scan by charcode', () => {
+    assert.deepEqual(Scan.scan(charMap, '$'), [{ value: '$', icon: '$', text: 'dollar sign' }], '$ should match the dollar sign');
+    assert.deepEqual(Scan.scan(charMap, 'À'), [{ value: 'À', icon: 'À', text: 'A - grave' }, { value: 'à', icon: 'à', text: 'a - grave' }], 'À should match the "A - grave" and "a - grave"');
+    assert.deepEqual(Scan.scan(charMap, '𝅘𝅥𝅮'), [{ value: '𝅘𝅥𝅮', icon: '𝅘𝅥𝅮', text: 'Musical Symbol Eighth Note' }], '𝅘𝅥𝅮 should match "Musical Symbol Eighth Note"');
+  });
 
-  const testNames = () => {
-    Assertions.assertEq('"dolla" should match the dollar sign', [{ value: '$', icon: '$', text: 'dollar sign' }], Scan.scan(charMap, 'dolla'));
-    Assertions.assertEq('"function" should match the function / florin sign', [{ value: 'ƒ', icon: 'ƒ', text: 'function / florin' }], Scan.scan(charMap, 'function'));
-    Assertions.assertEq('"A-" without spaces should match "A - grave" and "a - grave"', [{ value: 'À', icon: 'À', text: 'A - grave' }, { value: 'à', icon: 'à', text: 'a - grave' }], Scan.scan(charMap, 'A-'));
-    Assertions.assertEq('"A - " with spaces should match "A - grave" and "a - grave"', [{ value: 'À', icon: 'À', text: 'A - grave' }, { value: 'à', icon: 'à', text: 'a - grave' }], Scan.scan(charMap, 'A - '));
-    Assertions.assertEq('"grave" should match "A - grave" and "a - grave"', [{ value: 'À', icon: 'À', text: 'A - grave' }, { value: 'à', icon: 'à', text: 'a - grave' }], Scan.scan(charMap, 'grave'));
-  };
-
-  testCharCode();
-  testNames();
+  it('scan by name', () => {
+    assert.deepEqual(Scan.scan(charMap, 'dolla'), [{ value: '$', icon: '$', text: 'dollar sign' }], '"dolla" should match the dollar sign');
+    assert.deepEqual(Scan.scan(charMap, 'function'), [{ value: 'ƒ', icon: 'ƒ', text: 'function / florin' }], '"function" should match the function / florin sign');
+    assert.deepEqual(Scan.scan(charMap, 'A-'), [{ value: 'À', icon: 'À', text: 'A - grave' }, { value: 'à', icon: 'à', text: 'a - grave' }], '"A-" without spaces should match "A - grave" and "a - grave"');
+    assert.deepEqual(Scan.scan(charMap, 'A - '), [{ value: 'À', icon: 'À', text: 'A - grave' }, { value: 'à', icon: 'à', text: 'a - grave' }], '"A - " with spaces should match "A - grave" and "a - grave"');
+    assert.deepEqual(Scan.scan(charMap, 'grave'), [{ value: 'À', icon: 'À', text: 'A - grave' }, { value: 'à', icon: 'à', text: 'a - grave' }], '"grave" should match "A - grave" and "a - grave"');
+  });
 });
