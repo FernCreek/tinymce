@@ -13,9 +13,11 @@ import { Arr, Fun, Id, Merger, Obj, Optional, Optionals, Singleton, Throttler, T
 import { PlatformDetection } from '@ephox/sand';
 import { Class, Compare, Css, Focus, SugarElement } from '@ephox/sugar';
 
+import DOMUtils from 'tinymce/core/api/dom/DOMUtils';
 import Editor from 'tinymce/core/api/Editor';
 import Delay from 'tinymce/core/api/util/Delay';
 
+import { fireScrollContent } from '../../api/Events';
 import { getToolbarMode, ToolbarMode } from '../../api/Settings';
 import { UiFactoryBackstage, UiFactoryBackstageProviders } from '../../backstage/Backstage';
 import { renderToolbar } from '../toolbar/CommonToolbar';
@@ -39,6 +41,7 @@ interface Extras {
   readonly backstage: UiFactoryBackstage;
 }
 
+const DOM = DOMUtils.DOM;
 const enum TriggerCause {
   Reposition,
   NewAnchor
@@ -96,10 +99,13 @@ const register = (editor: Editor, registryContextToolbars: Record<string, Contex
     }
   };
 
+  const scroll = (e) => fireScrollContent(editor, e);
+
   const close = () => {
     lastElement.clear();
     lastTrigger.clear();
     lastContextPosition.clear();
+    editor.selection.getScrollContainers().forEach((container) => DOM.unbind(container, 'scroll', scroll));
     InlineView.hide(contextbar);
   };
 
@@ -108,6 +114,7 @@ const register = (editor: Editor, registryContextToolbars: Record<string, Contex
       const contextBarEle = contextbar.element;
       Css.remove(contextBarEle, 'display');
       if (shouldContextToolbarHide()) {
+        editor.selection.getScrollContainers().forEach((container) => DOM.unbind(container, 'scroll', scroll));
         Css.set(contextBarEle, 'display', 'none');
       } else {
         lastTrigger.set(TriggerCause.Reposition);
@@ -219,6 +226,7 @@ const register = (editor: Editor, registryContextToolbars: Record<string, Contex
         mode: 'placement'
       }
     }, () => Optional.some(getBounds()));
+    editor.selection.getScrollContainers().forEach((container) => DOM.bind(container, 'scroll', close));
 
     // IMPORTANT: This must be stored after the initial render, otherwise the lookup of the last element in the
     // anchor placement will be incorrect as it'll reuse the new element as the anchor point.
@@ -226,6 +234,7 @@ const register = (editor: Editor, registryContextToolbars: Record<string, Contex
 
     // It's possible we may have launched offscreen, if so then hide
     if (shouldContextToolbarHide()) {
+      editor.selection.getScrollContainers().forEach((container) => DOM.unbind(container, 'scroll', close));
       Css.set(contextBarEle, 'display', 'none');
     }
   };
@@ -252,6 +261,7 @@ const register = (editor: Editor, registryContextToolbars: Record<string, Contex
 
   editor.on('init', () => {
     editor.on('remove', close);
+    editor.addCommand('scHideContextToolbars', close);
     editor.on('ScrollContent ScrollWindow ObjectResized ResizeEditor longpress', hideOrRepositionIfNecessary);
 
     // FIX: Make it go away when the action makes it go away. E.g. deleting a column deletes the table.
