@@ -5,17 +5,17 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { trimHtml } from '../core/Utils';
 import { Clipboard } from './Clipboard';
-import * as Utils from '../core/Utils';
 
 export interface Api {
   readonly clipboard: Clipboard;
+  trimHtml: typeof trimHtml;
 }
 
-const get = (clipboard: Clipboard, quirks): Api => ({
+const get = (clipboard: Clipboard): Api => ({
   clipboard,
-  quirks,
-  trimHtml: Utils.trimHtml
+  trimHtml
 });
 
 export {

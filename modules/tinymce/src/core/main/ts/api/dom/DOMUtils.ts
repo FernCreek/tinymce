@@ -1506,13 +1506,15 @@ const DOMUtils = (doc: Document, settings: Partial<DOMUtilsSettings> = {}): DOMU
 
     /**
      * Forces an update of the cached styles on the passed elements.
+     *
+     * @method updateCachedStylesOnElements
      * @param {HTMLElement[]} elements - The elements to update cached styles on.
      */
-    updateCachedStylesOnElements (elements) {
+    updateCachedStylesOnElements(elements) {
       if (elements && elements.length) {
         elements.forEach((element) => {
           if (element) {
-            const walker = new TreeWalker(element, element);
+            const walker = new DomTreeWalker(element, element);
             while (walker.current()) {
               updateInternalStyleAttr(styles, this.$$(walker.current()));
               walker.next();

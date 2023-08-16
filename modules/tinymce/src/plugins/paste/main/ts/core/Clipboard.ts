@@ -5,11 +5,10 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
-import { Arr, Cell, Singleton, Strings, Type } from '@ephox/katamari';
+import { Cell, Singleton } from '@ephox/katamari';
 
 import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
-import { BlobInfo } from 'tinymce/core/api/file/BlobCache';
 import { ParserArgs } from 'tinymce/core/api/html/DomParser';
 import AstNode from 'tinymce/core/api/html/Node';
 import Delay from 'tinymce/core/api/util/Delay';
@@ -27,16 +26,6 @@ import * as Whitespace from './Whitespace';
 
 declare let window: any;
 
-interface FileResult {
-  readonly blob: File;
-  readonly uri: string;
-}
-
-interface DataUriResult {
-  readonly type: string | null;
-  readonly data: string | null;
-}
-
 export interface ClipboardContents {
   [key: string]: string;
 }
@@ -45,7 +34,7 @@ const doPaste = (editor: Editor, content: string, internal: boolean): void => {
   const args = ProcessFilters.process(editor, content, internal);
 
   if (args.cancelled === false) {
-    editor.insertContent(args.content, {merge: editor.settings.paste_merge_formats !== false, data: {paste: true}});
+    editor.insertContent(args.content, { merge: editor.settings.paste_merge_formats !== false, data: { paste: true }});
   }
 };
 
@@ -151,7 +140,7 @@ const isClipboardEvent = (event: Event): event is ClipboardEvent => event.type =
 const pasteImageData = (editor: Editor, e: ClipboardEvent | DragEvent, rng: Range): boolean => {
   const dataTransfer = isClipboardEvent(e) ? e.clipboardData : e.dataTransfer;
 
-  function processItems(items) {
+  const processItems = (items) => {
     let i, item, reader, hadImage = false;
 
     if (items) {
@@ -172,7 +161,7 @@ const pasteImageData = (editor: Editor, e: ClipboardEvent | DragEvent, rng: Rang
     }
 
     return hadImage;
-  }
+  };
 
   if (Settings.getPasteDataImages(editor) && dataTransfer) {
     return processItems(dataTransfer.items) || processItems(dataTransfer.files);

@@ -14,7 +14,7 @@ import { createTextBlock } from './TextBlock';
 
 const DOM = DOMUtils.DOM;
 
-const splitList = (editor: Editor, list: Node, li: Node, newBlock?): void => {
+const splitList = (editor: Editor, list: Node, li: Node, forceNewBlock?): void => {
   const removeAndKeepBookmarks = (targetNode: Node) => {
     Tools.each(bookmarks, (node) => {
       targetNode.parentNode.insertBefore(node, li.parentNode);
@@ -24,7 +24,7 @@ const splitList = (editor: Editor, list: Node, li: Node, newBlock?): void => {
   };
 
   const bookmarks = DOM.select('span[data-mce-type="bookmark"]', list);
-  const newBlock = newBlock || createTextBlock(editor, li);
+  const newBlock = forceNewBlock || createTextBlock(editor, li);
   const tmpRng = DOM.createRng();
   tmpRng.setStartAfter(li);
   tmpRng.setEndAfter(list);
@@ -42,7 +42,7 @@ const splitList = (editor: Editor, list: Node, li: Node, newBlock?): void => {
   }
 
   if (newBlock.childNodes) {
-    Tools.each(newBlock.childNodes, function (node) {
+    Tools.each(newBlock.childNodes, (node: ChildNode) => {
       if (NodeType.isListNode(node)) {
         node.setAttribute('data-mce-new-list', '');
       }

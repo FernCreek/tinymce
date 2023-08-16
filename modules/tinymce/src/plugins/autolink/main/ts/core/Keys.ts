@@ -10,7 +10,7 @@ import Env from 'tinymce/core/api/Env';
 
 import * as Settings from '../api/Settings';
 
-const rangeEqualsDelimiterOrSpace = function (rangeString, delimiter) {
+const rangeEqualsDelimiterOrSpace = (rangeString, delimiter) => {
   return rangeString === delimiter || rangeString === ' ' || rangeString.charCodeAt(0) === 160;
 };
 
@@ -20,14 +20,11 @@ const isTextNode = (node: Node): node is Text =>
 const isElement = (node: Node): node is Element =>
   node.nodeType === 1;
 
-const handleBracket = (editor: Editor): void =>
-  parseCurrentLine(editor, -1);
-
 const handleSpacebar = (editor: Editor): void =>
-  parseCurrentLine(editor, 0);
+  parseCurrentLine(editor, 0, '');
 
 const handleEnter = (editor: Editor): void =>
-  parseCurrentLine(editor, -1);
+  parseCurrentLine(editor, -1, '');
 
 const scopeIndex = (container: Node, index: number): number => {
   if (index < 0) {
@@ -61,12 +58,12 @@ const setEnd = (rng: Range, container: Node, offset: number): void => {
   }
 };
 
-const addProtocolIfNeeded = function (link) {
+const addProtocolIfNeeded = (link) => {
   // If there isn't a protocol and the url isn't a field code, assume http
   return !Settings.hasProtocolPattern().test(link) && (link.indexOf('%') !== 0) ? 'http://' + link : link;
 };
 
-const parseCurrentLine = function (editor, endOffset, delimiter) {
+const parseCurrentLine = (editor, endOffset, delimiter) => {
   let end, endContainer, bookmark, text, prev, len, rngText;
   const defaultLinkTarget = Settings.getDefaultLinkTarget(editor);
 
