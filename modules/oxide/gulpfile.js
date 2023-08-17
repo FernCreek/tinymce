@@ -92,7 +92,7 @@ gulp.task('minifyCss', function() {
     .pipe(cleanCSS({ rebase: false }))
     .pipe(header(fs.readFileSync('src/text/license-header.css', 'utf8')))
     .pipe(rename({ extname: '.min.css' }))
-    .pipe(sourcemaps.write('.'))
+    .pipe(sourcemaps.write('.', {addComment: false}))
     .pipe(gulp.dest('./build/skins'))
     .pipe(connect.reload());
 });
