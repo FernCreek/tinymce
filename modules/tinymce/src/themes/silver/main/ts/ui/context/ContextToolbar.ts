@@ -257,7 +257,7 @@ const register = (editor: Editor, registryContextToolbars: Record<string, Contex
         }
       );
     }
-  }, 17); // 17ms is used as that's about about 1 frame at 60fps
+  }, 0); // Revert back to 0 to prevent the context toolbar from being shown over our angular dialogs opened over SproutCore WYSIWYG
 
   editor.on('init', () => {
     editor.on('remove', close);
