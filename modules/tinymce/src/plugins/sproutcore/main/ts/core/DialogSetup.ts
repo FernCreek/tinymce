@@ -69,7 +69,6 @@ const setupLinkPropertiesDialog = (editor) => {
  * Sets up the image properties dialog
  * @param {tinymce.Editor} editor - the editor
  * @param owner - the sc view that owns the editor
- * @returns the view class for the dialog
  */
 const setupImagePropertiesDialog = (editor, owner) => {
   const selectedNode = editor.selection.getNode(), controller = TinySC.insertImageController;
@@ -103,8 +102,6 @@ const setupImagePropertiesDialog = (editor, owner) => {
     const delSettings = ['entityType', 'entityID', 'subtypeID', 'reportedBy', 'fieldID'];
     delSettings.forEach((setting) => delegate.set(setting, owner.get(setting)));
   }
-
-  return TinySC.InsertImagePane;
 };
 
 /**
