@@ -84,7 +84,7 @@ const determineInsetLayout = (editor: Editor, contextbar: SugarElement<HTMLEleme
     // Note: In fixed positioning mode we need to translate by adding the scroll pos to get the absolute position
     const yBounds = data.getMode() === 'fixed' ? bounds.y + Scroll.get().top : bounds.y;
     const contextbarHeight = Height.get(contextbar) + bubbleSize;
-    return yBounds + contextbarHeight <= selectionBounds.y ? LayoutInset.north : LayoutInset.south;
+    return yBounds + contextbarHeight <= selectionBounds.y ? LayoutInset.south : LayoutInset.north;
   }
 };
 
@@ -110,8 +110,8 @@ const getAnchorSpec = (editor: Editor, mobile: boolean, data: PositionData, posi
 
   // On desktop we prioritise north-then-south because it's cleaner, but on mobile we prioritise south to try to avoid overlapping with native context toolbars
   const desktopAnchorSpecLayouts = {
-    onLtr: (elem) => [ Layout.north, Layout.south, Layout.northeast, Layout.southeast, Layout.northwest, Layout.southwest ].concat(getInsetLayouts(elem)),
-    onRtl: (elem) => [ Layout.north, Layout.south, Layout.northwest, Layout.southwest, Layout.northeast, Layout.southeast ].concat(getInsetLayouts(elem))
+    onLtr: (elem) => [ Layout.south, Layout.north, Layout.southeast, Layout.northeast, Layout.southwest, Layout.northwest ].concat(getInsetLayouts(elem)),
+    onRtl: (elem) => [ Layout.south, Layout.north, Layout.southwest, Layout.northwest, Layout.southeast, Layout.northeast ].concat(getInsetLayouts(elem))
   };
 
   const mobileAnchorSpecLayouts = {
