@@ -121,7 +121,7 @@ const getContextToolbarBounds = (
 
   // Create bounds that lets the context toolbar overflow outside the content area, but remains in the viewport
   if (editor.inline || !toolbarOrMenubarEnabled) {
-    return Boxes.bounds(x, viewportBounds.y, width, viewportBounds.height);
+    return Boxes.bounds(x, viewportBounds.y, viewportBounds.width, viewportBounds.height);
   } else {
     const isToolbarTop = sharedBackstage.header.isPositionedAtTop();
     const { y, bottom } = getVerticalBounds(editor, contentAreaBox, viewportBounds, isToolbarTop, toolbarType, margin);
