@@ -6,6 +6,9 @@
  */
 import { getJQueryBody, SPTinyMCEInterface, findClosestAnchorNode, findChildAnchorNode } from 'shims/sptinymceinterface';
 
+// The margin on the body element of the iframe. Should match WysiwygUtils::kBodyMargin
+const BodyMargin = '8px';
+
 // Utility function to apply css to the editor body
 const applyCSS = (cssPairs) => {
   const $editorBody = getJQueryBody();
@@ -58,7 +61,7 @@ const loadPalette = (windowEdit, windowReadOnly, textEdit, textReadOnly) => {
   textEditColor = textEdit;
   windowReadOnlyColor = windowReadOnly;
   applyPalette();
-  applyCSS([[ 'margin', '3px' ]]);
+  applyCSS([[ 'margin', BodyMargin ]]);
 };
 
 // Editor configuration change handlers
