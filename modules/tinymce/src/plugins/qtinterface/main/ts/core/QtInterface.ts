@@ -4,35 +4,31 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-import {getJQueryBody, SPTinyMCEInterface, findClosestAnchorNode, findChildAnchorNode} from 'shims/sptinymceinterface';
+import { getJQueryBody, SPTinyMCEInterface, findClosestAnchorNode, findChildAnchorNode } from 'shims/sptinymceinterface';
 
-//////////////////////////////////////////////////////////////////////////
 // Utility function to apply css to the editor body
-//////////////////////////////////////////////////////////////////////////
 const applyCSS = (cssPairs) => {
   const $editorBody = getJQueryBody();
-  cssPairs.forEach(([key, value]) => $editorBody.css(key, value));
+  cssPairs.forEach(([ key, value ]) => $editorBody.css(key, value));
 };
 
-//////////////////////////////////////////////////////////////////////////
 // Editor configuration settings
-//////////////////////////////////////////////////////////////////////////
 
 // Whether the editor is in readonly mode
 let bReadOnly;
 // Palette color settings
-let textEditColor: string = '', textReadOnlyColor: string = '';
-let windowEditColor: string = '', windowReadOnlyColor: string = '';
+let textEditColor = '', textReadOnlyColor = '';
+let windowEditColor = '', windowReadOnlyColor = '';
 // Width setting
 let widthSetting = -1;
 
 // Applies the current palette
 const applyPalette = () => {
-  const [textColor, windowColor] = bReadOnly ? [textReadOnlyColor, windowReadOnlyColor] : [textEditColor, windowEditColor];
+  const [ textColor, windowColor ] = bReadOnly ? [ textReadOnlyColor, windowReadOnlyColor ] : [ textEditColor, windowEditColor ];
   if (textColor && windowColor) {
     applyCSS([
-      ['color', textColor],
-      ['background-color', windowColor]
+      [ 'color', textColor ],
+      [ 'background-color', windowColor ]
     ]);
     document.body.style.backgroundColor = windowColor;
   }
@@ -40,21 +36,19 @@ const applyPalette = () => {
 // Applies the width and overflow to the editor
 const applyWidth = (widthStr, overflowStr) => {
   applyCSS([
-    ['width', widthStr],
-    ['overflow', overflowStr]
+    [ 'width', widthStr ],
+    [ 'overflow', overflowStr ]
   ]);
 };
 
-//////////////////////////////////////////////////////////////////////////
 // Editor initial load handlers
-//////////////////////////////////////////////////////////////////////////
 
 // Loads the default font settings
 const loadDefaultFont = (fontJSON) => {
-  const {family, ptSize} = fontJSON;
+  const { family, ptSize } = fontJSON;
   applyCSS([
-    ['font-family', family],
-    ['font-size', `${ptSize}pt`]
+    [ 'font-family', family ],
+    [ 'font-size', `${ptSize}pt` ]
   ]);
 };
 // Loads the palette settings
@@ -64,12 +58,10 @@ const loadPalette = (windowEdit, windowReadOnly, textEdit, textReadOnly) => {
   textEditColor = textEdit;
   windowReadOnlyColor = windowReadOnly;
   applyPalette();
-  applyCSS([['margin', '3px']]);
+  applyCSS([[ 'margin', '3px' ]]);
 };
 
-//////////////////////////////////////////////////////////////////////////
 // Editor configuration change handlers
-//////////////////////////////////////////////////////////////////////////
 
 // Applies readonly mode to the editor
 const applyReadOnlyMode = (editor) => {
@@ -106,9 +98,7 @@ const clearFixedWidthEditor = () => {
   }
 };
 
-//////////////////////////////////////////////////////////////////////////
 // Hyperlink interaction handlers
-//////////////////////////////////////////////////////////////////////////
 
 // Callback for when the editor is clicked or double clicked
 const activateLink = (target) => {
@@ -118,9 +108,7 @@ const activateLink = (target) => {
   }
 };
 
-//////////////////////////////////////////////////////////////////////////
 // Image interaction handlers
-//////////////////////////////////////////////////////////////////////////
 
 // Helper function to escape a regular expression
 const escapeRegEg = (str) => str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, '\\$1');
