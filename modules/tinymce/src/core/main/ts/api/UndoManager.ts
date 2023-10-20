@@ -14,6 +14,36 @@ import { Index, Locks, UndoLevel, UndoManager } from '../undo/UndoManagerTypes';
 import Editor from './Editor';
 
 /**
+ * This interface represents the state of the undo manager.
+ */
+interface IUndoManagerState {
+  /**
+   * I'm not entirely sure what this is. I think it has something to do with the current selection.
+   */
+  beforeBookmark: Bookmark | null;
+
+  /**
+   * I'm not sure what this does but it seems prudent to persist it.
+   */
+  locks: number;
+
+  /**
+   * The current index in the undo stack.
+   */
+  index: number;
+
+  /**
+   * The stack of undo events.
+   */
+  data: object[];
+
+  /**
+   * If the user is currently typing.
+   */
+  typing: boolean;
+}
+
+/**
  * This class handles the undo/redo history levels for the editor. Since the built-in undo/redo has major drawbacks a custom one was needed.
  *
  * @class tinymce.UndoManager
@@ -39,15 +69,15 @@ const UndoManager = (editor: Editor): UndoManager => {
      * Populates an object representing the internal state of the undo manager.
      *
      * @method getUndoManagerState
-     * @return {object} Contains the current undo manager state.
+     * @return {IUndoManagerState} Contains the current undo manager state.
      */
-    getUndoManagerState: (): object => {
+    getUndoManagerState: (): IUndoManagerState => {
       return {
-        index,
+        beforeBookmark: beforeBookmark.get().getOrNull(),
+        locks: locks.get(),
+        index: index.get(),
         data: undoManager.data,
         typing: undoManager.typing,
-        beforeBookmark,
-        locks
       };
     },
 
@@ -55,15 +85,20 @@ const UndoManager = (editor: Editor): UndoManager => {
      * Sets internal state of the undo manager to a provided state
      *
      * @method setUndoManagerState
-     * @param {object} _stateJSON - The state to set as the internal state.
+     * @param {IUndoManagerState} state - The state to set as the internal state.
      */
-    setUndoManagerState: (_stateJSON: object) => {
-      // The previous logic crashes, I'm commenting out for now to get the build working. This will be fixed later
-      // index = stateJSON.index.clone();
-      // locks = stateJSON.locks.clone();
-      // beforeBookmark = stateJSON.beforeBookmark.clone();
-      // undoManager.data = stateJSON.data;
-      // undoManager.typing = stateJSON.typing;
+    setUndoManagerState: (state: IUndoManagerState) => {
+      if (state.beforeBookmark === null) {
+        // In my testing this case was never hit, but I think we still need to handle it due to how Singleton.value works
+        beforeBookmark.clear();
+      } else {
+        beforeBookmark.set(state.beforeBookmark);
+      }
+
+      locks.set(state.locks);
+      index.set(state.index);
+      undoManager.data = state.data;
+      undoManager.typing = state.typing;
     },
 
     /**
