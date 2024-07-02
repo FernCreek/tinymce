@@ -21,7 +21,7 @@ const preventNative = (evt) => {
 // Initiates a bypassed drag operation, allowing the host application to handle it instead of the browser
 const onDragStart = (editor) => {
   EditorCache.setBookmarkDragStart(editor.selection.getBookmark());
-  SPTinyMCEInterface.signalStartDrag(
+  SPTinyMCEInterface.emitStartDrag(
     editor.selection.getSelectionWithFormatting(),
     editor.selection.getContent({format: 'text'})
   );
@@ -67,7 +67,7 @@ const getContent = (editor) => {
 // Initiates a bypassed cut operation, allowing the host application to handle it instead of the browser
 const onCut = (editor) => {
   const {html, text} = getContent(editor);
-  SPTinyMCEInterface.signalCopyToClipboard(html, text);
+  SPTinyMCEInterface.emitCopyToClipboard(html, text);
   if (editor.mode.get() !== 'readonly') {
     editor.execCommand('delete');
   }
@@ -76,7 +76,7 @@ const onCut = (editor) => {
 // Initiates a bypassed copy operation, allowing the host application to handle it instead of the browser
 const onCopy = (editor) => {
   const {html, text} = getContent(editor);
-  SPTinyMCEInterface.signalCopyToClipboard(html, text);
+  SPTinyMCEInterface.emitCopyToClipboard(html, text);
   return false; // Always returns false, so the copy event is killed
 };
 // Modifies the TinyMCE editor's body tag to prevent cut/copy events from being handled natively

@@ -107,7 +107,7 @@ const clearFixedWidthEditor = () => {
 const activateLink = (target) => {
   const $el = findClosestAnchorNode($(target));
   if ($el) {
-    SPTinyMCEInterface.signalResponseOpenHyperlink($el.href);
+    SPTinyMCEInterface.emitResponseOpenHyperlink($el.href);
   }
 };
 
@@ -134,7 +134,7 @@ const detectImagesLoaded = (editor) => {
   const waitImgDone = (loadedImg, bWasError) => {
     editor.execCommand('mceRepaint');
     if (!bWasError) {
-      SPTinyMCEInterface.signalImageLoadedInBrowser(loadedImg.src);
+      SPTinyMCEInterface.emitImageLoadedInBrowser(loadedImg.src);
     }
   };
 

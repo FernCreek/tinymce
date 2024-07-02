@@ -25,7 +25,7 @@ const selectLink = (editor) => {
 const requestOpenLink = (editor) => {
   const anchorNode = findClosestLinkFromSelection(editor);
   if (anchorNode) {
-    SPTinyMCEInterface.signalResponseOpenHyperlink(anchorNode.href);
+    SPTinyMCEInterface.emitResponseOpenHyperlink(anchorNode.href);
   }
 };
 // Determines the information for inserting or editing a link for the current location
@@ -44,8 +44,8 @@ const requestInsertEditLink = (editor) => {
   }).length === 0;
 
   insertMode ?
-    SPTinyMCEInterface.signalResponseInsertHyperlink(displayText, displayTextEditable) :
-    SPTinyMCEInterface.signalResponseEditHyperlink(anchorNode ? anchorNode.getAttribute('href') : '', displayText, displayTextEditable);
+    SPTinyMCEInterface.emitResponseInsertHyperlink(displayText, displayTextEditable) :
+    SPTinyMCEInterface.emitResponseEditHyperlink(anchorNode ? anchorNode.getAttribute('href') : '', displayText, displayTextEditable);
 };
 
 // If the URL starts with %, it is for a field code

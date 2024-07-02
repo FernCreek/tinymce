@@ -28,7 +28,7 @@ const editorResized = (editor) => {
     const height = doc.body.offsetHeight;
     if (height !== EditorCache.getEditorHeight()) {
       EditorCache.setEditorHeight(height);
-      SPTinyMCEInterface.signalEditorHeightChanged(height);
+      SPTinyMCEInterface.emitEditorHeightChanged(height);
     }
   }
 };

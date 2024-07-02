@@ -28,7 +28,7 @@ const requestEditImage = (bForResize) => {
       width: cachedImage.width,
       height: cachedImage.height
     };
-    bForResize ? SPTinyMCEInterface.signalResponseEditImageSize(json) : SPTinyMCEInterface.signalResponseEditImage(json);
+    bForResize ? SPTinyMCEInterface.emitResponseEditImageSize(json) : SPTinyMCEInterface.emitResponseEditImage(json);
   });
 };
 // Sets the size of the selected image in the editor

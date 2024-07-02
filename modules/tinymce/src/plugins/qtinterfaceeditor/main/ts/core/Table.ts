@@ -80,7 +80,7 @@ const fireTableCommand = (editor, cmd) => {
     default:
       break;
   }
-  SPTinyMCEInterface.signalHasRowToPaste(hasRowToPaste);
+  SPTinyMCEInterface.emitHasRowToPaste(hasRowToPaste);
 };
 
 // Inserts a new table or applies different settings to the current table in the editor
@@ -151,7 +151,7 @@ const requestTableProperties = (editor) => {
       tablePlugin.getBorderForTable,
       tableBorderNames,
       tablePlugin.getBorderStyleForTable);
-    SPTinyMCEInterface.signalResponseTableProperties(json);
+    SPTinyMCEInterface.emitResponseTableProperties(json);
   }
 };
 // Determines and emits the signal with the row or cell properties
@@ -165,13 +165,13 @@ const requestRowCellProperties = (editor, element, bIsCell) => {
       borderNames = cellBorderNames;
       getMarginsFn = tablePlugin.getElementMarginsArray;
       getBorderStyleFn = tablePlugin.getBorderStyleForCell;
-      signalFn = SPTinyMCEInterface.signalResponseTableCellProperties;
+      signalFn = SPTinyMCEInterface.emitResponseTableCellProperties;
     } else {
       getBorderFn = tablePlugin.getBorderForRow;
       borderNames = rowBorderNames;
       getMarginsFn = tablePlugin.getRowMarginsArray;
       getBorderStyleFn = tablePlugin.getBorderStyleForRow;
-      signalFn = SPTinyMCEInterface.signalResponseTableRowProperties;
+      signalFn = SPTinyMCEInterface.emitResponseTableRowProperties;
     }
 
     const $ele = $(element);
