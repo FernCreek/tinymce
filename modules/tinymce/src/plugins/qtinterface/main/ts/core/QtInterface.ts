@@ -4,7 +4,7 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-import { getJQueryBody, SPTinyMCEInterface, findClosestAnchorNode, findChildAnchorNode } from 'shims/sptinymceinterface';
+import { getJQueryBody, findClosestAnchorNode, findChildAnchorNode } from 'shims/sptinymceinterface';
 
 // The margin on the body element of the iframe. Should match WysiwygUtils::kBodyMargin
 const BodyMargin = '8px';
@@ -22,8 +22,6 @@ let bReadOnly;
 // Palette color settings
 let textEditColor = '', textReadOnlyColor = '';
 let windowEditColor = '', windowReadOnlyColor = '';
-// Width setting
-let widthSetting = -1;
 
 // Applies the current palette
 const applyPalette = () => {
@@ -35,13 +33,6 @@ const applyPalette = () => {
     ]);
     document.body.style.backgroundColor = windowColor;
   }
-};
-// Applies the width and overflow to the editor
-const applyWidth = (widthStr, overflowStr) => {
-  applyCSS([
-    [ 'width', widthStr ],
-    [ 'overflow', overflowStr ]
-  ]);
 };
 
 // Editor initial load handlers
@@ -86,32 +77,6 @@ const setReadOnly = (editor, readOnly) => {
 };
 // Prevent drag events from being handled natively
 const disableOnDragStart = () => getJQueryBody().attr('ondragstart', 'return false;');
-// Handles setting the editor to be a fixed width
-const setFixedWidthEditor = (width) => {
-  if (widthSetting !== width) {
-    applyWidth(`${width}px`, 'hidden');
-    widthSetting = width;
-  }
-};
-// Handles setting the editor to be a variable width again
-const clearFixedWidthEditor = () => {
-  if (widthSetting !== -1) {
-    applyWidth('', '');
-    widthSetting = -1;
-  }
-};
-
-// Hyperlink interaction handlers
-
-// Callback for when the editor is clicked or double clicked
-const activateLink = (target) => {
-  const $el = findClosestAnchorNode($(target));
-  if ($el) {
-    SPTinyMCEInterface.emitResponseOpenHyperlink($el.href);
-  }
-};
-
-// Image interaction handlers
 
 // Helper function to escape a regular expression
 const escapeRegEg = (str) => str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, '\\$1');
@@ -129,27 +94,10 @@ const reloadImage = (editor, imgSrc) => {
   });
   editor.execCommand('mceRepaint');
 };
-// Function that sets up callbacks so a signal is emitted to the interface when an image is successfully loaded
-const detectImagesLoaded = (editor) => {
-  const waitImgDone = (loadedImg, bWasError) => {
-    editor.execCommand('mceRepaint');
-    if (!bWasError) {
-      SPTinyMCEInterface.emitImageLoadedInBrowser(loadedImg.src);
-    }
-  };
-
-  forEachImage((i, img) => {
-    const tmpImg = new Image();
-    tmpImg.onload = () => waitImgDone(tmpImg, false);
-    tmpImg.onerror = () => waitImgDone(tmpImg, true);
-    tmpImg.src = $(img).attr('src');
-  });
-};
 
 export {
   loadDefaultFont, loadPalette, disableOnDragStart,
-  findClosestAnchorNode, findChildAnchorNode, activateLink,
-  escapeRegEg, reloadImage, detectImagesLoaded,
-  setFixedWidthEditor, clearFixedWidthEditor,
+  findClosestAnchorNode, findChildAnchorNode,
+  escapeRegEg, reloadImage,
   setReadOnly
 };

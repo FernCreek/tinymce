@@ -4,11 +4,9 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-import {EditorCache} from './Cache';
-import {SPTinyMCEInterface} from 'shims/sptinymceinterface';
 
 // Inserts a horizontal rule
-const insertHorizontalRule = (editor) => editor.execCommand('InsertHorizontalRule', false, true);
+const insertHorizontalRule = (editor) => editor.execCommand('InsertHorizontalRule', false, true); // eslint-disable-line notice/notice
 // Toggles a bullet list on/off
 const bulletList = (editor, bInList) => editor.execCommand('InsertUnorderedList', false, bInList);
 // Toggles a numbered list on/off
@@ -21,16 +19,5 @@ const redo = (editor) => editor.execCommand('Redo');
 const selectAll = (editor) => editor.execCommand('selectAll');
 // Tells the editor to delete the current selection
 const deleteSelection = (editor) => editor.execCommand('delete');
-// Emits a signal to the interface when the editor's height changes
-const editorResized = (editor) => {
-  const doc = editor.getDoc();
-  if (doc && doc.body) {
-    const height = doc.body.offsetHeight;
-    if (height !== EditorCache.getEditorHeight()) {
-      EditorCache.setEditorHeight(height);
-      SPTinyMCEInterface.emitEditorHeightChanged(height);
-    }
-  }
-};
 
-export {insertHorizontalRule, bulletList, numberList, undo, redo, selectAll, deleteSelection, editorResized};
+export { insertHorizontalRule, bulletList, numberList, undo, redo, selectAll, deleteSelection };
