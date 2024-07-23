@@ -4,12 +4,24 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-import {SPTinyMCEInterface} from 'shims/sptinymceinterface';
-import {EditorCache} from './Cache';
 
-//////////////////////////////////////////////////////////////////////////
+// eslint-disable-next-line notice/notice
+import { QtHostInterface } from 'sp-qt-web-engine-util';
+
+import { EditorCache } from './Cache';
+
+// ////////////////////////////////////////////////////////////////////////
 // Image handling
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
+
+interface IImageData {
+  src: string;
+  width: number;
+  height: number;
+}
+
+let emitResponseEditImageSize: ((image: IImageData) => void) | undefined;
+let emitResponseEditImage: ((image: IImageData) => void) | undefined;
 
 // Inserts an image into the editor
 const insertImage = (editor, imgSrc) => editor.execCommand('mceInsertContent', false, imgSrc);
@@ -28,7 +40,7 @@ const requestEditImage = (bForResize) => {
       width: cachedImage.width,
       height: cachedImage.height
     };
-    bForResize ? SPTinyMCEInterface.emitResponseEditImageSize(json) : SPTinyMCEInterface.emitResponseEditImage(json);
+    bForResize ? emitResponseEditImageSize?.(json) : emitResponseEditImage?.(json);
   });
 };
 // Sets the size of the selected image in the editor
@@ -52,4 +64,32 @@ const setEditImage = (editor, src, width, height) => {
   });
 };
 
-export {insertImage, requestEditImage, setEditImageSize, setEditImage};
+/**
+ * Returns the image related actions.
+ */
+export const getImageActions = () => {
+  return {
+    insertImage,
+    setEditImageSize,
+    setEditImage
+  };
+};
+
+/**
+ * Returns the image related actions that don't require the editor as a parameter.
+ */
+export const getImageActionsWithoutEditor = () => {
+  return {
+    requestEditImage
+  };
+};
+
+/**
+ * Configures the host interface object for the image related actions.
+ *
+ * @param hostInterface - The host interface
+ */
+export const configureHostInterfaceForImageActions = (hostInterface: QtHostInterface) => {
+  emitResponseEditImageSize = hostInterface.registerEventEmitter('ResponseEditImageSize');
+  emitResponseEditImage = hostInterface.registerEventEmitter('ResponseEditImage');
+};

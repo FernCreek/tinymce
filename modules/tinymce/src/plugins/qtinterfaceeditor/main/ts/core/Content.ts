@@ -4,9 +4,17 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-import {getJQueryBody, SPTinyMCEInterface} from 'shims/sptinymceinterface';
-import {EditorCache} from './Cache';
+
+// eslint-disable-next-line notice/notice
+import { getJQueryBody } from 'shims/sptinymceinterface';
+import { QtHostInterface } from 'sp-qt-web-engine-util';
+
 import RangeUtils from 'tinymce/core/api/dom/RangeUtils';
+
+import { EditorCache } from './Cache';
+
+let emitStartDrag: ((html: string, text: string) => void) | undefined;
+let emitCopyToClipboard: ((html: string, text: string) => void) | undefined;
 
 // Handler used to prevent native event handling and propagation
 const preventNative = (evt) => {
@@ -14,16 +22,16 @@ const preventNative = (evt) => {
   evt.stopPropagation();
 };
 
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
 // Drag and drop interactions
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
 
 // Initiates a bypassed drag operation, allowing the host application to handle it instead of the browser
 const onDragStart = (editor) => {
   EditorCache.setBookmarkDragStart(editor.selection.getBookmark());
-  SPTinyMCEInterface.emitStartDrag(
+  emitStartDrag?.(
     editor.selection.getSelectionWithFormatting(),
-    editor.selection.getContent({format: 'text'})
+    editor.selection.getContent({ format: 'text' })
   );
   return false;
 };
@@ -40,7 +48,7 @@ const handleInternalDrop = (editor, strHTML, posX, posY) => {
       editor.undoManager.transact(() => {
         editor.execCommand('delete');
         editor.selection.setRng(rng);
-        editor.execCommand('mceInsertClipboardContent', false, {content: strHTML});
+        editor.execCommand('mceInsertClipboardContent', false, { content: strHTML });
       });
     }
   }
@@ -53,21 +61,21 @@ const bypassDragEvents = (editor) => {
   });
 };
 
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
 // Cut/Copy Handling
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
 
 // Gets the HTML and text content that is currently selected in the editor
 const getContent = (editor) => {
   editor.dom.updateCachedStylesOnElements(editor.selection.getSelectedBlocks());
-  const html = editor.selection.getSelectionWithFormatting({keepCachedStyles: true});
-  const text = editor.selection.getContent({format: 'text'});
-  return {html, text};
+  const html = editor.selection.getSelectionWithFormatting({ keepCachedStyles: true });
+  const text = editor.selection.getContent({ format: 'text' });
+  return { html, text };
 };
 // Initiates a bypassed cut operation, allowing the host application to handle it instead of the browser
 const onCut = (editor) => {
-  const {html, text} = getContent(editor);
-  SPTinyMCEInterface.emitCopyToClipboard(html, text);
+  const { html, text } = getContent(editor);
+  emitCopyToClipboard?.(html, text);
   if (editor.mode.get() !== 'readonly') {
     editor.execCommand('delete');
   }
@@ -75,8 +83,8 @@ const onCut = (editor) => {
 };
 // Initiates a bypassed copy operation, allowing the host application to handle it instead of the browser
 const onCopy = (editor) => {
-  const {html, text} = getContent(editor);
-  SPTinyMCEInterface.emitCopyToClipboard(html, text);
+  const { html, text } = getContent(editor);
+  emitCopyToClipboard?.(html, text);
   return false; // Always returns false, so the copy event is killed
 };
 // Modifies the TinyMCE editor's body tag to prevent cut/copy events from being handled natively
@@ -92,9 +100,9 @@ const bypassCutCopyEvents = (editor) => {
   });
 };
 
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
 // Insertion util functions
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
 
 // Uses the paste plugin util trimHTML function to trim the given HTML if possible
 const trimHTML = (editor, strHTML) =>
@@ -114,7 +122,7 @@ const removeCommentsFromContent = () => Array.from(getJQueryBody().contents()).f
 const removeAppleSpace = (editor) => {
   const appleSpaceClass = 'Apple-converted-space';
   const $apples = getJQueryBody().contents().find('.' + appleSpaceClass);
-  const emptySpan = {selector: 'span', attributes: ['style', 'class'], remove: 'empty', split: true, expand: false, deep: true};
+  const emptySpan = { selector: 'span', attributes: [ 'style', 'class' ], remove: 'empty', split: true, expand: false, deep: true };
   if ($apples.length) {
     editor.undoManager.transact(() => {
       $apples.removeClass(appleSpaceClass); // Remove the Apple-converted-space class
@@ -136,19 +144,19 @@ const putContentInEditor = (editor, str, asHTML, bShouldCollapse) => {
       editor.selection.collapse();
     }
     if (asHTML) {
-      editor.execCommand('mceInsertClipboardContent', false, {content: trimHTML(editor, str)});
+      editor.execCommand('mceInsertClipboardContent', false, { content: trimHTML(editor, str) });
       removeCommentsFromContent();
       removeAppleSpace(editor);
       removeImageMargins();
     } else {
-      editor.execCommand('mceInsertClipboardContent', false, {text: str});
+      editor.execCommand('mceInsertClipboardContent', false, { text: str });
     }
   });
 };
 
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
 // Paste/insertion handling
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
 
 // Pastes content into the editor (doesn't collapse selection)
 const pasteStr = (editor, str, asHTML) => putContentInEditor(editor, str, asHTML, false);
@@ -164,4 +172,27 @@ const insertText = (editor, strText) => insertStr(editor, strText, false);
 // Inserts the provided string as HTML into the editor
 const insertHTML = (editor, strHTML) => insertStr(editor, strHTML, true);
 
-export {bypassDragEvents, handleInternalDrop, bypassCutCopyEvents, pasteText, pasteHTML, insertText, insertHTML};
+/**
+ * Returns the content related actions.
+ */
+export const getContentActions = () => {
+  return {
+    bypassDragEvents,
+    handleInternalDrop,
+    bypassCutCopyEvents,
+    pasteText,
+    pasteHTML,
+    insertText,
+    insertHTML
+  };
+};
+
+/**
+ * Configures the host interface object for the content related actions.
+ *
+ * @param hostInterface - The host interface
+ */
+export const configureHostInterfaceForContentActions = (hostInterface: QtHostInterface) => {
+  emitStartDrag = hostInterface.registerEventEmitter('StartDrag');
+  emitCopyToClipboard = hostInterface.registerEventEmitter('CopyToClipboard');
+};

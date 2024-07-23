@@ -4,35 +4,43 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-import {SPTinyMCEInterface} from 'shims/sptinymceinterface';
-import {EditorCache} from './Cache';
 
-//////////////////////////////////////////////////////////////////////////
+// eslint-disable-next-line notice/notice
+import { QtHostInterface } from 'sp-qt-web-engine-util';
+
+import { EditorCache } from './Cache';
+
+let emitHasRowToPaste: ((hasRow: boolean) => void) | undefined;
+let emitResponseTableProperties: ((properties: object) => void) | undefined;
+let emitResponseTableCellProperties: ((properties: object) => void) | undefined;
+let emitResponseTableRowProperties: ((properties: object) => void) | undefined;
+
+// ////////////////////////////////////////////////////////////////////////
 // Table constants, see seapinetable plugin
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
 
 // The cell margin names in order of their constants, see seapinetable TableMargins
-const orderedMarginNames = ['top', 'bottom', 'left', 'right'];
+const orderedMarginNames = [ 'top', 'bottom', 'left', 'right' ];
 // The names for the borders used as keys on the JSON and on the seapinetable plugin interfaces
-const cellBorderNames = ['top', 'left', 'right', 'bottom'];
+const cellBorderNames = [ 'top', 'left', 'right', 'bottom' ];
 const rowBorderNames = cellBorderNames.concat('vertical');
 const tableBorderNames = rowBorderNames.concat('horizontal');
 
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
 // Table util functions (mostly to and from JSON helpers)
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
 
 // Gets a border from the provided JSON border information
-const getBorderFromJSON = (jsonBorder) => !!jsonBorder ? {width: jsonBorder.width, color: jsonBorder.color} : {width: 0, color: ''};
+const getBorderFromJSON = (jsonBorder) => !!jsonBorder ? { width: jsonBorder.width, color: jsonBorder.color } : { width: 0, color: '' };
 // Makes a key value pair object from the given key and value
-const makeKVP = (str, value) => ({[str]: value});
+const makeKVP = (str, value) => ({ [str]: value });
 // Makes a border interface from the JSON border information
 const makeBorderInterfaceFromJSON = (borderNames, jsonBorders) => {
   const safeBorderObj = !!jsonBorders ? jsonBorders : {};
   return borderNames.reduce((borders, str) => Object.assign(borders, makeKVP(str, getBorderFromJSON(safeBorderObj[str]))), {});
 };
 // Makes an alignment interface from JSON
-const makeAlignmentInterfaceFromJSON = (json) => ({horizontal: json.alignment, vertical: json.alignmentV});
+const makeAlignmentInterfaceFromJSON = (json) => ({ horizontal: json.alignment, vertical: json.alignmentV });
 // Validates the BG color
 const validateBgColor = (color) => (!!color ? color : '').toUpperCase();
 // Sets the JSON alignments
@@ -58,9 +66,9 @@ const setJSONBorderStyle = (borderStyle, json) => {
 const getBorderInterface = (getBorderFn, $element, borderNames) =>
   borderNames.reduce((borders, str) => Object.assign(borders, makeKVP(str, getBorderFn($element, str))), {});
 
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
 // Editor commands - saving and setting properties
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
 
 // Whether there is currently a row to paste
 let hasRowToPaste = false;
@@ -80,7 +88,7 @@ const fireTableCommand = (editor, cmd) => {
     default:
       break;
   }
-  SPTinyMCEInterface.emitHasRowToPaste(hasRowToPaste);
+  emitHasRowToPaste?.(hasRowToPaste);
 };
 
 // Inserts a new table or applies different settings to the current table in the editor
@@ -115,9 +123,9 @@ const setRowProperties = (editor, json) => saveRowCellProperties(editor, json, f
 // Applies the given properties to the current cell in the editor
 const setCellProperties = (editor, json) => saveRowCellProperties(editor, json, true);
 
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
 // Property request handlers, gets the information for qt
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
 
 // Set common json shared between tables, rows and cells
 const setCommonJSON = (tablePlugin, $ele, json, getMarginsFn, getBorderFn, borderNames, getBorderStyleFn) => {
@@ -151,7 +159,7 @@ const requestTableProperties = (editor) => {
       tablePlugin.getBorderForTable,
       tableBorderNames,
       tablePlugin.getBorderStyleForTable);
-    SPTinyMCEInterface.emitResponseTableProperties(json);
+    emitResponseTableProperties?.(json);
   }
 };
 // Determines and emits the signal with the row or cell properties
@@ -165,19 +173,19 @@ const requestRowCellProperties = (editor, element, bIsCell) => {
       borderNames = cellBorderNames;
       getMarginsFn = tablePlugin.getElementMarginsArray;
       getBorderStyleFn = tablePlugin.getBorderStyleForCell;
-      signalFn = SPTinyMCEInterface.emitResponseTableCellProperties;
+      signalFn = emitResponseTableCellProperties;
     } else {
       getBorderFn = tablePlugin.getBorderForRow;
       borderNames = rowBorderNames;
       getMarginsFn = tablePlugin.getRowMarginsArray;
       getBorderStyleFn = tablePlugin.getBorderStyleForRow;
-      signalFn = SPTinyMCEInterface.emitResponseTableRowProperties;
+      signalFn = emitResponseTableRowProperties;
     }
 
     const $ele = $(element);
     setJSONAlignmentBgColor(tablePlugin, $ele, json);
     setCommonJSON(tablePlugin, $ele, json, getMarginsFn, getBorderFn, borderNames, getBorderStyleFn);
-    signalFn(json);
+    signalFn?.(json);
   }
 };
 // Determines and emits the signal with the properties of the selected row
@@ -189,9 +197,29 @@ const requestRowProperties = (editor) => {
 // Determines and emits the signal with the properties of the selected cell
 const requestCellProperties = (editor) => requestRowCellProperties(editor, EditorCache.getCellElement(), true);
 
-export {
-  fireTableCommand,
-  insertOrSaveTable, requestTableProperties,
-  requestRowProperties, setRowProperties,
-  requestCellProperties, setCellProperties
+/**
+ * Returns the table related actions.
+ */
+export const getTableActions = () => {
+  return {
+    fireTableCommand,
+    insertOrSaveTable,
+    requestTableProperties,
+    requestRowProperties,
+    setRowProperties,
+    requestCellProperties,
+    setCellProperties
+  };
+};
+
+/**
+ * Configures the host interface object for the table related actions.
+ *
+ * @param hostInterface - The host interface
+ */
+export const configureHostInterfaceForTableActions = (hostInterface: QtHostInterface) => {
+  emitHasRowToPaste = hostInterface.registerEventEmitter('HasRowToPaste');
+  emitResponseTableProperties = hostInterface.registerEventEmitter('ResponseTableProperties');
+  emitResponseTableCellProperties = hostInterface.registerEventEmitter('ResponseTableCellProperties');
+  emitResponseTableRowProperties = hostInterface.registerEventEmitter('ResponseTableRowProperties');
 };

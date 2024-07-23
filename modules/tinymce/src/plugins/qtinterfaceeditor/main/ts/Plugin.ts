@@ -6,34 +6,54 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
+
+// eslint-disable-next-line notice/notice
+import { QtHostInterface } from 'sp-qt-web-engine-util';
+
 import PluginManager from 'tinymce/core/api/PluginManager';
-import {get} from 'shims/sptinymceinterface';
-import * as Links from './core/Link';
-import * as Misc from './core/Misc';
-import * as Table from './core/Table';
-import * as Image from './core/Image';
-import * as Content from './core/Content';
+
+import { configureHostInterfaceForContentActions, getContentActions } from './core/Content';
 import * as Formatting from './core/Format';
-import {nodeChanged} from './core/NodeChanged';
+import { configureHostInterfaceForImageActions, getImageActions, getImageActionsWithoutEditor } from './core/Image';
+import { configureHostInterfaceForLinkActions, getLinkActions } from './core/Link';
+import * as Misc from './core/Misc';
+import { configureHostInterfaceForNodeChanged, nodeChanged } from './core/NodeChanged';
+import { configureHostInterfaceForTableActions, getTableActions } from './core/Table';
 
-PluginManager.add('qtinterfaceeditor', function (editor) {
-  // Expose the global SPTinyMCEInterface object after the editor has been initialized
-  editor.on('init', () => get());
-  const applyEditorArg = (fn) => (...args) => fn(editor, ...args);
-  const applyEditorArgToObj = (obj) => Object.keys(obj).reduce((objApp, key) => Object.assign(objApp, ({[key]: applyEditorArg(obj[key])})), {});
-  // Link handlers
-  const links = applyEditorArgToObj(Links);
-  // Small misc handlers, not really specific
-  const misc = applyEditorArgToObj(Object.assign({}, Misc, {nodeChanged}));
-  // Table handlers
-  const table = applyEditorArgToObj(Table);
-  // Image handlers
-  const image = Object.assign({}, applyEditorArgToObj(Image), {requestEditImage: Image.requestEditImage});
-  // Content manipulation handlers
-  const content =  applyEditorArgToObj(Content);
-  // Formatting handlers
-  const formatting = Object.assign({}, applyEditorArgToObj(Formatting), {loadDefaultFont: Formatting.loadDefaultFont});
-  return Object.assign({}, links, misc, table, image, content, formatting);
-});
-
-export default function () { }
+export default () => {
+  PluginManager.add('qtinterfaceeditor', (editor) => {
+    const applyEditorArg = (fn) => (...args) => fn(editor, ...args);
+    const applyEditorArgToObj = (obj) => Object.keys(obj).reduce((objApp, key) => Object.assign(objApp, ({ [key]: applyEditorArg(obj[key]) })), {});
+    // Link handlers
+    const links = applyEditorArgToObj(getLinkActions());
+    // Small misc handlers, not really specific
+    const misc = applyEditorArgToObj(Object.assign({}, Misc, { nodeChanged }));
+    // Table handlers
+    const table = applyEditorArgToObj(getTableActions());
+    // Image handlers
+    const image = {
+      ...applyEditorArgToObj(getImageActions()),
+      ...getImageActionsWithoutEditor()
+    };
+    // Content manipulation handlers
+    const content = applyEditorArgToObj(getContentActions());
+    // Formatting handlers
+    const formatting = Object.assign({}, applyEditorArgToObj(Formatting), { loadDefaultFont: Formatting.loadDefaultFont });
+    // return Object.assign({}, links, misc, table, image, content, formatting);
+    return {
+      ...links,
+      ...misc,
+      ...table,
+      ...image,
+      ...content,
+      ...formatting,
+      configureHostInterface: (hostInterface: QtHostInterface) => {
+        configureHostInterfaceForLinkActions(hostInterface);
+        configureHostInterfaceForNodeChanged(hostInterface);
+        configureHostInterfaceForTableActions(hostInterface);
+        configureHostInterfaceForImageActions(hostInterface);
+        configureHostInterfaceForContentActions(hostInterface);
+      }
+    };
+  });
+};

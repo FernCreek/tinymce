@@ -4,11 +4,18 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-import {SPTinyMCEInterface, findClosestAnchorNode, findChildAnchorNode} from 'shims/sptinymceinterface';
 
-//////////////////////////////////////////////////////////////////////////
+// eslint-disable-next-line notice/notice
+import { findClosestAnchorNode, findChildAnchorNode } from 'shims/sptinymceinterface';
+import { QtHostInterface } from 'sp-qt-web-engine-util';
+
+let emitResponseOpenHyperlink: ((url: string) => void) | undefined;
+let emitResponseInsertHyperlink: ((displayText: string, displayTextEditable: boolean) => void) | undefined;
+let emitResponseEditHyperlink: ((url: string, displayText: string, displayTextEditable: boolean) => void) | undefined;
+
+// ////////////////////////////////////////////////////////////////////////
 // Hyperlink handling
-//////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////
 
 // Finds the closest link from the selection
 const findClosestLinkFromSelection = (editor) => findClosestAnchorNode($(editor.selection.getNode()));
@@ -25,27 +32,27 @@ const selectLink = (editor) => {
 const requestOpenLink = (editor) => {
   const anchorNode = findClosestLinkFromSelection(editor);
   if (anchorNode) {
-    SPTinyMCEInterface.emitResponseOpenHyperlink(anchorNode.href);
+    emitResponseOpenHyperlink?.(anchorNode.href);
   }
 };
 // Determines the information for inserting or editing a link for the current location
 const requestInsertEditLink = (editor) => {
   let anchorNode = findClosestLinkFromSelection(editor);
   const tmpDiv = document.createElement('div');
-  tmpDiv.innerHTML = editor.selection.getContent({format: 'html'});
+  tmpDiv.innerHTML = editor.selection.getContent({ format: 'html' });
   const insertMode = !anchorNode;
   anchorNode ?
     editor.selection.select(anchorNode) : // Select the anchor node, in case it was a parent of the actual selection.
     anchorNode = findChildAnchorNode($(tmpDiv)); // Find a child anchor node, so we can populate the dialog with its href.
 
-  const displayText = editor.selection.getContent({format: 'text'});
+  const displayText = editor.selection.getContent({ format: 'text' });
   const displayTextEditable = $(tmpDiv).find('*').addBack().contents().filter(function () {
     return this.nodeType !== Node.TEXT_NODE && (this as any).tagName !== 'A';
   }).length === 0;
 
   insertMode ?
-    SPTinyMCEInterface.emitResponseInsertHyperlink(displayText, displayTextEditable) :
-    SPTinyMCEInterface.emitResponseEditHyperlink(anchorNode ? anchorNode.getAttribute('href') : '', displayText, displayTextEditable);
+    emitResponseInsertHyperlink?.(displayText, displayTextEditable) :
+    emitResponseEditHyperlink?.(anchorNode ? anchorNode.getAttribute('href') : '', displayText, displayTextEditable);
 };
 
 // If the URL starts with %, it is for a field code
@@ -64,12 +71,12 @@ const insertLink = (editor, url, displayText) => {
   if (url.length === 0) {
     insertContent(displayText);
   } else {
-    url  = addProtocolIfNeeded(editor, url);
-    const htmlArgs = Object.assign({},  {
+    url = addProtocolIfNeeded(editor, url);
+    const htmlArgs = Object.assign({}, {
       href: url.replace(' ', '%20'),
       title: 'Open ' + url,
       id: 'tinysc-link'
-    }, !isFieldCodeLink(url) ? {target: '_blank'} : {});
+    }, !isFieldCodeLink(url) ? { target: '_blank' } : {});
     const linkHTML = editor.dom.createHTML('a', htmlArgs, editor.dom.encode(displayText));
     insertContent(linkHTML);
     const $link = $(editor.dom.select('#tinysc-link'));
@@ -81,4 +88,26 @@ const insertLink = (editor, url, displayText) => {
   editor.execCommand('mceAddUndoLevel');
 };
 
-export {unlink, selectLink, requestOpenLink, requestInsertEditLink, insertLink};
+/**
+ * Returns the link related actions.
+ */
+export const getLinkActions = () => {
+  return {
+    unlink,
+    selectLink,
+    requestOpenLink,
+    requestInsertEditLink,
+    insertLink
+  };
+};
+
+/**
+ * Configures the host interface object for the link related actions.
+ *
+ * @param hostInterface - The host interface
+ */
+export const configureHostInterfaceForLinkActions = (hostInterface: QtHostInterface) => {
+  emitResponseOpenHyperlink = hostInterface.registerEventEmitter('ResponseOpenHyperlink');
+  emitResponseInsertHyperlink = hostInterface.registerEventEmitter('ResponseInsertHyperlink');
+  emitResponseEditHyperlink = hostInterface.registerEventEmitter('ResponseEditHyperlink');
+};

@@ -6,11 +6,7 @@
  * Released under LGPL License.
  * License: http://www.tinymce.com/license
  */
-let SPTinyMCEInterface; // This is used by our our native qt interfaces
-function get() {
-  // @ts-ignore
-  SPTinyMCEInterface = (window as any).SPTinyMCEInterface;
-}
+
 // Common function used by the qtinterface and qtinterface editor
 const getJQueryBody = () => $('#content_ifr').contents().find('.tinymce-native');
 
@@ -29,4 +25,4 @@ const findChildAnchorNode = ($el) => {
   return childAnchors && childAnchors.length ? childAnchors[0] : null;
 };
 
-export { SPTinyMCEInterface, get, getJQueryBody, findClosestAnchorNode, findChildAnchorNode };
+export { getJQueryBody, findClosestAnchorNode, findChildAnchorNode };
