@@ -15,6 +15,7 @@ import { EditorCache } from './Cache';
 
 let emitStartDrag: ((html: string, text: string) => void) | undefined;
 let emitCopyToClipboard: ((html: string, text: string) => void) | undefined;
+let emitPaste: (() => void) | undefined;
 
 // Handler used to prevent native event handling and propagation
 const preventNative = (evt) => {
@@ -87,8 +88,8 @@ const onCopy = (editor) => {
   emitCopyToClipboard?.(html, text);
   return false; // Always returns false, so the copy event is killed
 };
-// Modifies the TinyMCE editor's body tag to prevent cut/copy events from being handled natively
-const bypassCutCopyEvents = (editor) => {
+// Modifies the TinyMCE editor's body tag to prevent clipboard events from being handled natively
+const bypassClipboardEvents = (editor) => {
   const $editorBody = getJQueryBody();
   $editorBody.on('cut', (evt) => {
     preventNative(evt);
@@ -98,6 +99,14 @@ const bypassCutCopyEvents = (editor) => {
     preventNative(evt);
     onCopy(editor);
   });
+  if ($editorBody[0]) {
+    $editorBody[0].addEventListener('paste', (evt) => {
+      // Prevent paste handling, so we can pre-process it on the Qt side first.
+      // However, we want to let the event continue propagating so TinyMCE will clean up the paste bin element.
+      evt.preventDefault();
+      emitPaste?.();
+    }, true);
+  }
 };
 
 // ////////////////////////////////////////////////////////////////////////
@@ -179,7 +188,7 @@ export const getContentActions = () => {
   return {
     bypassDragEvents,
     handleInternalDrop,
-    bypassCutCopyEvents,
+    bypassClipboardEvents,
     pasteText,
     pasteHTML,
     insertText,
@@ -195,4 +204,5 @@ export const getContentActions = () => {
 export const configureHostInterfaceForContentActions = (hostInterface: QtHostInterface) => {
   emitStartDrag = hostInterface.registerEventEmitter('StartDrag');
   emitCopyToClipboard = hostInterface.registerEventEmitter('CopyToClipboard');
+  emitPaste = hostInterface.registerEventEmitter('Paste');
 };
