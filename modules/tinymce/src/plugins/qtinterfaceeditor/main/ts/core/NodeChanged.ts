@@ -240,30 +240,32 @@ export const nodeChanged = (editor, element) => {
  * @param hostInterface - The host interface
  */
 export const configureHostInterfaceForNodeChanged = (hostInterface: QtHostInterface) => {
-  emitCursorIsBold = hostInterface.registerEventEmitter('CursorIsBold');
-  emitCursorIsItalic = hostInterface.registerEventEmitter('CursorIsItalic');
-  emitCursorIsUnderline = hostInterface.registerEventEmitter('CursorIsUnderline');
-  emitCursorIsStrikethrough = hostInterface.registerEventEmitter('CursorIsStrikethrough');
-  emitCursorDefaultFontFamily = hostInterface.registerEventEmitter('CursorDefaultFontFamily');
-  emitCursorFontFamily = hostInterface.registerEventEmitter('CursorFontFamily');
-  emitCursorDefaultFontSize = hostInterface.registerEventEmitter('CursorDefaultFontSize');
-  emitCursorFontSize = hostInterface.registerEventEmitter('CursorFontSize');
-  emitCursorOnImage = hostInterface.registerEventEmitter('CursorOnImage');
-  emitCursorAlignNone = hostInterface.registerEventEmitter('CursorAlignNone');
-  emitCursorAlignMultiple = hostInterface.registerEventEmitter('CursorAlignMultiple');
-  emitCursorAlignLeft = hostInterface.registerEventEmitter('CursorAlignLeft');
-  emitCursorAlignCenter = hostInterface.registerEventEmitter('CursorAlignCenter');
-  emitCursorAlignRight = hostInterface.registerEventEmitter('CursorAlignRight');
-  emitCursorAlignJustify = hostInterface.registerEventEmitter('CursorAlignJustify');
-  emitCursorInTable = hostInterface.registerEventEmitter('CursorInTable');
-  emitCursorInMultipleCells = hostInterface.registerEventEmitter('CursorInMultipleCells');
-  emitCursorInMergedCell = hostInterface.registerEventEmitter('CursorInMergedCell');
-  emitCursorInSingleCell = hostInterface.registerEventEmitter('CursorInSingleCell');
-  emitCursorInSingleRow = hostInterface.registerEventEmitter('CursorInSingleRow');
-  emitCursorInBulletedList = hostInterface.registerEventEmitter('CursorInBulletedList');
-  emitCursorInNumberedList = hostInterface.registerEventEmitter('CursorInNumberedList');
-  emitCursorInHyperlink = hostInterface.registerEventEmitter('CursorInHyperlink');
-  emitUndoAvailable = hostInterface.registerEventEmitter('UndoAvailable');
-  emitRedoAvailable = hostInterface.registerEventEmitter('RedoAvailable');
-  emitCursorHasSelection = hostInterface.registerEventEmitter('CursorHasSelection');
+  const logEvents = false;
+
+  emitCursorIsBold = hostInterface.registerEventEmitter('CursorIsBold', logEvents);
+  emitCursorIsItalic = hostInterface.registerEventEmitter('CursorIsItalic', logEvents);
+  emitCursorIsUnderline = hostInterface.registerEventEmitter('CursorIsUnderline', logEvents);
+  emitCursorIsStrikethrough = hostInterface.registerEventEmitter('CursorIsStrikethrough', logEvents);
+  emitCursorDefaultFontFamily = hostInterface.registerEventEmitter('CursorDefaultFontFamily', logEvents);
+  emitCursorFontFamily = hostInterface.registerEventEmitter('CursorFontFamily', logEvents);
+  emitCursorDefaultFontSize = hostInterface.registerEventEmitter('CursorDefaultFontSize', logEvents);
+  emitCursorFontSize = hostInterface.registerEventEmitter('CursorFontSize', logEvents);
+  emitCursorOnImage = hostInterface.registerEventEmitter('CursorOnImage', logEvents);
+  emitCursorAlignNone = hostInterface.registerEventEmitter('CursorAlignNone', logEvents);
+  emitCursorAlignMultiple = hostInterface.registerEventEmitter('CursorAlignMultiple', logEvents);
+  emitCursorAlignLeft = hostInterface.registerEventEmitter('CursorAlignLeft', logEvents);
+  emitCursorAlignCenter = hostInterface.registerEventEmitter('CursorAlignCenter', logEvents);
+  emitCursorAlignRight = hostInterface.registerEventEmitter('CursorAlignRight', logEvents);
+  emitCursorAlignJustify = hostInterface.registerEventEmitter('CursorAlignJustify', logEvents);
+  emitCursorInTable = hostInterface.registerEventEmitter('CursorInTable', logEvents);
+  emitCursorInMultipleCells = hostInterface.registerEventEmitter('CursorInMultipleCells', logEvents);
+  emitCursorInMergedCell = hostInterface.registerEventEmitter('CursorInMergedCell', logEvents);
+  emitCursorInSingleCell = hostInterface.registerEventEmitter('CursorInSingleCell', logEvents);
+  emitCursorInSingleRow = hostInterface.registerEventEmitter('CursorInSingleRow', logEvents);
+  emitCursorInBulletedList = hostInterface.registerEventEmitter('CursorInBulletedList', logEvents);
+  emitCursorInNumberedList = hostInterface.registerEventEmitter('CursorInNumberedList', logEvents);
+  emitCursorInHyperlink = hostInterface.registerEventEmitter('CursorInHyperlink', logEvents);
+  emitUndoAvailable = hostInterface.registerEventEmitter('UndoAvailable', logEvents);
+  emitRedoAvailable = hostInterface.registerEventEmitter('RedoAvailable', logEvents);
+  emitCursorHasSelection = hostInterface.registerEventEmitter('CursorHasSelection', logEvents);
 };
