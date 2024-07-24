@@ -93,10 +93,18 @@ const bypassClipboardEvents = (editor) => {
   const $editorBody = getJQueryBody();
   $editorBody.on('cut', (evt) => {
     preventNative(evt);
+    // Clear the current clipboard before calling into Qt code. This prevents Qt from automatically updating the
+    // clipboard to match the current selection which was overwriting the custom data emitCopyToClipboard writes to the
+    // clipboard.
+    evt?.originalEvent?.clipboardData?.clearData();
     onCut(editor);
   });
   $editorBody.on('copy', (evt) => {
     preventNative(evt);
+    // Clear the current clipboard before calling into Qt code. This prevents Qt from automatically updating the
+    // clipboard to match the current selection which was overwriting the custom data emitCopyToClipboard writes to the
+    // clipboard.
+    evt?.originalEvent?.clipboardData?.clearData();
     onCopy(editor);
   });
   if ($editorBody[0]) {
