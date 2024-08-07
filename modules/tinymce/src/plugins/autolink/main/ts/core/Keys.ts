@@ -5,6 +5,8 @@
  * For commercial licenses see https://www.tiny.cloud/
  */
 
+import { buildHyperlinkTooltip, isFieldCodeHyperlink } from 'shims/sptinymceinterface';
+
 import Editor from 'tinymce/core/api/Editor';
 import Env from 'tinymce/core/api/Env';
 
@@ -60,7 +62,7 @@ const setEnd = (rng: Range, container: Node, offset: number): void => {
 
 const addProtocolIfNeeded = (link) => {
   // If there isn't a protocol and the url isn't a field code, assume http
-  return !Settings.hasProtocolPattern().test(link) && (link.indexOf('%') !== 0) ? 'http://' + link : link;
+  return !Settings.hasProtocolPattern().test(link) && !isFieldCodeHyperlink(link) ? 'http://' + link : link;
 };
 
 const parseCurrentLine = (editor, endOffset, delimiter) => {
@@ -203,6 +205,9 @@ const parseCurrentLine = (editor, endOffset, delimiter) => {
 
     editor.selection.setRng(rng);
     editor.execCommand('createlink', false, validURL.href);
+    editor.dom.setAttrib(editor.selection.getNode(), 'title', buildHyperlinkTooltip(validURL.href));
+    // Ensure we can always find the original href when we build hyperlink tooltips
+    editor.dom.setAttrib(editor.selection.getNode(), 'data-mce-href', validURL.href);
 
     if (defaultLinkTarget) {
       editor.dom.setAttrib(editor.selection.getNode(), 'target', defaultLinkTarget);

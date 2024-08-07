@@ -6,7 +6,7 @@
  */
 
 // eslint-disable-next-line notice/notice
-import { getJQueryBody } from 'shims/sptinymceinterface';
+import { addTooltipsToHyperlinks, getJQueryBody } from 'shims/sptinymceinterface';
 import { QtHostInterface } from 'sp-qt-web-engine-util';
 
 import RangeUtils from 'tinymce/core/api/dom/RangeUtils';
@@ -154,6 +154,7 @@ const removeAppleSpace = (editor) => {
 // Removes any margins that are on images. We do not support margins on images.
 // I.E. sometimes applies margins (potentially negative ones) to images as part of their style.
 const removeImageMargins = () => getJQueryBody().find('img').css('margin', '');
+
 // Inserts the string into the editor as text or HTML
 const putContentInEditor = (editor, str, asHTML, bShouldCollapse) => {
   editor.undoManager.transact(() => {
@@ -165,6 +166,8 @@ const putContentInEditor = (editor, str, asHTML, bShouldCollapse) => {
       removeCommentsFromContent();
       removeAppleSpace(editor);
       removeImageMargins();
+      // Add tooltips to inserted hyperlink content
+      addTooltipsToHyperlinks(editor);
     } else {
       editor.execCommand('mceInsertClipboardContent', false, { text: str });
     }

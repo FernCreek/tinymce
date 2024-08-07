@@ -6,7 +6,12 @@
  */
 
 // eslint-disable-next-line notice/notice
-import { findClosestAnchorNode, findChildAnchorNode } from 'shims/sptinymceinterface';
+import {
+  buildHyperlinkTooltip,
+  findChildAnchorNode,
+  findClosestAnchorNode,
+  isFieldCodeHyperlink
+} from 'shims/sptinymceinterface';
 import { QtHostInterface } from 'sp-qt-web-engine-util';
 
 let emitResponseOpenHyperlink: ((url: string) => void) | undefined;
@@ -55,13 +60,10 @@ const requestInsertEditLink = (editor) => {
     emitResponseEditHyperlink?.(anchorNode ? anchorNode.getAttribute('href') : '', displayText, displayTextEditable);
 };
 
-// If the URL starts with %, it is for a field code
-const isFieldCodeLink = (url) => url.indexOf('%') === 0;
-
 // Add the http protocol if no supported protocol is present
 // If the URL starts with %, it is for a field code do not add the http protocol
 const addProtocolIfNeeded = (editor, url) =>
-  editor.plugins.autolink && editor.plugins.autolink.addProtocolIfNeeded && !isFieldCodeLink(url) ?
+  editor.plugins.autolink && editor.plugins.autolink.addProtocolIfNeeded && !isFieldCodeHyperlink(url) ?
     editor.plugins.autolink.addProtocolIfNeeded(url) : url;
 
 // Inserts a link in the editor with the provided information
@@ -72,11 +74,12 @@ const insertLink = (editor, url, displayText) => {
     insertContent(displayText);
   } else {
     url = addProtocolIfNeeded(editor, url);
-    const htmlArgs = Object.assign({}, {
-      href: url.replace(' ', '%20'),
-      title: 'Open ' + url,
+    const href = url.replace(' ', '%20');
+    const htmlArgs = {
+      href,
+      title: !isFieldCodeHyperlink(href) ? buildHyperlinkTooltip(href) : '',
       id: 'tinysc-link'
-    }, !isFieldCodeLink(url) ? { target: '_blank' } : {});
+    };
     const linkHTML = editor.dom.createHTML('a', htmlArgs, editor.dom.encode(displayText));
     insertContent(linkHTML);
     const $link = $(editor.dom.select('#tinysc-link'));
