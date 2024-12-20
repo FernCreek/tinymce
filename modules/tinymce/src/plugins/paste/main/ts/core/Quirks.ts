@@ -166,6 +166,16 @@ const removeUnderlineAndFontInAnchor = (editor: Editor, root: Element): void => 
   });
 };
 
+const removeInvalidFontSize = (editor: Editor, root: Element): void => {
+  // Find every element that has a font-size set
+  editor.$(root).find('[style*=\'font-size\']').each((i, node) => {
+    // Then if the font-size in any unit would be 0, remove the font-size style
+    if ('style' in node && Number.parseInt((node as HTMLElement).style.fontSize, 10) === 0) {
+      (node as HTMLElement).style.removeProperty('font-size');
+    }
+  });
+};
+
 const setup = (editor: Editor): void => {
   if (Env.webkit) {
     addPreProcessFilter(editor, removeWebKitStyles);
@@ -175,6 +185,8 @@ const setup = (editor: Editor): void => {
     addPreProcessFilter(editor, removeExplorerBrElementsAfterBlocks);
     addPostProcessFilter(editor, removeUnderlineAndFontInAnchor);
   }
+
+  addPostProcessFilter(editor, removeInvalidFontSize);
 };
 
 export {
