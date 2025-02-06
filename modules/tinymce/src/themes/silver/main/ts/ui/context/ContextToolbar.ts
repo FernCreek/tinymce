@@ -105,7 +105,9 @@ const register = (editor: Editor, registryContextToolbars: Record<string, Contex
     lastElement.clear();
     lastTrigger.clear();
     lastContextPosition.clear();
-    editor.selection.getScrollContainers().forEach((container) => DOM.unbind(container, 'scroll', scroll));
+    if (editor.selection) {
+      editor.selection.getScrollContainers().forEach((container) => DOM.unbind(container, 'scroll', scroll));
+    }
     InlineView.hide(contextbar);
   };
 
